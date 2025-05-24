@@ -10,7 +10,7 @@ Section Hoare.
   specification monad, but we directly use specification monads here for
   simplicity. *)
   Definition Hoare {R} (P : S -> Prop) (m : SpecST S R) (Q : R -> S -> Prop) : Prop :=
-    forall p s, P s -> (forall r s', Q r s' -> p r s') -> proj1_sig m p s.
+    forall p s, P s -> (forall r s', Q r s' -> p r s') -> m p s.
 
   Notation "{{ P }} m {{ Q }}" := (Hoare P m Q) (at level 45).
 
@@ -58,10 +58,9 @@ Section Hoare.
       {{ P }} m {{ Q1 }} /\ {{ P }} m {{ Q2 }} ->
         {{ P }} m {{ conj2 Q1 Q2 }}.
   Proof.
-    intros R P Q1 Q2 [m Hm] [HQ1 HQ2]. 
+    intros R P Q1 Q2 m [HQ1 HQ2]. 
     autounfold with hoare in *; simpl in *.
     intros p s HP Hconj.
-    eapply Hm. apply Hconj.
     specialize (HQ1 Q1 s HP ltac:(auto)).
     specialize (HQ2 Q2 s HP ltac:(auto)).
   Abort.

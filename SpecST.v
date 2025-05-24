@@ -11,27 +11,20 @@ Section SpecST.
   Variable S : Type.
   
   Definition SpecST (R : Type) :=
-    { m : (R -> S -> Prop) -> S -> Prop |
-      (forall (p q : R -> S -> Prop) s,
-        (forall r s, p r s -> q r s) -> m p s -> m q s)
-    }.
+    (R -> S -> Prop) -> S -> Prop.
 
-  Program Definition retST {R} (r : R) : SpecST R :=
+  Definition retST {R} (r : R) : SpecST R :=
     fun p => p r.
 
-  Program Definition bindST {X Y}
+  Definition bindST {X Y}
     (m : SpecST X)
     (k : X -> SpecST Y) : SpecST Y :=
     fun p => m (fun x => k x p).
-  Next Obligation.
-  destruct m as [m Hm]. cbn in *.
-  eapply Hm; [| apply H0]. sauto.
-  Defined.
 
-  Program Definition getST : SpecST S :=
+  Definition getST : SpecST S :=
     fun p s => p s s.
 
-  Program Definition putST (s : S) : SpecST unit :=
+  Definition putST (s : S) : SpecST unit :=
     fun p _ => p tt s.
 
 End SpecST.
@@ -62,7 +55,7 @@ Section Examples.
     x <- get ;; put (x + 1).
 
   Theorem read_inc_write_spec :
-    forall s, s >= 0 -> proj1_sig read_inc_write (fun _ s => s >= 1) s.
+    forall s, s >= 0 -> read_inc_write (fun _ s => s >= 1) s.
   Proof.
     intros. unfold read_inc_write. cbn.
     autounfold with specst. lia.
@@ -72,7 +65,7 @@ Section Examples.
     x <- get ;; if (42 <=? x) then put (x + 1) else put 0.
 
   Theorem read_if_inc_write_spec :
-    forall s, proj1_sig read_if_inc_write (fun _ s => s >= 43 \/ s = 0) s.
+    forall s, read_if_inc_write (fun _ s => s >= 43 \/ s = 0) s.
   Proof.
     intros. unfold read_if_inc_write.
     simpl. autounfold with specst.

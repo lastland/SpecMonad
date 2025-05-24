@@ -7,7 +7,7 @@ Section Incorrectness.
   Variable S : Type.
 
   Definition Incorrectness {R} (P : S -> Prop) (m : SpecST S R) (Q : R -> S -> Prop) : Prop :=
-    forall p, exists s, P s /\ (forall r s', Q r s' -> p r s') /\ proj1_sig m p s.
+    forall p, exists s, P s /\ (forall r s', Q r s' -> p r s') /\ m p s.
 
   Notation "[[ P ]] m [[ Q ]]" := (Incorrectness P m Q) (at level 45).
 
