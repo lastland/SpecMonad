@@ -1,0 +1,25 @@
+opam-version: "2.0"
+maintainer: "liyao@pdx.edu"
+version: "dev"
+
+homepage: "https://github.com/lastland/SpecMonad"
+dev-repo: "git@github.com:lastland/SpecMonad.git"
+bug-reports: "https://github.com/lastland/SpecMonad/issues"
+license: "MIT"
+
+synopsis: "The Coq formalization of spec monads"
+description: "Theory for spec monads, Hoare logic, and incorrectness logic."
+
+build: [make "-j%{jobs}%"]
+install: [make "install"]
+depends: [
+  "coq" {>= "8.17"}
+  "coq-hammer" {>= "1.3.2"}
+  "coq-ext-lib" {>= "0.13.0"}
+]
+
+tags: []
+
+authors: [
+  "Yao Li"
+]
