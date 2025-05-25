@@ -1,11 +1,6 @@
 From ExtLib Require Import Monad MonadState.
 From Hammer Require Import Hammer Tactics.
-
-Definition conj2 {A B} (p1 p2 : A -> B -> Prop) : A -> B -> Prop :=
-  fun a b => p1 a b /\ p2 a b.
-
-Definition disj2 {A B} (p1 p2 : A -> B -> Prop) : A -> B -> Prop :=
-  fun a b => p1 a b \/ p2 a b.
+From Spec Require Export Common.
 
 Section SpecSTEx.
   Variable S E : Type.
@@ -27,10 +22,12 @@ Section SpecSTEx.
   Definition putST (s : S) : SpecSTEx unit :=
     fun p _ _ => p tt s.
 
-  Definition fail {R} (e : E) : SpecSTEx R :=
+  Definition fail_ {R} (e : E) : SpecSTEx R :=
     fun _ q => q e. 
 
 End SpecSTEx.
+
+Arguments fail_ {S} {E} {R}.
 
 
 #[global] Instance Monad__SpecST {S E} : Monad (SpecSTEx S E) :=
@@ -52,7 +49,7 @@ Section Examples.
   Local Open Scope nat_scope.
   Import MonadNotation.
 
-  #[local] Hint Unfold getST putST bindST : specst.
+  #[local] Hint Unfold getST putST bindST fail_ : specst.
 
   Definition read_inc_write : SpecSTEx nat unit unit :=
     x <- get ;; put (x + 1).
@@ -75,5 +72,20 @@ Section Examples.
     pose proof (Nat.leb_spec0 42 s) as Hs.
     inversion Hs; simpl; lia.
   Qed.
-  
+
+  Definition read_if_inc_write_else_fail : SpecSTEx nat nat unit :=
+    x <- get ;; if (42 <=? x) then put (x + 1) else fail_ 0.
+
+  Theorem read_if_inc_write_else_fail_spec :
+    forall s, read_if_inc_write_else_fail
+           (fun _ s => s >= 43)
+           (fun n _ => n = 0)
+           s.
+  Proof.
+    intros. unfold read_if_inc_write_else_fail.
+    simpl. autounfold with specst.
+    pose proof (Nat.leb_spec0 42 s) as Hs.
+    inversion Hs; simpl; lia.
+  Qed.
+
 End Examples.
