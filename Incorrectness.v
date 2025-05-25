@@ -57,11 +57,7 @@ Section Incorrectness.
   Theorem incorrectness_disj_intro : forall R P Q1 Q2 (m : SpecST S R),
       [[ P ]] m [[ Q1 ]] /\ [[ P ]] m [[ Q2 ]] ->
         [[ P ]] m [[ disj2 Q1 Q2 ]].
-  Proof.
-    intros R P Q1 Q2 m [Hm1 Hm2] p Hp.
-    unfold disj2 in Hp.
-    specialize (Hm1 p). specialize (Hm2 p).
-  Abort.
+  Proof. sfirstorder. Qed.
 
 End Incorrectness.
 
