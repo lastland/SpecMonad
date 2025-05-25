@@ -1,5 +1,5 @@
 From ExtLib Require Import Monad MonadState.
-From Spec Require Import SpecST HoareST.
+From Incorrectness.ST Require Import SpecST HoareST.
 From Hammer Require Import Hammer Tactics.
 
 Definition Incorrectness {S R}

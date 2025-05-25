@@ -1,6 +1,6 @@
 From ExtLib Require Import Monad MonadState.
 From Hammer Require Import Hammer Tactics.
-From Spec Require Export Common.
+From Incorrectness Require Export Common.Common.
 
 Section SpecSTEx.
   Variable S E : Type.

@@ -1,5 +1,5 @@
 From ExtLib Require Import Monad MonadState.
-From Spec Require Import SpecSTEx.
+From Incorrectness Require Import ST.SpecSTEx.
 From Hammer Require Import Hammer Tactics.
 
 (* Technically, [m] should be an ordinary monad that can be morphed to a
