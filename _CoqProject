@@ -1,4 +1,5 @@
 -Q . Incorrectness
+-Q ITreeExamples ITree.Examples
 
 Common/Common.v
 ST/SpecST.v
@@ -7,3 +8,6 @@ ST/HoareST.v
 ST/HoareSTEx.v
 ST/IncorrectnessST.v
 ST/IncorrectnessSTEx.v
+
+ITreeExamples/Imp.v
+ITreeExamples/ImpHoare.v
