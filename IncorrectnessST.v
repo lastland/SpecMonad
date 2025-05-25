@@ -72,9 +72,6 @@ Section Examples.
 
   #[local] Hint Unfold getST putST bindST : specst.
 
-  Definition read_inc_write : SpecST nat unit :=
-    x <- get ;; put (x + 1).
-
   Theorem read_inc_write_spec :
     [[ fun s => s >= 10 ]] read_inc_write [[ fun _ s => s >= 11 ]].
   Proof.
@@ -85,9 +82,6 @@ Section Examples.
     destruct s'; [lia |].
     scongruence use: Nat.sub_0_r, Nat.add_1_r.
   Qed.
-
-  Definition read_if_inc_write : SpecST nat unit :=
-    x <- get ;; if (42 <=? x) then put (x + 1) else put 0.
 
   Theorem read_if_inc_write_spec :
     [[ fun s => s >= 42 ]] read_if_inc_write [[ fun _ s => s > 42 ]].

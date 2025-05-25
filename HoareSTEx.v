@@ -78,9 +78,6 @@ Section Examples.
 
   #[local] Hint Unfold getST putST bindST : specst.
 
-  Definition read_inc_write : SpecSTEx nat unit unit :=
-    x <- get ;; put (x + 1).
-
   Theorem read_inc_write_spec {H} :
     {{ fun s => s >= 10 }} read_inc_write {{ fun _ s => s >= 11 }} {{ H }}.
   Proof.
