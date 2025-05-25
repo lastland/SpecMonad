@@ -1,9 +1,14 @@
 From ExtLib Require Import Monad MonadState.
-From Spec Require Import SpecST.
+From Spec Require Import SpecST HoareST.
 From Hammer Require Import Hammer Tactics.
 
-Definition Incorrectness {S R} (P : S -> Prop) (m : SpecST S R) (Q : R -> S -> Prop) : Prop :=
-  forall p r s', Q r s' -> p r s' -> exists s, P s /\ m p s.
+Definition Incorrectness {S R}
+  (P : S -> Prop)
+  (m : SpecST S R)
+  (Q : R -> S -> Prop) : Prop :=
+  forall p r s',
+    Q r s' -> p r s' ->
+    exists s, P s /\ m p s.
 
 Notation "[[ P ]] m [[ Q ]]" := (Incorrectness P m Q) (at level 45).
 
@@ -15,9 +20,9 @@ Section Incorrectness.
 
   Lemma strengthen_pre {A} (m : SpecST S A) :
     forall (P P' : S -> Prop) (Q : A -> S -> Prop),
-      [[ P' ]] m [[ Q ]] ->
-      (forall i, P' i -> P i) ->
-      [[ P  ]] m [[ Q ]].
+      [[ P  ]] m [[ Q ]] ->
+      (forall i, P i -> P' i) ->
+      [[ P' ]] m [[ Q ]].
   Proof.
     intros P P' Q H H0 p r s Hp. 
     specialize (H p r s Hp).
@@ -58,6 +63,8 @@ Section Incorrectness.
       [[ P ]] m [[ Q1 ]] /\ [[ P ]] m [[ Q2 ]] ->
         [[ P ]] m [[ disj2 Q1 Q2 ]].
   Proof. sfirstorder. Qed.
+
+  (* Agreement and deniable seem not provale under abstract m. *)
 
 End Incorrectness.
 

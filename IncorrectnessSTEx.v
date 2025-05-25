@@ -3,7 +3,10 @@ From Spec Require Import SpecSTEx.
 From Hammer Require Import Hammer Tactics.
 
 Definition Incorrectness {S E R}
-  (P : S -> Prop) (m : SpecSTEx S E R) (Q : R -> S -> Prop) (H : E -> S -> Prop) : Prop :=
+  (P : S -> Prop)
+  (m : SpecSTEx S E R)
+  (Q : R -> S -> Prop)
+  (H : E -> S -> Prop) : Prop :=
   forall p h r e s',
     Q r s' -> p r s' ->
     H e s' -> h e s' -> 
