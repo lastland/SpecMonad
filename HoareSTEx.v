@@ -69,6 +69,7 @@ Section Hoare.
 End Hoare.
 
 From Coq Require Import Nat Lia PeanoNat.
+Opaque "<=?".
 
 Section Examples.
 
@@ -76,7 +77,7 @@ Section Examples.
   Local Open Scope nat_scope.
   Import MonadNotation.
 
-  #[local] Hint Unfold getST putST bindST : specst.
+  #[local] Hint Unfold getST putST bindST fail_ : specst.
 
   Theorem read_inc_write_spec {H} :
     {{ fun s => s >= 10 }} read_inc_write {{ fun _ s => s >= 11 }} {{ H }}.
@@ -85,6 +86,20 @@ Section Examples.
     autounfold with specst.
     intros p h s n Hp Hh.
     apply Hp. lia.
+  Qed.
+
+  Theorem read_if_inc_write_else_fail_spec :
+    {{ fun _ => True }}
+      read_if_inc_write_else_fail
+    {{ fun _ s => s >= 43 }}
+    {{ fun n _ => n = 0 }}.
+  Proof.
+    intros. unfold read_if_inc_write_else_fail.
+    simpl. autounfold with specst.
+    intros p h s _ Hp Hh.
+    pose proof (Nat.leb_spec0 42 s) as Hs.
+    inversion Hs; simpl;
+      [apply Hp | apply Hh]; lia.
   Qed.
 
 End Examples.
