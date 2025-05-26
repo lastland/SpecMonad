@@ -2,6 +2,7 @@
 -Q ITreeExamples ITree.Examples
 
 Common/Common.v
+ST/STExamples.v
 ST/SpecST.v
 ST/SpecSTEx.v
 ST/HoareST.v
