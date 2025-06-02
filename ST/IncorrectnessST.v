@@ -2,17 +2,58 @@ From ExtLib Require Import Monad MonadState StateMonad.
 From Incorrectness.ST Require Import SpecST HoareST STExamples.
 From Hammer Require Import Hammer Tactics.
 
+Definition Verify {S R} (w : SpecST S R) (m : state S R) :=
+  forall p r s s0, p r s -> runState m s0 = (r, s) -> w p s0.
+
+Section Verify.
+
+  Variables R S : Type.
+
+  Theorem Verify_ret :
+    forall r, @Verify S R (ret r) (ret r).
+  Proof. 
+    unfold ret; cbn. unfold retST; cbn.
+    intros r p r' s s0' Hr' Hm. sauto q: on.
+  Qed.
+
+  Theorem Verify_bind :
+    forall {A} (m : SpecST S A) m' k k',
+      Verify m m' ->
+      (forall x, Verify (k x) (k' x)) ->
+      @Verify S R (bind m k) (bind m' k').
+  Proof. 
+    unfold bind; cbn. unfold bindST; cbn.
+    intros A m m' k k' Hm Hk p r s s0' H ?.
+    cbn in *. unfold Verify in Hm, Hk. subst.
+    hauto.
+  Qed.
+
+  Theorem Verify_get :
+    @Verify S S get get.
+  Proof.
+    unfold get; cbn. unfold getST; cbn.
+    intros p r s s0 Hp Hm. sauto.
+  Qed.
+
+  Theorem Verify_put :
+    forall s, @Verify S unit (put s) (put s).
+  Proof.
+    unfold put; cbn. unfold putST; cbn.
+    intros p r s s0 Hp Hm. sauto.
+  Qed.
+
+End Verify.
+  
 Definition Incorrectness {S R}
   (P : S -> Prop)
   (m : state S R)
   (Q : R -> S -> Prop) : Prop :=
-  forall p r s',
-    Q r s' -> p r s' ->
-    exists s, P s /\ uncurry p (runState m s).
+  forall p r s', Q r s' -> p r s' -> 
+  exists s, P s /\ uncurry p (runState m s).
 
 Notation "[[ P ]] m [[ Q ]]" := (Incorrectness P m Q) (at level 45).
 
-Hint Unfold Incorrectness conj2 uncurry : incorrectness.
+Hint Unfold Incorrectness conj2 disj2 uncurry : incorrectness.
   
 Section Incorrectness.
 
@@ -67,7 +108,7 @@ Section Examples.
 
   #[local] Hint Unfold getST putST bindST : specst.
 
-  Theorem read_inc_write_spec :
+  Theorem read_inc_write_incorrect :
     [[ fun s => s >= 10 ]] read_inc_write [[ fun _ s => s >= 11 ]].
   Proof.
     intros. unfold read_inc_write.
@@ -76,6 +117,14 @@ Section Examples.
     exists (s' - 1). split; [lia |].
     destruct s'; [lia |].
     scongruence use: Nat.sub_0_r, Nat.add_1_r.
+  Qed.
+
+  Theorem read_inc_write_spec' :
+    Verify read_inc_write_spec read_inc_write.
+  Proof.
+    intros p r s s0' Hp Hm. subst.
+    unfold read_inc_write, read_inc_write_spec in *.
+    cbn in *. sauto lq: on.
   Qed.
 
   Theorem read_if_inc_write_spec :
