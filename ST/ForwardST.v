@@ -182,6 +182,9 @@ Module ReadIfIncWrite.
   Program Definition obsNatUnder' (R : Type) (m : state nat R) : ST nat R :=
     fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 >= 42 /\ s = s0 + 1)) /\ pre.
 
+  Program Definition obsNatUnder'' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ False) /\ pre.
+
   Theorem Verify_read_if_inc_write :
     Verify
       read_if_inc_write
@@ -220,6 +223,16 @@ Module ReadIfIncWrite.
     Incorrect
       read_if_inc_write
       STExamples.read_if_inc_write obsNatUnder'.
+  Proof.
+    autounfold with mst. cbn; intros. exists s0.
+    destruct (Nat.leb_spec0 42 s0);
+      cbn in *; hauto.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write'' :
+    Incorrect
+      read_if_inc_write
+      STExamples.read_if_inc_write obsNatUnder''.
   Proof.
     autounfold with mst. cbn; intros. exists s0.
     destruct (Nat.leb_spec0 42 s0);
