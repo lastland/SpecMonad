@@ -17,78 +17,37 @@ Set Implicit Arguments.
 Definition Exc (E A : Type) :=
   forall (pre : Prop), E + A -> {p : Prop | p -> pre}.
 
-Definition WFExc (E A : Type) :=
-  { m : Exc E A | forall a b pre, proj1_sig (m pre a) -> proj1_sig (m pre b) -> a = b }.
-
 Section Exc.
 
   Variable E : Type.
   
-  Program Definition retExc {A} (a : A) : WFExc E A :=
+  Program Definition retExc {A} (a : A) : Exc E A :=
     fun pre r => pre /\ r = inr a.
   
   Program Definition bindExc {A B}
-    (m : WFExc E A) (k : A -> WFExc E B) : WFExc E B :=
+    (m : Exc E A) (k : A -> Exc E B) : Exc E B :=
     fun pre r => exists a, match a with
                    | inl e => m pre a /\ r = inl e
                    | inr v => k v (m pre a) r
                    end.
   Next Obligation. sauto. Qed.
-  Next Obligation.
-    destruct m; cbn in *.
-    destruct H; destruct H0.
-    - destruct H1, H2; subst.
-      specialize (e (inl e0) (inl e1) pre H1 H).
-      sauto lq: on.
-    - destruct H2; subst.
-      assert (Hx: proj1_sig (x pre (inr a0))) by sfirstorder.
-      specialize (e (inl e0) (inr a0) pre H Hx).
-      discriminate.
-    - destruct H1; subst.
-      assert (Hx: proj1_sig (x pre (inr a0))) by sfirstorder.
-      specialize (e (inr a0) (inl e0) pre Hx H).
-      discriminate.
-    - assert (Hx1: proj1_sig (x pre (inr a0))) by sfirstorder.
-      assert (Hx2: proj1_sig (x pre (inr a1))) by sfirstorder.
-      specialize (e (inr a0) (inr a1) pre Hx1 Hx2). inversion e; subst.
-      destruct (k a1) eqn:Hk; cbn in *. hauto lq: on.
-  Qed.
 
-  Program Definition raiseExc {A} (e : E) : WFExc E A :=
+  Program Definition raiseExc {A} (e : E) : Exc E A :=
     fun pre r => pre /\ r = inl e.
 
   Program Definition catchExc {A}
-    (m : WFExc E A) (c : E -> WFExc E A) : WFExc E A :=
+    (m : Exc E A) (c : E -> Exc E A) : Exc E A :=
     fun pre r => exists a, match a with
                   | inl e => c e (m pre a) r
                   | inr v => m pre a /\ r = inr v
                   end.
   Next Obligation. sauto. Qed.
-  Next Obligation.
-    destruct m; cbn in *.
-    destruct H; destruct H0.
-    - assert (Hx1: proj1_sig (x pre (inl e0))) by sfirstorder.
-      assert (Hx2: proj1_sig (x pre (inl e1))) by sfirstorder.
-      specialize (e (inl e0) (inl e1) pre Hx1 Hx2). inversion e; subst.
-      destruct (c e1) eqn:Hk; cbn in *. hauto lq: on.
-    - destruct H1; subst.
-      assert (Hx: proj1_sig (x pre (inl e0))) by sfirstorder.
-      specialize (e (inr a0) (inl e0) pre H Hx).
-      discriminate.
-    - destruct H2; subst.
-      assert (Hx: proj1_sig (x pre (inl e0))) by sfirstorder.
-      specialize (e (inl e0) (inr a0) pre Hx H).
-      discriminate.
-    - destruct H1, H2; subst.
-      specialize (e (inr a0) (inr a1) pre H1 H).
-      sauto lq: on.
-  Qed.
 
-  #[global] Instance Monad__Exc : Monad (WFExc E) :=
+  #[global] Instance Monad__Exc : Monad (Exc E) :=
     {| ret := fun _ => retExc ;
        bind := fun _ _ => bindExc |}.
 
-  #[global] Instance MonadExc__Exc : MonadExc E (WFExc E) :=
+  #[global] Instance MonadExc__Exc : MonadExc E (Exc E) :=
     {| raise := fun _ => raiseExc ;
        catch := fun _ => catchExc |}.
 
@@ -96,20 +55,25 @@ Section Exc.
 
 End Exc.
 
-Program Definition obsNeverFail (E R : Type) (m : sum E R) : WFExc E R :=
+Program Definition obsNeverFail (E R : Type) (m : sum E R) : Exc E R :=
   match m with
   | inl e => fun pre r => False
   | inr a => fun pre r => r = inr a /\ pre
   end.
 Next Obligation. contradiction. Qed.
-Next Obligation. contradiction. Qed.
 
-Program Definition obsFineToFail (E R : Type) (m : sum E R) : WFExc E R :=
+Program Definition obsFineToFail (E R : Type) (m : sum E R) : Exc E R :=
   fun pre r => m = r /\ pre.
 
+Program Definition obsAlwaysSucc (E R : Type) (m : sum E R) : Exc E R :=
+  match m with
+  | inl e => fun pre r => pre
+  | inr a => fun pre r => r = inr a /\ pre
+  end.
+
 Program Definition Verify {E R}
-  (w : WFExc E R) (m : sum E R)
-  (obs: forall {R}, sum E R -> WFExc E R) : Prop :=
+  (w : Exc E R) (m : sum E R)
+  (obs: forall {R}, sum E R -> Exc E R) : Prop :=
   forall pre r, proj1_sig (w pre r) -> proj1_sig (obs m pre r).
 
 #[local] Hint Unfold retExc bindExc raiseExc catchExc Verify: mst.
@@ -136,7 +100,7 @@ Section Dijkstra.
       @Verify E R (m1 >>= k1) (m2 >>= k2) (@obsFineToFail E).
   Proof.
     autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. sauto lq: on drew: off.
+    sauto lq: on drew: off.
   Qed.
 
   Theorem Verify_bind' : forall m1 m2 k1 k2,
@@ -145,7 +109,7 @@ Section Dijkstra.
       @Verify E R (m1 >>= k1) (m2 >>= k2) (@obsNeverFail E).
   Proof.
     autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. destruct H1 as [a H1].
+    destruct H1 as [a H1].
     destruct m2; cbn in *.
     - (* m2 has an exception. *)
       specialize (H pre a). sauto.
@@ -153,7 +117,7 @@ Section Dijkstra.
       destruct a.
       + (* a is an exception *) hauto lq: on.
       + (* a is a value *)
-        assert (proj1_sig (x pre (inr a))) by sfirstorder.
+        assert (proj1_sig (m1 pre (inr a))) by sfirstorder.
         specialize (H pre (inr a) H2). destruct H; inversion H; subst.
         (* Now we know a and a0 are the same. *)
         specialize (H0 a0 _ _ H1). 
@@ -179,7 +143,7 @@ Section Dijkstra.
       @Verify E A (catch m1 k1) (catch m2 k2) (@obsFineToFail E).
   Proof.
     autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. hauto lq: on drew: off.
+    hauto lq: on drew: off.
   Qed.
 
   Theorem Verify_catch' : forall m1 m2 k1 k2,
@@ -188,15 +152,15 @@ Section Dijkstra.
       @Verify E A (catch m1 k1) (catch m2 k2) (@obsNeverFail E).
   Proof.
     autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. destruct H1 as [a H1].
+    destruct H1 as [a H1].
     destruct m2; cbn in *.
     - (* m2 has an exception. *)
       specialize (H pre a). sauto.
     - (* m2 runs normally *)
       destruct a.
       + (* a is an exception *)
-        assert (proj1_sig (x pre (inl e0))) by sfirstorder.
-        specialize (H pre (inl e0) H2). sfirstorder.
+        assert (proj1_sig (m1 pre (inl e))) by sfirstorder.
+        specialize (H pre (inl e) H2). sfirstorder.
       + (* a is a value *)
         sauto lq: on.
   Qed.
@@ -204,8 +168,8 @@ Section Dijkstra.
 End Dijkstra.
 
 Program Definition Incorrect {E R}
-  (w : WFExc E R) (m : sum E R)
-  (obs: forall {R}, sum E R -> WFExc E R) : Prop :=
+  (w : Exc E R) (m : sum E R)
+  (obs: forall {R}, sum E R -> Exc E R) : Prop :=
   forall pre r, proj1_sig (obs m pre r) -> proj1_sig (w pre r).
  
 #[local] Hint Unfold Incorrect : mst.
@@ -235,8 +199,7 @@ Section Incorrect.
       (forall a, @Incorrect E R (k1 a) (k2 a) (@obsNeverFail E)) ->
       @Incorrect E R (m1 >>= k1) (m2 >>= k2) (@obsNeverFail E).
   Proof.
-    autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. destruct m2.
+    autounfold with mst. cbn; intros. destruct m2.
     - (* m2 has an exception *)
       cbn in *. contradiction.
     - (* m2 runs normally *)
@@ -264,8 +227,7 @@ Section Incorrect.
       (forall a, @Incorrect E A (k1 a) (k2 a) (@obsFineToFail E)) ->
       @Incorrect E A (catch m1 k1) (catch m2 k2) (@obsFineToFail E).
   Proof.
-    autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. sauto q: on.
+    autounfold with mst. cbn; intros. sauto q: on.
   Qed.
 
   Theorem Incorrect_catch' : forall m1 m2 k1 k2,
@@ -273,10 +235,9 @@ Section Incorrect.
       (forall a, @Incorrect E A (k1 a) (k2 a) (@obsNeverFail E)) ->
       @Incorrect E A (catch m1 k1) (catch m2 k2) (@obsNeverFail E).
   Proof.
-    autounfold with mst. cbn; intros.
-    destruct m1; cbn in *. destruct m2.
+    autounfold with mst. cbn; intros. destruct m2.
     - (* m2 has an exception. *)
-      cbn in *. exists (inl e0). destruct (k2 e0) eqn:Hk2.
+      cbn in *. exists (inl e). destruct (k2 e) eqn:Hk2.
       + (* catches an exception, but returns an exception *)
         cbn in H1. contradiction.
       + (* catches an exception, but returns a normal value *)
