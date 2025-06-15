@@ -173,10 +173,16 @@ Module ReadIfIncWrite.
   Program Definition obsNatOver (R : Type) (m : state nat R) : ST nat R :=
     fun s0 pre r s => runState m s0 = (r, s) /\ pre /\ s >= 0.
 
-  Program Definition obsNatUnder (R : Type) (m : state nat R) : ST nat R :=
-    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 = 0 /\ s = 0)) /\ pre.
+  Program Definition obsNatOver' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => runState m s0 = (r, s) /\ pre /\ (s0 >= 42 -> s = s0 + 1).
 
-  Theorem Verify_read_inc_write :
+  Program Definition obsNatUnder (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 < 42 /\ s = 0)) /\ pre.
+
+  Program Definition obsNatUnder' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 >= 42 /\ s = s0 + 1)) /\ pre.
+
+  Theorem Verify_read_if_inc_write :
     Verify
       read_if_inc_write
       STExamples.read_if_inc_write obsNatOver.
@@ -187,15 +193,37 @@ Module ReadIfIncWrite.
       destruct (Nat.leb_spec0 42 a);
       cbn in *; fcrush.
   Qed.
-  
-  Theorem Incorrect_read_inc_write :
+
+  Theorem Verify_read_if_inc_write' :
+    Verify
+      read_if_inc_write
+      STExamples.read_if_inc_write obsNatOver'.
+  Proof.
+    autounfold with mst. cbn. intros.
+    destruct H as [a [s' H]].
+    destruct (Nat.leb_spec0 42 s0);
+      destruct (Nat.leb_spec0 42 a);
+      cbn in *; fcrush.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write :
     Incorrect
       read_if_inc_write
       STExamples.read_if_inc_write obsNatUnder.
   Proof.
     autounfold with mst. cbn; intros. exists s0.
     destruct (Nat.leb_spec0 42 s0);
-      cbn in *; sauto lq: on.
+      cbn in *; hauto.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write' :
+    Incorrect
+      read_if_inc_write
+      STExamples.read_if_inc_write obsNatUnder'.
+  Proof.
+    autounfold with mst. cbn; intros. exists s0.
+    destruct (Nat.leb_spec0 42 s0);
+      cbn in *; hauto.
   Qed.
 
 End ReadIfIncWrite.

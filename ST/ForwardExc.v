@@ -265,7 +265,7 @@ Section Incorrect.
 
 End Incorrect.
 
-(*)
+(*
 Module ReadIncWrite.
 
   Definition read_inc_write : Exc nat unit :=
