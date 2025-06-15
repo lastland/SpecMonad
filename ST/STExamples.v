@@ -10,3 +10,6 @@ Definition read_inc_write : state nat unit :=
 
 Definition read_if_inc_write : state nat unit :=
   x <- get ;; if (42 <=? x) then put (x + 1) else put 0.
+
+Definition read_if_inc_write2 : state nat unit :=
+  x <- get ;; if (42 <=? x) then put (x + 1) else put 42.

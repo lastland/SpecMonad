@@ -112,15 +112,14 @@ Section Incorrect.
 
   Theorem Incorrect_ret : forall (r : R),
       @Incorrect S _ (ret r) (ret r) (@obsST S).
-  Proof. autounfold with mst. sfirstorder. Qed.
+  Proof. autounfold with mst. hauto. Qed.
 
   Theorem Incorrect_bind : forall m1 m2 k1 k2,
       @Incorrect S A m1 m2 (@obsST S) ->
       (forall a, @Incorrect S R (k1 a) (k2 a) (@obsST S)) ->
       @Incorrect S R (m1 >>= k1) (m2 >>= k2) (@obsST S).
   Proof.
-    autounfold with mst.
-    hauto lq: on drew: off.
+    autounfold with mst. hauto lq: on drew: off.
   Qed.
 
   Theorem Incorrect_get :
@@ -240,3 +239,94 @@ Module ReadIfIncWrite.
   Qed.
 
 End ReadIfIncWrite.
+
+Module ReadIfIncWrite2.
+
+  Definition read_if_inc_write2 : ST nat unit :=
+    x <- get ;; if (42 <=? x) then put (x + 1) else put 42.
+
+  Program Definition obsNatOver (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => runState m s0 = (r, s) /\ pre /\ s >= 42.
+
+  Program Definition obsNatOver' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => runState m s0 = (r, s) /\ pre /\ (s0 >= 42 -> s = s0 + 1).
+
+  Program Definition obsNatUnder (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 < 42 /\ s = 42)) /\ pre.
+
+  Program Definition obsNatUnder' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 >= 42 /\ s = s0 + 1)) /\ pre.
+
+  Program Definition obsNatUnder'' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ False) /\ pre.
+
+  Program Definition obsNatUnder''' (R : Type) (m : state nat R) : ST nat R :=
+    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 < 42 /\ s = 0)) /\ pre.
+
+  Theorem Verify_read_if_inc_write2 :
+    Verify
+      read_if_inc_write2
+      STExamples.read_if_inc_write2 obsNatOver.
+  Proof.
+    autounfold with mst. cbn. intros.
+    destruct H as [a [s' H]].
+    destruct (Nat.leb_spec0 42 s0);
+      destruct (Nat.leb_spec0 42 a);
+      cbn in *; fcrush.
+  Qed.
+
+  Theorem Verify_read_if_inc_write2' :
+    Verify
+      read_if_inc_write2
+      STExamples.read_if_inc_write2 obsNatOver'.
+  Proof.
+    autounfold with mst. cbn. intros.
+    destruct H as [a [s' H]].
+    destruct (Nat.leb_spec0 42 s0);
+      destruct (Nat.leb_spec0 42 a);
+      cbn in *; fcrush.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write2 :
+    Incorrect
+      read_if_inc_write2
+      STExamples.read_if_inc_write2 obsNatUnder.
+  Proof.
+    autounfold with mst. cbn; intros. exists s0.
+    destruct (Nat.leb_spec0 42 s0);
+      cbn in *; hauto.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write2' :
+    Incorrect
+      read_if_inc_write2
+      STExamples.read_if_inc_write2 obsNatUnder'.
+  Proof.
+    autounfold with mst. cbn; intros. exists s0.
+    destruct (Nat.leb_spec0 42 s0);
+      cbn in *; hauto.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write2'' :
+    Incorrect
+      read_if_inc_write2
+      STExamples.read_if_inc_write2 obsNatUnder''.
+  Proof.
+    autounfold with mst. cbn; intros. exists s0.
+    destruct (Nat.leb_spec0 42 s0);
+      cbn in *; hauto.
+  Qed.
+
+  Theorem Incorrect_read_if_inc_write2''' :
+    Incorrect
+      read_if_inc_write2
+      STExamples.read_if_inc_write2 obsNatUnder'''.
+  Proof.
+    autounfold with mst. cbn; intros. exists s0.
+    destruct (Nat.leb_spec0 42 s0);
+      cbn in *.
+    - fcrush.
+    - exists s0. (* Not provable *)
+  Abort.
+
+End ReadIfIncWrite2.
