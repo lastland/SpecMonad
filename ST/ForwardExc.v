@@ -249,6 +249,20 @@ Section Incorrect.
       exists (inr a). cbn in *. sauto lq: on.
   Abort.
 
+  Theorem Incorrect_ret'' : forall (r : R),
+      @Incorrect E _ (ret r) (ret r) (@obsAlwaysSucc E).
+  Proof. autounfold with mst. sfirstorder. Qed.
+
+  Theorem Incorrect_bind'' : forall m1 m2 k1 k2,
+      @Incorrect E A m1 m2 (@obsAlwaysSucc E) ->
+      (forall a, @Incorrect E R (k1 a) (k2 a) (@obsAlwaysSucc E)) ->
+      @Incorrect E R (m1 >>= k1) (m2 >>= k2) (@obsAlwaysSucc E).
+  Proof.
+    autounfold with mst. cbn; intros. destruct m2; cbn in *.
+    - (* m2 has an exception *)
+      exists (inl e). split; auto. (* not provable *)
+  Abort.
+
 End Incorrect.
 
 (*)
