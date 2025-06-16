@@ -252,16 +252,16 @@ Module ReadIfIncWrite2.
     fun s0 pre r s => runState m s0 = (r, s) /\ pre /\ (s0 >= 42 -> s = s0 + 1).
 
   Program Definition obsNatUnder (R : Type) (m : state nat R) : ST nat R :=
-    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 < 42 /\ s = 42)) /\ pre.
+    fun s0 pre r s => (s0 < 42 /\ s = 42) /\ pre.
 
   Program Definition obsNatUnder' (R : Type) (m : state nat R) : ST nat R :=
-    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 >= 42 /\ s = s0 + 1)) /\ pre.
+    fun s0 pre r s => (s0 >= 42 /\ s = s0 + 1) /\ pre.
 
   Program Definition obsNatUnder'' (R : Type) (m : state nat R) : ST nat R :=
-    fun s0 pre r s => (runState m s0 = (r, s) \/ False) /\ pre.
+    fun s0 pre r s => False /\ pre.
 
   Program Definition obsNatUnder''' (R : Type) (m : state nat R) : ST nat R :=
-    fun s0 pre r s => (runState m s0 = (r, s) \/ (s0 < 42 /\ s = 0)) /\ pre.
+    fun s0 pre r s => (s0 < 42 /\ s = 0) /\ pre.
 
   Theorem Verify_read_if_inc_write2 :
     Verify
@@ -292,9 +292,7 @@ Module ReadIfIncWrite2.
       read_if_inc_write2
       STExamples.read_if_inc_write2 obsNatUnder.
   Proof.
-    autounfold with mst. cbn; intros. exists s0.
-    destruct (Nat.leb_spec0 42 s0);
-      cbn in *; hauto.
+    autounfold with mst. sauto.
   Qed.
 
   Theorem Incorrect_read_if_inc_write2' :
@@ -302,9 +300,7 @@ Module ReadIfIncWrite2.
       read_if_inc_write2
       STExamples.read_if_inc_write2 obsNatUnder'.
   Proof.
-    autounfold with mst. cbn; intros. exists s0.
-    destruct (Nat.leb_spec0 42 s0);
-      cbn in *; hauto.
+    autounfold with mst. sauto.
   Qed.
 
   Theorem Incorrect_read_if_inc_write2'' :
@@ -312,9 +308,7 @@ Module ReadIfIncWrite2.
       read_if_inc_write2
       STExamples.read_if_inc_write2 obsNatUnder''.
   Proof.
-    autounfold with mst. cbn; intros. exists s0.
-    destruct (Nat.leb_spec0 42 s0);
-      cbn in *; hauto.
+    autounfold with mst. hauto.
   Qed.
 
   Theorem Incorrect_read_if_inc_write2''' :
@@ -330,3 +324,54 @@ Module ReadIfIncWrite2.
   Abort.
 
 End ReadIfIncWrite2.
+
+Program Definition Incorrect' {R S}
+  (presumes : S -> Prop)
+  (achieves: S -> R -> S -> Prop)
+  (w : ST S R) : Prop :=
+    (forall s0 r s, presumes s0 ->
+               achieves s0 r s ->
+               w s0 (presumes s0) r s) /\
+      exists s0, presumes s0.
+
+Hint Unfold Incorrect' : mst.
+
+Module ReadIfIncWrite'.
+
+  Definition read_if_inc_write : ST nat unit :=
+    x <- get ;; if (42 <=? x) then put (x + 1) else put 0.
+
+  Theorem Incorrect_read_if_inc_write_less :
+    Incorrect' (fun s0 => s0 < 42) (fun _ _ s => s = 0) read_if_inc_write. 
+  Proof.
+    (* This should be very easy to prove; provable by SMT solvers? *)
+    autounfold with mst. sauto.
+  Qed.
+      
+  Theorem Verify_read_if_inc_write :
+    Verify
+      read_if_inc_write
+      (* [STExamples.read_if_inc_write] is defined the same as
+         [read_if_inc_write], except that we use the computation monad
+         [state]. *)
+      STExamples.read_if_inc_write (@obsST nat).
+  Proof.
+    (* This is the Dijkstra monad. *)
+    eapply Verify_bind.
+    - apply Verify_get.
+    - intros. destruct (Nat.leb_spec0 42 a); apply Verify_put.
+  Qed.
+
+  (* This combines the two theorems above and shows that an execution exists
+     such that the result state is 0; the trigger presumption is that s0 <
+     42. *)
+  Theorem Exists_in_obs : forall r, exists s0,
+      proj1_sig (obsST STExamples.read_if_inc_write s0 (s0 < 42)) r 0.
+  Proof.
+    pose proof (Incorrect_read_if_inc_write_less) as HI.
+    pose proof (Verify_read_if_inc_write) as HV.
+    intros r. destruct HI as [Hunder [s0 Hpre]].
+    exists s0. auto.
+  Qed.
+
+End ReadIfIncWrite'.
