@@ -97,6 +97,8 @@ Section Dijkstra.
     
 End Dijkstra.
 
+#[export] Hint Resolve Verify_ret Verify_bind Verify_get Verify_put : mst.
+
 Program Definition Incorrect {S R}
   (w : ST S R) (m : state S R)
   (obs: forall {R}, state S R -> ST S R) : Prop :=
@@ -329,8 +331,8 @@ Program Definition Incorrect' {R S}
   (presumes : S -> Prop)
   (achieves: S -> R -> S -> Prop)
   (w : ST S R) : Prop :=
-    (forall s0 r s, presumes s0 ->
-               achieves s0 r s ->
+    (forall s0 r s,
+        presumes s0 -> achieves s0 r s ->
                w s0 (presumes s0) r s) /\
       exists s0, presumes s0.
 
@@ -345,7 +347,7 @@ Module ReadIfIncWrite'.
     Incorrect' (fun s0 => s0 < 42) (fun _ _ s => s = 0) read_if_inc_write. 
   Proof.
     (* This should be very easy to prove; provable by SMT solvers? *)
-    autounfold with mst. sauto.
+    sauto.
   Qed.
       
   Theorem Verify_read_if_inc_write :
@@ -357,9 +359,9 @@ Module ReadIfIncWrite'.
       STExamples.read_if_inc_write (@obsST nat).
   Proof.
     (* This is the Dijkstra monad. *)
-    eapply Verify_bind.
+    apply Verify_bind.
     - apply Verify_get.
-    - intros. destruct (Nat.leb_spec0 42 a); apply Verify_put.
+    - intros. destruct (42 <=? a); apply Verify_put.
   Qed.
 
   (* This combines the two theorems above and shows that an execution exists

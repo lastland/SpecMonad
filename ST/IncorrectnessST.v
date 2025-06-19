@@ -3,18 +3,32 @@ From Incorrectness.ST Require Import SpecST HoareST STExamples.
 From Hammer Require Import Hammer Tactics.
 
 Definition Verify {S R} (w : SpecST S R) (m : state S R) :=
-  forall p r s s0, p r s -> runState m s0 = (r, s) -> w p s0.
+  forall (p : R -> S -> Prop) r s s0,
+    p r s -> runState m s0 = (r, s) -> w p s0.
 
+Definition Verify' {S R} (w : SpecST S R) (m : state S R) :=
+  forall (p : R -> S -> Prop) r s,
+    p r s ->
+    (exists s0', runState m s0' = (r, s) /\ 
+    w p s0').
 Section Verify.
 
   Variables R S : Type.
 
   Theorem Verify_ret :
     forall r, @Verify S R (ret r) (ret r).
-  Proof. 
+  Proof.
+    unfold Verify.
     unfold ret; cbn. unfold retST; cbn.
     intros r p r' s s0' Hr' Hm. sauto q: on.
   Qed.
+  
+  Theorem Verify'_ret :
+    forall r, @Verify' S R (ret r) (ret r).
+  Proof.
+    unfold ret; cbn. unfold retST; cbn.
+    intros r p r' s Hp. exists s. cbn.
+  Abort.
 
   Theorem Verify_bind :
     forall {A} (m : SpecST S A) m' k k',
@@ -93,7 +107,7 @@ Section Incorrectness.
         [[ P ]] m [[ disj2 Q1 Q2 ]].
   Proof. sfirstorder. Qed.
 
-  (* Agreement and deniable seem not provale under abstract m. *)
+  (* principle of agreement and deniability *)
 
 End Incorrectness.
 
