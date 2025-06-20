@@ -1,14 +1,7 @@
 -Q . Incorrectness
 
+SPost.v
 Common/Common.v
 ST/STExamples.v
-ST/SpecST.v
-ST/SpecSTEx.v
-ST/HoareST.v
-ST/HoareSTEx.v
-ST/IncorrectnessST.v
-ST/IncorrectnessSTEx.v
-ST/SPost.v
-ST/ForwardST.v
 ST/IncorrectST.v
-ST/IncorrectReader.v
+Reader/IncorrectReader.v
