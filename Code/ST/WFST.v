@@ -118,7 +118,15 @@ Program Definition IncorrectWF {R S}
      w s0 (presumes s0) r s) /\
       presumes s0.
 
-Hint Unfold IncorrectWF : mst.
+Program Definition Incorrect' {R S}
+  (presumes : S -> Prop)
+  (achieves: R -> S -> Prop)
+  (w : WFST S R) : Prop :=
+  forall r s, 
+    achieves r s ->
+    exists s0, w s0 (presumes s0) r s /\ presumes s0.
+
+Hint Unfold IncorrectWF Incorrect' : mst.
 
 Module ReasoningRules.
 
@@ -167,6 +175,51 @@ Module ReasoningRules.
     
 End ReasoningRules.
   
+
+Module ReasoningRules'.
+
+  Theorem weaken_pre :
+    forall {S R} P P' Q (m : WFST S R),
+      Incorrect' P Q m ->
+      (forall (s : S), P s -> P' s) ->
+      Incorrect' P' Q m.
+  Proof.
+    autounfold with mst. intros.
+    sauto q: on.
+  Qed.
+
+  Theorem strengthen_post :
+    forall {S R} P Q Q' (m : WFST S R),
+      Incorrect' P Q m ->
+      (forall r (s : S), Q' r s -> Q r s) ->
+      Incorrect' P Q' m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem post_disj_intro :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    Incorrect' P Q1 m ->
+    Incorrect' P Q2 m ->
+    Incorrect' P (fun r s => Q1 r s \/ Q2 r s) m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem post_disj_elim :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    Incorrect' P (fun r s => Q1 r s \/ Q2 r s) m ->
+    Incorrect' P Q1 m /\
+    Incorrect' P Q2 m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+    
+End ReasoningRules'.
+  
 Module OHearnExample.
 
     Definition example_3_1_ST : WFST (nat * nat * nat) unit :=
@@ -184,11 +237,11 @@ Module OHearnExample.
     (* The new incorrectness reasoning that relates [presumes] and [achieves]
        with specification monad, but not effect observations yet! *)
     Theorem example_3_1_incorrect :
-      IncorrectWF
+      Incorrect'
         (fun '(x, y, z) => z = 11)
-        (fun _ _ '(x, y, z) => z = 42 /\
-                              Nat.even x = true /\
-                              negb (Nat.even y) = true)
+        (fun _ '(x, y, z) => z = 42 /\
+                            Nat.even x = true /\
+                            negb (Nat.even y) = true)
         example_3_1_ST.
     Proof.
       autounfold with mst. cbn; intros.
@@ -225,9 +278,9 @@ Module OHearnExample.
     Proof.
       pose proof (example_3_1_incorrect) as HI.
       pose proof (example_3_1_dijkstra)  as HV.
-      intros. specialize (HI tt (x', y', z')).
-      destruct HI as [[[x y] z] [? ?]]. exists x, y, z.
-      eapply HV. apply H2; hauto.
+      intros. specialize (HI tt (x', y', z') ltac:(hauto lq: on)). 
+      destruct HI as [[[x y] z] [HI ?]]. exists x, y, z.
+      eapply HV. apply HI.
     Qed.
 
 End OHearnExample.
