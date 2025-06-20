@@ -290,26 +290,53 @@ Program Definition IncorrectWF {R S}
 
 Hint Unfold IncorrectWF : mst.
 
-Theorem weaken_pre :
-  forall {S R} P P' Q (m : WFST S R),
-  IncorrectWF P Q m ->
-  (forall (s : S), P s -> P' s) ->
-  IncorrectWF P' Q m.
-Proof.
-  autounfold with mst. intros.
-  sfirstorder.
-Qed.
+Module ReasoningRules.
 
-Theorem strengthen_post :
-  forall {S R} P Q Q' (m : WFST S R),
-  IncorrectWF P Q m ->
-  (forall r (s0 s : S), Q' s0 r s -> Q s0 r s) ->
-  IncorrectWF P Q' m.
-Proof.
-  autounfold with mst. intros.
-  sfirstorder.
-Qed.
+  Theorem weaken_pre :
+    forall {S R} P P' Q (m : WFST S R),
+      IncorrectWF P Q m ->
+      (forall (s : S), P s -> P' s) ->
+      IncorrectWF P' Q m.
+  Proof.
+    autounfold with mst. intros. 
+    sfirstorder.
+  Qed.
 
+  Theorem strengthen_post :
+    forall {S R} P Q Q' (m : WFST S R),
+      IncorrectWF P Q m ->
+      (forall r (s0 s : S), Q' s0 r s -> Q s0 r s) ->
+      IncorrectWF P Q' m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem post_disj_intro :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    IncorrectWF P Q1 m ->
+    IncorrectWF P Q2 m ->
+    IncorrectWF P (fun s0 r s => Q1 s0 r s \/ Q2 s0 r s) m.
+  Proof.
+    autounfold with mst. intros.
+    destruct m as [m Hm]; cbn in *.
+    specialize (H r s). specialize (H0 r s).
+    destruct H as [s1 [? ?]]. destruct H0 as [s2 [? ?]].
+    (* This does not seem provable. *)
+  Abort.
+
+  Theorem post_disj_elim :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    IncorrectWF P (fun s0 r s => Q1 s0 r s \/ Q2 s0 r s) m ->
+    IncorrectWF P Q1 m /\
+    IncorrectWF P Q2 m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+    
+End ReasoningRules.
+  
 Module OHearnExample.
 
     Definition example_3_1_ST : WFST (nat * nat * nat) unit :=
