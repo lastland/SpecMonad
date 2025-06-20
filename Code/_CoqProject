@@ -3,5 +3,6 @@
 SPost.v
 Common/Common.v
 ST/STExamples.v
-ST/IncorrectST.v
+ST/ST.v
+ST/WFST.v
 Reader/IncorrectReader.v
