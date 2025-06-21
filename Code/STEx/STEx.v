@@ -137,6 +137,14 @@ End Dijkstra.
 
 #[export] Hint Resolve Verify_ret Verify_bind Verify_get Verify_put Verify_raise : mst.
 
+Definition Incorrect {R E S}
+  (presumes : S -> Prop)
+  (achieves: E + R * S -> Prop)
+  (w : STEx S E R) : Prop :=
+  forall r,
+    achieves r ->
+    exists s0, proj1_sig (w s0 (presumes s0) r) /\ presumes s0.
+  
 Definition IncorrectNormal {R E S}
   (presumes : S -> Prop)
   (achieves: R -> S -> Prop)
@@ -153,29 +161,29 @@ Definition IncorrectErr {R E S}
     errors e ->
     exists s0, proj1_sig (w s0 (presumes s0) (inl e)) /\ presumes s0.
 
-Definition Incorrect {R E S}
+Definition Incorrect' {R E S}
   (presumes : S -> Prop)
   (achieves: R -> S -> Prop)
   (errors: E -> Prop)
   (w : STEx S E R) : Prop :=
   IncorrectNormal presumes achieves w /\ IncorrectErr presumes errors w. 
 
-Hint Unfold IncorrectNormal IncorrectErr Incorrect : mst.
+Hint Unfold IncorrectNormal IncorrectErr Incorrect Incorrect' : mst.
 
 Module ReadIfIncWrite.
 
   Definition read_if_inc_write : STEx nat unit unit :=
     x <- get ;; if (42 <=? x) then put (x + 1) else raise tt.
 
-  Theorem Incorrect_read_if_inc_write_less :
-    Incorrect (fun s0 => s0 < 42) (fun _ _ => False) (fun e => e = tt) read_if_inc_write. 
+  Theorem Incorrect'_read_if_inc_write_less :
+    Incorrect' (fun s0 => s0 < 42) (fun _ _ => False) (fun e => e = tt) read_if_inc_write. 
   Proof.
     (* This should be very easy to prove; provable by SMT solvers? *)
     autounfold with mst. cbn; intros. sauto.
   Qed.
 
-  Theorem Incorrect_read_if_inc_write_more :
-    Incorrect (fun s0 => s0 >= 42) (fun _ s => s > 42) (fun _ => False) read_if_inc_write. 
+  Theorem Incorrect'_read_if_inc_write_more :
+    Incorrect' (fun s0 => s0 >= 42) (fun _ s => s > 42) (fun _ => False) read_if_inc_write. 
   Proof.
     (* Is this provable by automatic theorem provers? *)
     autounfold with mst. cbn; intros. split; [ | sauto lq: on drew: off ].
@@ -202,7 +210,7 @@ Module ReadIfIncWrite.
   Theorem Exists_in_obs_less : exists s0,
       proj1_sig (obsSTEx Examples.read_if_inc_write s0 (s0 < 42) (inl tt)).
   Proof.
-    pose proof (Incorrect_read_if_inc_write_less) as HI.
+    pose proof (Incorrect'_read_if_inc_write_less) as HI.
     pose proof (Verify_read_if_inc_write) as HV.
     destruct HI as [Hn He]. specialize (He tt ltac:(reflexivity)).
     destruct He as [s0 [He1 ?]]. exists s0. apply HV. apply He1.
@@ -212,7 +220,7 @@ Module ReadIfIncWrite.
     forall s, s > 42 ->
     exists s0, proj1_sig (obsSTEx Examples.read_if_inc_write s0 (s0 >= 42) (inr (tt, s))).
   Proof.
-    pose proof (Incorrect_read_if_inc_write_more) as HI.
+    pose proof (Incorrect'_read_if_inc_write_more) as HI.
     pose proof (Verify_read_if_inc_write) as HV.
     intros. destruct HI as [Hn He]. specialize (Hn tt s H).
     destruct Hn as [s0 [Hn1 ?]]. exists s0. apply HV. apply Hn1.
