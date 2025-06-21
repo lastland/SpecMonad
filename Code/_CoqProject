@@ -2,7 +2,9 @@
 
 SPost.v
 Common/Common.v
-ST/STExamples.v
+ST/Examples.v
 ST/ST.v
 ST/WFST.v
 Reader/IncorrectReader.v
+STEx/Examples.v
+STEx/STEx.v
