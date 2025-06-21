@@ -24,5 +24,5 @@ jobs:
                           opam config list; opam repo list; opam list
                         endGroup
                         startGroup "Pin dune"
-                          opam pin dune 3.19.1
+                          opam update; opam pin -y dune 3.19.1
                         endGroup
