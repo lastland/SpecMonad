@@ -128,6 +128,8 @@ Program Definition Incorrect' {R S}
 
 Hint Unfold IncorrectWF Incorrect' : mst.
 
+(* If we have an [achieves] that talks about initial states, not all reasoning
+   principles of incorrectness logic follow. *)
 Module ReasoningRules.
 
   Theorem weaken_pre :
@@ -174,7 +176,8 @@ Module ReasoningRules.
   Qed.
     
 End ReasoningRules.
-  
+
+(* The one where [achieves] does not talk about the initial state works fine. *)
 
 Module ReasoningRules'.
 
@@ -245,12 +248,11 @@ Module OHearnExample.
         example_3_1_ST.
     Proof.
       autounfold with mst. cbn; intros.
-      destruct s as [[? ?] ?].
-      exists (n, n0, 11). split; auto; intros.
-      exists (n, n0, 11).
-      destruct (Nat.even n) eqn:Hn; cbn; [| sauto q: on].
-      destruct (Nat.even n0) eqn:Hn0; cbn; [hauto |].
-      hauto.
+      (* This does not seem very automatic; can an SMT solver work here? *)
+      destruct s as [[x y] z].
+      exists (x, y, 11). split; auto; intros. exists (x, y, 11).
+      destruct (Nat.even x); destruct (Nat.even y);
+        hauto lq: on drew: off.
     Qed.
 
     (* This is the old thing with Dijkstra monads. *)
