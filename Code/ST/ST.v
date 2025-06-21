@@ -15,8 +15,8 @@ Section Types.
 
   Variable S A : Type.
 
-  Definition ST := forall (s0 : S) (pre : Prop), 
-      {p : A -> S -> Prop | forall a s, p a s -> pre}.
+  Definition ST := forall (s0 : S) (pre : Prop),
+      A -> S -> {p : Prop | p -> pre}.
 
 End Types.
 
@@ -53,11 +53,11 @@ End ST.
 Program Definition obsST (S R : Type) (m : state S R) : ST S R :=
   fun s0 pre r s => runState m s0 = (r, s) /\ pre.
 
-Program Definition Verify {S R}
+Definition Verify {S R}
   (w : ST S R) (m : state S R)
   (obs: forall {R}, state S R -> ST S R) : Prop :=
   forall s0 pre r s,
-    w s0 pre r s -> obs m s0 pre r s.
+    proj1_sig (w s0 pre r s) -> proj1_sig (obs m s0 pre r s).
 
 #[local] Hint Unfold retST bindST getST putST Verify: mst.
 
@@ -99,13 +99,13 @@ End Dijkstra.
 
 #[export] Hint Resolve Verify_ret Verify_bind Verify_get Verify_put : mst.
 
-Program Definition Incorrect {R S}
+Definition Incorrect {R S}
   (presumes : S -> Prop)
   (achieves: S -> R -> S -> Prop)
   (w : ST S R) : Prop :=
   forall r s, exists s0,
     (presumes s0 -> achieves s0 r s ->
-     w s0 (presumes s0) r s) /\
+     proj1_sig (w s0 (presumes s0) r s)) /\
       presumes s0.
 
 Hint Unfold Incorrect : mst.
@@ -140,7 +140,7 @@ Module ReadIfIncWrite.
      such that the result state is 0; the trigger presumption is that s0 <
      42. *)
   Theorem Exists_in_obs : forall r, exists s0,
-      proj1_sig (obsST STExamples.read_if_inc_write s0 (s0 < 42)) r 0.
+      proj1_sig (obsST STExamples.read_if_inc_write s0 (s0 < 42) r 0).
   Proof.
     pose proof (Incorrect_read_if_inc_write_less) as HI.
     pose proof (Verify_read_if_inc_write) as HV.

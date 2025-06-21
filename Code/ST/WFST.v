@@ -17,7 +17,7 @@ Section Types.
 
   Definition WFST :=
     { w : ST S A | forall s0 p q r s,
-        (p -> q) -> proj1_sig (w s0 p) r s -> proj1_sig (w s0 q) r s  }.
+        (p -> q) -> proj1_sig (w s0 p r s) -> proj1_sig (w s0 q r s)  }.
 
 End Types.
 
@@ -62,7 +62,7 @@ Program Definition VerifyWF {S R}
   (w : WFST S R) (m : state S R)
   (obs: forall {R}, state S R -> WFST S R) : Prop :=
   forall s0 pre r s,
-    w s0 pre r s -> obs m s0 pre r s.
+    proj1_sig (w s0 pre r s) -> proj1_sig (obs m s0 pre r s).
 
 #[local] Hint Unfold retWFST bindWFST getWFST putWFST VerifyWF : mst.
 
@@ -115,7 +115,7 @@ Program Definition IncorrectWF {R S}
   (w : WFST S R) : Prop :=
   forall r s, exists s0,
     (presumes s0 -> achieves s0 r s ->
-     w s0 (presumes s0) r s) /\
+     proj1_sig (w s0 (presumes s0) r s)) /\
       presumes s0.
 
 Program Definition Incorrect' {R S}
