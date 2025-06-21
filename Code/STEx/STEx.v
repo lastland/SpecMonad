@@ -177,7 +177,7 @@ Module ReadIfIncWrite.
   Theorem Incorrect_read_if_inc_write_more :
     Incorrect (fun s0 => s0 >= 42) (fun _ s => s > 42) (fun _ => False) read_if_inc_write. 
   Proof.
-    (* This should be very easy to prove; provable by SMT solvers? *)
+    (* Is this provable by automatic theorem provers? *)
     autounfold with mst. cbn; intros. split; [ | sauto lq: on drew: off ].
     intros [] s Hs. exists (s - 1). split; try solve [lia]. exists (inr (s - 1 , s - 1)).
     destruct (Nat.leb_spec0 42 (s - 1)); try solve [lia]. cbn. sauto.
@@ -199,13 +199,23 @@ Module ReadIfIncWrite.
   (* This combines the two theorems above and shows that an execution exists
      such that the result state is 0; the trigger presumption is that s0 <
      42. *)
-  Theorem Exists_in_obs : exists s0,
+  Theorem Exists_in_obs_less : exists s0,
       proj1_sig (obsSTEx Examples.read_if_inc_write s0 (s0 < 42) (inl tt)).
   Proof.
     pose proof (Incorrect_read_if_inc_write_less) as HI.
     pose proof (Verify_read_if_inc_write) as HV.
     destruct HI as [Hn He]. specialize (He tt ltac:(reflexivity)).
     destruct He as [s0 [He1 ?]]. exists s0. apply HV. apply He1.
+  Qed.
+
+  Theorem Exists_in_obs_more :
+    forall s, s > 42 ->
+    exists s0, proj1_sig (obsSTEx Examples.read_if_inc_write s0 (s0 >= 42) (inr (tt, s))).
+  Proof.
+    pose proof (Incorrect_read_if_inc_write_more) as HI.
+    pose proof (Verify_read_if_inc_write) as HV.
+    intros. destruct HI as [Hn He]. specialize (Hn tt s H).
+    destruct Hn as [s0 [Hn1 ?]]. exists s0. apply HV. apply Hn1.
   Qed.
 
 End ReadIfIncWrite.

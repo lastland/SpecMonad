@@ -1,6 +1,6 @@
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-From Incorrectness Require Import ST.STExamples ST.WFST.
+From Incorrectness Require Import ST.Examples ST.WFST.
 
 From Coq Require Import Nat Lia PeanoNat.
 Opaque "<=?".
@@ -75,7 +75,7 @@ Module OHearnExample.
       apply H0. exists (x, y).
       destruct (Nat.even x) eqn:Hx; cbn.
       - destruct (Nat.even y) eqn:Hy; cbn.
-        + 
+        + exists 11. exists (42, (x, y)). subst.
       - hauto lq: on.
 
     Qed.
