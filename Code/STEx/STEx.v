@@ -1,5 +1,6 @@
 From ExtLib Require Import Monad MonadState StateMonad MonadExc EitherMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
+From Incorrectness Require Import STEx.Examples.
 
 From Coq Require Import Nat Lia PeanoNat.
 Opaque "<=?".
@@ -88,6 +89,7 @@ Definition Verify {S E R}
 #[local] Hint Unfold retSTEx bindSTEx getSTEx putSTEx raiseSTEx catchSTEx Verify: mst.
 
 Existing Instance Monad_stateT.
+Existing Instance Exc_stateT.
 
 Section Dijkstra.
 
@@ -120,84 +122,90 @@ Section Dijkstra.
     Verify (put s) (put s) (@obsSTEx S E).
   Proof.
     autounfold with mst.
-    sauto lq: on.
+    sfirstorder.
   Qed.
+
+  Theorem Verify_raise : forall (r : E),
+      @Verify S _ R (raise r) (raise r) (@obsSTEx S E).
+  Proof.
+    autounfold with mst.
+    sfirstorder.
+  Qed.
+
     
 End Dijkstra.
 
-#[export] Hint Resolve Verify_ret Verify_bind Verify_get Verify_put : mst.
+#[export] Hint Resolve Verify_ret Verify_bind Verify_get Verify_put Verify_raise : mst.
 
-Definition Incorrect {R S}
+Definition IncorrectNormal {R E S}
   (presumes : S -> Prop)
-  (achieves: S -> R -> S -> Prop)
-  (w : STEx S R) : Prop :=
-  forall r s, exists s0,
-    (presumes s0 -> achieves s0 r s ->
-     proj1_sig (w s0 (presumes s0) r s)) /\
-      presumes s0.
+  (achieves: R -> S -> Prop)
+  (w : STEx S E R) : Prop :=
+  forall r s,
+    achieves r s ->
+    exists s0, proj1_sig (w s0 (presumes s0) (inr (r, s))) /\ presumes s0.
 
-Hint Unfold Incorrect : mst.
+Definition IncorrectErr {R E S}
+  (presumes : S -> Prop)
+  (errors: E -> Prop)
+  (w : STEx S E R) : Prop :=
+  forall e,
+    errors e ->
+    exists s0, proj1_sig (w s0 (presumes s0) (inl e)) /\ presumes s0.
+
+Definition Incorrect {R E S}
+  (presumes : S -> Prop)
+  (achieves: R -> S -> Prop)
+  (errors: E -> Prop)
+  (w : STEx S E R) : Prop :=
+  IncorrectNormal presumes achieves w /\ IncorrectErr presumes errors w. 
+
+Hint Unfold IncorrectNormal IncorrectErr Incorrect : mst.
 
 Module ReadIfIncWrite.
 
-  Definition read_if_inc_write : ST nat unit :=
-    x <- get ;; if (42 <=? x) then put (x + 1) else put 0.
+  Definition read_if_inc_write : STEx nat unit unit :=
+    x <- get ;; if (42 <=? x) then put (x + 1) else raise tt.
 
   Theorem Incorrect_read_if_inc_write_less :
-    Incorrect (fun s0 => s0 < 42) (fun _ _ s => s = 0) read_if_inc_write. 
+    Incorrect (fun s0 => s0 < 42) (fun _ _ => False) (fun e => e = tt) read_if_inc_write. 
   Proof.
     (* This should be very easy to prove; provable by SMT solvers? *)
     autounfold with mst. cbn; intros. sauto.
   Qed.
-      
+
+  Theorem Incorrect_read_if_inc_write_more :
+    Incorrect (fun s0 => s0 >= 42) (fun _ s => s > 42) (fun _ => False) read_if_inc_write. 
+  Proof.
+    (* This should be very easy to prove; provable by SMT solvers? *)
+    autounfold with mst. cbn; intros. split; [ | sauto lq: on drew: off ].
+    intros [] s Hs. exists (s - 1). split; try solve [lia]. exists (inr (s - 1 , s - 1)).
+    destruct (Nat.leb_spec0 42 (s - 1)); try solve [lia]. cbn. sauto.
+  Qed.
+
   Theorem Verify_read_if_inc_write :
     Verify
       read_if_inc_write
-      (* [STExamples.read_if_inc_write] is defined the same as
+      (* [Examples.read_if_inc_write] is defined the same as
          [read_if_inc_write], except that we use the computation monad
          [state]. *)
-      STExamples.read_if_inc_write (@obsST nat).
+      Examples.read_if_inc_write (@obsSTEx nat unit).
   Proof.
     (* This is the Dijkstra monad. *)
-    apply Verify_bind.
-    - apply Verify_get.
-    - intros. destruct (42 <=? a); apply Verify_put.
+    apply Verify_bind; [ auto with mst |].
+    intros. destruct (42 <=? a); auto with mst.
   Qed.
 
   (* This combines the two theorems above and shows that an execution exists
      such that the result state is 0; the trigger presumption is that s0 <
      42. *)
-  Theorem Exists_in_obs : forall r, exists s0,
-      proj1_sig (obsST STExamples.read_if_inc_write s0 (s0 < 42) r 0).
+  Theorem Exists_in_obs : exists s0,
+      proj1_sig (obsSTEx Examples.read_if_inc_write s0 (s0 < 42) (inl tt)).
   Proof.
     pose proof (Incorrect_read_if_inc_write_less) as HI.
     pose proof (Verify_read_if_inc_write) as HV.
-    intros r. specialize (HI r 0). destruct HI as [s0 [? ?]].
-    exists s0. auto.
+    destruct HI as [Hn He]. specialize (He tt ltac:(reflexivity)).
+    destruct He as [s0 [He1 ?]]. exists s0. apply HV. apply He1.
   Qed.
 
 End ReadIfIncWrite.
-
-(* We can prove the following is true for [ret]s, but not for [bind]s. *)
-
-Theorem weaken_pre_ret :
-  forall {S R} P P' Q (r : R),
-  Incorrect P Q (ret r) ->
-  (forall (s : S), P s -> P' s) ->
-  Incorrect P' Q (ret r).
-Proof.
-  autounfold with mst. intros.
-  specialize (H r0 s). destruct H as [s0 [? ?]].
-  exists s0. hauto lq: on.
-Qed.
-
-Theorem strengthen_post_ret :
-  forall {S R} P Q Q' (r : R),
-  Incorrect P Q (ret r) ->
-  (forall r (s0 s : S), Q' s0 r s -> Q s0 r s) ->
-  Incorrect P Q' (ret r).
-Proof.
-  autounfold with mst. intros.
-  specialize (H r0 s). destruct H as [s0 [? ?]].
-  exists s0. sfirstorder.
-Qed.
