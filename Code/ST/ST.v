@@ -1,6 +1,6 @@
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-From Incorrectness Require Import ST.STExamples.
+From Incorrectness Require Import ST.Examples.
 
 From Coq Require Import Nat Lia PeanoNat.
 Opaque "<=?".
@@ -125,10 +125,10 @@ Module ReadIfIncWrite.
   Theorem Verify_read_if_inc_write :
     Verify
       read_if_inc_write
-      (* [STExamples.read_if_inc_write] is defined the same as
+      (* [Examples.read_if_inc_write] is defined the same as
          [read_if_inc_write], except that we use the computation monad
          [state]. *)
-      STExamples.read_if_inc_write (@obsST nat).
+      Examples.read_if_inc_write (@obsST nat).
   Proof.
     (* This is the Dijkstra monad. *)
     apply Verify_bind.
@@ -140,7 +140,7 @@ Module ReadIfIncWrite.
      such that the result state is 0; the trigger presumption is that s0 <
      42. *)
   Theorem Exists_in_obs : forall r, exists s0,
-      proj1_sig (obsST STExamples.read_if_inc_write s0 (s0 < 42) r 0).
+      proj1_sig (obsST Examples.read_if_inc_write s0 (s0 < 42) r 0).
   Proof.
     pose proof (Incorrect_read_if_inc_write_less) as HI.
     pose proof (Verify_read_if_inc_write) as HV.
