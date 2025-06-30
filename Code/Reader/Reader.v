@@ -112,6 +112,15 @@ Program Definition Incorrect {R S}
      w s0 (presumes s0) r) /\
       presumes s0.
 
+Program Definition Incorrect' {R S}
+  (presumes : S -> Prop)
+  (w : Reader S R) 
+  (achieves: R -> Prop) : Prop :=
+  forall r,
+    achieves r ->
+      (exists s0, w s0 (presumes s0) r /\
+      presumes s0).
+
 Hint Unfold Incorrect : mst.
 
 Definition example_3_1r : reader (nat * nat * nat) nat :=
@@ -150,8 +159,6 @@ Qed.
 
 Module Test2.
 
-  (* These used to work, but somehow breaks now. *)
-
   Definition example_3_1R : Reader (nat * nat * nat) (nat * nat * nat) :=
     '(x, y, z) <- ask ;;
     if Nat.even x then
@@ -166,9 +173,9 @@ Module Test2.
          z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true).
   Proof.
     autounfold with mst. cbn; intros.
-    exists (0, 1, 11). split; auto.
-    cbn; intros. exists (0, 1, 11).
     destruct r. destruct p.
+    exists (n0, n1, 11). split; auto.
+    cbn; intros. exists (n0, n1, 11).
     destruct H. destruct H0. simpl.
     hauto lq: on drew: off.
   Qed.

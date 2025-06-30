@@ -5,6 +5,6 @@ Common/Common.v
 ST/Examples.v
 ST/ST.v
 ST/WFST.v
-Reader/IncorrectReader.v
+Reader/Reader.v
 STEx/Examples.v
 STEx/STEx.v
