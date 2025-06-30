@@ -147,3 +147,39 @@ Proof.
   destruct (Nat.even n) eqn:Hn; [ | apply Verify_ret ].
   destruct (Nat.even n0) eqn:Hn0; cbn; apply Verify_ret.
 Qed.
+Module Test2.
+
+  Definition example_3_1R : Reader (nat * nat * nat) (nat * nat * nat) :=
+    '(x, y, z) <- ask ;;
+    if Nat.even x then
+      if negb (Nat.even y) then ret (x, y, 42) else ret (x, y, z)
+    else ret (x, y, z).
+
+  Example example_3_1_test1 :
+    Incorrect
+      (fun '(x, y, z) => z = 11)
+      example_3_1R
+      (fun _ '(x, y, z) =>
+         z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true).
+  Proof.
+    autounfold with mst. cbn; intros.
+    exists (0, 1, 11). split; auto.
+    cbn; intros. exists (0, 1, 11).
+    destruct r. destruct p.
+    destruct H. destruct H0. simpl.
+    hauto lq: on drew: off.
+  Qed.
+
+  Example example_3_1_test2 : (** should be unprovable *)
+    Incorrect
+      (fun '(x, y, z) => z = 11)
+      example_3_1R
+      (fun '(x0,y0,z0) '(x, y, z) => z = 42 /\ x0 = x /\ y0 = y).
+  Proof.
+    autounfold with mst. cbn; intros.
+    exists (0, 1, 11). split; auto.
+    cbn; intros. exists (0, 1, 11).
+    hauto lq: on drew: off.
+  Qed.
+
+End Test2.

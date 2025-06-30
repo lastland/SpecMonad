@@ -108,6 +108,17 @@ Definition Incorrect {R S}
      proj1_sig (w s0 (presumes s0) r s)) /\
       presumes s0.
 
+Definition Incorrect' {R S}
+  (presumes : S -> Prop)
+  (achieves: R -> S -> Prop)
+  (w : ST S R) : Prop :=
+  forall r s, 
+    achieves r s ->
+    exists s0, proj1_sig (w s0 (presumes s0) r s) /\
+      presumes s0.
+
+(* [p] c [q1] /\ [p] c [q2] <-> [p] c [q1 \/ q2] *)
+
 Hint Unfold Incorrect : mst.
 
 Module ReadIfIncWrite.

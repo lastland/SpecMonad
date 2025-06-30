@@ -276,7 +276,7 @@ Module OHearnExample.
         z' = 42 ->
         Nat.even x' = true ->
         negb (Nat.even y') = true ->
-      exists x y z, runState example_3_1_state (x, y, z) = (tt, (x', y', z')).
+      exists x y z, runState example_3_1_state (x, y, z) = (tt, (x', y', z')) /\ z = 11.
     Proof.
       pose proof (example_3_1_incorrect) as HI.
       pose proof (example_3_1_dijkstra)  as HV.
@@ -284,5 +284,9 @@ Module OHearnExample.
       destruct HI as [[[x y] z] [HI ?]]. exists x, y, z.
       eapply HV. apply HI.
     Qed.
+
+    (* incorrectness conditions -> effect observation *)
+    (* incorrectness conditions -> spec monad -> effect observation *)
+    (* Hoare logic? *)
 
 End OHearnExample.
