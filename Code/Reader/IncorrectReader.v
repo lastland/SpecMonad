@@ -108,7 +108,7 @@ Program Definition Incorrect {R S}
   (w : Reader S R) 
   (achieves: S -> R -> Prop) : Prop :=
   forall r, exists s0,
-    (presumes s0 -> achieves s0 r ->
+    (achieves s0 r ->
      w s0 (presumes s0) r) /\
       presumes s0.
 
@@ -147,7 +147,10 @@ Proof.
   destruct (Nat.even n) eqn:Hn; [ | apply Verify_ret ].
   destruct (Nat.even n0) eqn:Hn0; cbn; apply Verify_ret.
 Qed.
+
 Module Test2.
+
+  (* These used to work, but somehow breaks now. *)
 
   Definition example_3_1R : Reader (nat * nat * nat) (nat * nat * nat) :=
     '(x, y, z) <- ask ;;
