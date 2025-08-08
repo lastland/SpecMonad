@@ -24,10 +24,10 @@ End Types.
 Section WFST.
 
   Variable S : Type.
-  
+
   Program Definition retWFST {A} (a : A) : WFST S A :=
     retST a.
-  
+
   Program Definition bindWFST {A B}
     (m : WFST S A) (k : A -> WFST S B) : WFST S B :=
     bindST m k.
@@ -58,13 +58,16 @@ End WFST.
 Program Definition obsWFST (S R : Type) (m : state S R) : WFST S R :=
   fun s0 pre r s => runState m s0 = (r, s) /\ pre.
 
+Program Definition ordWFST {S R} (w w':WFST S R) : Prop :=
+  forall s0 pre r s,
+    proj1_sig (w s0 pre r s) -> proj1_sig (w' s0 pre r s).
+
 Program Definition VerifyWF {S R}
   (w : WFST S R) (m : state S R)
   (obs: forall {R}, state S R -> WFST S R) : Prop :=
-  forall s0 pre r s,
-    proj1_sig (w s0 pre r s) -> proj1_sig (obs m s0 pre r s).
+  ordWFST w (obs m).
 
-#[local] Hint Unfold retWFST bindWFST getWFST putWFST VerifyWF : mst.
+#[local] Hint Unfold retWFST bindWFST getWFST putWFST VerifyWF ordWFST : mst.
 
 Section Dijkstra.
 
@@ -99,7 +102,7 @@ Section Dijkstra.
     autounfold with mst.
     sauto lq: on.
   Qed.
-    
+
 End Dijkstra.
 
 #[export] Hint Resolve
@@ -118,15 +121,27 @@ Program Definition IncorrectWF {R S}
      proj1_sig (w s0 (presumes s0) r s)) /\
       presumes s0.
 
+Program Definition Correct {R S}
+  (pre : S -> Prop)
+  (post: S -> R -> S -> Prop)
+  (w : WFST S R) : Prop :=
+  ordWFST w (fun s0 pre' r s => pre' /\ (pre s0 -> post s0 r s)).
+
 Program Definition Incorrect' {R S}
   (presumes : S -> Prop)
   (achieves: R -> S -> Prop)
   (w : WFST S R) : Prop :=
-  forall r s, 
+  forall r s,
     achieves r s ->
     exists s0, w s0 (presumes s0) r s /\ presumes s0.
 
-Hint Unfold IncorrectWF Incorrect' : mst.
+Program Definition Correct' {R S}
+  (pre : S -> Prop)
+  (post: R -> S -> Prop)
+  (w : WFST S R) : Prop :=
+  ordWFST w (fun s0 pre' r s => pre' /\ (pre s0 -> post r s)).
+
+Hint Unfold IncorrectWF Incorrect' Correct Correct' : mst.
 
 (* If we have an [achieves] that talks about initial states, not all reasoning
    principles of incorrectness logic follow. *)
@@ -138,7 +153,7 @@ Module ReasoningRules.
       (forall (s : S), P s -> P' s) ->
       IncorrectWF P' Q m.
   Proof.
-    autounfold with mst. intros. 
+    autounfold with mst. intros.
     sfirstorder.
   Qed.
 
@@ -174,7 +189,45 @@ Module ReasoningRules.
     autounfold with mst. intros.
     sfirstorder.
   Qed.
-    
+
+  Theorem agreement :
+    forall {S R} (m : WFST S R) u u' o o',
+      IncorrectWF u u' m ->
+      (forall s0, u s0 -> o s0) ->
+      Correct o o' m ->
+      (forall s0 r s, u' s0 r s -> o' s0 r s).
+  Proof.
+    autounfold with mst.
+    intros.
+    assert (IncorrectWF o u' m). {
+      apply (weaken_pre _ H H0).
+    }
+    clear H. clear H0.
+    autounfold with mst in H3.
+    specialize H3 with r s.
+    destruct H3 as [s0' [Hos0' H]].
+    apply Hos0' in H. clear Hos0'.
+    specialize H1 with s0' (o s0') r s.
+    simpl in H1.
+    apply H1 in H.
+    clear H1.
+    (** unprovable *)
+  Abort.
+
+  Theorem denial :
+    forall {S R} (m : WFST S R) u u' o o',
+      (IncorrectWF u u' m /\
+       (forall s0, u s0 -> o s0) /\
+       ~(forall s0 r s, u' s0 r s -> o' s0 r s)) ->
+      ~(Correct o o' m).
+  Proof.
+    (* autounfold with mst. *)
+    unfold not.
+    intros.
+    destruct H as [H1 [H2 H3]].
+    apply H3.
+    (** This is agreement, but it is not provable. *)
+  Abort.
 End ReasoningRules.
 
 (* The one where [achieves] does not talk about the initial state works fine. *)
@@ -220,9 +273,46 @@ Module ReasoningRules'.
     autounfold with mst. intros.
     sfirstorder.
   Qed.
-    
+
+  Theorem agreement :
+    forall {S R} (m : WFST S R) u u' o o',
+      Incorrect' u u' m ->
+      (forall s0, u s0 -> o s0) ->
+      Correct' o o' m ->
+      (forall r s, u' r s -> o' r s).
+  Proof.
+    autounfold with mst.
+    intros.
+    assert (Incorrect' o u' m). {
+      apply (weaken_pre _ H H0).
+    }
+    clear H. clear H0.
+    unfold Incorrect' in H1.
+
+    autounfold with mst in H3.
+    specialize H3 with r s.
+    apply H3 in H2.
+    destruct H2 as [s0 H0].
+    specialize H1 with s0 (o s0) r s.
+    sauto q: on.
+  Qed.
+
+  Theorem denial :
+    forall {S R} (m : WFST S R) u u' o o',
+      (Incorrect' u u' m /\
+       (forall s0, u s0 -> o s0) /\
+       ~(forall r s, u' r s -> o' r s)) ->
+      ~(Correct' o o' m).
+  Proof.
+    (* autounfold with mst. *)
+    unfold not.
+    intros.
+    destruct H as [H1 [H2 H3]].
+    apply H3.
+    apply (agreement H1 H2 H0).
+  Qed.
 End ReasoningRules'.
-  
+
 Module OHearnExample.
 
     Definition example_3_1_ST : WFST (nat * nat * nat) unit :=
@@ -267,7 +357,7 @@ Module OHearnExample.
       - apply Verify_ret_WF.
       - apply Verify_put_WF.
     Qed.
-    
+
     (* This is the final theorem we want that relates [assumes] and [achieves]
        with effect observation. We only need to compose the above two proofs to
        obtain this. *)
@@ -280,7 +370,7 @@ Module OHearnExample.
     Proof.
       pose proof (example_3_1_incorrect) as HI.
       pose proof (example_3_1_dijkstra)  as HV.
-      intros. specialize (HI tt (x', y', z') ltac:(hauto lq: on)). 
+      intros. specialize (HI tt (x', y', z') ltac:(hauto lq: on)).
       destruct HI as [[[x y] z] [HI ?]]. exists x, y, z.
       eapply HV. apply HI.
     Qed.
