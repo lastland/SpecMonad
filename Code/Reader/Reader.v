@@ -180,7 +180,7 @@ Module Test2.
     hauto lq: on drew: off.
   Qed.
 
-  Example example_3_1_test2 : (** should be unprovable *)
+  Example example_3_1_test2 :
     Incorrect
       (fun '(x, y, z) => z = 11)
       example_3_1R
@@ -191,5 +191,17 @@ Module Test2.
     cbn; intros. exists (0, 1, 11).
     hauto lq: on drew: off.
   Qed.
+
+  Example example_3_1_test2': (** should be unprovable *)
+    Incorrect'
+      (fun '(x, y, z) => z = 11)
+      example_3_1R
+      (fun '(x, y, z) => z = 42).
+  Proof.
+    autounfold with mst. cbn; intros.
+    intros [[x y] z ] ->. exists (x, y, 11).
+    cbn. split; auto. exists (x, y, 11).
+    destruct (Nat.even x); destruct (Nat.even y); cbn.
+  Abort.
 
 End Test2.
