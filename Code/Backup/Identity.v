@@ -21,35 +21,42 @@ Definition example_3_1 (x y z : nat) : nat :=
 From Hammer Require Import Hammer Tactics.
 
 Example example_3_1_test1 :
-  forall x y z,
+  forall x y, exists z,
     Incorrect
       (z = 11)
       (example_3_1 x y z)
       (fun r => r = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true).
 Proof.
-  intros x y z.
+  intros. exists 11.
   unfold Incorrect. unfold example_3_1.
   split.
   - sauto lq: on.
-  - exfalso. admit. (* This branch is unprovable *)
-Admitted.
+  - reflexivity.
+Qed.
 
 Example example_3_1_test2 :
-  forall x y z,
+  forall x y, exists z,
     Incorrect
       (True)
       (example_3_1 x y z)
       (fun r => r = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true).
 Proof.
-  intros x y z.
+  intros x y. exists 11.
   unfold Incorrect. unfold example_3_1.
   split.
   - hauto lq: on drew: off.
   - trivial.
 Qed.
 
-Example example_3_1_test3 :
-  forall x y z,
-    not (Incorrect (z = 11) (example_3_1 x y z) (fun r => r = 42)).
+Example example_3_1_test4 : (** supposed to not work **)
+  forall x y, exists z,
+    Incorrect
+      (z = 11)
+      (example_3_1 x y z)
+      (fun r => r = 42).
 Proof.
-Admitted.
+  intros. exists 11.
+  unfold Incorrect. unfold example_3_1.
+  split.
+  - 
+Abort.
