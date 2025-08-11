@@ -121,12 +121,6 @@ Program Definition IncorrectWF {R S}
      proj1_sig (w s0 (presumes s0) r s)) /\
       presumes s0.
 
-Program Definition Correct {R S}
-  (pre : S -> Prop)
-  (post: S -> R -> S -> Prop)
-  (w : WFST S R) : Prop :=
-  ordWFST w (fun s0 pre' r s => pre' /\ (pre s0 -> post s0 r s)).
-
 Program Definition Incorrect' {R S}
   (presumes : S -> Prop)
   (achieves: R -> S -> Prop)
@@ -135,13 +129,32 @@ Program Definition Incorrect' {R S}
     achieves r s ->
     exists s0, w s0 (presumes s0) r s /\ presumes s0.
 
+
+Program Definition pp2sp {S A}
+  (pre : S -> Prop)
+  (post : S -> A -> S -> Prop) : WFST S A :=
+  fun s0 pre' r s1 =>
+    pre' /\ (pre s0 -> post s0 r s1).
+
+Program Definition pp2sp' {S A}
+  (pre : S -> Prop)
+  (post : A -> S -> Prop) : WFST S A :=
+  fun s0 pre' r s1 =>
+    pre' /\ (pre s0 -> post r s1).
+
+Program Definition Correct {R S}
+  (pre : S -> Prop)
+  (post: S -> R -> S -> Prop)
+  (w : WFST S R) : Prop :=
+  ordWFST w (pp2sp pre post).
+
 Program Definition Correct' {R S}
   (pre : S -> Prop)
   (post: R -> S -> Prop)
   (w : WFST S R) : Prop :=
-  ordWFST w (fun s0 pre' r s => pre' /\ (pre s0 -> post r s)).
+  ordWFST w (pp2sp' pre post).
 
-Hint Unfold IncorrectWF Incorrect' Correct Correct' : mst.
+Hint Unfold IncorrectWF Incorrect' Correct Correct' pp2sp pp2sp' : mst.
 
 (* If we have an [achieves] that talks about initial states, not all reasoning
    principles of incorrectness logic follow. *)
@@ -274,7 +287,7 @@ Module ReasoningRules'.
     sfirstorder.
   Qed.
 
-  Theorem agreement :
+  Theorem agreement' :
     forall {S R} (m : WFST S R) u u' o o',
       Incorrect' u u' m ->
       (forall s0, u s0 -> o s0) ->
@@ -297,7 +310,7 @@ Module ReasoningRules'.
     sauto q: on.
   Qed.
 
-  Theorem denial :
+  Theorem denial' :
     forall {S R} (m : WFST S R) u u' o o',
       (Incorrect' u u' m /\
        (forall s0, u s0 -> o s0) /\
@@ -309,8 +322,47 @@ Module ReasoningRules'.
     intros.
     destruct H as [H1 [H2 H3]].
     apply H3.
+    apply (agreement' H1 H2 H0).
+  Qed.
+
+  Theorem agreement :
+    forall {S R} (m : WFST S R) u u' o o',
+      Incorrect' u u' m ->
+      (forall s0, u s0 -> o s0) ->
+      Correct o o' m ->
+      (forall r s1, u' r s1 -> (exists s0, o' s0 r s1)).
+  Proof.
+    autounfold with mst.
+    intros.
+    assert (Incorrect' o u' m). {
+      apply (weaken_pre _ H H0).
+    }
+    clear H. clear H0.
+    unfold Incorrect' in H1.
+    simpl in H1.
+    autounfold with mst in H3.
+    specialize H3 with r s1.
+    apply H3 in H2.
+    destruct H2 as [s0 H0].
+    specialize H1 with s0 (o s0) r s1.
+    sauto q: on.
+  Qed.
+
+  Theorem denial :
+    forall {S R} (m : WFST S R) u u' o o',
+      (Incorrect' u u' m /\
+       (forall s0, u s0 -> o s0) /\
+       ~(forall r s1, u' r s1 -> (exists s0, o' s0 r s1))) ->
+      ~(Correct o o' m).
+  Proof.
+    (* autounfold with mst. *)
+    unfold not.
+    intros.
+    destruct H as [H1 [H2 H3]].
+    apply H3.
     apply (agreement H1 H2 H0).
   Qed.
+
 End ReasoningRules'.
 
 Module OHearnExample.
