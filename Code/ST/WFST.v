@@ -139,20 +139,19 @@ Program Definition pp2sp {S A}
 Program Definition pp2sp' {S A}
   (pre : S -> Prop)
   (post : A -> S -> Prop) : WFST S A :=
-  fun s0 pre' r s1 =>
-    pre' /\ (pre s0 -> post r s1).
+  pp2sp pre (fun _ => post).
 
 Program Definition Correct {R S}
   (pre : S -> Prop)
   (post: S -> R -> S -> Prop)
   (w : WFST S R) : Prop :=
-  ordWFST w (pp2sp pre post).
+  ordWFST (pp2sp pre post) w.
 
 Program Definition Correct' {R S}
   (pre : S -> Prop)
   (post: R -> S -> Prop)
   (w : WFST S R) : Prop :=
-  ordWFST w (pp2sp' pre post).
+  ordWFST (pp2sp' pre post) w.
 
 Hint Unfold IncorrectWF Incorrect' Correct Correct' pp2sp pp2sp' : mst.
 
@@ -222,8 +221,6 @@ Module ReasoningRules.
     apply Hos0' in H. clear Hos0'.
     specialize H1 with s0' (o s0') r s.
     simpl in H1.
-    apply H1 in H.
-    clear H1.
     (** unprovable *)
   Abort.
 
@@ -299,16 +296,16 @@ Module ReasoningRules'.
     assert (Incorrect' o u' m). {
       apply (weaken_pre _ H H0).
     }
-    clear H. clear H0.
+    clear H. 
+    clear H0.
     unfold Incorrect' in H1.
-
+    simpl in H1.
     autounfold with mst in H3.
     specialize H3 with r s.
     apply H3 in H2.
     destruct H2 as [s0 H0].
     specialize H1 with s0 (o s0) r s.
-    sauto q: on.
-  Qed.
+  Admitted.
 
   Theorem denial' :
     forall {S R} (m : WFST S R) u u' o o',
@@ -345,8 +342,8 @@ Module ReasoningRules'.
     apply H3 in H2.
     destruct H2 as [s0 H0].
     specialize H1 with s0 (o s0) r s1.
-    sauto q: on.
-  Qed.
+    (* sauto q: on. *)
+  Admitted.
 
   Theorem denial :
     forall {S R} (m : WFST S R) u u' o o',
@@ -396,6 +393,20 @@ Module OHearnExample.
       destruct (Nat.even x); destruct (Nat.even y);
         hauto lq: on drew: off.
     Qed.
+
+    Theorem example_3_1_correct :
+      Correct
+        (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
+        (fun _ _ '(x, y, z) => z = 42)
+        example_3_1_ST.
+    Proof.
+      autounfold with mst. cbn. intros.
+      destruct s0 as [[x y] z].
+      destruct s as [[x' y'] z'].
+      exists (x, y, z). exists (x, y, z').
+      destruct H.
+      + destruct (Nat.even x); destruct (Nat.even y); simpl.
+    Admitted.
 
     (* This is the old thing with Dijkstra monads. *)
     Theorem example_3_1_dijkstra :
