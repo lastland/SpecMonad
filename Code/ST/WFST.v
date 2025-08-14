@@ -221,10 +221,11 @@ Module ReasoningRulesCorrectness.
       Correct P Q' m.
   Proof.
     autounfold with mst. simpl. intros.
+    apply H1.
+    intros.
     apply H.
     intros.
-    specialize H1 with sp.
-    specialize H2 with s0 pre r s.
+    apply H3.
   Admitted.
 
   Theorem post_conj_intro :
