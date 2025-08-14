@@ -111,12 +111,55 @@ End Dijkstra.
 
 Program Definition Incorrect {R S}
   (presumes : S -> Prop)
-  (achieves: R -> S -> Prop)
+  (achieves: R -> S -> Prop) (* [achieves] works fine ifdoes not talk about the initial state *)
   (w : WFST S R) : Prop :=
   forall r s,
     achieves r s ->
     exists s0, w s0 (presumes s0) r s /\ presumes s0.
 
+Hint Unfold Incorrect : mst.
+
+Module ReasoningRulesIncorrectness.
+  Theorem weaken_pre :
+    forall {S R} P P' Q (m : WFST S R),
+      Incorrect P Q m ->
+      (forall (s : S), P s -> P' s) ->
+      Incorrect P' Q m.
+  Proof.
+    autounfold with mst. intros.
+    sauto q: on.
+  Qed.
+
+  Theorem strengthen_post :
+    forall {S R} P Q Q' (m : WFST S R),
+      Incorrect P Q m ->
+      (forall r (s : S), Q' r s -> Q r s) ->
+      Incorrect P Q' m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem post_disj_intro :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    Incorrect P Q1 m ->
+    Incorrect P Q2 m ->
+    Incorrect P (fun r s => Q1 r s \/ Q2 r s) m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem post_disj_elim :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    Incorrect P (fun r s => Q1 r s \/ Q2 r s) m ->
+    Incorrect P Q1 m /\
+    Incorrect P Q2 m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+End ReasoningRulesIncorrectness.
 
 Program Definition pp2sp0 {S A}
   (pre : S -> Prop)
@@ -154,24 +197,9 @@ Program Definition Correct {R S}
   (w : WFST S R) : Prop :=
   ordWFST (pp2sp pre post) w.
 
-Hint Unfold Incorrect Correct pp2sp : mst.
+Hint Unfold Correct pp2sp : mst.
 
-
-
-(* The one where [achieves] does not talk about the initial state works fine. *)
-
-Module ReasoningRules.
-
-  Theorem weaken_pre :
-    forall {S R} P P' Q (m : WFST S R),
-      Incorrect P Q m ->
-      (forall (s : S), P s -> P' s) ->
-      Incorrect P' Q m.
-  Proof.
-    autounfold with mst. intros.
-    sauto q: on.
-  Qed.
-
+Module ReasoningRulesCorrectness.
   Theorem strengthen_pre :
     forall {S R} P P' Q (m : WFST S R),
       Correct P Q m ->
@@ -186,16 +214,6 @@ Module ReasoningRules.
     assumption.
   Qed.
 
-  Theorem strengthen_post :
-    forall {S R} P Q Q' (m : WFST S R),
-      Incorrect P Q m ->
-      (forall r (s : S), Q' r s -> Q r s) ->
-      Incorrect P Q' m.
-  Proof.
-    autounfold with mst. intros.
-    sfirstorder.
-  Qed.
-
   Theorem weaken_post :
     forall {S R} P Q Q' (m : WFST S R),
       Correct P Q m ->
@@ -207,28 +225,39 @@ Module ReasoningRules.
     intros.
     specialize H1 with sp.
     specialize H2 with s0 pre r s.
-  Abort.
+  Admitted.
 
-  Theorem post_disj_intro :
+  Theorem post_conj_intro :
     forall {S R} P Q1 Q2 (m : WFST S R),
-    Incorrect P Q1 m ->
-    Incorrect P Q2 m ->
-    Incorrect P (fun r s => Q1 r s \/ Q2 r s) m.
+    Correct P Q1 m ->
+    Correct P Q2 m ->
+    Correct P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1) m.
   Proof.
-    autounfold with mst. intros.
+    autounfold with mst. simpl. intros.
+    apply H1.
+    intros.
+    apply H.
+    intros.
+    apply H3.
+    destruct H2 as [Hq [HQ1 HQ2]].
     sfirstorder.
   Qed.
 
-  Theorem post_disj_elim :
+  Theorem post_conj_elim :
     forall {S R} P Q1 Q2 (m : WFST S R),
-    Incorrect P (fun r s => Q1 r s \/ Q2 r s) m ->
-    Incorrect P Q1 m /\
-    Incorrect P Q2 m.
+    Correct P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1) m ->
+    Correct P Q1 m /\
+    Correct P Q2 m.
   Proof.
-    autounfold with mst. intros.
-    sfirstorder.
-  Qed.
+    autounfold with mst. simpl. intros.
+    split.
+    - intros. apply H0.
+      intros. apply H.
+      intros. apply H2. 
+  Admitted.
+End ReasoningRulesCorrectness.
 
+Module ReasoningRulesAgreement.
   Theorem agreement :
     forall {S R} (m : WFST S R) u u' o o',
       Incorrect u u' m ->
@@ -237,18 +266,11 @@ Module ReasoningRules.
       (forall r s1, u' r s1 -> (exists s0, o' s0 r s1)).
   Proof.
     autounfold with mst. simpl. intros.
-    assert (Incorrect o u' m). {
+    (* assert (Incorrect o u' m). {
       apply (weaken_pre _ H H0).
     }
     clear H. clear H0.
-    unfold Incorrect in H3.
-    simpl in H1.
-    autounfold with mst in H3.
-    specialize H3 with r s1.
-    apply H3 in H2.
-    destruct H2 as [s0 H0].
-    specialize H1 with s0 (o s0) r s1.
-    (* sauto q: on. *)
+    unfold Incorrect in H3. *)
   Admitted.
 
   Theorem denial :
@@ -265,8 +287,8 @@ Module ReasoningRules.
     apply H3.
     apply (agreement H1 H2 H0).
   Qed.
+End ReasoningRulesAgreement.
 
-End ReasoningRules.
 
 Module OHearnExample.
 
