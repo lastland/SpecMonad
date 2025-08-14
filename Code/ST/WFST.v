@@ -109,19 +109,7 @@ End Dijkstra.
   Verify_ret_WF Verify_bind_WF
   Verify_get_WF Verify_put_WF : mst.
 
-(* But we can prove the following if we use [WFST], which has an additional
-   invariant. *)
-
-Program Definition IncorrectWF {R S}
-  (presumes : S -> Prop)
-  (achieves: S -> R -> S -> Prop)
-  (w : WFST S R) : Prop :=
-  forall r s, exists s0,
-    (presumes s0 -> achieves s0 r s ->
-     proj1_sig (w s0 (presumes s0) r s)) /\
-      presumes s0.
-
-Program Definition Incorrect' {R S}
+Program Definition Incorrect {R S}
   (presumes : S -> Prop)
   (achieves: R -> S -> Prop)
   (w : WFST S R) : Prop :=
@@ -160,30 +148,227 @@ Program Definition pp2sp {S A}
     sfirstorder.
   Qed.
 
-    (* pre' /\ (pre s0 -> post s0 r s1). *)
-
-Program Definition pp2sp' {S A}
-  (pre : S -> Prop)
-  (post : A -> S -> Prop) : WFST S A :=
-  pp2sp pre (fun _ => post).
-
 Program Definition Correct {R S}
   (pre : S -> Prop)
   (post: S -> R -> S -> Prop)
   (w : WFST S R) : Prop :=
   ordWFST (pp2sp pre post) w.
 
-Program Definition Correct' {R S}
-  (pre : S -> Prop)
-  (post: R -> S -> Prop)
-  (w : WFST S R) : Prop :=
-  ordWFST (pp2sp' pre post) w.
+Hint Unfold Incorrect Correct pp2sp : mst.
 
-Hint Unfold IncorrectWF Incorrect' Correct Correct' pp2sp pp2sp' : mst.
+
+
+(* The one where [achieves] does not talk about the initial state works fine. *)
+
+Module ReasoningRules.
+
+  Theorem weaken_pre :
+    forall {S R} P P' Q (m : WFST S R),
+      Incorrect P Q m ->
+      (forall (s : S), P s -> P' s) ->
+      Incorrect P' Q m.
+  Proof.
+    autounfold with mst. intros.
+    sauto q: on.
+  Qed.
+
+  Theorem strengthen_pre :
+    forall {S R} P P' Q (m : WFST S R),
+      Correct P Q m ->
+      (forall (s0 : S), P' s0 -> P s0) ->
+      Correct P' Q m.
+  Proof.
+    autounfold with mst. intros.
+    simpl in H. simpl in H1.
+    apply H.
+    intro sp.
+    specialize H1 with sp.
+    assumption.
+  Qed.
+
+  Theorem strengthen_post :
+    forall {S R} P Q Q' (m : WFST S R),
+      Incorrect P Q m ->
+      (forall r (s : S), Q' r s -> Q r s) ->
+      Incorrect P Q' m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem weaken_post :
+    forall {S R} P Q Q' (m : WFST S R),
+      Correct P Q m ->
+      (forall s0 r s1, Q s0 r s1 -> Q' s0 r s1) ->
+      Correct P Q' m.
+  Proof.
+    autounfold with mst. simpl. intros.
+    apply H.
+    intros.
+    specialize H1 with sp.
+    specialize H2 with s0 pre r s.
+  Abort.
+
+  Theorem post_disj_intro :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    Incorrect P Q1 m ->
+    Incorrect P Q2 m ->
+    Incorrect P (fun r s => Q1 r s \/ Q2 r s) m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem post_disj_elim :
+    forall {S R} P Q1 Q2 (m : WFST S R),
+    Incorrect P (fun r s => Q1 r s \/ Q2 r s) m ->
+    Incorrect P Q1 m /\
+    Incorrect P Q2 m.
+  Proof.
+    autounfold with mst. intros.
+    sfirstorder.
+  Qed.
+
+  Theorem agreement :
+    forall {S R} (m : WFST S R) u u' o o',
+      Incorrect u u' m ->
+      (forall s0, u s0 -> o s0) ->
+      Correct o o' m ->
+      (forall r s1, u' r s1 -> (exists s0, o' s0 r s1)).
+  Proof.
+    autounfold with mst. simpl. intros.
+    assert (Incorrect o u' m). {
+      apply (weaken_pre _ H H0).
+    }
+    clear H. clear H0.
+    unfold Incorrect in H3.
+    simpl in H1.
+    autounfold with mst in H3.
+    specialize H3 with r s1.
+    apply H3 in H2.
+    destruct H2 as [s0 H0].
+    specialize H1 with s0 (o s0) r s1.
+    (* sauto q: on. *)
+  Admitted.
+
+  Theorem denial :
+    forall {S R} (m : WFST S R) u u' o o',
+      (Incorrect u u' m /\
+       (forall s0, u s0 -> o s0) /\
+       ~(forall r s1, u' r s1 -> (exists s0, o' s0 r s1))) ->
+      ~(Correct o o' m).
+  Proof.
+    (* autounfold with mst. *)
+    unfold not.
+    intros.
+    destruct H as [H1 [H2 H3]].
+    apply H3.
+    apply (agreement H1 H2 H0).
+  Qed.
+
+End ReasoningRules.
+
+Module OHearnExample.
+
+    Definition example_3_1_ST : WFST (nat * nat * nat) unit :=
+      '(x, y, z) <- get ;;
+        if Nat.even x then
+          if negb (Nat.even y) then put (x, y, 42) else ret tt
+        else ret tt.
+
+    Definition example_3_1_state : state (nat * nat * nat) unit :=
+      '(x, y, z) <- get ;;
+        if Nat.even x then
+          if negb (Nat.even y) then put (x, y, 42) else ret tt
+        else ret tt.
+
+    (* The new incorrectness reasoning that relates [presumes] and [achieves]
+       with specification monad, but not effect observations yet! *)
+    Theorem example_3_1_incorrect :
+      Incorrect
+        (fun '(x, y, z) => z = 11)
+        (fun _ '(x, y, z) => z = 42 /\
+                            Nat.even x = true /\
+                            negb (Nat.even y) = true)
+        example_3_1_ST.
+    Proof.
+      autounfold with mst. cbn; intros.
+      (* This does not seem very automatic; can an SMT solver work here? *)
+      destruct s as [[x y] z].
+      exists (x, y, 11). split; auto; intros. exists (x, y, 11).
+      destruct (Nat.even x); destruct (Nat.even y);
+        hauto lq: on drew: off.
+    Qed.
+
+    Theorem example_3_1_correct :
+      Correct
+        (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
+        (fun _ _ '(x, y, z) => z = 42)
+        example_3_1_ST.
+    Proof.
+      autounfold with mst. cbn. intros.
+      destruct s0 as [[x y] z].
+      destruct s as [[x' y'] z'].
+      exists (x, y, z).
+      destruct (Nat.even x); destruct (Nat.even y); simpl.
+    Admitted.
+
+    (* This is the old thing with Dijkstra monads. *)
+    Theorem example_3_1_dijkstra :
+      VerifyWF example_3_1_ST example_3_1_state (@obsWFST _).
+    Proof.
+      unfold example_3_1_ST, example_3_1_state.
+      apply Verify_bind_WF; [ apply Verify_get_WF | ].
+      intros [[? ?] ?].
+      destruct (Nat.even n) eqn:Hn.
+      destruct (Nat.even n0) eqn:Hn0; cbn.
+      - apply Verify_ret_WF.
+      - apply Verify_put_WF.
+      - apply Verify_ret_WF.
+    Qed.
+
+    (* This is the final theorem we want that relates [assumes] and [achieves]
+       with effect observation. We only need to compose the above two proofs to
+       obtain this. *)
+    Theorem example_3_1_final :
+      forall x' y' z',
+        z' = 42 ->
+        Nat.even x' = true ->
+        negb (Nat.even y') = true ->
+      exists x y z, runState example_3_1_state (x, y, z) = (tt, (x', y', z')) /\ z = 11.
+    Proof.
+      pose proof (example_3_1_incorrect) as HI.
+      pose proof (example_3_1_dijkstra)  as HV.
+      intros. specialize (HI tt (x', y', z') ltac:(hauto lq: on)).
+      destruct HI as [[[x y] z] [HI ?]]. exists x, y, z.
+      eapply HV. apply HI.
+    Qed.
+
+    (* incorrectness conditions -> effect observation *)
+    (* incorrectness conditions -> spec monad -> effect observation *)
+    (* Hoare logic? *)
+
+End OHearnExample.
+
+
+(* But we can prove the following if we use [WFST], which has an additional
+   invariant. *)
+
+Program Definition IncorrectWF {R S}
+  (presumes : S -> Prop)
+  (achieves: S -> R -> S -> Prop)
+  (w : WFST S R) : Prop :=
+  forall r s, exists s0,
+    (presumes s0 -> achieves s0 r s ->
+     proj1_sig (w s0 (presumes s0) r s)) /\
+      presumes s0.
+
+
+Hint Unfold IncorrectWF : mst.
 
 (* If we have an [achieves] that talks about initial states, not all reasoning
    principles of incorrectness logic follow. *)
-Module ReasoningRules.
+Module BadReasoningRules.
 
   Theorem weaken_pre :
     forall {S R} P P' Q (m : WFST S R),
@@ -264,237 +449,4 @@ Module ReasoningRules.
     apply H3.
     (** This is agreement, but it is not provable. *)
   Abort.
-End ReasoningRules.
-
-(* The one where [achieves] does not talk about the initial state works fine. *)
-
-Module ReasoningRules'.
-
-  Theorem weaken_pre :
-    forall {S R} P P' Q (m : WFST S R),
-      Incorrect' P Q m ->
-      (forall (s : S), P s -> P' s) ->
-      Incorrect' P' Q m.
-  Proof.
-    autounfold with mst. intros.
-    sauto q: on.
-  Qed.
-
-  Theorem strengthen_pre :
-    forall {S R} P P' Q (m : WFST S R),
-      Correct P Q m ->
-      (forall (s0 : S), P' s0 -> P s0) ->
-      Correct P' Q m.
-  Proof.
-    autounfold with mst. intros.
-    simpl in H. simpl in H1.
-    apply H.
-    intro sp.
-    specialize H1 with sp.
-    assumption.
-  Qed.
-
-  Theorem strengthen_post :
-    forall {S R} P Q Q' (m : WFST S R),
-      Incorrect' P Q m ->
-      (forall r (s : S), Q' r s -> Q r s) ->
-      Incorrect' P Q' m.
-  Proof.
-    autounfold with mst. intros.
-    sfirstorder.
-  Qed.
-
-  Theorem weaken_post :
-    forall {S R} P Q Q' (m : WFST S R),
-      Correct P Q m ->
-      (forall s0 r s1, Q s0 r s1 -> Q' s0 r s1) ->
-      Correct P Q' m.
-  Proof.
-    autounfold with mst. simpl. intros.
-    apply H.
-    intros.
-    specialize H1 with sp.
-    specialize H2 with s0 pre r s.
-  Abort.
-
-  Theorem post_disj_intro :
-    forall {S R} P Q1 Q2 (m : WFST S R),
-    Incorrect' P Q1 m ->
-    Incorrect' P Q2 m ->
-    Incorrect' P (fun r s => Q1 r s \/ Q2 r s) m.
-  Proof.
-    autounfold with mst. intros.
-    sfirstorder.
-  Qed.
-
-  Theorem post_disj_elim :
-    forall {S R} P Q1 Q2 (m : WFST S R),
-    Incorrect' P (fun r s => Q1 r s \/ Q2 r s) m ->
-    Incorrect' P Q1 m /\
-    Incorrect' P Q2 m.
-  Proof.
-    autounfold with mst. intros.
-    sfirstorder.
-  Qed.
-
-  Theorem agreement' :
-    forall {S R} (m : WFST S R) u u' o o',
-      Incorrect' u u' m ->
-      (forall s0, u s0 -> o s0) ->
-      Correct' o o' m ->
-      (forall r s1, u' r s1 -> o' r s1).
-  Proof.
-    autounfold with mst.
-    intros.
-    simpl in H1.
-    assert (Incorrect' o u' m). {
-      apply (weaken_pre _ H H0).
-    }
-    clear H. 
-    clear H0.
-    unfold Incorrect' in H1.
-    simpl in H1.
-    autounfold with mst in H3.
-    specialize H3 with r s1.
-    apply H3 in H2.
-    clear H3.
-    destruct H2 as [s0 [H0 Hos0]].
-    specialize H1 with s0 (o s0) r s1.
-  Admitted.
-
-  Theorem denial' :
-    forall {S R} (m : WFST S R) u u' o o',
-      (Incorrect' u u' m /\
-       (forall s0, u s0 -> o s0) /\
-       ~(forall r s, u' r s -> o' r s)) ->
-      ~(Correct' o o' m).
-  Proof.
-    (* autounfold with mst. *)
-    unfold not.
-    intros.
-    destruct H as [H1 [H2 H3]].
-    apply H3.
-    apply (agreement' H1 H2 H0).
-  Qed.
-
-  Theorem agreement :
-    forall {S R} (m : WFST S R) u u' o o',
-      Incorrect' u u' m ->
-      (forall s0, u s0 -> o s0) ->
-      Correct o o' m ->
-      (forall r s1, u' r s1 -> (exists s0, o' s0 r s1)).
-  Proof.
-    autounfold with mst.
-    intros.
-    assert (Incorrect' o u' m). {
-      apply (weaken_pre _ H H0).
-    }
-    clear H. clear H0.
-    unfold Incorrect' in H1.
-    simpl in H1.
-    autounfold with mst in H3.
-    specialize H3 with r s1.
-    apply H3 in H2.
-    destruct H2 as [s0 H0].
-    specialize H1 with s0 (o s0) r s1.
-    (* sauto q: on. *)
-  Admitted.
-
-  Theorem denial :
-    forall {S R} (m : WFST S R) u u' o o',
-      (Incorrect' u u' m /\
-       (forall s0, u s0 -> o s0) /\
-       ~(forall r s1, u' r s1 -> (exists s0, o' s0 r s1))) ->
-      ~(Correct o o' m).
-  Proof.
-    (* autounfold with mst. *)
-    unfold not.
-    intros.
-    destruct H as [H1 [H2 H3]].
-    apply H3.
-    apply (agreement H1 H2 H0).
-  Qed.
-
-End ReasoningRules'.
-
-Module OHearnExample.
-
-    Definition example_3_1_ST : WFST (nat * nat * nat) unit :=
-      '(x, y, z) <- get ;;
-        if Nat.even x then
-          if negb (Nat.even y) then put (x, y, 42) else ret tt
-        else ret tt.
-
-    Definition example_3_1_state : state (nat * nat * nat) unit :=
-      '(x, y, z) <- get ;;
-        if Nat.even x then
-          if negb (Nat.even y) then put (x, y, 42) else ret tt
-        else ret tt.
-
-    (* The new incorrectness reasoning that relates [presumes] and [achieves]
-       with specification monad, but not effect observations yet! *)
-    Theorem example_3_1_incorrect :
-      Incorrect'
-        (fun '(x, y, z) => z = 11)
-        (fun _ '(x, y, z) => z = 42 /\
-                            Nat.even x = true /\
-                            negb (Nat.even y) = true)
-        example_3_1_ST.
-    Proof.
-      autounfold with mst. cbn; intros.
-      (* This does not seem very automatic; can an SMT solver work here? *)
-      destruct s as [[x y] z].
-      exists (x, y, 11). split; auto; intros. exists (x, y, 11).
-      destruct (Nat.even x); destruct (Nat.even y);
-        hauto lq: on drew: off.
-    Qed.
-
-    Theorem example_3_1_correct :
-      Correct
-        (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
-        (fun _ _ '(x, y, z) => z = 42)
-        example_3_1_ST.
-    Proof.
-      autounfold with mst. cbn. intros.
-      destruct s0 as [[x y] z].
-      destruct s as [[x' y'] z'].
-      exists (x, y, z).
-      destruct (Nat.even x); destruct (Nat.even y); simpl.
-    Admitted.
-
-    (* This is the old thing with Dijkstra monads. *)
-    Theorem example_3_1_dijkstra :
-      VerifyWF example_3_1_ST example_3_1_state (@obsWFST _).
-    Proof.
-      unfold example_3_1_ST, example_3_1_state.
-      apply Verify_bind_WF; [ apply Verify_get_WF | ].
-      intros [[? ?] ?].
-      destruct (Nat.even n) eqn:Hn.
-      destruct (Nat.even n0) eqn:Hn0; cbn.
-      - apply Verify_ret_WF.
-      - apply Verify_put_WF.
-      - apply Verify_ret_WF.
-    Qed.
-
-    (* This is the final theorem we want that relates [assumes] and [achieves]
-       with effect observation. We only need to compose the above two proofs to
-       obtain this. *)
-    Theorem example_3_1_final :
-      forall x' y' z',
-        z' = 42 ->
-        Nat.even x' = true ->
-        negb (Nat.even y') = true ->
-      exists x y z, runState example_3_1_state (x, y, z) = (tt, (x', y', z')) /\ z = 11.
-    Proof.
-      pose proof (example_3_1_incorrect) as HI.
-      pose proof (example_3_1_dijkstra)  as HV.
-      intros. specialize (HI tt (x', y', z') ltac:(hauto lq: on)).
-      destruct HI as [[[x y] z] [HI ?]]. exists x, y, z.
-      eapply HV. apply HI.
-    Qed.
-
-    (* incorrectness conditions -> effect observation *)
-    (* incorrectness conditions -> spec monad -> effect observation *)
-    (* Hoare logic? *)
-
-End OHearnExample.
+End BadReasoningRules.
