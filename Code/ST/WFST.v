@@ -130,11 +130,37 @@ Program Definition Incorrect' {R S}
     exists s0, w s0 (presumes s0) r s /\ presumes s0.
 
 
+Program Definition pp2sp0 {S A}
+  (pre : S -> Prop)
+  (post : S -> A -> S -> Prop) : WFST S A :=
+  fun s0 q r s1 =>
+    q /\ (pre s0 -> post s0 r s1).
+
 Program Definition pp2sp {S A}
   (pre : S -> Prop)
   (post : S -> A -> S -> Prop) : WFST S A :=
-  fun s0 pre' r s1 =>
-    pre' /\ (pre s0 -> post s0 r s1).
+  fun s0 q r s1 =>
+    forall (sp : WFST S A),
+      (forall s0' q' r' s1', q' /\ post s0' r' s1' -> proj1_sig (proj1_sig sp s0' q' r' s1')) ->
+        proj1_sig (proj1_sig sp s0 q r s1).
+  Next Obligation.
+    specialize H with (pp2sp0 pre post).
+    cbv in H.
+    apply H.
+    sfirstorder.
+  Qed.
+  Next Obligation.
+    specialize H0 with sp.
+    assert (forall (s0 : S) (p q : Prop) (r : A) (s : S),
+(p -> q) -> proj1_sig (proj1_sig sp s0 p r s) -> proj1_sig (proj1_sig sp s0 q r s)). {
+      destruct sp as [m mon].
+      apply mon.
+    }
+    apply (H2 s0 p q r s);
+    sfirstorder.
+  Qed.
+
+    (* pre' /\ (pre s0 -> post s0 r s1). *)
 
 Program Definition pp2sp' {S A}
   (pre : S -> Prop)
@@ -254,6 +280,20 @@ Module ReasoningRules'.
     sauto q: on.
   Qed.
 
+  Theorem strengthen_pre :
+    forall {S R} P P' Q (m : WFST S R),
+      Correct P Q m ->
+      (forall (s0 : S), P' s0 -> P s0) ->
+      Correct P' Q m.
+  Proof.
+    autounfold with mst. intros.
+    simpl in H. simpl in H1.
+    apply H.
+    intro sp.
+    specialize H1 with sp.
+    assumption.
+  Qed.
+
   Theorem strengthen_post :
     forall {S R} P Q Q' (m : WFST S R),
       Incorrect' P Q m ->
@@ -263,6 +303,19 @@ Module ReasoningRules'.
     autounfold with mst. intros.
     sfirstorder.
   Qed.
+
+  Theorem weaken_post :
+    forall {S R} P Q Q' (m : WFST S R),
+      Correct P Q m ->
+      (forall s0 r s1, Q s0 r s1 -> Q' s0 r s1) ->
+      Correct P Q' m.
+  Proof.
+    autounfold with mst. simpl. intros.
+    apply H.
+    intros.
+    specialize H1 with sp.
+    specialize H2 with s0 pre r s.
+  Abort.
 
   Theorem post_disj_intro :
     forall {S R} P Q1 Q2 (m : WFST S R),
@@ -289,10 +342,11 @@ Module ReasoningRules'.
       Incorrect' u u' m ->
       (forall s0, u s0 -> o s0) ->
       Correct' o o' m ->
-      (forall r s, u' r s -> o' r s).
+      (forall r s1, u' r s1 -> o' r s1).
   Proof.
     autounfold with mst.
     intros.
+    simpl in H1.
     assert (Incorrect' o u' m). {
       apply (weaken_pre _ H H0).
     }
@@ -301,10 +355,11 @@ Module ReasoningRules'.
     unfold Incorrect' in H1.
     simpl in H1.
     autounfold with mst in H3.
-    specialize H3 with r s.
+    specialize H3 with r s1.
     apply H3 in H2.
-    destruct H2 as [s0 H0].
-    specialize H1 with s0 (o s0) r s.
+    clear H3.
+    destruct H2 as [s0 [H0 Hos0]].
+    specialize H1 with s0 (o s0) r s1.
   Admitted.
 
   Theorem denial' :
@@ -368,13 +423,13 @@ Module OHearnExample.
       '(x, y, z) <- get ;;
         if Nat.even x then
           if negb (Nat.even y) then put (x, y, 42) else ret tt
-        else put (x, y, 42).
+        else ret tt.
 
     Definition example_3_1_state : state (nat * nat * nat) unit :=
       '(x, y, z) <- get ;;
         if Nat.even x then
           if negb (Nat.even y) then put (x, y, 42) else ret tt
-        else put (x, y, 42).
+        else ret tt.
 
     (* The new incorrectness reasoning that relates [presumes] and [achieves]
        with specification monad, but not effect observations yet! *)
@@ -403,9 +458,8 @@ Module OHearnExample.
       autounfold with mst. cbn. intros.
       destruct s0 as [[x y] z].
       destruct s as [[x' y'] z'].
-      exists (x, y, z). exists (x, y, z').
-      destruct H.
-      + destruct (Nat.even x); destruct (Nat.even y); simpl.
+      exists (x, y, z).
+      destruct (Nat.even x); destruct (Nat.even y); simpl.
     Admitted.
 
     (* This is the old thing with Dijkstra monads. *)
@@ -415,10 +469,11 @@ Module OHearnExample.
       unfold example_3_1_ST, example_3_1_state.
       apply Verify_bind_WF; [ apply Verify_get_WF | ].
       intros [[? ?] ?].
-      destruct (Nat.even n) eqn:Hn; [ | apply Verify_put_WF ].
+      destruct (Nat.even n) eqn:Hn.
       destruct (Nat.even n0) eqn:Hn0; cbn.
       - apply Verify_ret_WF.
       - apply Verify_put_WF.
+      - apply Verify_ret_WF.
     Qed.
 
     (* This is the final theorem we want that relates [assumes] and [achieves]
