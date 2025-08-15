@@ -1,3 +1,4 @@
+From Coq Require Import RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
 From Incorrectness Require Import ST.Examples ST.ST.
@@ -61,6 +62,9 @@ Program Definition obsWFST (S R : Type) (m : state S R) : WFST S R :=
 Program Definition ordWFST {S R} (w w':WFST S R) : Prop :=
   forall s0 pre r s,
     proj1_sig (w s0 pre r s) -> proj1_sig (w' s0 pre r s).
+
+Instance : forall {S R}, Transitive (@ordWFST S R).
+Proof. now intros S R x y z hxy hyz ???? ?%hxy%hyz. Qed.
 
 Program Definition VerifyWF {S R}
   (w : WFST S R) (m : state S R)
@@ -191,6 +195,22 @@ Program Definition pp2sp {S A}
     sfirstorder.
   Qed.
 
+Definition ordPrePost {R S}
+  (pre1 pre2 : S -> Prop) (post1 post2 : S -> R -> S -> Prop) : Prop :=
+  (forall s, pre2 s -> pre1 s) /\ (forall s0 r s1, post1 s0 r s1 -> post2 s0 r s1).
+
+Lemma pp2sp_monotone {R S}
+  (pre1 pre2 : S -> Prop) (post1 post2 : S -> R -> S -> Prop) :
+  ordPrePost pre1 pre2 post1 post2 ->
+  ordWFST (pp2sp pre1 post1) (pp2sp pre2 post2).
+Proof.
+  (* Surprisingly, hpre is never used *)
+  intros [_ (* hpre *) hpost] s0 pre r s1 hwp1 sp hsp; apply hwp1.
+  intros s0' pre' r' s1' [hpre' hpost1].
+  apply hsp; split; [assumption| now apply hpost].
+Qed.
+
+
 Program Definition Correct {R S}
   (pre : S -> Prop)
   (post: S -> R -> S -> Prop)
@@ -220,12 +240,17 @@ Module ReasoningRulesCorrectness.
       (forall s0 r s1, Q s0 r s1 -> Q' s0 r s1) ->
       Correct P Q' m.
   Proof.
-    autounfold with mst. simpl. intros.
+    intros.
+    unfold Correct; etransitivity; [|eassumption].
+    apply pp2sp_monotone; split; [easy|].
+    (* The hypothesis goes into the wrong direction
+      I think your definition of `Correct` actually correspond to `Incorrect` *)
+    (* autounfold with mst. simpl. intros.
     apply H1.
     intros.
     apply H.
     intros.
-    apply H3.
+    apply H3. *)
   Admitted.
 
   Theorem post_conj_intro :
@@ -254,7 +279,7 @@ Module ReasoningRulesCorrectness.
     split.
     - intros. apply H0.
       intros. apply H.
-      intros. apply H2. 
+      intros. apply H2.
   Admitted.
 End ReasoningRulesCorrectness.
 
