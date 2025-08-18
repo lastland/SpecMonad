@@ -93,8 +93,9 @@ Module Examples.
       autounfold with mst. cbn; intros.
       (* This does not seem very automatic; can an SMT solver work here? *)
       destruct s as [[x y] z].
-      exists (x, y, 11). split; auto; intros. split. reflexivity.
-      unfold getWPST, putWPST, retWPST, bindWPST.
+      exists (x, y, 11). split; auto; intros; simpl. 
+      apply H0. split. reflexivity.
+      autounfold with mst. cbn; intros.
       destruct (Nat.even x); destruct (Nat.even y); destruct r;
       hauto lq: on drew: off.
     Qed.
@@ -110,7 +111,8 @@ Module Examples.
       autounfold with mst. cbn; intros.
       (* This does not seem very automatic; can an SMT solver work here? *)
       destruct s as [[x y] z].
-      exists (x, y, 11). split; auto; intros. split. reflexivity.
+      exists (x, y, 11). split; auto; intros. apply H0. split. reflexivity.
+      autounfold with mst.
       destruct (Nat.even x); destruct (Nat.even y); destruct r; simpl; intros.
       + rewrite H.
     Abort.
