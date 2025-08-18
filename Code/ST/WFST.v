@@ -210,12 +210,29 @@ Proof.
   apply hsp; split; [assumption| now apply hpost].
 Qed.
 
+Lemma pp2sp_post_conj_intro {R S}
+  (P : S -> Prop)
+  (Q1 Q2 : S -> R -> S -> Prop) :
+  forall s0 pre r s1,
+    proj1_sig (proj1_sig (pp2sp P Q1) s0 pre r s1) /\ 
+    proj1_sig (proj1_sig (pp2sp P Q2) s0 pre r s1) -> 
+    proj1_sig (proj1_sig (pp2sp P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1)) s0 pre r s1).
+  Proof.
+    intros.
+    destruct H as [H1 H2].
+    simpl.
+    intros.
+    simpl in H1. specialize H1 with sp.
+    simpl in H2. specialize H2 with sp.
+    specialize H with s0 pre r s1. 
+    apply H.
+  Admitted.
 
 Program Definition Correct {R S}
   (pre : S -> Prop)
   (post: S -> R -> S -> Prop)
   (w : WFST S R) : Prop :=
-  ordWFST (pp2sp pre post) w.
+  ordWFST w (pp2sp pre post).
 
 Hint Unfold Correct pp2sp : mst.
 
@@ -229,9 +246,8 @@ Module ReasoningRulesCorrectness.
     autounfold with mst. intros.
     simpl in H. simpl in H1.
     apply H.
-    intro sp.
-    specialize H1 with sp.
-    assumption.
+    sfirstorder.
+    sfirstorder.
   Qed.
 
   Theorem weaken_post :
@@ -240,18 +256,11 @@ Module ReasoningRulesCorrectness.
       (forall s0 r s1, Q s0 r s1 -> Q' s0 r s1) ->
       Correct P Q' m.
   Proof.
-    intros.
-    unfold Correct; etransitivity; [|eassumption].
-    apply pp2sp_monotone; split; [easy|].
-    (* The hypothesis goes into the wrong direction
-      I think your definition of `Correct` actually correspond to `Incorrect` *)
-    (* autounfold with mst. simpl. intros.
-    apply H1.
-    intros.
+    autounfold with mst. simpl. intros.
     apply H.
-    intros.
-    apply H3. *)
-  Admitted.
+    sfirstorder.
+    sfirstorder.
+  Qed.
 
   Theorem post_conj_intro :
     forall {S R} P Q1 Q2 (m : WFST S R),
@@ -259,13 +268,14 @@ Module ReasoningRulesCorrectness.
     Correct P Q2 m ->
     Correct P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1) m.
   Proof.
-    autounfold with mst. simpl. intros.
-    apply H1.
     intros.
-    apply H.
-    intros.
-    apply H3.
-    destruct H2 as [Hq [HQ1 HQ2]].
+    unfold Correct in *.
+    unfold ordWFST in *.
+    intros s0 H_P.
+    intros r s1 Hms0. 
+    specialize (H s0 H_P r s1 Hms0).
+    specialize (H0 s0 H_P r s1 Hms0).
+    apply pp2sp_post_conj_intro.
     sfirstorder.
   Qed.
 
@@ -277,10 +287,9 @@ Module ReasoningRulesCorrectness.
   Proof.
     autounfold with mst. simpl. intros.
     split.
-    - intros. apply H0.
-      intros. apply H.
-      intros. apply H2.
-  Admitted.
+    - intros. apply H. sfirstorder. sfirstorder.
+    - intros. apply H. sfirstorder. sfirstorder.
+  Qed.
 End ReasoningRulesCorrectness.
 
 Module ReasoningRulesAgreement.
@@ -292,12 +301,19 @@ Module ReasoningRulesAgreement.
       (forall r s1, u' r s1 -> (exists s0, o' s0 r s1)).
   Proof.
     autounfold with mst. simpl. intros.
-    (* assert (Incorrect o u' m). {
-      apply (weaken_pre _ H H0).
+
+    assert (Incorrect o u' m). {
+      apply (ReasoningRulesIncorrectness.weaken_pre _ H H0).
     }
     clear H. clear H0.
-    unfold Incorrect in H3. *)
-  Admitted.
+    unfold Incorrect in H3.
+    specialize H3 with r s1.
+    apply H3 in H2. clear H3.
+    destruct H2 as [s0 [Hpre H0]].
+    exists s0.
+    specialize H1 with s0 (o s0) r s1 (pp2sp0 o o').
+    sauto q: on.    
+  Qed.
 
   Theorem denial :
     forall {S R} (m : WFST S R) u u' o o',
@@ -355,10 +371,11 @@ Module OHearnExample.
         example_3_1_ST.
     Proof.
       autounfold with mst. cbn. intros.
-      destruct s0 as [[x y] z].
-      destruct s as [[x' y'] z'].
-      exists (x, y, z).
-      destruct (Nat.even x); destruct (Nat.even y); simpl.
+      (* destruct s0 as [[x y] z]. *)
+      destruct s as [[x'' y''] z''].
+      destruct H as [[[x y] z] [[[x' y'] z'] H]].
+      apply H0.
+      destruct (Nat.even x); destruct (Nat.even y); simpl in H.
     Admitted.
 
     (* This is the old thing with Dijkstra monads. *)
