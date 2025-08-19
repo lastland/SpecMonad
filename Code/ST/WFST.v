@@ -171,6 +171,11 @@ Program Definition pp2sp0 {S A}
   fun s0 q r s1 =>
     q /\ (pre s0 -> post s0 r s1).
 
+(** 
+  pp2sp factors through the simpler pred specification monad that only captures the postcondition.
+  Kenji proved that forward predicate transformers and predicate are in bijection.
+*)
+
 Program Definition pp2sp {S A}
   (pre : S -> Prop)
   (post : S -> A -> S -> Prop) : WFST S A :=
@@ -374,9 +379,10 @@ Module OHearnExample.
       (* destruct s0 as [[x y] z]. *)
       destruct s as [[x'' y''] z''].
       destruct H as [[[x y] z] [[[x' y'] z'] H]].
-      apply H0.
+      apply H0. 
       destruct (Nat.even x); destruct (Nat.even y); simpl in H.
-    Admitted.
+      (** We do not have the pre-condition. *)
+    Abort.
 
     (* This is the old thing with Dijkstra monads. *)
     Theorem example_3_1_dijkstra :
