@@ -69,9 +69,31 @@ Program Definition IncorrectWP {R S}
   (presumes : S -> Prop)
   (achieves : R -> S -> Prop)
   (w : WPST S R) : Prop :=
-  Incorrect' presumes achieves (wp2sp w).
+  Incorrect presumes achieves (wp2sp w).
 
 Hint Unfold CorrectWP IncorrectWP wp2sp : mst.
+
+Lemma wp_ord_wp2sp {S R}  (m:WPST S R) P Q :
+    CorrectWP P Q m ->
+    Correct P Q (wp2sp m).
+Proof.
+  unfold CorrectWP.
+  unfold Correct.
+Admitted.
+
+Theorem agreement :
+  forall {S R} (m : WPST S R) u u' o o',
+    IncorrectWP u u' m ->
+    (forall s0, u s0 -> o s0) ->
+    CorrectWP o o' m ->
+    (forall r s1, u' r s1 -> (exists s0, o' s0 r s1)).
+Proof.
+  intros.
+  unfold IncorrectWP in H.
+  apply wp_ord_wp2sp in H1. (** this is admitted *)
+  apply (ReasoningRulesAgreement.agreement H H0 H1).
+  sfirstorder.
+Qed.
 
 Module Examples.
 
