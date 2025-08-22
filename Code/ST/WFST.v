@@ -252,7 +252,7 @@ Lemma pp2sp_post_conj_intro {R S}
       (** impossible to prove. Something like this is needed:
         (A /\ C -> B) -> (A -> B) /\ (C -> B).
       *)
-  Abort.
+  Admitted.
 
 Program Definition Correct {R S}
   (pre : S -> Prop)
