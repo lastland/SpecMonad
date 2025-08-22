@@ -215,26 +215,11 @@ Proof.
   apply hsp; split; [assumption| now apply hpost].
 Qed.
 
-Lemma test A B C  :
-  (A -> B) ->
-  (C -> B) ->
-  (A /\ C -> B).
-Proof.
-    sfirstorder.
-Qed.
+Lemma helper_lemma1 A B C  :
+  (A -> B) -> (C -> B) -> (A /\ C -> B).
+Proof. sfirstorder. Qed.
 
-(* Lemma test' A B C  :
-  (A /\ C -> B) ->
-  (A -> B) /\ (C -> B).
-Proof.
-    intros.
-    split.
-    - intros. apply H. split; assumption.
-    - intros. apply H. split; assumption.
-Qed. *)
-
-
-Lemma test2 {A B C D} (P1 P2:A -> B -> C -> D -> Prop) (Q:Prop):
+Lemma helper_lemma2 {A B C D} (P1 P2:A -> B -> C -> D -> Prop) (Q:Prop):
   ((forall a b c d, P1 a b c d) /\ (forall a b c d, P2 a b c d) -> Q) ->
   ((forall a b c d, P1 a b c d /\ P2 a b c d) -> Q).
 Proof.
@@ -259,8 +244,8 @@ Lemma pp2sp_post_conj_intro {R S}
     intros.
     simpl in H1. specialize H1 with sp.
     simpl in H2. specialize H2 with sp.
-    pose proof (test H1 H2) as H3. clear H1 H2.
-    apply test2 in H3.
+    pose proof (helper_lemma1 H1 H2) as H3. clear H1 H2.
+    apply helper_lemma2 in H3.
     + assumption.
     + clear H3. intros s0' q' r' s1'.
       specialize H with s0' q' r' s1'.
