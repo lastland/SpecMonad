@@ -215,6 +215,36 @@ Proof.
   apply hsp; split; [assumption| now apply hpost].
 Qed.
 
+Lemma test A B C  :
+  (A -> B) ->
+  (C -> B) ->
+  (A /\ C -> B).
+Proof.
+    sfirstorder.
+Qed.
+
+(* Lemma test' A B C  :
+  (A /\ C -> B) ->
+  (A -> B) /\ (C -> B).
+Proof.
+    intros.
+    split.
+    - intros. apply H. split; assumption.
+    - intros. apply H. split; assumption.
+Qed. *)
+
+
+Lemma test2 {A B C D} (P1 P2:A -> B -> C -> D -> Prop) (Q:Prop):
+  ((forall a b c d, P1 a b c d) /\ (forall a b c d, P2 a b c d) -> Q) ->
+  ((forall a b c d, P1 a b c d /\ P2 a b c d) -> Q).
+Proof.
+    intros.
+    apply H.
+    split.
+    + intros. specialize H0 with a b c d. sfirstorder.
+    + intros. specialize H0 with a b c d. sfirstorder.
+Qed.
+
 Lemma pp2sp_post_conj_intro {R S}
   (P : S -> Prop)
   (Q1 Q2 : S -> R -> S -> Prop) :
@@ -229,9 +259,15 @@ Lemma pp2sp_post_conj_intro {R S}
     intros.
     simpl in H1. specialize H1 with sp.
     simpl in H2. specialize H2 with sp.
-    specialize H with s0 pre r s1. 
-    apply H.
-  Admitted.
+    pose proof (test H1 H2) as H3. clear H1 H2.
+    apply test2 in H3.
+    + assumption.
+    + clear H3. intros s0' q' r' s1'.
+      specialize H with s0' q' r' s1'.
+      (** impossible to prove. Something like this is needed:
+        (A /\ C -> B) -> (A -> B) /\ (C -> B).
+      *)
+  Abort.
 
 Program Definition Correct {R S}
   (pre : S -> Prop)
