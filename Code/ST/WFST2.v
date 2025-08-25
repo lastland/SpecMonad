@@ -66,7 +66,7 @@ Program Definition ordWFST {S R} (w w':WFST S R) : Prop :=
     (** This definition should be like this, which
         is flipped compared to weakest-precondition because (Cezar's guess) these are post-conditions *)
 
-    (* The fli was necessary to be able to prove the following law (Hoare Logic): {P}c{Q} /\ Q -> {Q'} -> {P}c{Q'} *)
+    (* The flip was necessary to be able to prove the following law (Hoare Logic): {P}c{Q} /\ Q -> Q' -> {P}c{Q'} *)
 
 Instance : forall {S R}, Transitive (@ordWFST S R).
 Proof. now intros S R x y z hxy hyz ???? ?%hyz%hxy. Qed.
