@@ -201,30 +201,18 @@ Proof.
 Qed.
 
 Lemma test_pp2sp0_loop {S R} (sp:WFST S R) :
-  (* let (P, Q) := sp2pp sp in *)
-  ordWFST (pp2sp0 (fst (sp2pp sp)) (snd (sp2pp sp))) sp.
+  let (P, Q) := sp2pp sp in
+  ordWFST (pp2sp0 P Q) sp.
 Proof.
   unfold ordWFST. 
-  (* simpl. *)
-  intros.
   simpl.
+  intros.
   split.
   + destruct sp. sfirstorder.
   + intros.
     destruct H0 as [pre' [Hpre' H0]].
     destruct sp.
- 
-(* Lemma test_pp2sp0 {S R} P (Q:S -> R -> S -> Prop) :
-  let (P', Q') := sp2pp (pp2sp0 P Q) in
-  ordPrePost P P' Q Q'.
-Proof.
-  unfold ordPrePost.
-  split.
-  + intros s0 Hpre. destruct Hpre as [P' [H HP']].
-  unfold pp2sp0 in H. simpl in H.
-  admit.
-  + intros. unfold pp2sp0. simpl. sfirstorder.
-Abort. *)
+Abort.
   
 
 Program Definition Correct {R S}
