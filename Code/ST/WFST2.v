@@ -173,6 +173,43 @@ Program Definition pp2sp0 {S A}
   fun s0 q r s1 =>
     q /\ (pre s0 -> post s0 r s1).
 
+Definition ordPrePost {R S}
+  (pre1 pre2 : S -> Prop) (post1 post2 : S -> R -> S -> Prop) : Prop :=
+  (forall s, pre2 s -> pre1 s) /\ (forall s0 r s1, post1 s0 r s1 -> post2 s0 r s1).
+
+Definition sp2pp {R S} (sp:WFST S R) : (S -> Prop) * (S -> R -> S -> Prop) :=
+  let post := fun s0 x s1 => forall (pre : Prop), pre -> proj1_sig (proj1_sig sp s0 pre x s1) in
+  let pre := fun s0 => exists pre, (forall x s1, post s0 x s1 -> proj1_sig (proj1_sig sp s0 pre x s1)) /\ pre in
+  (pre, post).
+
+Lemma test_pp2sp0' {S R} P (Q:S -> R -> S -> Prop) :
+  ordPrePost (fst (sp2pp (pp2sp0 P Q))) P (snd (sp2pp (pp2sp0 P Q))) Q.
+Proof.
+  split.
+  + intros s0 Hpre. exists (P s0). split.
+    ++ intros. apply H. sfirstorder.
+    ++ sfirstorder.
+  + intros.
+    unfold pp2sp0 in H. unfold sp2pp in H. simpl in H.
+    specialize H with True.
+    apply H.
+    sfirstorder. 
+    admit. (** no P **)
+Abort.
+
+Lemma test_pp2sp0 {S R} P (Q:S -> R -> S -> Prop) :
+  let (P', Q') := sp2pp (pp2sp0 P Q) in
+  ordPrePost P P' Q Q'.
+Proof.
+  unfold ordPrePost.
+  split.
+  + intros s0 Hpre. destruct Hpre as [P' [H HP']].
+  unfold pp2sp0 in H. simpl in H.
+  admit.
+  + intros. unfold pp2sp0. simpl. sfirstorder.
+Abort.
+  
+
 Program Definition Correct {R S}
   (pre : S -> Prop)
   (post: S -> R -> S -> Prop)
@@ -412,10 +449,6 @@ Module ReasoningRulesCorrectnessWithPP2SP.
       apply (H2 s0 p q r s);
       sfirstorder.
     Qed.
-
-  Definition ordPrePost {R S}
-    (pre1 pre2 : S -> Prop) (post1 post2 : S -> R -> S -> Prop) : Prop :=
-    (forall s, pre2 s -> pre1 s) /\ (forall s0 r s1, post1 s0 r s1 -> post2 s0 r s1).
 
   (* Lemma pp2sp_monotone {R S}
     (pre1 pre2 : S -> Prop) (post1 post2 : S -> R -> S -> Prop) :
