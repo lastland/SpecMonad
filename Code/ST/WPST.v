@@ -85,12 +85,17 @@ End WPST.
 
 Hint Unfold getWPST putWPST retWPST bindWPST ordWPST : mst.
 
+Program Definition pp2wp {R S}
+  (pre : S -> Prop)
+  (post: S -> R -> S -> Prop) : WPST S R :=
+  fun p s0 => pre s0 /\ (forall r s1, post s0 r s1 -> p r s1).
+Next Obligation. sfirstorder. Qed.
+
 Program Definition CorrectWP {R S}
   (pre : S -> Prop)
   (post: S -> R -> S -> Prop)
   (w : WPST S R) : Prop :=
-  ordWPST (fun p s0 => pre s0 /\ (forall r s1, post s0 r s1 -> p r s1)) w.
-Next Obligation. sfirstorder. Qed.
+  ordWPST (pp2wp pre post) w.
 
 Program Definition IncorrectWP {R S}
   (presumes : S -> Prop)
@@ -98,7 +103,7 @@ Program Definition IncorrectWP {R S}
   (w : WPST S R) : Prop :=
   Incorrect presumes achieves (wp2sp w).
 
-Hint Unfold CorrectWP IncorrectWP wp2sp : mst.
+Hint Unfold CorrectWP IncorrectWP pp2wp wp2sp : mst.
 
 Lemma wp_ord_wp2sp {S R}  (m:WPST S R) P Q :
     CorrectWP P Q m ->
