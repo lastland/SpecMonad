@@ -62,8 +62,11 @@ Program Definition obsWFST (S R : Type) (m : state S R) : WFST S R :=
 Program Definition ordWFST {S R} (w w':WFST S R) : Prop :=
   forall s0 pre r s,
     proj1_sig (w' s0 pre r s) -> proj1_sig (w s0 pre r s).
+    (* >= *)
     (** This definition should be like this, which
         is flipped compared to weakest-precondition because (Cezar's guess) these are post-conditions *)
+
+    (* The fli was necessary to be able to prove the following law (Hoare Logic): {P}c{Q} /\ Q -> {Q'} -> {P}c{Q'} *)
 
 Instance : forall {S R}, Transitive (@ordWFST S R).
 Proof. now intros S R x y z hxy hyz ???? ?%hyz%hxy. Qed.
@@ -178,26 +181,40 @@ Definition ordPrePost {R S}
   (forall s, pre2 s -> pre1 s) /\ (forall s0 r s1, post1 s0 r s1 -> post2 s0 r s1).
 
 Definition sp2pp {R S} (sp:WFST S R) : (S -> Prop) * (S -> R -> S -> Prop) :=
-  let post := fun s0 x s1 => forall (pre : Prop), pre -> proj1_sig (proj1_sig sp s0 pre x s1) in
-  let pre := fun s0 => exists pre, (forall x s1, post s0 x s1 -> proj1_sig (proj1_sig sp s0 pre x s1)) /\ pre in
+  let post := fun s0 x s1 => forall (pre : Prop), proj1_sig (proj1_sig sp s0 pre x s1) in
+  let pre := fun s0 => exists pre, pre /\ (forall x s1, post s0 x s1 -> proj1_sig (proj1_sig sp s0 pre x s1)) in
   (pre, post).
 
 Lemma test_pp2sp0' {S R} P (Q:S -> R -> S -> Prop) :
-  ordPrePost (fst (sp2pp (pp2sp0 P Q))) P (snd (sp2pp (pp2sp0 P Q))) Q.
+  let (P', Q') := sp2pp (pp2sp0 P Q) in
+  ordPrePost P' P Q' Q.
 Proof.
   split.
   + intros s0 Hpre. exists (P s0). split.
-    ++ intros. apply H. sfirstorder.
+    ++ intros. apply Hpre. 
     ++ sfirstorder.
   + intros.
     unfold pp2sp0 in H. unfold sp2pp in H. simpl in H.
-    specialize H with True.
+    specialize H with (P s0).
     apply H.
     sfirstorder. 
-    admit. (** no P **)
-Abort.
+Qed.
 
-Lemma test_pp2sp0 {S R} P (Q:S -> R -> S -> Prop) :
+Lemma test_pp2sp0_loop {S R} (sp:WFST S R) :
+  (* let (P, Q) := sp2pp sp in *)
+  ordWFST (pp2sp0 (fst (sp2pp sp)) (snd (sp2pp sp))) sp.
+Proof.
+  unfold ordWFST. 
+  (* simpl. *)
+  intros.
+  simpl.
+  split.
+  + destruct sp. sfirstorder.
+  + intros.
+    destruct H0 as [pre' [Hpre' H0]].
+    destruct sp.
+ 
+(* Lemma test_pp2sp0 {S R} P (Q:S -> R -> S -> Prop) :
   let (P', Q') := sp2pp (pp2sp0 P Q) in
   ordPrePost P P' Q Q'.
 Proof.
@@ -207,7 +224,7 @@ Proof.
   unfold pp2sp0 in H. simpl in H.
   admit.
   + intros. unfold pp2sp0. simpl. sfirstorder.
-Abort.
+Abort. *)
   
 
 Program Definition Correct {R S}
