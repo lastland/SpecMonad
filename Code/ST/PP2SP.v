@@ -38,36 +38,6 @@ Section PP2SP.
     fun q r =>
       q /\ (fst pp -> snd pp r).
 
-  Definition sp2pp (sp:mSPost) : PrePost :=
-    let post := fun x => forall (pre : Prop), proj1_sig (proj1_sig sp pre x) in
-    let pre := exists pre, pre /\ (forall x, post x -> proj1_sig (proj1_sig sp pre x)) in
-    (pre, post).
-
-  Lemma loop1 (pp:PrePost):
-    ordPrePost (sp2pp (pp2sp pp)) pp.
-  Proof.
-    destruct pp as [P Q].
-    cbv.
-    split.
-    + exists P. split; sfirstorder.
-    + intros r Hpre.
-      specialize Hpre with P.
-      apply Hpre.
-      sfirstorder. 
-  Qed.
-
-  Lemma loop2 (sp:mSPost) :
-    ordSPost (pp2sp (sp2pp sp)) sp.
-  Proof.
-    split. 
-    + destruct sp. sfirstorder.
-    + intros.
-      destruct H0 as [pre' [Hpre' H0]].
-      simpl.
-      destruct sp.
-      simpl in *.
-  Abort.
-
   Theorem strengthen_pre (P1 P2:Prop) (Q:A -> Prop) :
     forall pre r,
       proj1_sig (proj1_sig (pp2sp (P1, Q)) pre r) -> 
@@ -107,5 +77,71 @@ Section PP2SP.
     cbv.
     sfirstorder.
   Qed.
+
+
+  Definition sp2pp (sp:mSPost) : PrePost :=
+    let post := fun x => forall (pre : Prop), proj1_sig (proj1_sig sp pre x) in
+    let pre := exists pre, pre /\ (forall x, post x -> proj1_sig (proj1_sig sp pre x)) in
+    (pre, post).
+
+  Lemma loop1 (pp:PrePost):
+    ordPrePost (sp2pp (pp2sp pp)) pp.
+  Proof.
+    destruct pp as [P Q].
+    cbv.
+    split.
+    + exists P. split; sfirstorder.
+    + intros r Hpre.
+      specialize Hpre with P.
+      apply Hpre.
+      sfirstorder. 
+  Qed.
+
+  Lemma loop2 (sp:mSPost) :
+    ordSPost (pp2sp (sp2pp sp)) sp.
+  Proof.
+    split. 
+    + destruct sp. sfirstorder.
+    + intros.
+      destruct H0 as [pre' [Hpre' H0]].
+      simpl.
+      destruct sp.
+      simpl in *.
+  Abort.
+
+  (** Trying the version from Kenji's thesis: *)
+  Program Definition pp2sp' (pp:PrePost) : mSPost :=
+    fun q r =>
+      forall (sp : mSPost),
+        (forall q' r', q' /\ snd pp r' -> proj1_sig (proj1_sig sp q' r')) ->
+          proj1_sig (proj1_sig sp q r).
+    Next Obligation.
+      specialize H with (pp2sp pp).
+      cbv in H.
+      apply H.
+      sfirstorder.
+    Qed.
+    Next Obligation.
+      specialize H0 with sp.
+      assert (forall (p q : Prop) (r : A),
+  (p -> q) -> proj1_sig (proj1_sig sp p r) -> proj1_sig (proj1_sig sp q r)). {
+        destruct sp as [m mon].
+        apply mon.
+      }
+      apply (H2 p q r);
+      sfirstorder.
+    Qed.
+
+  Theorem post_conj_intro' (P:Prop) (Q1 Q2:A -> Prop) :
+    forall pre r,
+      proj1_sig (proj1_sig (pp2sp' (P, Q1)) pre r) -> 
+      proj1_sig (proj1_sig (pp2sp' (P, Q2)) pre r) -> 
+      proj1_sig (proj1_sig (pp2sp' (P, (fun r => Q1 r /\ Q2 r))) pre r).
+  Proof.
+    unfold pp2sp'. simpl.
+    intros.
+    specialize H with sp.
+    specialize H0 with sp.
+  Abort.
 
 End PP2SP.
