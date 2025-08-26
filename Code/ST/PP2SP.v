@@ -3,6 +3,15 @@ From Hammer Require Import Hammer Tactics.
 
 Set Implicit Arguments.
 
+(** We want to transform PrePost-conditions to 
+    the Forward Predicate Transformer (SPost) so that
+    the transformation:
+    * satisfies the laws of Hoare logic:
+        {P}c{Q1} /\ {P}c{Q2} <-> {P}c{Q1 /\ Q2}
+        {P1}c{Q} /\ (P2 -> P1) -> {P2}c{Q}
+        {P}c{Q1} /\ (Q1 -> Q2) -> {P}c{Q2}
+    * creates a Galois connection?
+*)
 
 Section PP2SP.
 
@@ -18,6 +27,7 @@ Section PP2SP.
   Definition ordSPost (sp1 sp2:mSPost) : Prop := 
     forall pre r,
       proj1_sig (proj1_sig sp2 pre r) -> proj1_sig (proj1_sig sp1 pre r).
+    (** !!!! Contravariant *)  
 
   Definition PrePost := prod Prop (A -> Prop).
 
@@ -35,16 +45,14 @@ Section PP2SP.
 
   Lemma loop1 (pp:PrePost):
     ordPrePost (sp2pp (pp2sp pp)) pp.
-  Proof.    
+  Proof.
     destruct pp as [P Q].
-    unfold sp2pp. unfold pp2sp. unfold ordPrePost. simpl.
+    cbv.
     split.
-    + intros Hpre. exists P. split.
-      ++ intros. apply Hpre. 
-      ++ sfirstorder.
-    + intros.
-      specialize H with P.
-      apply H.
+    + exists P. split; sfirstorder.
+    + intros r Hpre.
+      specialize Hpre with P.
+      apply Hpre.
       sfirstorder. 
   Qed.
 
@@ -57,6 +65,47 @@ Section PP2SP.
       destruct H0 as [pre' [Hpre' H0]].
       simpl.
       destruct sp.
+      simpl in *.
   Abort.
+
+  Theorem strengthen_pre (P1 P2:Prop) (Q:A -> Prop) :
+    forall pre r,
+      proj1_sig (proj1_sig (pp2sp (P1, Q)) pre r) -> 
+      (P2 -> P1) ->
+      proj1_sig (proj1_sig (pp2sp (P2, Q)) pre r).
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+
+  Theorem weaken_post (P:Prop) (Q1 Q2:A -> Prop) :
+    forall pre r,
+      proj1_sig (proj1_sig (pp2sp (P, Q1)) pre r) -> 
+      (forall r, Q1 r -> Q2 r) ->
+      proj1_sig (proj1_sig (pp2sp (P, Q2)) pre r).
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+
+  Theorem post_conj_elim P Q1 Q2 :
+    forall pre r,
+      proj1_sig (proj1_sig (pp2sp (P, (fun r => Q1 r /\ Q2 r))) pre r) ->
+      proj1_sig (proj1_sig (pp2sp (P, Q1)) pre r) /\
+      proj1_sig (proj1_sig (pp2sp (P, Q2)) pre r).
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+
+  Theorem post_conj_intro (P:Prop) (Q1 Q2:A -> Prop) :
+    forall pre r,
+      proj1_sig (proj1_sig (pp2sp (P, Q1)) pre r) -> 
+      proj1_sig (proj1_sig (pp2sp (P, Q2)) pre r) -> 
+      proj1_sig (proj1_sig (pp2sp (P, (fun r => Q1 r /\ Q2 r))) pre r).
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
 
 End PP2SP.
