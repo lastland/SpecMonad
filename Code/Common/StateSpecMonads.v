@@ -1,5 +1,6 @@
 From Coq Require Import RelationClasses.
 Require Import Coq.Program.Basics.
+From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
 
 Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
@@ -36,7 +37,6 @@ Section ForwardPredicateTransformer.
 End ForwardPredicateTransformer.
 
 Section PredMonad.
-
   Definition Pred S A := S -> A -> S -> Prop.
 
   Program Definition retPred {S A} (a : A) : Pred S A :=
@@ -48,14 +48,34 @@ Section PredMonad.
   Definition ordPred {S A} (P1 P2:Pred S A) : Prop :=
     forall s0 r s1, P2 s0 r s1 -> P1 s0 r s1.
   (** !!!! Contravariant *)
+
+  Instance : forall {S A}, Transitive (@ordPred S A).
+  Proof. cbv. sfirstorder. Qed.
+
+  Program Definition getPred {S} : Pred S S :=
+    fun s0 r s1 => r = s0 /\ s1 = s0.
+
+  Program Definition putPred {S} (s : S) : Pred S unit :=
+    fun s0 r s1 => s1 = s.
+
+  #[global] Instance Monad__Pred {S} : Monad (Pred S) :=
+    {| ret := fun _ => retPred ;
+       bind := fun _ _ => bindPred |}.
+
+  #[global] Instance MonadState__Pred {S} : MonadState S (Pred S) :=
+    {| get := getPred ;
+       put := putPred |}.
 End PredMonad.
 
 Section PrePostMonad.
-
   Definition PrePost S A := prod (S -> Prop) (S -> A -> S -> Prop).
 
   Definition ordPrePost {S A} (pp1 pp2:PrePost S A) : Prop :=
     (forall s0, fst pp2 s0 -> fst pp1 s0) /\ (forall s0 r s1, fst pp2 s0 -> (snd pp1) s0 r s1 -> snd pp2 s0 r s1).
+
+  Instance : forall {S A}, Transitive (@ordPrePost S A).
+  Proof. cbv. intros S A [Px Qx] [Py Qy] [Pz Qz] hxy hyz.
+          sfirstorder. Qed.    
 End PrePostMonad.
 
 Section RelationPred2PrePost.
