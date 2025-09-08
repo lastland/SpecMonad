@@ -7,7 +7,8 @@ Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
 Set Implicit Arguments.
 
 Section ForwardPredicateTransformer.
-  Definition _SPost A := forall (pre : Prop),
+  Definition _SPost A :=
+    forall (pre : Prop),
       A -> {p : Prop | p -> pre}.
 
   Definition SPost A :=
@@ -78,8 +79,26 @@ Section RelationPred2PrePost.
       sfirstorder.
   Qed.
 
+  Lemma loop_p2pp_pp2p' {A} (pp:PrePost A):
+    ordPrePost pp (p2pp (pp2p pp)).
+  Proof.
+    destruct pp as [P Q].
+    cbv.
+    split.
+    + admit. (** impossible to prove **)
+    + intros r Hpre Hpq.
+      sfirstorder.
+  Abort.
+
   Lemma loop_pp2p_p2pp {A} (P:Pred A) :
     ordPred (pp2p (p2pp P)) P.
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+
+  Lemma loop_pp2p_p2pp' {A} (P:Pred A) :
+    ordPred P (pp2p (p2pp P)).
   Proof.
     cbv.
     sfirstorder.
@@ -94,7 +113,7 @@ Section RelationPred2PrePost.
   Qed.
 End RelationPred2PrePost.
 
-Section RelationPred2PrePost.
+Section RelationPred2SPost.
   Program Definition p2sp {A} (P:Pred A) : SPost A :=
     fun pre r => pre /\ P r.
 
@@ -132,7 +151,7 @@ Section RelationPred2PrePost.
   Proof.  
     cbv. destruct sp. sfirstorder.
   Qed.
-End RelationPred2PrePost.
+End RelationPred2SPost.
 
 Section RelationSPost2PrePost.
   Program Definition pp2sp {A} (pp:PrePost A) : SPost A :=
