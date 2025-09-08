@@ -18,13 +18,13 @@ Program Definition obs (S A : Type) (m : state S A) : Pred S A :=
 Program Definition Verify {S A}
   (w : Pred S A) (m : state S A)
   (obs: forall {A}, state S A -> Pred S A) : Prop :=
-  ordPred w (obs m). 
+  ordPred (obs m) w.
 
 Program Definition Correct {S A}
     (pre : S -> Prop)
     (post: S -> A -> S -> Prop)
     (w : Pred S A) : Prop :=
-    ordPred (pp2p (pre,post)) w. 
+    ordPred w (pp2p (pre,post)). 
 
 Program Definition Incorrect {S A}
   (presumes : S -> Prop)
@@ -178,7 +178,7 @@ Module OHearnExample.
       (* This does not seem very automatic; can an SMT solver work here? *)
       destruct s1 as [[x y] z]. destruct r.
       exists (x, y, 11). split; auto; intros. exists (x, y, 11). exists (x, y, 11).
-      destruct (Nat.even x); destruct (Nat.even y); split; cbv; eauto; split; eauto.
+      destruct (Nat.even x); destruct (Nat.even y); split; cbv; eauto; split; eauto; rewrite H.
       + admit.
       + admit.
       + admit. 

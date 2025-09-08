@@ -5,6 +5,8 @@ From Hammer Require Import Hammer Tactics.
 
 Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
 
+Hint Unfold compose : mst.
+
 Set Implicit Arguments.
 
 Section ForwardPredicateTransformer.
@@ -46,9 +48,13 @@ Section ForwardPredicateTransformer.
 
   Definition ordSPost {S A} (sp1 sp2:SPost S A) : Prop :=
     forall s0 pre r s1,
-      proj1_sig (proj1_sig sp2 s0 pre r s1) -> proj1_sig (proj1_sig sp1 s0 pre r s1).
-  (** !!!! Contravariant *)  
+      proj1_sig (proj1_sig sp1 s0 pre r s1) -> proj1_sig (proj1_sig sp2 s0 pre r s1).
+
+  Instance : forall {S A}, Transitive (@ordSPost S A).
+  Proof. cbn. sfirstorder. Qed.
 End ForwardPredicateTransformer.
+
+Hint Unfold getSPost putSPost retSPost bindSPost ordSPost : mst.
 
 Section PredMonad.
   Definition Pred S A := S -> A -> S -> Prop.
@@ -60,8 +66,7 @@ Section PredMonad.
     fun s0 r s1 => exists a s', m s0 a s' /\ k a s' r s1.
 
   Definition ordPred {S A} (P1 P2:Pred S A) : Prop :=
-    forall s0 r s1, P2 s0 r s1 -> P1 s0 r s1.
-  (** !!!! Contravariant *)
+    forall s0 r s1, P1 s0 r s1 -> P2 s0 r s1.
 
   Instance : forall {S A}, Transitive (@ordPred S A).
   Proof. cbv. sfirstorder. Qed.
@@ -137,7 +142,7 @@ Section RelationPred2PrePost.
   Qed.
 
   Lemma adjunction_pp_p {S A} (P:Pred S A) (pp:PrePost S A) :
-    ordPred (pp2p pp) P <-> ordPrePost (p2pp P) pp.
+    ordPred P (pp2p pp) <-> ordPrePost (p2pp P) pp.
   Proof.
     split.
     + sfirstorder.
@@ -167,7 +172,7 @@ Section RelationPred2SPost.
   Qed.
 
   Theorem inverse_p2sp_sp2p {S A} (sp:SPost S A) :
-    ordSPost (p2sp (sp2p sp)) sp.
+    ordSPost sp (p2sp (sp2p sp)).
   Proof.
     split.
     + destruct sp. sfirstorder.
@@ -177,7 +182,7 @@ Section RelationPred2SPost.
   Qed.
 
   Theorem inverse_p2sp_sp2p' {S A} (sp:SPost S A) :
-    ordSPost sp (p2sp (sp2p sp)).
+    ordSPost (p2sp (sp2p sp)) sp.
   Proof.  
     cbv. destruct sp. 
     intros.
@@ -194,7 +199,7 @@ Section RelationSPost2PrePost.
     (p2pp ∘ sp2p) sp.
 
   Lemma loop_pp2sp_sp2pp {S A} (sp:SPost S A):
-    ordSPost (pp2sp (sp2pp sp)) sp.
+    ordSPost sp (pp2sp (sp2pp sp)).
   Proof.
     unfold pp2sp. unfold sp2pp. unfold compose.
     unfold ordSPost.
@@ -225,7 +230,7 @@ Section RelationSPost2PrePost.
   Qed.
 
   Lemma adjunction_sp_pp {S A} (pp:PrePost S A) (sp:SPost S A) :
-    ordSPost (pp2sp pp) sp <-> ordPrePost (sp2pp sp) pp.
+    ordSPost sp (pp2sp pp) <-> ordPrePost (sp2pp sp) pp.
   Proof.
     unfold sp2pp. unfold pp2sp. unfold compose.
     split.
@@ -256,30 +261,24 @@ Section RelationSPost2PrePost.
   Qed.
 
   Theorem strengthen_pre {S A} (P1 P2:S -> Prop) (Q:S -> A -> S -> Prop) :
-    forall s0 pre r s1,
-      proj1_sig (proj1_sig (pp2sp (P1, Q)) s0 pre r s1) -> 
-      (P2 s0 -> P1 s0) ->
-      proj1_sig (proj1_sig (pp2sp (P2, Q)) s0 pre r s1).
+    (forall s0, (P2 s0 -> P1 s0)) ->
+    ordSPost (pp2sp (P1, Q)) (pp2sp (P2, Q)).
   Proof.
     cbv.
     sfirstorder.
   Qed.
 
   Theorem weaken_post {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) :
-    forall s0 pre r s1,
-      proj1_sig (proj1_sig (pp2sp (P, Q1)) s0 pre r s1) -> 
-      (Q1 s0 r s1 -> Q2 s0 r s1) ->
-      proj1_sig (proj1_sig (pp2sp (P, Q2)) s0 pre r s1).
+    (forall s0 r s1, (Q1 s0 r s1 -> Q2 s0 r s1)) -> 
+      ordSPost (pp2sp (P, Q1)) (pp2sp (P, Q2)).
   Proof.
     cbv.
     sfirstorder.
   Qed.
 
   Theorem post_conj_elim {S A} P (Q1 Q2:S -> A -> S -> Prop) :
-    forall s0 pre r s1,
-      proj1_sig (proj1_sig (pp2sp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) s0 pre r s1) ->
-      proj1_sig (proj1_sig (pp2sp (P, Q1)) s0 pre r s1) /\
-      proj1_sig (proj1_sig (pp2sp (P, Q2)) s0 pre r s1).
+    ordSPost (pp2sp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) (pp2sp (P, Q1)) /\
+    ordSPost (pp2sp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) (pp2sp (P, Q2)).
   Proof.
     cbv.
     sfirstorder.
@@ -295,3 +294,121 @@ Section RelationSPost2PrePost.
     sfirstorder.
   Qed.
 End RelationSPost2PrePost.
+
+
+Section WeakestPreconditionTransformer.
+
+  Definition _WP S A :=
+    (A -> S -> Prop) -> (S -> Prop).
+
+  Definition wp_monotonicity {S A} (w:_WP S A) : Prop := 
+    forall p q,
+      (forall r s1, p r s1 -> q r s1) -> 
+        (forall s0, w p s0 -> w q s0).    
+
+  Definition WP S A :=
+    { w : _WP S A | wp_monotonicity w }.
+
+  Definition ordWP {S A} (m1 m2 : WP S A) : Prop :=
+    forall p s0, proj1_sig m1 p s0 -> proj1_sig m2 p s0.
+
+  Instance : forall {S A}, Transitive (@ordWP S A).
+  Proof. cbn. sfirstorder. Qed.
+
+  Program Definition retWP {S A} (a : A) : WP S A :=
+    fun p s0 => p a s0.
+  Next Obligation. sfirstorder. Qed.
+
+  Program Definition bindWP {S A B}
+    (m : WP S A) (k : A -> WP S B) : WP S B :=
+    fun p => m (fun a s1 => k a p s1).
+  Next Obligation.
+    destruct m as [m Hmm].
+    (* destruct k as [k' Hkm]. *)
+    unfold wp_monotonicity in *. simpl.
+    intros.
+    assert (forall a s1, proj1_sig (k a) p s1 -> proj1_sig (k a) q s1). {
+      simpl. intros. destruct (k a) as [ka Hkm]. unfold wp_monotonicity in Hkm. 
+      simpl.
+      simpl in H1.
+      specialize Hkm with p q s1. apply Hkm. sfirstorder. sfirstorder.
+    }
+
+    specialize Hmm with (fun a s1 => proj1_sig (k a) p s1) (fun a s1 => proj1_sig (k a) q s1) s0.
+    apply Hmm. sfirstorder. sfirstorder.
+  Qed.
+
+  Program Definition getWP {S} : WP S S :=
+    fun p s0 => p s0 s0.
+  Next Obligation. sfirstorder. Qed.
+
+  Program Definition putWP {S} (s : S) : WP S unit :=
+    fun p s0 => p tt s.
+  Next Obligation. sfirstorder. Qed.
+
+  #[global] Instance Monad__WP {S} : Monad (WP S) :=
+    {| ret := fun _ => retWP ;
+       bind := fun _ _ => bindWP |}.
+
+  #[global] Instance MonadState__WP {S} : MonadState S (WP S) :=
+    {| get := getWP ;
+       put := putWP |}.
+End WeakestPreconditionTransformer.
+
+Hint Unfold getWP putWP retWP bindWP ordWP : mst.
+
+Section RelationWP2PrePost.
+
+  Definition wp2pp {S A} (w : WP S A) : (S -> Prop) * (S -> A -> S -> Prop) :=
+    (proj1_sig w (fun _ _ => True), fun s0 a s1 => forall p, proj1_sig w p s0 -> p a s1).
+
+  Program Definition pp2wp {S A} (pp:PrePost S A) : WP S A :=
+    fun p s0 => fst pp s0 /\ (forall r s1, snd pp s0 r s1 -> p r s1).
+  Next Obligation. cbv. sfirstorder. Qed.
+
+  Theorem strengthen_pre_pp2wp {S A} (P1 P2:S -> Prop) (Q:S -> A -> S -> Prop) :
+    (forall s0, P2 s0 -> P1 s0) ->
+      ordWP (pp2wp (P2, Q)) (pp2wp (P1, Q)) .
+  Proof.
+    cbv.
+    intros.
+    split.
+    + sfirstorder.
+    + sfirstorder.
+  Qed.
+
+  Theorem weaken_post_pp2wp {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) :
+    (forall s0 r s1, Q1 s0 r s1 -> Q2 s0 r s1) ->
+      ordWP (pp2wp (P, Q2)) (pp2wp (P, Q1)).
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+
+  Theorem post_conj_elim_pp2wp {S A} P (Q1 Q2:S -> A -> S -> Prop) :
+    ordWP (pp2wp (P, Q1)) (pp2wp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) /\
+    ordWP (pp2wp (P, Q2)) (pp2wp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))).
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+
+  Theorem post_conj_intro_pp2wp {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) :
+    forall p s0,
+      proj1_sig (pp2wp (P, Q1)) p s0 -> 
+      proj1_sig (pp2wp (P, Q2)) p s0 -> 
+      proj1_sig (pp2wp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) p s0.
+  Proof.
+    cbv.
+    sfirstorder.
+  Qed.
+End RelationWP2PrePost.
+
+Section RelationWP2Pred.
+  Definition wp2p {S A} (w : WP S A) : Pred S A :=
+    (pp2p ∘ wp2pp) w.
+
+  Definition p2wp {S A} (P:Pred S A) : WP S A :=
+    (pp2wp ∘ p2pp) P.
+  
+End RelationWP2Pred.
