@@ -284,13 +284,15 @@ Section RelationSPost2PrePost.
     sfirstorder.
   Qed.
 
-  Theorem post_conj_intro {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) :
-    forall s0 pre r s1,
-      proj1_sig (proj1_sig (pp2sp (P, Q1)) s0 pre r s1) -> 
-      proj1_sig (proj1_sig (pp2sp (P, Q2)) s0 pre r s1) -> 
-      proj1_sig (proj1_sig (pp2sp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) s0 pre r s1).
+  Theorem post_conj_intro {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) (m:SPost S A) :
+    ordSPost (pp2sp (P, Q1)) m ->
+    ordSPost (pp2sp (P, Q2)) m ->
+    ordSPost (pp2sp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) m.
   Proof.
-    cbv.
+    unfold ordSPost, pp2sp, p2sp, compose, pp2p. simpl.
+    intros.
+    specialize H with s0 pre r s1.
+    specialize H0 with s0 pre r s1.
     sfirstorder.
   Qed.
 End RelationSPost2PrePost.
@@ -393,15 +395,16 @@ Section RelationWP2PrePost.
     sfirstorder.
   Qed.
 
-  Theorem post_conj_intro_pp2wp {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) :
-    forall p s0,
-      proj1_sig (pp2wp (P, Q1)) p s0 -> 
-      proj1_sig (pp2wp (P, Q2)) p s0 -> 
-      proj1_sig (pp2wp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) p s0.
+  Theorem post_conj_intro_pp2wp {S A} (P:S -> Prop) (Q1 Q2:S -> A -> S -> Prop) (m:WP S A) :
+    ordWP (pp2wp (P, Q1)) m ->
+    ordWP (pp2wp (P, Q2)) m ->
+    ordWP (pp2wp (P, (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1))) m.
   Proof.
-    cbv.
-    sfirstorder.
-  Qed.
+    unfold ordWP, pp2wp. simpl.
+    intros.
+    
+    specialize H with (fun r s1 => Q2 s0 r s1 -> p r s1) s0.
+  Admitted.
 End RelationWP2PrePost.
 
 Section RelationWP2Pred.

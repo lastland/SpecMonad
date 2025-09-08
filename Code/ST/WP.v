@@ -95,11 +95,9 @@ Module ReasoningRulesCorrectness.
     Correct P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1) m.
   Proof.
     unfold Correct.
-    unfold ordWP.
     intros.
-    specialize H with p s0.
-    specialize H0 with p s0.
-  Admitted.
+    apply (post_conj_intro_pp2wp); assumption.
+  Qed.
 
   Theorem post_conj_elim :
     forall {S A} P Q1 Q2 (m : WP S A),
