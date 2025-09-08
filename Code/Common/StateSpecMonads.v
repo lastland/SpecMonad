@@ -30,6 +30,20 @@ Section ForwardPredicateTransformer.
     cbn in *. eapply Hkp; eauto.
   Qed.
 
+    Program Definition getSPost {S} : SPost S S :=
+    fun s0 pre r s1 => r = s0 /\ s1 = s0 /\ pre.
+
+  Program Definition putSPost {S} (s : S) : SPost S unit :=
+    fun s0 pre r s1 => pre /\ s1 = s0.
+
+  #[global] Instance Monad__SPost {S} : Monad (SPost S) :=
+    {| ret := fun _ => retSPost ;
+       bind := fun _ _ => bindSPost |}.
+
+  #[global] Instance MonadState__SPost {S} : MonadState S (SPost S) :=
+    {| get := getSPost ;
+       put := putSPost |}.
+
   Definition ordSPost {S A} (sp1 sp2:SPost S A) : Prop :=
     forall s0 pre r s1,
       proj1_sig (proj1_sig sp2 s0 pre r s1) -> proj1_sig (proj1_sig sp1 s0 pre r s1).

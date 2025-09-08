@@ -233,6 +233,7 @@ Qed.
 Lemma pp2sp_post_conj_intro {R S}
   (P : S -> Prop)
   (Q1 Q2 : S -> R -> S -> Prop) :
+  (* P -> Q1 /\ P -> Q2 -> (P -> Q1 /\ Q2) *)
   forall s0 pre r s1,
     proj1_sig (proj1_sig (pp2sp P Q1) s0 pre r s1) /\ 
     proj1_sig (proj1_sig (pp2sp P Q2) s0 pre r s1) -> 
