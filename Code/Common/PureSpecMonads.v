@@ -13,7 +13,7 @@ Section PrePostMonad.
     (fst pp2 -> fst pp1) /\ (forall r, fst pp2 -> snd pp1 r -> snd pp2 r).
   (** This order is tweaked:           ^^^^^^^^^^.
       Necessary for having a Galois connection between PrePost and Pred
-      using pp2p and p2pp.
+      using pp2p (P,Q) = fun r -> Q r and p2pp P = (True, P).
       
       The Galois connection is not used further in proofs. *)
 
@@ -135,69 +135,6 @@ Section RelationPred2PrePost.
     assumption.
   Qed.
 End RelationPred2PrePost.
-
-Section RelationPred2PrePostStandard.
-  (** Looking at the standard ordering for PrePost *)
-  Definition ordPrePost_standard {A} (pp1 pp2:PrePost A) : Prop :=
-    (fst pp2 -> fst pp1) /\ (forall r, snd pp1 r -> snd pp2 r).
-
-  Instance : forall {A}, Transitive (@ordPrePost_standard A).
-  Proof. cbn. sfirstorder. Qed.
-
-  Theorem strengthen_pre_pp_standard {A} (P1 P2:Prop) (Q:A -> Prop) :
-    (P2 -> P1) ->
-    ordPrePost_standard (P1, Q) (P2, Q).
-  Proof. cbv. sfirstorder. Qed.
-
-  Theorem weaken_post_pp_standard {A} (P:Prop) (Q1 Q2:A -> Prop) :
-    (forall r, Q1 r -> Q2 r) ->
-    ordPrePost_standard (P, Q1) (P, Q2).
-  Proof. cbv. sfirstorder. Qed.
-
-  Theorem post_conj_elim_pp_standard {A} P (Q1 Q2:A -> Prop) :
-    ordPrePost_standard (P, (fun r => Q1 r /\ Q2 r)) (P, Q1) /\
-    ordPrePost_standard (P, (fun r => Q1 r /\ Q2 r)) (P, Q2).
-  Proof. cbv. sfirstorder. Qed.
-
-  Theorem post_conj_intro_pp_standard {A} (P:Prop) (Q1 Q2:A -> Prop) (m:PrePost A):
-    ordPrePost_standard m (P, Q1) ->
-    ordPrePost_standard m (P, Q2) ->
-    ordPrePost_standard m (P, (fun r => Q1 r /\ Q2 r)).
-  Proof. cbv. sfirstorder. Qed.    
-
-  Lemma loop_p2pp_pp2p_standard {A} (pp:PrePost A):
-    ordPrePost_standard (p2pp (pp2p pp)) pp.
-  Proof. cbv. firstorder. destruct pp. apply H. Abort. 
-
-  Lemma loop_p2pp_pp2p_standard {A} (pp:PrePost A):
-    ordPrePost_standard pp (p2pp (pp2p pp)).
-  Proof. destruct pp as [P Q]. cbv. split. Abort. (** impossible to prove **)
-
-  Lemma adjunction_pp_p_standard {A} (P:Pred A) (pp:PrePost A) :
-    ordPred P (pp2p pp) <-> ordPrePost_standard (p2pp P) pp.
-  Proof. cbv. split. destruct pp. + admit. + sfirstorder. Abort.
-
-  Theorem strengthen_pre_pp2p_standard {A} (P1 P2:Prop) (Q:A -> Prop) :
-    (P2 -> P1) ->
-    ordPred (pp2p (P1, Q)) (pp2p (P2, Q)).
-  Proof. cbv. sfirstorder. Qed.
-
-  Theorem weaken_post_pp2p_standard {A} (P:Prop) (Q1 Q2:A -> Prop) :
-    (forall r, Q1 r -> Q2 r) ->
-    ordPred (pp2p (P, Q1)) (pp2p (P, Q2)).
-  Proof. cbv. sfirstorder. Qed.
-
-  Theorem post_conj_elim_pp2p_standard {A} P (Q1 Q2:A -> Prop) :
-    ordPred (pp2p (P, (fun r => Q1 r /\ Q2 r))) (pp2p (P, Q1)) /\
-    ordPred (pp2p (P, (fun r => Q1 r /\ Q2 r))) (pp2p (P, Q2)).
-  Proof. cbv. sfirstorder. Qed.
-
-  Theorem post_conj_intro_pp2p_standard {A} (P:Prop) (Q1 Q2:A -> Prop) (m:Pred A):
-    ordPred m (pp2p (P, Q1)) ->
-    ordPred m (pp2p (P, Q2)) ->
-    ordPred m (pp2p (P, (fun r => Q1 r /\ Q2 r))).
-  Proof. cbv. sfirstorder. Qed.
-End RelationPred2PrePostStandard.
 
 Section ForwardPredicateTransformer.
   Definition _SPost A :=
