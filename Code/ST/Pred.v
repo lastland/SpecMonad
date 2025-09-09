@@ -67,10 +67,7 @@ Module ReasoningRulesIncorrectness.
     Incorrect P (fun r s => Q1 r s \/ Q2 r s) m ->
     Incorrect P Q1 m /\
     Incorrect P Q2 m.
-  Proof.
-    cbv.
-    sfirstorder.
-  Qed.
+  Proof. cbv. sfirstorder. Qed.
 End ReasoningRulesIncorrectness.
 
 Module ReasoningRulesCorrectness.
@@ -166,6 +163,26 @@ Module OHearnExample.
         With SPost, the goal looks like: exists a s', sp _ (a = (x, y, 11) /\ s' = (x, y, 11) _ _)*)
       hauto lq: on drew: off.
     Qed.
+
+    Theorem example_3_1_correct :
+      Correct
+        (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
+        (fun _ _ '(x, y, z) => z = 42)
+        example_3_1_pred.
+    Proof.
+      unfold Correct, ordPred, pp2p, ordPost. simpl.
+      intros.
+      destruct s0 as [[x'' y''] z''].
+      destruct s1 as [[x''' y'''] z'''].
+      destruct H as [[[x y] z]]. destruct H as [[[x' y'] z']].
+      destruct a.
+      destruct (Nat.even x); destruct (Nat.even y); simpl in H;
+      unfold getPred, putPred, retPred, bindPred in H.
+      + admit.  
+     
+      (** I think now this can be proved, but my Rocq skills are limited.
+          I want to keep the hypothesis of the destruct here. *)
+    Abort.
 
     Theorem example_3_1_incorrect_unprovable : 
       Incorrect
