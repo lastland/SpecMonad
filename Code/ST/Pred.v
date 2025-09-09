@@ -74,7 +74,7 @@ Module ReasoningRulesCorrectness.
   Theorem strengthen_pre :
     forall {S A} P P' Q (m : Pred S A),
       Correct P Q m ->
-      (forall (s0 : S), P' s0 -> P s0) ->
+      (ordPre P' P) ->
       Correct P' Q m.
   Proof. cbv. sfirstorder. Qed.
 
@@ -139,62 +139,160 @@ Module ReasoningRulesAgreement.
 End ReasoningRulesAgreement.
 
 Module OHearnExample.
-    Definition example_3_1_pred : Pred (nat * nat * nat) unit :=
-      '(x, y, z) <- get ;;
-        if Nat.even x then
-          if negb (Nat.even y) then put (x, y, 42) else ret tt
-        else ret tt.
+  Definition example_3_1_pred : Pred (nat * nat * nat) unit :=
+    '(x, y, z) <- get ;;
+      if Nat.even x then
+        if negb (Nat.even y) then put (x, y, 42) else ret tt
+      else ret tt.
 
-    Theorem example_3_1_incorrect :
-      Incorrect
-        (fun '(x, y, z) => z = 11)
-        (fun _ '(x, y, z) => z = 42 /\
-                            Nat.even x = true /\
-                            negb (Nat.even y) = true)
-        example_3_1_pred.
-    Proof.
-      cbv. intros.
-      (* This does not seem very automatic; can an SMT solver work here? *)
-      destruct s1 as [[x y] z].
-      exists (x, y, 11). split; auto; intros. (* surprise, predicates work better than SPosts. *)
-      (** The goal looks like: exists a s', (a = (x, y, 11) /\ s' = (x, y, 11)) /\ ...
-        and it seems a tactic can easily infer `a` and `s'`.
-        
-        With SPost, the goal looks like: exists a s', sp _ (a = (x, y, 11) /\ s' = (x, y, 11) _ _)*)
-      hauto lq: on drew: off.
-    Qed.
+  Example example_3_1_incorrect :
+    Incorrect
+      (fun '(x, y, z) => z = 11)
+      (fun _ '(x, y, z) => z = 42 /\
+                          Nat.even x = true /\
+                          negb (Nat.even y) = true)
+      example_3_1_pred.
+  Proof.
+    cbv. intros.
+    destruct s1 as [[x y] z].
+    exists (x, y, 11). split; auto; intros. (* surprise, predicates work better than SPosts. *)
+    (** The goal looks like: exists a s', (a = (x, y, 11) /\ s' = (x, y, 11)) /\ ...
+      and it seems a tactic can easily infer `a` and `s'`.
+      
+      With SPost, the goal looks like: exists a s', sp _ (a = (x, y, 11) /\ s' = (x, y, 11) _ _)*)
+    hauto lq: on drew: off.
+  Qed.
 
-    Theorem example_3_1_correct :
-      Correct
-        (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
-        (fun _ _ '(x, y, z) => z = 42)
-        example_3_1_pred.
-    Proof.
-      unfold Correct, ordPred, pp2p, ordPost. simpl.
-      intros.
-      destruct s0 as [[x'' y''] z''].
-      destruct s1 as [[x''' y'''] z'''].
-      destruct H as [[[x y] z]]. destruct H as [[[x' y'] z']].
-      destruct a.
-      destruct (Nat.even x); destruct (Nat.even y); simpl in H;
-      unfold getPred, putPred, retPred, bindPred in H.
-      + admit.  
-     
-      (** I think now this can be proved, but my Rocq skills are limited.
-          I want to keep the hypothesis of the destruct here. *)
-    Abort.
+  Example example_3_1_incorrect' :
+    Incorrect
+      (fun '(x, y, z) => True)
+      (fun _ '(x, y, z) => z = 42)
+      example_3_1_pred.
+  Proof.
+    unfold Incorrect, ordPred, pp2p, ordPost, example_3_1_pred.
+    simpl.
+    unfold retPred, bindPred, getPred, putPred.
+    destruct r.
+    destruct s1 as [[x y] z].
+    exists (x, y, z). split; auto; intros.
+    exists (x, y, z). exists (x, y, z).
+    hauto lq: on drew: off.
+  Qed.
 
-    Theorem example_3_1_incorrect_unprovable : 
-      Incorrect
-        (fun '(x, y, z) => z = 11)
-        (fun _ '(x, y, z) => z = 42)
-        example_3_1_pred.
-    Proof.
-      cbn. unfold bindPred. unfold getPred. unfold retPred. unfold putPred.
-        unfold Incorrect. intros.
-      (* This does not seem very automatic; can an SMT solver work here? *)
-      destruct s1 as [[x y] z]. destruct r.
-      exists (x, y, 11). split; auto; intros. exists (x, y, 11). exists (x, y, 11).
-      destruct (Nat.even x); destruct (Nat.even y); split; cbv; eauto; split; eauto; rewrite H.
-    Abort. (** this is intentional *)
+  Example example_3_1_correct :
+    Correct
+      (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
+      (fun _ _ '(x, y, z) => z = 42)
+      example_3_1_pred.
+  Proof.
+    unfold Correct, ordPred, pp2p, ordPost. simpl.
+    intros.
+    destruct s0 as [[x'' y''] z''].
+    destruct s1 as [[x''' y'''] z'''].
+    destruct H as [[[x y] z]]. destruct H as [[[x' y'] z']].
+    destruct a.
+    destruct (Nat.even x) as [] eqn:Eqx;
+    destruct (negb (Nat.even y)) as [] eqn:Eqy;
+    sfirstorder.
+  Qed.
+
+  Example example_3_1_incorrect_unprovable : 
+    Incorrect
+      (fun '(x, y, z) => z = 11)
+      (fun _ '(x, y, z) => z = 42)
+      example_3_1_pred.
+  Proof.
+    cbn. unfold bindPred. unfold getPred. unfold retPred. unfold putPred.
+      unfold Incorrect. intros.
+    (* This does not seem very automatic; can an SMT solver work here? *)
+    destruct s1 as [[x y] z]. destruct r.
+    exists (x, y, 11). split; auto; intros. exists (x, y, 11). exists (x, y, 11).
+    destruct (Nat.even x); 
+    destruct (Nat.even y); 
+    split; cbv; eauto; split; eauto; rewrite H.
+  Abort. (** this is intentional *)
 End OHearnExample.
+
+Module AssertTest.
+  Program Definition assertPred {S} (P:Prop) : Pred S P :=
+    fun s0 _ s1 => s0 = s1.
+
+  Lemma correct_assert {S} (P:Prop) :
+    Correct (fun _ => P) (fun _ _ _ => True) (@assertPred S P).
+  Proof. cbv. intros. trivial. Qed.
+
+  Example example_3_1_assert : Pred (nat * nat * nat) unit :=
+  '(x, y, z) <- get ;;
+  _ <- @assertPred (nat * nat * nat) (Nat.even x = true);;
+  _ <- @assertPred (nat * nat * nat) (negb (Nat.even y) = true);;
+  put (x, y, 42).
+  (* if Nat.even x then
+    if negb (Nat.even y) then put (x, y, 42) else ret tt
+  else ret tt. *)
+
+  Example example_3_1_correct :
+    Correct
+      (fun '(x, y, z) => True) (** This is so weird. Why does it accept True here?*)
+      (fun _ _ '(x, y, z) => z = 42)
+      example_3_1_assert.
+  Proof.
+    unfold Correct, example_3_1_assert. simpl.
+    unfold assertPred, bindPred, retPred, putPred, getPred.
+    unfold ordPred, pp2p, ordPost. simpl.
+    intros.
+    destruct s0 as [[x'' y''] z''].
+    destruct s1 as [[x''' y'''] z'''].
+    destruct H as [[[x y] z]]. destruct H as [[[x' y'] z']].
+    destruct a.
+    destruct H.
+    destruct H1.
+    destruct H1.
+    destruct H1.
+    destruct H1.
+    destruct H2.
+    destruct H1.
+    sfirstorder.
+  Qed.
+
+  Example example_3_1_incorrect :
+    Incorrect
+      (fun '(x, y, z) => z = 11)
+      (fun _ '(x, y, z) => z = 42 /\ 
+                          (Nat.even x) = true /\
+                          negb (Nat.even y) = true)
+      example_3_1_assert.
+  Proof.
+    unfold Incorrect, ordPred, pp2p, ordPost, example_3_1_assert.
+    simpl.
+    unfold retPred, bindPred, getPred, putPred, assertPred.
+    intros.
+    destruct r.
+    destruct s1 as [[x y] z].
+    exists (x, y, 11). 
+    hauto lq: on drew: off.
+  Qed.
+
+  (** one cannot achieve the post-state z = 42 without also
+      depending on (Nat.even x) = true /\ negb (Nat.even y) = true *)
+  Example example_3_1_incorrect' :
+    Incorrect
+      (fun '(x, y, z) => True)
+      (fun _ '(x, y, z) => z = 42)
+      example_3_1_assert.
+  Proof.
+    unfold Incorrect, ordPred, pp2p, ordPost, example_3_1_assert.
+    simpl.
+    unfold retPred, bindPred, getPred, putPred, assertPred.
+    intros.
+    destruct r.
+    destruct s1 as [[x y] z].
+    exists (x, y, z). split; eauto.
+    exists (x, y, z). exists (x, y, z).
+    split; eauto. eexists. 
+    + admit. (** Goal: Nat.even x = true *)
+    + exists (x, y, z).
+      split; eauto. eexists.
+      ++ admit. (** Goal: negb (Nat.even y) = true *)
+      ++ exists (x, y, z). sfirstorder.
+  Abort.
+End AssertTest.
