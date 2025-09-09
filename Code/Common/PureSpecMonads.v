@@ -1,5 +1,6 @@
 From Coq Require Import RelationClasses.
 Require Import Coq.Program.Basics.
+From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
 
 Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
@@ -7,36 +8,46 @@ Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
 Set Implicit Arguments.
 
 Section PrePostMonad.
-  Definition PrePost A := prod Prop (A -> Prop).
+  Variable A:Type.
 
-  Definition ordPrePost {A} (pp1 pp2:PrePost A) : Prop :=
-    (fst pp2 -> fst pp1) /\ (forall r, fst pp2 -> snd pp1 r -> snd pp2 r).
+  Definition Pre := Prop.
+  Definition Post := A -> Prop.
+  Definition PrePost := prod Pre Post.
+
+  Definition ordPre (P1 P2:Pre) : Prop := P1 -> P2.
+  Definition ordPost (Q1 Q2:Post) : Prop := forall r, Q1 r -> Q2 r.
+
+  Definition ordPrePost (pp1 pp2:PrePost) : Prop :=
+    (ordPre (fst pp2) (fst pp1)) /\ (fst pp2 -> ordPost (snd pp1) (snd pp2)).
   (** This order is tweaked:           ^^^^^^^^^^.
       Necessary for having a Galois connection between PrePost and Pred
       using pp2p (P,Q) = fun r -> Q r and p2pp P = (True, P).
       
       The Galois connection is not used further in proofs. *)
 
+  Definition conjPost (Q1 Q2:Post) : Post :=
+    fun r => Q1 r /\ Q2 r.
+
   (** Correctness laws *)
-  Theorem strengthen_pre_pp {A} (P1 P2:Prop) (Q:A -> Prop) :
-    (P2 -> P1) ->
+  Theorem strengthen_pre_pp (P1 P2:Pre) (Q:Post) :
+    (ordPre P2 P1) ->
     ordPrePost (P1, Q) (P2, Q).
   Proof. cbv. sfirstorder. Qed.
 
-  Theorem weaken_post_pp {A} (P:Prop) (Q1 Q2:A -> Prop) :
-    (forall r, Q1 r -> Q2 r) ->
+  Theorem weaken_post_pp (P:Pre) (Q1 Q2:Post) :
+    ordPost Q1 Q2 ->
     ordPrePost (P, Q1) (P, Q2).
   Proof. cbv. sfirstorder. Qed.
 
-  Theorem post_conj_elim_pp {A} P (Q1 Q2:A -> Prop) :
-    ordPrePost (P, (fun r => Q1 r /\ Q2 r)) (P, Q1) /\
-    ordPrePost (P, (fun r => Q1 r /\ Q2 r)) (P, Q2).
+  Theorem post_conj_elim_pp P (Q1 Q2:Post) :
+    ordPrePost (P, conjPost Q1 Q2) (P, Q1) /\
+    ordPrePost (P, conjPost Q1 Q2) (P, Q2).
   Proof. cbv. sfirstorder. Qed.
 
-  Theorem post_conj_intro_pp {A} (P:Prop) (Q1 Q2:A -> Prop) (m:PrePost A):
+  Theorem post_conj_intro_pp (P:Pre) (Q1 Q2:Post) (m:PrePost) :
     ordPrePost m (P, Q1) ->
     ordPrePost m (P, Q2) ->
-    ordPrePost m (P, (fun r => Q1 r /\ Q2 r)).
+    ordPrePost m (P, conjPost Q1 Q2).
   Proof. cbv. sfirstorder. Qed.
 End PrePostMonad.
 
@@ -47,7 +58,7 @@ Instance : forall {A}, Reflexive (@ordPrePost A).
 Proof. sfirstorder. Qed.
 
 Section PredMonad.
-  Definition Pred A := A -> Prop.
+  Definition Pred A := Post A.
 
   Program Definition retPred {A} (a : A) : Pred A :=
     fun r => r = a.
@@ -57,6 +68,10 @@ Section PredMonad.
 
   Definition ordPred {A} (P1 P2:Pred A) : Prop :=
     forall r, P1 r -> P2 r.
+
+  #[global] Instance Monad__Pred : Monad (Pred) :=
+    {| ret := fun _ => retPred ;
+       bind := fun _ _ => bindPred |}.    
 End PredMonad.
 
 Instance : forall {A}, Transitive (@ordPred A).
@@ -78,8 +93,7 @@ Section RelationPred2PrePost.
 
   Lemma loop_p2pp_pp2p' {A} (pp:PrePost A):
     ordPrePost pp (p2pp (pp2p pp)).
-  Proof. destruct pp as [P Q]. cbv. split. admit. (** impossible to prove **)
-  Abort.
+  Proof. destruct pp as [P Q]. cbv. Abort. (** impossible to prove **)
 
   Lemma inverse_pp2p_p2pp {A} (P:Pred A) :
     ordPred P (pp2p (p2pp P)) /\ ordPred (pp2p (p2pp P)) P.
@@ -89,8 +103,8 @@ Section RelationPred2PrePost.
     ordPred P (pp2p pp) <-> ordPrePost (p2pp P) pp.
   Proof. sfirstorder. Qed.
 
-  Theorem strengthen_pre_pp2p {A} (P1 P2:Prop) (Q:A -> Prop) :
-    (P2 -> P1) ->
+  Theorem strengthen_pre_pp2p {A} (P1 P2:Pre) (Q:Post A) :
+    ordPre P2 P1 ->
     ordPred (pp2p (P1, Q)) (pp2p (P2, Q)).
   Proof.
     intros HP2iP1.
@@ -100,32 +114,32 @@ Section RelationPred2PrePost.
     transitivity (P1, Q); assumption.
   Qed.
 
-  Theorem weaken_post_pp2p {A} (P:Prop) (Q1 Q2:A -> Prop) :
-    (forall r, Q1 r -> Q2 r) ->
+  Theorem weaken_post_pp2p {A} (P:Pre) (Q1 Q2:Post A) :
+    ordPost Q1 Q2 ->
     ordPred (pp2p (P, Q1)) (pp2p (P, Q2)).
   Proof.
     intros HQ1iQ2.
     apply adjunction_pp_p.
     pose proof (loop_p2pp_pp2p (P, Q1)).
-    pose proof (weaken_post_pp P Q1 Q2 HQ1iQ2).
+    pose proof (weaken_post_pp P HQ1iQ2).
     transitivity (P, Q1); assumption.
   Qed.
 
-  Theorem post_conj_elim_pp2p {A} P (Q1 Q2:A -> Prop) :
-    ordPred (pp2p (P, (fun r => Q1 r /\ Q2 r))) (pp2p (P, Q1)) /\
-    ordPred (pp2p (P, (fun r => Q1 r /\ Q2 r))) (pp2p (P, Q2)).
+  Theorem post_conj_elim_pp2p {A} P (Q1 Q2:Post A) :
+    ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q1)) /\
+    ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q2)).
   Proof. 
     pose proof (post_conj_elim_pp P Q1 Q2).
     destruct H.
     split; apply adjunction_pp_p;
-    pose proof (loop_p2pp_pp2p (P, (fun r => Q1 r /\ Q2 r)));
-    transitivity (P, (fun r => Q1 r /\ Q2 r)); assumption.
+    pose proof (loop_p2pp_pp2p (P, conjPost Q1 Q2));
+    transitivity (P, conjPost Q1 Q2); assumption.
    Qed.
 
-  Theorem post_conj_intro_pp2p {A} (P:Prop) (Q1 Q2:A -> Prop) (m:Pred A):
+  Theorem post_conj_intro_pp2p {A} (P:Pre) (Q1 Q2:Post A) (m:Pred A):
     ordPred m (pp2p (P, Q1)) ->
     ordPred m (pp2p (P, Q2)) ->
-    ordPred m (pp2p (P, (fun r => Q1 r /\ Q2 r))).
+    ordPred m (pp2p (P, conjPost Q1 Q2)).
   Proof.
     intros H1 H2.
     apply adjunction_pp_p in H1.
@@ -247,37 +261,36 @@ Section RelationSPost2PrePost.
       cbv in H.
       destruct H.      
       split.
-      specialize (H1 r).
       ++ destruct sp. hauto.
       ++ destruct sp. intros. apply H1.
       +++ sfirstorder.
       +++ sfirstorder.
   Qed.
 
-  Theorem strengthen_pre_pp2sp {A} (P1 P2:Prop) (Q:A -> Prop) :
-    (P2 -> P1) ->
+  Theorem strengthen_pre_pp2sp {A} (P1 P2:Pre) (Q:Post A) :
+    ordPre P2 P1 ->
     ordSPost (pp2sp (P1, Q)) (pp2sp (P2, Q)).
   Proof.
     cbv.
     sfirstorder.
   Qed.
 
-  Theorem weaken_post_pp2sp {A} (P:Prop) (Q1 Q2:A -> Prop) :
-    (forall r, Q1 r -> Q2 r) ->
+  Theorem weaken_post_pp2sp {A} (P:Pre) (Q1 Q2:Post A) :
+    ordPost Q1 Q2 ->
     ordSPost (pp2sp (P, Q1)) (pp2sp (P, Q2)).
   Proof.
     cbv.
     sfirstorder.
   Qed.
 
-  Theorem post_conj_elim_pp2sp {A} P (Q1 Q2:A -> Prop) :
-    ordSPost (pp2sp (P, (fun r => Q1 r /\ Q2 r))) (pp2sp (P, Q1)) /\
-    ordSPost (pp2sp (P, (fun r => Q1 r /\ Q2 r))) (pp2sp (P, Q2)).
+  Theorem post_conj_elim_pp2sp {A} P (Q1 Q2:Post A) :
+    ordSPost (pp2sp (P, conjPost Q1 Q2)) (pp2sp (P, Q1)) /\
+    ordSPost (pp2sp (P, conjPost Q1 Q2)) (pp2sp (P, Q2)).
   Proof. cbv. sfirstorder. Qed.
 
-  Theorem post_conj_intro_pp2sp {A} (P:Prop) (Q1 Q2:A -> Prop) (m:SPost A):
+  Theorem post_conj_intro_pp2sp {A} (P:Pre) (Q1 Q2:Post A) (m:SPost A):
     ordSPost m (pp2sp (P, Q1)) ->
     ordSPost m (pp2sp (P, Q2)) ->
-    ordSPost m (pp2sp (P, (fun r => Q1 r /\ Q2 r))).
+    ordSPost m (pp2sp (P, conjPost Q1 Q2)).
   Proof. cbv. sfirstorder. Qed.
 End RelationSPost2PrePost.

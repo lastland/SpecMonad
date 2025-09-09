@@ -179,8 +179,5 @@ Module OHearnExample.
       destruct s1 as [[x y] z]. destruct r.
       exists (x, y, 11). split; auto; intros. exists (x, y, 11). exists (x, y, 11).
       destruct (Nat.even x); destruct (Nat.even y); split; cbv; eauto; split; eauto; rewrite H.
-      + admit.
-      + admit.
-      + admit. 
     Abort. (** this is intentional *)
 End OHearnExample.
