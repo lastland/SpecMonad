@@ -49,10 +49,8 @@ Section PrePostMonad.
   Proof. cbv. sfirstorder. Qed.
 End PrePostMonad.
 
-Instance : forall {A}, Transitive (@ordPrePost A).
-Proof. sfirstorder. Qed.
-
-Instance : forall {A}, Reflexive (@ordPrePost A).
+Instance PreOrder_ordPrePost:
+  forall {A}, PreOrder (@ordPrePost A).
 Proof. sfirstorder. Qed.
 
 Section PredMonad.

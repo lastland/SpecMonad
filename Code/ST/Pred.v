@@ -1,7 +1,7 @@
 From Coq Require Import RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-From Incorrectness Require Import Common.StateSpecMonads.
+From Incorrectness.Common Require Import Notations StateSpecMonads.
 
 From Coq Require Import Nat Lia PeanoNat.
 Opaque "<=?".
@@ -28,7 +28,8 @@ Program Definition Correct {S A}
 
 Program Definition Incorrect {S A}
   (presumes : S -> Prop)
-  (achieves: A -> S -> Prop) (* [achieves] works if does not talk about the initial state *)
+  (* [achieves] works if does not talk about the initial state *)
+  (achieves: A -> S -> Prop) 
   (w : Pred S A) : Prop :=
   forall r s1,
     achieves r s1 ->
