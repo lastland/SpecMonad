@@ -4,6 +4,7 @@ Common/Notations.v
 Common/PureSpecMonads.v
 Common/PurePrePostStandard.v
 Common/StateSpecMonads.v
+Common/NonDetSpecMonads.v
 Identity/Identity.v
 Identity/IdentityVariations.v
 Reader/Reader.v
