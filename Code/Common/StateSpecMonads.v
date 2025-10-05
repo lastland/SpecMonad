@@ -1,9 +1,7 @@
 From Coq Require Import RelationClasses.
-Require Import Coq.Program.Basics.
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-
-Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
+From Incorrectness Require Import Common.Notations.
 
 Set Implicit Arguments.
 
@@ -47,10 +45,8 @@ Section PrePostMonad.
   Proof. cbv. sfirstorder. Qed.
 End PrePostMonad.
 
-Instance : forall {S A}, Transitive (@ordPrePost S A).
-Proof. sfirstorder. Qed.
-
-Instance : forall {S A}, Reflexive (@ordPrePost S A).
+Instance PreOrder_ordPrePost :
+  forall {S A}, PreOrder (@ordPrePost S A).
 Proof. sfirstorder. Qed.
 
 Section PredMonad.
@@ -81,10 +77,8 @@ Section PredMonad.
        put := putPred |}.    
 End PredMonad.
 
-Instance : forall {S A}, Transitive (@ordPred S A).
-Proof. sfirstorder. Qed.
-
-Instance : forall {S A}, Reflexive (@ordPred S A).
+Instance PreOrder_ordPred :
+  forall {S A}, PreOrder (@ordPred S A).
 Proof. sfirstorder. Qed.
 
 Section RelationPred2PrePost.

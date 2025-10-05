@@ -1,9 +1,7 @@
 From Coq Require Import RelationClasses.
-Require Import Coq.Program.Basics.
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-
-Notation "f ∘ g" := (compose f g) (at level 40, left associativity).
+From Incorrectness Require Import Common.Notations.
 
 Set Implicit Arguments.
 
@@ -206,41 +204,30 @@ Section RelationSPost2PrePost.
 
   Definition sp2pp {A} (sp:SPost A) : PrePost A :=
     (p2pp ∘ sp2p) sp.
+  
+  Hint Unfold pp2sp sp2pp ordPost : spec_monads.
 
   Lemma loop_pp2sp_sp2pp {A} (sp:SPost A):
     ordSPost sp (pp2sp (sp2pp sp)).
   Proof.
-    unfold pp2sp. unfold sp2pp. unfold compose.
-    unfold ordSPost.
-    intros.
-    simpl.
-    split.
-    - destruct sp. sfirstorder.
+    autounfold with spec_monads.
+    intros; split; destruct sp.
+    - sfirstorder.
     - apply inverse_pp2p_p2pp.
-      cbv.
-      destruct sp.
-      cbv in *.
-      sfirstorder. 
+      cbv in *. sfirstorder.
   Qed.
   
   Lemma loop_sp2pp_pp2sp {A} (pp:PrePost A):
     ordPrePost (sp2pp (pp2sp pp)) pp.
   Proof.
-    unfold pp2sp. unfold sp2pp. unfold compose.
-    unfold ordPrePost.
-    simpl.
-    destruct pp as [P Q].
-    cbv.
-    split.
-    - sfirstorder.
-    - intros r Hpre Hpq.
-      sfirstorder.
+    autounfold with spec_monads.
+    intros; split; destruct pp; sfirstorder.
   Qed.
 
   Lemma adjunction_sp_pp {A} (pp:PrePost A) (sp:SPost A) :
     ordSPost sp (pp2sp pp) <-> ordPrePost (sp2pp sp) pp.
   Proof.
-    unfold sp2pp. unfold pp2sp. unfold compose.
+    autounfold with spec_monads.
     split.
     + intros H. 
       apply adjunction_pp_p.
