@@ -1,7 +1,7 @@
 From Coq Require Import RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-From Incorrectness.Common Require Import Notations StateSpecMonads.
+From Incorrectness Require Import Common.
 
 From Coq Require Import Nat Lia PeanoNat.
 Opaque "<=?".
@@ -12,32 +12,32 @@ Import MonadNotation.
 Open Scope monad_scope.
 Open Scope nat_scope.
 
-Program Definition obs (S A : Type) (m : state S A) : Pred S A :=
+Program Definition obs (S A : Type) (m : state S A) : StatePred S A :=
   fun s0 r s1 => runState m s0 = (r, s1).
 
 Program Definition Verify {S A}
-  (w : Pred S A) (m : state S A)
-  (obs: forall {A}, state S A -> Pred S A) : Prop :=
+  (w : StatePred S A) (m : state S A)
+  (obs: forall {A}, state S A -> StatePred S A) : Prop :=
   ordPred (obs m) w.
 
 Program Definition Correct {S A}
     (pre : S -> Prop)
     (post: S -> A -> S -> Prop)
-    (w : Pred S A) : Prop :=
-    ordPred w (pp2p (pre,post)). 
+    (w : StatePred S A) : Prop :=
+    ordPred w (pp2p (pre, post)). 
 
 Program Definition Incorrect {S A}
   (presumes : S -> Prop)
   (* [achieves] works if does not talk about the initial state *)
   (achieves: A -> S -> Prop) 
-  (w : Pred S A) : Prop :=
+  (w : StatePred S A) : Prop :=
   forall r s1,
     achieves r s1 ->
     exists s0, w s0 r s1 /\ presumes s0.
 
 Module ReasoningRulesIncorrectness.
   Theorem weaken_pre :
-    forall {S A} P P' Q (m : Pred S A),
+    forall {S A} P P' Q (m : StatePred S A),
       Incorrect P Q m ->
       (forall (s : S), P s -> P' s) ->
       Incorrect P' Q m.
@@ -46,7 +46,7 @@ Module ReasoningRulesIncorrectness.
   Qed.
 
   Theorem strengthen_post :
-    forall {S A} P Q Q' (m : Pred S A),
+    forall {S A} P Q Q' (m : StatePred S A),
       Incorrect P Q m ->
       (forall r (s : S), Q' r s -> Q r s) ->
       Incorrect P Q' m.
@@ -55,7 +55,7 @@ Module ReasoningRulesIncorrectness.
   Qed.
 
   Theorem post_disj_intro :
-    forall {S A} P Q1 Q2 (m : Pred S A),
+    forall {S A} P Q1 Q2 (m : StatePred S A),
     Incorrect P Q1 m ->
     Incorrect P Q2 m ->
     Incorrect P (fun r s => Q1 r s \/ Q2 r s) m.
@@ -64,7 +64,7 @@ Module ReasoningRulesIncorrectness.
   Qed.
 
   Theorem post_disj_elim :
-    forall {S A} P Q1 Q2 (m : Pred S A),
+    forall {S A} P Q1 Q2 (m : StatePred S A),
     Incorrect P (fun r s => Q1 r s \/ Q2 r s) m ->
     Incorrect P Q1 m /\
     Incorrect P Q2 m.
@@ -73,28 +73,28 @@ End ReasoningRulesIncorrectness.
 
 Module ReasoningRulesCorrectness.
   Theorem strengthen_pre :
-    forall {S A} P P' Q (m : Pred S A),
+    forall {S A} P P' Q (m : StatePred S A),
       Correct P Q m ->
       (ordPre P' P) ->
       Correct P' Q m.
   Proof. cbv. sfirstorder. Qed.
 
   Theorem weaken_post :
-    forall {S A} P Q Q' (m : Pred S A),
+    forall {S A} P Q Q' (m : StatePred S A),
       Correct P Q m ->
       (forall s0 r s1, Q s0 r s1 -> Q' s0 r s1) ->
       Correct P Q' m.
   Proof. cbv. sfirstorder. Qed.
 
   Theorem post_conj_intro :
-    forall {S A} P Q1 Q2 (m : Pred S A),
+    forall {S A} P Q1 Q2 (m : StatePred S A),
     Correct P Q1 m ->
     Correct P Q2 m ->
     Correct P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1) m.
   Proof. cbv. sfirstorder. Qed.
 
   Theorem post_conj_elim :
-    forall {S A} P Q1 Q2 (m : Pred S A),
+    forall {S A} P Q1 Q2 (m : StatePred S A),
     Correct P (fun s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1) m ->
     Correct P Q1 m /\
     Correct P Q2 m.
@@ -103,7 +103,7 @@ End ReasoningRulesCorrectness.
 
 Module ReasoningRulesAgreement.
   Theorem agreement :
-    forall {S A} (m : Pred S A) u u' o o',
+    forall {S A} (m : StatePred S A) u u' o o',
       Incorrect u u' m ->
       (forall s0, u s0 -> o s0) ->
       Correct o o' m ->
@@ -125,7 +125,7 @@ Module ReasoningRulesAgreement.
   Qed.
 
   Theorem denial :
-    forall {S A} (m : Pred S A) u u' o o',
+    forall {S A} (m : StatePred S A) u u' o o',
       (Incorrect u u' m /\
        (forall s0, u s0 -> o s0) /\
        ~(forall r s1, u' r s1 -> (exists s0, o' s0 r s1))) ->
@@ -140,7 +140,7 @@ Module ReasoningRulesAgreement.
 End ReasoningRulesAgreement.
 
 Module OHearnExample.
-  Definition example_3_1_pred : Pred (nat * nat * nat) unit :=
+  Definition example_3_1_pred : StatePred (nat * nat * nat) unit :=
     '(x, y, z) <- get ;;
       if Nat.even x then
         if negb (Nat.even y) then put (x, y, 42) else ret tt
@@ -215,14 +215,14 @@ Module OHearnExample.
 End OHearnExample.
 
 Module AssertTest.
-  Program Definition assertPred {S} (P:Prop) : Pred S P :=
+  Program Definition assertPred {S} (P:Prop) : StatePred S P :=
     fun s0 _ s1 => s0 = s1.
 
   Lemma correct_assert {S} (P:Prop) :
     Correct (fun _ => P) (fun _ _ _ => True) (@assertPred S P).
   Proof. cbv. intros. trivial. Qed.
 
-  Example example_3_1_assert : Pred (nat * nat * nat) unit :=
+  Example example_3_1_assert : StatePred (nat * nat * nat) unit :=
   '(x, y, z) <- get ;;
   _ <- @assertPred (nat * nat * nat) (Nat.even x = true);;
   _ <- @assertPred (nat * nat * nat) (negb (Nat.even y) = true);;

@@ -1,6 +1,6 @@
 From Incorrectness.Common Require Export
   Notations
+  Classes
   PureSpecMonads
-  PurePrePostStandard
   StateSpecMonads
-  NonDetSpecMonads.
+  OptionSpecMonads.

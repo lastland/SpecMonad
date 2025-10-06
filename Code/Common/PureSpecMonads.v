@@ -7,15 +7,16 @@ Set Implicit Arguments.
 Section PrePostMonad.
   Variable A:Type.
 
-  #[global] Instance PurePre : PreT :=
+  Definition PurePre := Prop.
+  Definition PurePost := fun A => A -> Prop.
+
+  #[global] Instance PurePreT : PreT PurePre :=
     {|
-      Pre := Prop ;
       ordPre := fun P1 P2 => P1 -> P2 
     |}.
 
-  #[global] Instance PurePost : PostT :=
+  #[global] Instance PurePostT : PostT PurePost :=
     {|
-      Post := fun A => A -> Prop ;
       ordPost := fun _ Q1 Q2 => forall r, Q1 r -> Q2 r ;
       conjPost := fun _ Q1 Q2 r => Q1 r /\ Q2 r
     |}.
@@ -32,29 +33,30 @@ Section PrePostMonad.
     |}.
 
   (** Correctness laws *)
-  #[global] Instance PurePrePostLaws : PrePostLaws PurePrePost.
+  #[global] Instance PurePrePostLaws :
+    PrePostLaws PurePrePost.
   sfirstorder.
   Qed.
 End PrePostMonad.
 
 Section PredMonad.
-  Definition Pred A := Post A.
+  Definition PurePred A := PurePost A.
 
-  Program Definition retPred {A} (a : A) : Pred A :=
+  Program Definition retPred {A} (a : A) : PurePred A :=
     fun r => r = a.
 
-  Program Definition bindPred {A B} (m : Pred A) (k : A -> Pred B) : Pred B :=
+  Program Definition bindPred {A B} (m : PurePred A) (k : A -> PurePred B) : PurePred B :=
     fun r => exists a, m a /\ k a r.
 
-  #[global] Instance Monad__Pred : Monad Pred :=
+  #[global] Instance Monad__Pred : Monad PurePred :=
     {| ret := fun _ => retPred ;
        bind := fun _ _ => bindPred |}.
 
-  #[global] Instance PredMonad__Pred : PredMonad Pred :=
+  #[global] Instance PredMonad__Pred : PredMonad PurePred :=
     {| monadPred := Monad__Pred ;
        ordPred := fun {A} P1 P2 => forall r, P1 r -> P2 r |}.
 
-  #[global] Instance PredMonadLaws__Pred : PredMonadLaws Pred.
+  #[global] Instance PredMonadLaws__Pred : PredMonadLaws PurePred.
   sfirstorder.
   Qed.
     
@@ -63,13 +65,13 @@ End PredMonad.
 Section RelationPred2PrePost.
 
   #[global] Instance GaloisPure :
-    GaloisPrePostPred Pred PurePre PurePost :=
+    GaloisPrePostPred PurePred PurePre PurePost :=
     {| p2pp := fun _ P => (True, P) ;
        pp2p := fun _ pp r => fst pp -> snd pp r
     |}.
 
   #[global] Instance GaloisPureLaws : 
-    GaloisPrePostPredLaws Pred PurePre PurePost.
+    GaloisPrePostPredLaws PurePred PurePre PurePost.
   sfirstorder.
   Qed.
 
@@ -77,37 +79,33 @@ Section RelationPred2PrePost.
     ordPrePost pp (p2pp (pp2p pp)).
   Proof. destruct pp as [P Q]. cbv. Abort. (** impossible to prove **)
 
-  Theorem strengthen_pre_pp2p {A} (P1 P2:Pre) (Q:Post A) :
+  Theorem strengthen_pre_pp2p {A} (P1 P2:PurePre) (Q:PurePost A) :
     ordPre P2 P1 ->
     ordPred (pp2p (P1, Q)) (pp2p (P2, Q)).
   Proof.
-    apply strengthen_pre_pp2p.
-    apply PurePrePostLaws. apply GaloisPureLaws.
+    apply strengthen_pre_pp2p; typeclasses eauto.
   Qed.
 
-  Theorem weaken_post_pp2p {A} (P:Pre) (Q1 Q2:Post A) :
+  Theorem weaken_post_pp2p {A} (P:PurePre) (Q1 Q2:PurePost A) :
     ordPost Q1 Q2 ->
     ordPred (pp2p (P, Q1)) (pp2p (P, Q2)).
   Proof.
-    apply weaken_post_pp2p.
-    apply PurePrePostLaws. apply GaloisPureLaws.
+    apply weaken_post_pp2p; typeclasses eauto.
   Qed.
 
-  Theorem post_conj_elim_pp2p {A} P (Q1 Q2:Post A) :
+  Theorem post_conj_elim_pp2p {A} P (Q1 Q2:PurePost A) :
     ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q1)) /\
     ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q2)).
   Proof.
-    apply post_conj_elim_pp2p.
-    apply PurePrePostLaws. apply GaloisPureLaws.
+    apply post_conj_elim_pp2p; typeclasses eauto.
   Qed.
 
-  Theorem post_conj_intro_pp2p {A} (P:Pre) (Q1 Q2:Post A) (m:Pred A):
+  Theorem post_conj_intro_pp2p {A} (P:PurePre) (Q1 Q2:PurePost A) (m:PurePred A):
     ordPred m (pp2p (P, Q1)) ->
     ordPred m (pp2p (P, Q2)) ->
     ordPred m (pp2p (P, conjPost Q1 Q2)).
   Proof.
-    apply post_conj_intro_pp2p.
-    apply PurePrePostLaws. apply GaloisPureLaws.
+    apply post_conj_intro_pp2p; typeclasses eauto.
   Qed.
 End RelationPred2PrePost.
 
@@ -140,13 +138,13 @@ Section ForwardPredicateTransformer.
 End ForwardPredicateTransformer.
 
 Section RelationPred2SPost.
-  Program Definition p2sp {A} (P:Pred A) : SPost A :=
+  Program Definition p2sp {A} (P:PurePred A) : SPost A :=
     fun pre r => pre /\ P r.
 
-  Program Definition sp2p {A} (sp:SPost A) : Pred A :=
+  Program Definition sp2p {A} (sp:SPost A) : PurePred A :=
     sp True.
 
-  Theorem inverse_sp2p_p2sp {A} (P:Pred A) :
+  Theorem inverse_sp2p_p2sp {A} (P:PurePred A) :
     ordPred (sp2p (p2sp P)) P /\ ordPred P (sp2p (p2sp P)).
   Proof. cbv. sfirstorder. Qed.
 
@@ -216,7 +214,7 @@ Section RelationSPost2PrePost.
       +++ sfirstorder.
   Qed.
 
-  Theorem strengthen_pre_pp2sp {A} (P1 P2:Pre) (Q:Post A) :
+  Theorem strengthen_pre_pp2sp {A} (P1 P2:PurePre) (Q:PurePost A) :
     ordPre P2 P1 ->
     ordSPost (pp2sp (P1, Q)) (pp2sp (P2, Q)).
   Proof.
@@ -224,7 +222,7 @@ Section RelationSPost2PrePost.
     sfirstorder.
   Qed.
 
-  Theorem weaken_post_pp2sp {A} (P:Pre) (Q1 Q2:Post A) :
+  Theorem weaken_post_pp2sp {A} (P:PurePre) (Q1 Q2:PurePost A) :
     ordPost Q1 Q2 ->
     ordSPost (pp2sp (P, Q1)) (pp2sp (P, Q2)).
   Proof.
@@ -232,12 +230,12 @@ Section RelationSPost2PrePost.
     sfirstorder.
   Qed.
 
-  Theorem post_conj_elim_pp2sp {A} P (Q1 Q2:Post A) :
+  Theorem post_conj_elim_pp2sp {A} P (Q1 Q2:PurePost A) :
     ordSPost (pp2sp (P, conjPost Q1 Q2)) (pp2sp (P, Q1)) /\
     ordSPost (pp2sp (P, conjPost Q1 Q2)) (pp2sp (P, Q2)).
   Proof. cbv. sfirstorder. Qed.
 
-  Theorem post_conj_intro_pp2sp {A} (P:Pre) (Q1 Q2:Post A) (m:SPost A):
+  Theorem post_conj_intro_pp2sp {A} (P:PurePre) (Q1 Q2:PurePost A) (m:SPost A):
     ordSPost m (pp2sp (P, Q1)) ->
     ordSPost m (pp2sp (P, Q2)) ->
     ordSPost m (pp2sp (P, conjPost Q1 Q2)).

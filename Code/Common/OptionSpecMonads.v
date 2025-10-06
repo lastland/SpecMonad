@@ -7,12 +7,12 @@ From Incorrectness Require Import
 Set Implicit Arguments.
 
 Section OptionMonad.
-
   Variable A:Type.
 
-  #[global] Instance OptionPost : PostT :=
+  Definition OptionPost := fun A => option A -> Prop.
+
+  #[global] Instance OptionPostT : PostT OptionPost :=
     {|
-      Post := fun A => option A -> Prop ;
       ordPost := fun _ Q1 Q2 => forall r, Q1 r -> Q2 r ;
       conjPost := fun _ Q1 Q2 r => Q1 r /\ Q2 r
     |}.
@@ -21,11 +21,6 @@ Section OptionMonad.
     {|
       ordPrePost := fun _ pp1 pp2 =>
     (ordPre (fst pp2) (fst pp1)) /\ (fst pp2 -> ordPost (snd pp1) (snd pp2))
-  (** This order is tweaked:           ^^^^^^^^^^.
-      Necessary for having a Galois connection between PrePost and Pred
-      using pp2p (P,Q) = fun r -> Q r and p2pp P = (True, P).
-      
-      The Galois connection is not used further in proofs. *)
     |}.
 
   (** Correctness laws *)
@@ -35,36 +30,36 @@ Section OptionMonad.
 End OptionMonad.
 
 Section PredMonad.
-  Definition Pred A := Post A.
+  Definition OptionPred A := OptionPost A.
 
-  Program Definition retPred {A} (a : A) : Pred A :=
+  Program Definition retPred {A} (a : A) : OptionPred A :=
     fun r => r = Some a.
 
-  Program Definition bindPred {A B} (m : Pred A) (k : A -> Pred B) : Pred B :=
+  Program Definition bindPred {A B} (m : OptionPred A) (k : A -> OptionPred B) : OptionPred B :=
     fun r => exists a, m (Some a) /\ k a r.
 
-  #[global] Instance Monad__Pred : Monad (Pred) :=
+  #[global] Instance Monad__Pred : Monad (OptionPred) :=
     {| ret := fun _ => retPred ;
        bind := fun _ _ => bindPred |}.    
 
-  #[global] Instance PredMonad__Pred : PredMonad Pred :=
+  #[global] Instance PredMonad__Pred : PredMonad OptionPred :=
     {| monadPred := Monad__Pred ;
        ordPred := fun {A} P1 P2 => forall r, P1 r -> P2 r |}.
 
-  #[global] Instance PredMonadLaws__Pred : PredMonadLaws Pred.
+  #[global] Instance PredMonadLaws__Pred : PredMonadLaws OptionPred.
   sfirstorder.
   Qed.
 End PredMonad.
 
 Section RelationPred2PrePost.
   #[global] Instance GaloisPure :
-    GaloisPrePostPred Pred PurePre OptionPost :=
+    GaloisPrePostPred OptionPred PurePre OptionPost :=
     {| p2pp := fun _ P => (True, P) ;
        pp2p := fun _ pp r => fst pp -> snd pp r
     |}.
 
   #[global] Instance GaloisPureLaws : 
-    GaloisPrePostPredLaws Pred PurePre OptionPost.
+    GaloisPrePostPredLaws OptionPred PurePre OptionPost.
   sfirstorder.
   Qed.
 End RelationPred2PrePost.
@@ -98,13 +93,13 @@ Section ForwardPredicateTransformer.
 End ForwardPredicateTransformer.
 
 Section RelationPred2SPost.
-  Program Definition p2sp {A} (P:Pred A) : SPost A :=
+  Program Definition p2sp {A} (P:OptionPred A) : SPost A :=
     fun pre r => pre /\ P r.
 
-  Program Definition sp2p {A} (sp:SPost A) : Pred A :=
+  Program Definition sp2p {A} (sp:SPost A) : OptionPred A :=
     sp True.
 
-  Theorem inverse_sp2p_p2sp {A} (P:Pred A) :
+  Theorem inverse_sp2p_p2sp {A} (P:OptionPred A) :
     ordPred (sp2p (p2sp P)) P /\ ordPred P (sp2p (p2sp P)).
   Proof. cbv. sfirstorder. Qed.
 
@@ -174,7 +169,7 @@ Section RelationSPost2PrePost.
       +++ sfirstorder.
   Qed.
 
-  Theorem strengthen_pre_pp2sp {A} (P1 P2:Pre) (Q:Post A) :
+  Theorem strengthen_pre_pp2sp {A} (P1 P2:PurePre) (Q:OptionPost A) :
     ordPre P2 P1 ->
     ordSPost (pp2sp (P1, Q)) (pp2sp (P2, Q)).
   Proof.
@@ -182,7 +177,7 @@ Section RelationSPost2PrePost.
     sfirstorder.
   Qed.
 
-  Theorem weaken_post_pp2sp {A} (P:Pre) (Q1 Q2:Post A) :
+  Theorem weaken_post_pp2sp {A} (P:PurePre) (Q1 Q2:OptionPost A) :
     ordPost Q1 Q2 ->
     ordSPost (pp2sp (P, Q1)) (pp2sp (P, Q2)).
   Proof.
@@ -190,12 +185,12 @@ Section RelationSPost2PrePost.
     sfirstorder.
   Qed.
 
-  Theorem post_conj_elim_pp2sp {A} P (Q1 Q2:Post A) :
+  Theorem post_conj_elim_pp2sp {A} P (Q1 Q2:OptionPost A) :
     ordSPost (pp2sp (P, conjPost Q1 Q2)) (pp2sp (P, Q1)) /\
     ordSPost (pp2sp (P, conjPost Q1 Q2)) (pp2sp (P, Q2)).
   Proof. cbv. sfirstorder. Qed.
 
-  Theorem post_conj_intro_pp2sp {A} (P:Pre) (Q1 Q2:Post A) (m:SPost A):
+  Theorem post_conj_intro_pp2sp {A} (P:PurePre) (Q1 Q2:OptionPost A) (m:SPost A):
     ordSPost m (pp2sp (P, Q1)) ->
     ordSPost m (pp2sp (P, Q2)) ->
     ordSPost m (pp2sp (P, conjPost Q1 Q2)).

@@ -2,26 +2,27 @@ From Coq Require Import RelationClasses Relation_Definitions.
 From ExtLib Require Import Monad MonadLaws.
 From Hammer Require Import Hammer Tactics.
 
-Class PreT :=
+Class PreT (Pre : Type) :=
   {
-    Pre : Type ;
     ordPre : Pre -> Pre -> Prop
   }.
 
-Class PostT :=
+Class PostT (Post : Type -> Type) :=
   {
-    Post : Type -> Type ;
     ordPost : forall {A}, Post A -> Post A -> Prop ;
     conjPost : forall {A}, Post A -> Post A -> Post A
   }.
 
-Class PrePostT (p : PreT) (q : PostT) :=
+Class PrePostT (Pre : Type) (Post : Type -> Type)
+  `{PreT Pre} `{PostT Post} :=
   {
     PrePost A := prod Pre (Post A) ;
     ordPrePost : forall {A}, relation (PrePost A) 
   }.
 
-Class PrePostLaws {p q} (pp : PrePostT p q) :=
+Class PrePostLaws {Pre : Type} {Post : Type -> Type}
+                  `{PreT Pre} `{PostT Post}
+                  (pp : PrePostT Pre Post) :=
   {
     strengthen_pre_pp :
       forall A (P1 P2:Pre) (Q:Post A),
@@ -38,7 +39,7 @@ Class PrePostLaws {p q} (pp : PrePostT p q) :=
         ordPrePost m (P, Q1) ->
         ordPrePost m (P, Q2) ->
         ordPrePost m (P, conjPost Q1 Q2) ;
-    preorderPrePost : forall {A}, PreOrder (@ordPrePost _ _ pp A)
+    preorderPrePost : forall {A}, PreOrder (@ordPrePost _ _ _ _ _ A)
   }.
 
 #[global] Existing Instance preorderPrePost.
@@ -56,18 +57,17 @@ Class PredMonadLaws Pred `{PredMonad Pred} :=
 
 #[global] Existing Instance preorderPredMonad.
 
-Class GaloisPrePostPred Pred pre post
-  (* Why do I need @ before PrePostT here? *)
-  `{PredMonad Pred} `{@PrePostT pre post} :=
+Class GaloisPrePostPred Pred Pre Post
+  `{PredMonad Pred} `{PrePostT Pre Post} :=
   {
     p2pp : forall {A}, Pred A -> PrePost A ;
     pp2p : forall {A}, PrePost A -> Pred A
   }.
 
 Class GaloisPrePostPredLaws
-  Pred pre post
-  `{PredMonad Pred} `{@PrePostT pre post}
-  {g : GaloisPrePostPred Pred pre post} :=
+  Pred Pre Post
+  `{PredMonad Pred} `{PrePostT Pre Post}
+  {g : GaloisPrePostPred Pred Pre Post} :=
   {
     loop_p2pp_pp2p : forall {A} (pp:PrePost A),
       ordPrePost (p2pp (pp2p pp)) pp ;
@@ -80,11 +80,12 @@ Class GaloisPrePostPredLaws
 Section GaloisOtherLaws.
 
   Variable A : Type.
-  Variables (Pred : Type -> Type) (pre: PreT) (post : PostT).
-  Context `{PredMonad Pred} {pp : @PrePostT pre post}.
-  Context `{@PrePostLaws _ _ pp}. 
-  Context {g : GaloisPrePostPred Pred pre post}.
-  Context {gl : GaloisPrePostPredLaws Pred pre post}.
+  Variables (Pred : Type -> Type) (Pre : Type) (Post : Type -> Type).
+  Context `{pp : PrePostT Pre Post}.
+  Context `{PredMonad Pred}.
+  Context {pl: @PrePostLaws _ _ _ _ pp}. 
+  Context {g : GaloisPrePostPred Pred Pre Post}.
+  Context {gl : GaloisPrePostPredLaws Pred Pre Post}.
 
   Theorem strengthen_pre_pp2p (P1 P2:Pre) (Q:Post A) :
     ordPre P2 P1 ->
@@ -111,7 +112,7 @@ Section GaloisOtherLaws.
   Theorem post_conj_elim_pp2p P (Q1 Q2:Post A) :
     ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q1)) /\
       ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q2)).
-  Proof. 
+  Proof.
     pose proof (post_conj_elim_pp _ P Q1 Q2).
     destruct H. destruct gl. 
     split; apply adjunction_pp_p;
@@ -124,12 +125,7 @@ Section GaloisOtherLaws.
     ordPred m (pp2p (P, Q2)) ->
     ordPred m (pp2p (P, conjPost Q1 Q2)).
   Proof.
-    intros H1 H2.
-    apply adjunction_pp_p in H1.
-    apply adjunction_pp_p in H2.
-    apply adjunction_pp_p.
-    pose proof (post_conj_intro_pp _ _ _ _ _ H1 H2).
-    assumption.
+    sauto lq: on.
   Qed.
 
 End GaloisOtherLaws.

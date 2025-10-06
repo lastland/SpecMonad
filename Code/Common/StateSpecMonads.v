@@ -9,15 +9,16 @@ Section PrePostMonad.
   Variable S:Type.
   Variable A:Type.
 
-    #[global] Instance StatePre : PreT :=
+  Definition StatePre := S -> Prop.
+  Definition StatePost := fun A => S -> A -> S -> Prop.
+
+  #[global] Instance StatePreT : PreT StatePre :=
     {|
-      Pre := S -> Prop ;
       ordPre := fun P1 P2 => forall s0, P1 s0 -> P2 s0 
     |}.
 
-  #[global] Instance StatePost : PostT :=
+  #[global] Instance StatePostT : PostT StatePost :=
     {|
-      Post := fun A => S -> A -> S -> Prop ;
       ordPost := fun _ Q1 Q2 => forall s0 a s1, Q1 s0 a s1 -> Q2 s0 a s1 ;
       conjPost := fun _ Q1 Q2 s0 r s1 => Q1 s0 r s1 /\ Q2 s0 r s1
     |}.
@@ -40,33 +41,33 @@ Section PredMonad.
   
   Variable S:Type.
   
-  Definition Pred A := @Post (StatePost S) A.
+  Definition StatePred A := StatePost S A.
 
-  Program Definition retPred {A} (a : A) : Pred A :=
+  Program Definition retPred {A} (a : A) : StatePred A :=
     fun s0 r s1 => s0 = s1 /\ r = a.
 
-  Program Definition bindPred {A B} (m : Pred A) (k : A -> Pred B) : Pred B :=
+  Program Definition bindPred {A B} (m : StatePred A) (k : A -> StatePred B) : StatePred B :=
     fun s0 r s1 => exists a s', m s0 a s' /\ k a s' r s1.
 
-  Program Definition getPred : Pred S :=
+  Program Definition getPred : StatePred S :=
     fun s0 r s1 => r = s0 /\ s1 = s0.
 
-  Program Definition putPred (s : S) : Pred unit :=
+  Program Definition putPred (s : S) : StatePred unit :=
     fun s0 r s1 => s1 = s.
 
-  #[global] Instance Monad__Pred : Monad (Pred) :=
+  #[global] Instance Monad__Pred : Monad (StatePred) :=
     {| ret := fun _ => retPred ;
        bind := fun _ _ => bindPred |}.
 
-  #[global] Instance MonadState__Pred : MonadState S Pred :=
+  #[global] Instance MonadState__Pred : MonadState S StatePred :=
     {| get := getPred ;
        put := putPred |}.
 
-  #[global] Instance PredMonad__Pred : PredMonad Pred :=
+  #[global] Instance PredMonad__Pred : PredMonad StatePred :=
     {| monadPred := Monad__Pred ;
        ordPred := fun {A} P1 P2 => ordPost P1 P2 |}.
 
-  #[global] Instance PredMonadLaws__Pred : PredMonadLaws Pred.
+  #[global] Instance PredMonadLaws__Pred : PredMonadLaws StatePred.
   sfirstorder.
   Qed.
 End PredMonad.
@@ -76,13 +77,13 @@ Section RelationPred2PrePost.
   Variable (S : Type).
 
   #[global] Program Instance GaloisState :
-    GaloisPrePostPred (Pred S) (StatePre S) (StatePost S) :=
+    GaloisPrePostPred (StatePred S) (StatePre S) (StatePost S) :=
     {| p2pp := fun _ P => (fun _ => True, P) ;
        pp2p := fun _ pp s0 r s1 => fst pp s0 -> snd pp s0 r s1
     |}.
 
   #[global] Instance GaloisPureLaws : 
-    GaloisPrePostPredLaws (Pred S) (StatePre S) (StatePost S).
+    GaloisPrePostPredLaws (StatePred S) (StatePre S) (StatePost S).
   sfirstorder.
   Qed.
 End RelationPred2PrePost.
