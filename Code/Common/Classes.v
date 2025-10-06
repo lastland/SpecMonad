@@ -41,6 +41,8 @@ Class PrePostLaws {p q} (pp : PrePostT p q) :=
     preorderPrePost : forall {A}, PreOrder (@ordPrePost _ _ pp A)
   }.
 
+#[global] Existing Instance preorderPrePost.
+
 Class PredMonad (Pred : Type -> Type) :=
   {
     monadPred : Monad Pred ;
@@ -51,6 +53,8 @@ Class PredMonadLaws Pred `{PredMonad Pred} :=
   {
     preorderPredMonad : forall {A}, PreOrder (@ordPred Pred _ A)
   }.
+
+#[global] Existing Instance preorderPredMonad.
 
 Class GaloisPrePostPred Pred pre post
   (* Why do I need @ before PrePostT here? *)
@@ -90,7 +94,7 @@ Section GaloisOtherLaws.
     apply adjunction_pp_p.
     pose proof (loop_p2pp_pp2p (P1, Q)).
     pose proof (strengthen_pre_pp _ _ _ Q HP2iP1).
-    destruct H0. transitivity (P1, Q); assumption.
+    transitivity (P1, Q); assumption.
   Qed.
 
   Theorem weaken_post_pp2p (P:Pre) (Q1 Q2:Post A) :
@@ -101,7 +105,7 @@ Section GaloisOtherLaws.
     apply adjunction_pp_p.
     pose proof (loop_p2pp_pp2p (P, Q1)).
     pose proof (weaken_post_pp _ P _ _ HQ1iQ2).
-    destruct H0. transitivity (P, Q1); assumption.
+    transitivity (P, Q1); assumption.
   Qed.
 
   Theorem post_conj_elim_pp2p P (Q1 Q2:Post A) :
@@ -109,7 +113,7 @@ Section GaloisOtherLaws.
       ordPred (pp2p (P, conjPost Q1 Q2)) (pp2p (P, Q2)).
   Proof. 
     pose proof (post_conj_elim_pp _ P Q1 Q2).
-    destruct H. destruct gl. destruct H0.
+    destruct H. destruct gl. 
     split; apply adjunction_pp_p;
       pose proof (loop_p2pp_pp2p0 _ (P, conjPost Q1 Q2));
       transitivity (P, conjPost Q1 Q2); sfirstorder.
