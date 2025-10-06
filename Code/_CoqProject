@@ -7,6 +7,7 @@ Common/PurePrePostStandard.v
 Common/StateSpecMonads.v
 Common/OptionSpecMonads.v
 Common/NonDetSpecMonads.v
+Common/Guarded.v
 Common.v
 Identity/Identity.v
 Identity/IdentityVariations.v
