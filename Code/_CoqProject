@@ -13,5 +13,6 @@ Identity/Identity.v
 Identity/IdentityVariations.v
 Reader/Reader.v
 ST/Pred.v
+ST/GuardedPred.v
 STEx/Examples.v
 STEx/STEx.v

@@ -1,7 +1,7 @@
 From Coq Require Import RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-From Incorrectness Require Import Common.StateSpecMonads Common.Guarded.
+From Incorrectness Require Import Common Common.Guarded.
 
 From Coq Require Import Nat Lia PeanoNat.
 Opaque "<=?".
@@ -41,37 +41,44 @@ Section GuardedPredState.
 
   (* Effect observation *)
 
-  Definition obsPred {S A} (c : M S A) : Pred S A :=
+  Definition obsPredForall {S A} (c : M S A) : StatePred S A :=
     fun s0 r s1 =>
       forall proof, (projT2 (c s0) proof) = (s1, r).
 
+  Definition obsPredExists {S A} (c : M S A) : StatePred S A :=
+    fun s0 r s1 =>
+      exists proof, (projT2 (c s0) proof) = (s1, r).
+
   Program Definition Verify {S A}
-    (w : Pred S A) (m : M S A) : Prop :=
-    ordPred (obsPred m) w.
+    (w : StatePred S A) (m : M S A) : Prop :=
+    ordPred (obsPredForall m) w.
+    (*       ^^^^^^^^^^^^^^^^^
+      one wants to use forall for correctness because
+      we want to have a computation that runs only if
+      we can give a proof of the pre-condition.
+    *)
 
   Program Definition Correct {S A}
-    (pre : Pre S)
-    (post: Post S A)
+    (pre : StatePre S)
+    (post: StatePost S A)
     (m : M S A) : Prop :=
     Verify (pp2p (pre, post)) m. 
 
-  Program Definition Incorrect0 {S A}
+  Program Definition VerifyIncorrect {S A}
     (presumes : S -> Prop)
-    (* [achieves] works if does not talk about the initial state *)
     (achieves: A -> S -> Prop) 
-    (w : Pred S A) : Prop :=
+    (w : StatePred S A) : Prop :=
     forall r s1,
       achieves r s1 ->
       exists s0, w s0 r s1 /\ presumes s0.
 
   Program Definition Incorrect {S A}
     (presumes : S -> Prop)
-    (* [achieves] works if does not talk about the initial state *)
     (achieves: A -> S -> Prop) 
     (m : M S A) : Prop :=
-    Incorrect0 presumes achieves (obsPred m).
+    VerifyIncorrect presumes achieves (obsPredExists m).
 
-  Example example_3_1_assert : M (nat * nat * nat) unit :=
+  Example example_3_1_guard : M (nat * nat * nat) unit :=
   '(x, y, z) <- get ;;
   _ <- guard (Nat.even x = true);;
   _ <- guard (negb (Nat.even y) = true);;
@@ -81,10 +88,10 @@ Section GuardedPredState.
     Correct
       (fun '(x, y, z) => Nat.even x = true /\ negb (Nat.even y) = true)
       (fun _ _ '(x, y, z) => z = 42)
-      example_3_1_assert.
+      example_3_1_guard.
   Proof.
-    unfold Correct, Verify, example_3_1_assert. 
-    unfold ordPred, pp2p, ordPost, obsPred.
+    unfold Correct, Verify, example_3_1_guard. 
+    unfold ordPred, pp2p, ordPost, obsPredForall. simpl.
     intros.
     destruct s0 as [[x y] z].
     destruct s1 as [[x' y'] z'].
@@ -108,17 +115,25 @@ True), True)). {
   Example example_3_1_incorrect :
     Incorrect
       (fun '(x, y, z) => z = 11)
-      (fun _ '(x, y, z) => z = 42)
-      example_3_1_assert.
+      (fun _ '(x, y, z) => z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true)
+      example_3_1_guard.
   Proof.
-    unfold Incorrect, Incorrect0, ordPred, obsPred, pp2p, ordPost, example_3_1_assert.
+    unfold Incorrect, VerifyIncorrect, ordPred, obsPredExists, pp2p, ordPost, example_3_1_guard.
     simpl.
     intros.
     destruct r.
     destruct s1 as [[x y] z].
     exists (x, y, 11).
     simpl.
-    hauto lq: on drew: off.  
+    split.
+    + destruct H as [Hz [Hx Hy]].
+      split.
+      ++ exists I. 
+         exists (ex_intro _ Hx I).
+         exists (ex_intro _ Hy I).
+         constructor.
+      ++ sfirstorder. 
+    + firstorder.  
   Qed.
 
 End GuardedPredState.      
