@@ -1,6 +1,7 @@
 -Q . Incorrectness
 
 Common/Notations.v
+Common/Classes.v
 Common/PureSpecMonads.v
 Common/PurePrePostStandard.v
 Common/StateSpecMonads.v
