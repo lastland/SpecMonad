@@ -77,6 +77,10 @@ Section GuardedPredState.
     (achieves: A -> S -> Prop) 
     (m : M S A) : Prop :=
     VerifyIncorrect presumes achieves (obsPredExists m).
+    (*                                 ^^^^^^^^^^^^^ 
+      one wants to prove that the guards hold in the initial state.
+      if using forall, then one gets a proof that the guards hold.
+    *)
 
   Example example_3_1_guard : M (nat * nat * nat) unit :=
   '(x, y, z) <- get ;;
@@ -134,6 +138,25 @@ True), True)). {
          constructor.
       ++ sfirstorder. 
     + firstorder.  
+  Qed.
+
+  Example example_3_1_incorrect' :
+    VerifyIncorrect
+      (fun '(x, y, z) => z = 11)
+      (fun _ '(x, y, z) => z = 42)
+      (obsPredForall example_3_1_guard).
+  Proof.
+    unfold VerifyIncorrect, ordPred, obsPredForall, pp2p, ordPost, example_3_1_guard.
+    simpl.
+    intros.
+    destruct r.
+    destruct s1 as [[x y] z].
+    exists (x, y, 11).
+    simpl.
+    split.
+    + intros [_ [Hx [Hy _]]]. (** I get a proof that the guards hold! *)
+      sfirstorder.
+    + reflexivity. 
   Qed.
 
 End GuardedPredState.      
