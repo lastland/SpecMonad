@@ -87,3 +87,9 @@ Section RelationPred2PrePost.
   sfirstorder.
   Qed.
 End RelationPred2PrePost.
+
+Goal forall {S A : Type} (p q : (StatePre S * StatePost S A)),
+    ordPrePost p q -> ordPred (pp2p p) (pp2p q).
+Proof.
+  sfirstorder.
+Qed.

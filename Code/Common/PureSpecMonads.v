@@ -45,7 +45,8 @@ Section PredMonad.
   Program Definition retPred {A} (a : A) : PurePred A :=
     fun r => r = a.
 
-  Program Definition bindPred {A B} (m : PurePred A) (k : A -> PurePred B) : PurePred B :=
+  Program Definition bindPred {A B}
+    (m : PurePred A) (k : A -> PurePred B) : PurePred B :=
     fun r => exists a, m a /\ k a r.
 
   #[global] Instance Monad__Pred : Monad PurePred :=
@@ -100,7 +101,8 @@ Section RelationPred2PrePost.
     apply post_conj_elim_pp2p; typeclasses eauto.
   Qed.
 
-  Theorem post_conj_intro_pp2p {A} (P:PurePre) (Q1 Q2:PurePost A) (m:PurePred A):
+  Theorem post_conj_intro_pp2p {A}
+    (P:PurePre) (Q1 Q2:PurePost A) (m:PurePred A):
     ordPred m (pp2p (P, Q1)) ->
     ordPred m (pp2p (P, Q2)) ->
     ordPred m (pp2p (P, conjPost Q1 Q2)).

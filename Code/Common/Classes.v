@@ -47,12 +47,15 @@ Class PrePostLaws {Pre : Type} {Post : Type -> Type}
 Class PredMonad (Pred : Type -> Type) :=
   {
     monadPred : Monad Pred ;
-    ordPred : forall {A}, relation (Pred A)
+    ordPred : forall {A}, relation (Pred A) ;
+    eqPred : forall {A}, relation (Pred A) :=
+      fun _ x y => ordPred x y /\ ordPred y x
   }.
 
 Class PredMonadLaws Pred `{PredMonad Pred} :=
   {
-    preorderPredMonad : forall {A}, PreOrder (@ordPred Pred _ A)
+    preorderPredMonad : forall {A}, PreOrder (@ordPred Pred _ A) ;
+    equivalencePredMonad : forall {A}, Equivalence (@eqPred Pred _ A) ;
   }.
 
 #[global] Existing Instance preorderPredMonad.
@@ -71,10 +74,10 @@ Class GaloisPrePostPredLaws
   {
     loop_p2pp_pp2p : forall {A} (pp:PrePost A),
       ordPrePost (p2pp (pp2p pp)) pp ;
-    inverse_pp2p_p2pp : forall {A} (P:Pred A),
-      ordPred P (pp2p (p2pp P)) /\ ordPred (pp2p (p2pp P)) P ;
-    adjunction_pp_p : forall {A} (P:Pred A) (pp:PrePost A),
-      ordPred P (pp2p pp) <-> ordPrePost (p2pp P) pp ;
+    inverse_pp2p_p2pp : forall {A} (p:Pred A),
+      eqPred p (pp2p (p2pp p)) ;
+    adjunction_pp_p : forall {A} (p:Pred A) (pp:PrePost A),
+      ordPred p (pp2p pp) <-> ordPrePost (p2pp p) pp ;
   }.
 
 Section GaloisOtherLaws.
