@@ -5,6 +5,14 @@ From Coq Require Import RelationClasses Relation_Definitions.
 
 Set Implicit Arguments.
 
+Definition pointwise_eq {A B} : relation (A -> B) :=
+  fun f g => forall a, f a = g a.
+
+Notation "f =1 g" := (pointwise_eq f g) (at level 42).
+
+Instance Eq__pointwise {A B} : Equivalence (@pointwise_eq A B).
+Proof. sfirstorder. Qed.
+
 (** We no longer consider a single monad, but a Kleisli category. *)
 Definition Kleisli (m : Type -> Type) a b := a -> m b.
 
@@ -18,11 +26,13 @@ Section PrePostKleisli.
 
   (** The subset type is to make sure that [dualPrePost] is an ordering
       relation, shown later. *)
-  Definition PurePre := {p : A -> Prop | exists a, p a }.
+  Definition PurePre := { ap : A * (A -> Prop) | snd ap (fst ap) }.
+  (** I cannot make [PurePost] parameterize over [A], because I won't be able to
+      define [dualPrePost] that way. *)
   Definition PurePost := B -> Prop.
 
-  Definition ordPre (P1 P2 : PurePre) :=
-    forall a, proj1_sig P1 a -> proj1_sig P2 a.
+  Program Definition ordPre (P1 P2 : PurePre) :=
+    forall a, snd P1 a -> snd P2 a.
   Definition ordPost (Q1 Q2 : PurePost) :=
     forall b, Q1 b -> Q2 b.
 
@@ -41,7 +51,7 @@ Section PrePostKleisli.
     match pp1, pp2 with
     | (P1, Q1), (P2, Q2) =>
         ordPre P2 P1 /\
-          forall a, P2 a -> forall b, Q1 b -> Q2 b
+          forall a, snd P2 a -> forall b, Q1 b -> Q2 b
     end.
 
   #[global] Instance PreOrder__PrePost : PreOrder ordPrePost.
@@ -82,7 +92,7 @@ Section PrePostKleisli.
     match pp1, pp2 with
     | (P1, Q1), (P2, Q2) =>
         ordPre P1 P2 /\
-          forall b, Q2 b -> (exists a, P2 a /\ Q1 b)
+          forall b, Q2 b -> (exists a, snd P2 a /\ Q1 b)
     end.
 
   (** It is a preorder. *)
@@ -93,7 +103,7 @@ Section PrePostKleisli.
     - intros [] [] []. sfirstorder.
   Qed.
 
-  (** Correctness laws of [dualPrePost]. This corresponds to the laws of the
+  (** Correctness laws of [dualPrePost]. These correspond to the laws of the
       incorrectness logic. *)
   Theorem weaken_pre_pp : forall (P1 P2 : PurePre) (Q : PurePost),
       ordPre P1 P2 -> dualPrePost (P1, Q) (P2, Q).
@@ -116,7 +126,6 @@ Section PrePostKleisli.
         dualPrePost m (P, Q2) ->
         dualPrePost m (P, conjPost Q1 Q2).
   Proof. hauto lq: on. Qed.
-
   
   (** Interactions between [ordPrePost] and [dualPrePost]. These correspond to
       the principles of agreement and denial. *)
@@ -141,49 +150,92 @@ End PrePostKleisli.
 Arguments PurePre : clear implicits.
 Arguments PurePost : clear implicits.
 
-(** The rest does not work, because I have just figured out PrePost. *)
-
-(*)
 Section PredKleisli.
   
   Variables A B : Type.
   
-  Definition PurePred := fun A B => PurePost A B.
+  (** There are two possible Preds: A -> B -> Prop and (A -> B) -> Prop. Both
+      seem to make sense. *)
+  Definition PurePred := (A -> B) -> Prop.
 
-  Definition ordPred (P1 P2 : PurePred A B) :=
-    forall a b, P1 a b -> P2 a b.
-
-  (* TODO: Laws; arrow instance? *)
+  Definition ordPred (P1 P2 : PurePred) : Prop :=
+    forall f1 f2, f1 =1 f2 -> P1 f1 -> P2 f2.
 
 End PredKleisli.
+
+Section PredArrow.
+
+  Variables A B C : Type.
+
+  Definition arrPred (f : A -> B) : PurePred A B :=
+    fun f' => f =1 f'.
+
+  Definition compPred 
+    (l : PurePred A B) (r : PurePred B C) : PurePred A C :=
+    fun f => exists (g : A -> B) (h : B -> C), l g /\ r h /\ f =1 fun a => h (g a).
+
+  Definition firstPred (p : PurePred A B) : PurePred (A * C) (B * C) :=
+    fun f => exists l, (fun '(a, c) => (l a, c)) =1 f /\ p l.
+
+  Definition leftPred (p : PurePred A B) : PurePred (A + C) (B + C) :=
+    fun f => exists l, (fun ac => match ac with
+                       | inl a => inl (l a)
+                       | inr c => inr c
+                       end) =1 f /\ p l.
+
+  (* Not sure about this one. *)
+  Definition appPred : PurePred (PurePred A B * A) B :=
+    fun f => exists l, exists p, forall a, f (p, a) = l a /\ p l.
+
+  (** TODO: I don't like proving arrow laws; leaving them as future work for
+      now. *)
+  
+End PredArrow.
+
 
 Section RelationPred2PrePost.
   
   Variables A B : Type.
 
-  Definition p2pp (p : PurePred A B) : PurePre A * PurePost A B :=
-    (fun _ => True, p).
+  Program Definition p2pp (a : A) (p : PurePred A B) : PurePre A * PurePost B :=
+    ((a, fun _ => True), fun b => p (fun _ => b)).
 
-  Definition pp2p (pp : PurePre A * PurePost A B) : PurePred A B :=
-    fun a b =>
-    match pp with
-    | (p, q) => p a -> q a b
-    end.
+  Program Definition pp2p (pp : PurePre A * PurePost B) : PurePred A B :=
+    fun f => match pp with
+          | (ap, q) =>
+              match ap with
+              | (a, p) => p a -> q (f a)  
+              end
+          end.
 
-  Lemma loop_p2pp_pp2p (p : PurePred A B) :
-    ordPred p (pp2p (p2pp p)) /\ ordPred (pp2p (p2pp p)) p.
-  Proof. sfirstorder. Qed.
+  Theorem adjunction_p_pp : forall a p pp,
+    ordPrePost (p2pp a p) pp <-> ordPred p (pp2p pp).
+  Proof.
+    destruct pp. unfold ordPrePost, ordPred, ordPre, ordPost.
+    cbn. destruct p0 as [[a0 p0] Hp0]. cbn in *. split.
+    - intros. destruct H. eapply H3. apply H2.
+      (** Missing some invariance of [Pred]? *)
+  Abort.
+
+
+  (*
+  Lemma loop_p2pp_pp2p (a : A) (p : PurePred A B) :
+    ordPred p (pp2p (p2pp a p)) /\ ordPred (pp2p (p2pp a p)) p.
+  Proof.
+    unfold PurePred in p. split.
+    - unfold p2pp, pp2p, ordPred. cbn. intros.
+      admit.
+    - unfold p2pp, pp2p, ordPred. cbn. intros.
+      hammer.
+
+  Qed.
 
   Lemma loop_pp2p_p2pp (pp : PurePre A * PurePost A B) :
     ordPrePost (p2pp (pp2p pp)) pp.
   Proof. destruct pp. sfirstorder. Qed.
-
-  Theorem adjunction_p_pp : forall p pp,
-    ordPrePost (p2pp p) pp <-> ordPred p (pp2p pp).
-  Proof. destruct pp. sfirstorder. Qed.
+   *)
 
 End RelationPred2PrePost.
-*)
 
 Section ForwardPredicateTransformer.
   
