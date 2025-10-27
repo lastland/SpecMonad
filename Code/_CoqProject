@@ -3,6 +3,7 @@
 Common/Notations.v
 Common/Classes.v
 Common/PureSpecMonads.v
+Common/PureSpecKleisli.v
 Common/PurePrePostStandard.v
 Common/StateSpecMonads.v
 Common/OptionSpecMonads.v
