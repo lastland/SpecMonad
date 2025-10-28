@@ -150,6 +150,48 @@ End PrePostKleisli.
 Arguments PurePre : clear implicits.
 Arguments PurePost : clear implicits.
 
+Class Default (A : Type) := { default : A }.
+
+Section PrePostMonads.
+
+  (* [PurePost] is a monad. I'm not sure about these definitions yet. *)
+  Program Definition retPrePost {A B} `{Default A}
+    (b : B) : PurePre A * PurePost B :=
+    ((default, (fun _ => True)), (fun b' => b = b')).
+
+  Program Definition bindPrePost {A B C}
+    (m : PurePre A * PurePost B) (k : B -> PurePre A * PurePost C) :
+    PurePre A * PurePost C :=
+    match m with
+    | (p, q) =>
+        (p,
+          fun c => forall b,
+              q b ->
+              match k b with
+              | (kp, kq) => ordPre p kp /\ kq c
+              end)
+    end.
+
+  (* [PurePre] is a comonad. I'm not sure about these definitions yet. *)
+  Program Definition extractPrePost {A B}
+    (pp : PurePre A * PurePost B) : A :=
+    match pp with (p, _) =>
+                    match p with (a, _) => a end
+    end.
+
+  Program Definition extendPrePost {A B C}
+    (k : PurePre A * PurePost B -> C)                     
+    (a : PurePre A * PurePost B) :
+    PurePre C * PurePost B :=
+    match a with
+    | (_, b) => (k a, (fun c' => exists a, k a = c'), b)
+    end.
+  Next Obligation.
+    exists (p, p0). reflexivity.
+  Qed.
+  
+End PrePostMonads.
+
 Section PredKleisli.
   
   Variables A B : Type.
