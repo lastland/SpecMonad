@@ -124,8 +124,8 @@ Section PrePostKleisli.
       forall P (Q1 Q2 : PurePost) (m: PurePre * PurePost),
         dualPrePost m (P, Q1) ->
         dualPrePost m (P, Q2) ->
-        dualPrePost m (P, conjPost Q1 Q2).
-  Proof. hauto lq: on. Qed.
+        dualPrePost m (P, disjPost Q1 Q2).
+  Proof. sauto. Qed.
   
   (** Interactions between [ordPrePost] and [dualPrePost]. These correspond to
       the principles of agreement and denial. *)
@@ -150,47 +150,38 @@ End PrePostKleisli.
 Arguments PurePre : clear implicits.
 Arguments PurePost : clear implicits.
 
-Class Default (A : Type) := { default : A }.
+(* Class Default (A : Type) := { default : A }. *)
 
 Section PrePostMonads.
 
   (* [PurePost] is a monad. I'm not sure about these definitions yet. *)
-  Program Definition retPrePost {A B} `{Default A}
-    (b : B) : PurePre A * PurePost B :=
-    ((default, (fun _ => True)), (fun b' => b = b')).
+  Program Definition retPost {B} (b : B) : PurePost B :=
+    fun b' => b = b'.
 
-  Program Definition bindPrePost {A B C}
-    (m : PurePre A * PurePost B) (k : B -> PurePre A * PurePost C) :
-    PurePre A * PurePost C :=
-    match m with
-    | (p, q) =>
-        (p,
-          fun c => forall b,
-              q b ->
-              match k b with
-              | (kp, kq) => ordPre p kp /\ kq c
-              end)
-    end.
+  Program Definition bindPost {B C}
+    (m : PurePost B) (k : B -> PurePost C) : PurePost C :=
+    fun c => exists b, m b /\ (k b) c.
+
+  (*
+  Monad B   := PurePre A * PurePost B ;
+  Comonad A := PurePre A * PurePost B                                
+  *)
 
   (* [PurePre] is a comonad. I'm not sure about these definitions yet. *)
-  Program Definition extractPrePost {A B}
-    (pp : PurePre A * PurePost B) : A :=
-    match pp with (p, _) =>
-                    match p with (a, _) => a end
-    end.
+  Program Definition extractPre {A}
+    (p : PurePre A) : A := fst p.
 
-  Program Definition extendPrePost {A B C}
-    (k : PurePre A * PurePost B -> C)                     
-    (a : PurePre A * PurePost B) :
-    PurePre C * PurePost B :=
-    match a with
-    | (_, b) => (k a, (fun c' => exists a, k a = c'), b)
-    end.
+  Program Definition extendPrePost {A B}
+    (k : PurePre A -> B) (a : PurePre A) : PurePre B :=
+    (k a, (fun b => exists a', k a' = b)).
   Next Obligation.
-    exists (p, p0). reflexivity.
+    exists a. reflexivity.
   Qed.
   
 End PrePostMonads.
+
+Import MonadNotation.
+
 
 Section PredKleisli.
   
@@ -198,17 +189,35 @@ Section PredKleisli.
   
   (** There are two possible Preds: A -> B -> Prop and (A -> B) -> Prop. Both
       seem to make sense. *)
-  Definition PurePred := (A -> B) -> Prop.
+  Definition PurePred := (A * ((A -> B) -> Prop))%type.
 
   Definition ordPred (P1 P2 : PurePred) : Prop :=
-    forall f1 f2, f1 =1 f2 -> P1 f1 -> P2 f2.
+    forall f1 f2, f1 =1 f2 -> snd P1 f1 -> snd P2 f2.
 
 End PredKleisli.
 
 Section PredArrow.
 
-  Variables A B C : Type.
+  Variables A B : Type.
 
+  Program Definition retPred (b : B) : PurePred unit B :=
+    (tt, fun f => f tt = b).
+
+  Program Definition bindPred {C}
+    (m : PurePred A B) (k : B -> PurePred A C) : PurePred A C :=
+    match m with
+    | (a, m) => (a , fun f => exists g, m g /\ exists a, snd (k (g a)) f)
+    end.
+
+  Program Definition extractPred (b : PurePred A B) : A := fst b.
+
+  Program Definition extendPred {C}
+    (k : PurePred A B -> C) (a : PurePred A B) : PurePred C B.
+  unfold PurePred in *. split; [exact (k a) |].
+  intros f. refine (exists c', _).
+  Abort.
+
+(*  
   Definition arrPred (f : A -> B) : PurePred A B :=
     fun f' => f =1 f'.
 
@@ -231,10 +240,11 @@ Section PredArrow.
 
   (** TODO: I don't like proving arrow laws; leaving them as future work for
       now. *)
-  
+  *)
 End PredArrow.
 
 
+(*
 Section RelationPred2PrePost.
   
   Variables A B : Type.
@@ -376,4 +386,5 @@ Section RelationSPost2PrePost.
       eapply H; [sauto lq: on | assumption].
   Qed.
 End RelationSPost2PrePost.
+*)
 *)
