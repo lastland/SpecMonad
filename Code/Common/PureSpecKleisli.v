@@ -1,14 +1,19 @@
 From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
 From Hammer Require Import Hammer Tactics.
-From Incorrectness Require Import Common.Notations Common.Classes.
+From Incorrectness Require Import Common.Notations.
 From Coq Require Import RelationClasses Relation_Definitions.
+
+Import MonadNotation.
 
 Set Implicit Arguments.
 
 Definition pointwise_eq {A B} : relation (A -> B) :=
   fun f g => forall a, f a = g a.
-
 Notation "f =1 g" := (pointwise_eq f g) (at level 42).
+
+Definition pointwise_eq2 {A B C} : relation (A -> B -> C) :=
+  fun f g => forall a, f a =1 g a.
+Notation "f =2 g" := (pointwise_eq f g) (at level 42).
 
 Instance Eq__pointwise {A B} : Equivalence (@pointwise_eq A B).
 Proof. sfirstorder. Qed.
@@ -180,93 +185,182 @@ Section PrePostMonads.
   
 End PrePostMonads.
 
-Import MonadNotation.
-
-
 Section PredKleisli.
   
   Variables A B : Type.
   
-  (** There are two possible Preds: A -> B -> Prop and (A -> B) -> Prop. Both
-      seem to make sense. *)
-  Definition PurePred := (A * ((A -> B) -> Prop))%type.
+  (* This is similar to: [{p : (a * (A -> B -> Prop)) | exists b, snd p (fst p) b}] but we
+  can actually extract [b] in this version. We need to be able to extract b in
+  [p2pp]. *)
+  Definition PurePred := { p : (A * (A -> B * (B -> Prop)))%type
+                         | match p with
+                           | (a, p) =>
+                               match (p a) with
+                                 | (b, p') => p' b
+                               end
+                           end }.
 
-  Definition ordPred (P1 P2 : PurePred) : Prop :=
-    forall f1 f2, f1 =1 f2 -> snd P1 f1 -> snd P2 f2.
+  Program Definition ordPred (P1 P2 : PurePred) : Prop :=
+    forall a b, snd (snd P1 a) b -> snd (snd P2 a) b.
 
 End PredKleisli.
 
-Section PredArrow.
+Section PredMonadComonad.
 
   Variables A B : Type.
 
   Program Definition retPred (b : B) : PurePred unit B :=
-    (tt, fun f => f tt = b).
+    (tt, fun _ => (b, fun b' => b = b')).
 
   Program Definition bindPred {C}
     (m : PurePred A B) (k : B -> PurePred A C) : PurePred A C :=
     match m with
-    | (a, m) => (a , fun f => exists g, m g /\ exists a, snd (k (g a)) f)
+    | (a, fa) =>
+        match fa a with
+        | (b, fb) =>
+            match k b with
+            | (a', fa') =>
+                match fa' a' with
+                | (c, fc) =>
+                    (a, (fun a => (c, fc)))
+                end
+            end
+        end
     end.
-
+  Next Obligation.
+    sauto.
+  Qed.
+  
   Program Definition extractPred (b : PurePred A B) : A := fst b.
 
   Program Definition extendPred {C}
-    (k : PurePred A B -> C) (a : PurePred A B) : PurePred C B.
-  unfold PurePred in *. split; [exact (k a) |].
-  intros f. refine (exists c', _).
-  Abort.
+    (k : PurePred A B -> C) (a : PurePred A B) : PurePred C B :=
+    (* This one feels too simple, which makes me feel I could have made a
+       mistake somewhere... This may become clear when working on comonad
+       laws. *)
+    match a with
+    | (a', fa) =>
+        match fa a' with
+        | (b, fb) =>
+            (k a, fun c => (b, fb))
+        end
+    end.
+  Next Obligation.
+    sauto.
+  Qed. 
 
-(*  
-  Definition arrPred (f : A -> B) : PurePred A B :=
-    fun f' => f =1 f'.
+  (** TODO: Monad and comonad laws. *)
+End PredMonadComonad.
 
-  Definition compPred 
-    (l : PurePred A B) (r : PurePred B C) : PurePred A C :=
-    fun f => exists (g : A -> B) (h : B -> C), l g /\ r h /\ f =1 fun a => h (g a).
+(* Tactic for destructing a PurePred. *)
+Ltac destruct_p p :=
+       let a  := fresh "a" in
+       let fa := fresh "fa" in
+       let Ha := fresh "Ha" in
+       destruct p as [[a fa] Ha] ;
+       let b  := fresh "b" in
+       let fb := fresh "fb" in
+       let eqfa := fresh "Heqfa" in 
+       destruct (fa a) as [b fb] eqn:eqfa.
 
-  Definition firstPred (p : PurePred A B) : PurePred (A * C) (B * C) :=
-    fun f => exists l, (fun '(a, c) => (l a, c)) =1 f /\ p l.
+(* TODO: at some point, refactor this codebase to be based on two types of
+     predicates: normal predicate [A -> Prop] and nonempty predicate [A * (A ->
+     Prop)]. *)
+Definition NEPrePost A B :=
+  { pp : B * PurePre A * PurePost B |
+    match pp with
+    | (b, exist _ (a, pre) _, post) =>
+        pre a -> post b
+    end }.
 
-  Definition leftPred (p : PurePred A B) : PurePred (A + C) (B + C) :=
-    fun f => exists l, (fun ac => match ac with
-                       | inl a => inl (l a)
-                       | inr c => inr c
-                       end) =1 f /\ p l.
-
-  (* Not sure about this one. *)
-  Definition appPred : PurePred (PurePred A B * A) B :=
-    fun f => exists l, exists p, forall a, f (p, a) = l a /\ p l.
-
-  (** TODO: I don't like proving arrow laws; leaving them as future work for
-      now. *)
-  *)
-End PredArrow.
-
-
-(*
+Ltac destruct_ne_pp pp :=
+  let a := fresh "a" in
+  let b := fresh "b" in
+  let pre := fresh "pre" in
+  let post := fresh "post" in
+  let Hpre := fresh "Hpre" in
+  let Hpp := fresh "Hpp" in
+  destruct pp as [[[b [[a pre] Hpre]] post] Hpp].
+              
 Section RelationPred2PrePost.
   
   Variables A B : Type.
 
-  Program Definition p2pp (a : A) (p : PurePred A B) : PurePre A * PurePost B :=
-    ((a, fun _ => True), fun b => p (fun _ => b)).
+  (* [p2pp] does not need to produce [NEPrePost]. *)
+  Program Definition p2pp' (p : PurePred A B) : PurePre A * PurePost B :=
+    match p with
+    | (a, fa) => 
+        (* Intentionally kept simple for easy reasoning. *)
+        ((a, (fun a => snd (fa a) (fst (fa a)))),
+          fun b => snd (fa a) b) (* It seems wrong that this depends on [a]. *)
+    end.
+  Next Obligation.
+    pose proof (proj2_sig p). rewrite <- Heq_p in H.
+    destruct (fa a) eqn:Hfa. assumption.
+  Qed.
+    
+  (* This one produces [NEPrePost] for symmetry. *)
+  Program Definition p2pp (p : PurePred A B) : NEPrePost A B :=
+    match p with
+    | (a, fa) => 
+        (* Intentionally kept simple (avoid pattern match on [fa a]) for easy
+           reasoning. *)
+        (fst (fa a), (a, (fun a => snd (fa a) (fst (fa a)))),
+          fun b => snd (fa a) b)
+    end.
+  Next Obligation.
+    pose proof (proj2_sig p). rewrite <- Heq_p in H.
+    destruct (fa a) eqn:Hfa. assumption.
+  Qed.
 
-  Program Definition pp2p (pp : PurePre A * PurePost B) : PurePred A B :=
-    fun f => match pp with
-          | (ap, q) =>
-              match ap with
-              | (a, p) => p a -> q (f a)  
-              end
-          end.
+  (* This needs to be over [NEPrePost]. *)
+  Program Definition pp2p (pp : NEPrePost A B) : PurePred A B :=
+    match pp with
+    | (b, pre', post) =>
+        match pre' with
+        | (a, pre) =>
+            (a, fun a => (b, fun b => pre a -> post b))
+        end
+    end.
+  (*
+  Next Obligation.
+    pose proof (proj2_sig p). rewrite <- Heq_p in H0. 
+    exists a. destruct (fa a) eqn:Hfa. cbn in *. assumption.
+  Qed. *)
+  Next Obligation.
+    pose proof (proj2_sig pp). cbn in H0. rewrite <- Heq_pp in H0.
+    destruct pre'. cbn in *. rewrite <- Heq_pre' in H0. solve [auto].
+  Qed.
 
-  Theorem adjunction_p_pp : forall a p pp,
-    ordPrePost (p2pp a p) pp <-> ordPred p (pp2p pp).
+  Program Definition ordPrePost' (p q : NEPrePost A B) : Prop :=
+    ordPrePost (snd (fst p), snd p) (snd (fst q), snd q).
+
+  Theorem loop_p2pp_pp2p : forall pp,
+      ordPrePost' (p2pp (pp2p pp)) pp.
   Proof.
-    destruct pp. unfold ordPrePost, ordPred, ordPre, ordPost.
-    cbn. destruct p0 as [[a0 p0] Hp0]. cbn in *. split.
-    - intros. destruct H. eapply H3. apply H2.
-      (** Missing some invariance of [Pred]? *)
+    intros. destruct_ne_pp pp. cbv. split.
+    - hauto.
+    - hauto lq: on drew: off.
+  Qed.
+    
+  Theorem inverse_pp2p_p2pp : forall (p : PurePred A B),
+      ordPred p (pp2p (p2pp p)) /\ ordPred (pp2p (p2pp p)) p.
+  Proof.
+    intros. destruct p as [[a fa] Ha]. cbv. split.
+    - intros. destruct (fa a0) eqn:Hfaa0.
+      destruct (fa a) eqn:Hfaa.
+      (* Not provable *)
+  Abort.
+
+  Theorem adjunction_p_pp : forall p pp,
+    ordPrePost' (p2pp p) pp <-> ordPred p (pp2p pp).
+  Proof.
+    intros. destruct p as [[a fa] Ha].
+    destruct_ne_pp pp. cbn in Hpre.
+    unfold ordPrePost', ordPrePost, ordPred, ordPre. cbn. split.
+    - intros. destruct H as [H H2].
+      eapply H2. apply H1. 
+    (* Not provable. *)
   Abort.
 
 
@@ -289,6 +383,7 @@ Section RelationPred2PrePost.
 
 End RelationPred2PrePost.
 
+(*
 Section ForwardPredicateTransformer.
   
   Variables A B : Type.
