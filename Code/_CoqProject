@@ -18,3 +18,4 @@ ST/Pred.v
 ST/GuardedPred.v
 STEx/Examples.v
 STEx/STEx.v
+Delay/WP.v
