@@ -4,7 +4,6 @@ From ExtLib Require Import
   MonadState MonadExc.
 From ITree Require Import ITree Eq Props.Infinite.
 From ITree.Extra.Dijkstra Require Import DelaySpecMonad.
-From Hammer Require Import Tactics.
 
 #[local] Open Scope itree_scope.
 
@@ -149,7 +148,8 @@ Section WPProgSpec.
     (* Adapted from Dijkstra monad forever proof. *)
     red. red in H0. destruct w as [w Hw]. simpl in *. eapply Hw; try apply H0.
     simpl. intros. basic_solve.
-    dest_dep f a. eapply Hfa; eauto. fcrush. 
+    dest_dep f a. eapply Hfa; eauto.
+    specialize (H1 a H2). rewrite Heq in H1. simpl in H1. exact H1.
   Qed.
 
   Definition DelayAWLP := DelaySpec.
@@ -198,7 +198,8 @@ Section WPProgSpec.
     (* Adapted from Dijkstra monad forever proof. *)
     red. red in H0. destruct w as [w Hw]. simpl in *. eapply Hw; try apply H0.
     simpl. intros. basic_solve.
-    - left. intros. dest_dep f a. eapply Hfa; eauto. fcrush.
+    - left. intros. dest_dep f a. eapply Hfa; eauto.
+      specialize (H1 a H2). rewrite Heq in H1. simpl in H1. exact H1.
     - right. assumption.
   Qed.
 
