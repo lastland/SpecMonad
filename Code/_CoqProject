@@ -20,3 +20,4 @@ STEx/Examples.v
 STEx/STEx.v
 Delay/WP.v
 Delay/WPFacts.v
+Delay/WPMonad.v

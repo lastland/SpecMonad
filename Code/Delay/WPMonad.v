@@ -180,22 +180,18 @@ End BindAssociativity.
 Section ReturnOfBindCounter.
 
   (** A specification that evaluates any postcondition at [spin]. *)
-  Definition spin_spec (A : Type) : DelaySpec A.
-    refine (exist _ (fun p => proj1_sig p ITree.spin) _).
-    intros p p' Himp Hp. apply Himp. exact Hp.
-  Defined.
+  #[program] Definition spin_spec (A : Type) : DelaySpec A :=
+    fun p => proj1_sig p ITree.spin.
 
   (** A postcondition that is universally true. *)
-  Definition true_post (A : Type) : DelaySpecInput A.
-    refine (exist _ (fun _ => True) _).
-    intros t1 t2 _. tauto.
-  Defined.
+  #[program] Definition true_post (A : Type) : DelaySpecInput A :=
+    fun _ => True.
+  Next Obligation. intros t1 t2 _. tauto. Qed.
 
   (** A postcondition that is universally false. *)
-  Definition false_post (A : Type) : DelaySpecInput A.
-    refine (exist _ (fun _ => False) _).
-    intros t1 t2 _. tauto.
-  Defined.
+  #[program] Definition false_post (A : Type) : DelaySpecInput A :=
+    fun _ => False.
+  Next Obligation. intros t1 t2 _. tauto. Qed.
 
   (** For AWP: [bind_awp m ret] at [true_post] requires a terminating [spin],
       but [m] at [true_post] holds trivially. *)
