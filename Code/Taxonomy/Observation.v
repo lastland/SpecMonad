@@ -5,7 +5,8 @@ From ExtLib Require Import
   StateMonad OptionMonad List.          
 From Hammer Require Import Tactics.
 
-From Incorrectness.Taxonomy Require Import Prog WP.
+From Incorrectness.Taxonomy Require Import
+  Prog WP SPost.
 
 Section ObservationWP.
 
@@ -28,3 +29,17 @@ Section ObservationWP.
   
 End ObservationWP.
 
+Section ObservationSP.
+
+  Variable S : Type.
+
+  #[program]
+    Definition observationSP {A} (m : prog S A) : ProgSPost S A :=
+    mkStateT
+      (fun s => mkOptionT
+               (fun pre => match runStateT m s with
+                        | mkOptionT o => fun r => eutt eq o (ret r) /\ pre
+                        end)).
+
+  (** What should [slp] be like? *)
+End ObservationSP.

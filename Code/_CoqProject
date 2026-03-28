@@ -21,4 +21,6 @@ STEx/STEx.v
 Taxonomy/Prog.v
 Taxonomy/WP.v
 Taxonomy/ProgFacts.v
-Taxonomy/WPFacts.v
+Taxonomy/ProgSpecFacts.v
+Taxonomy/SPost.v
+Taxonomy/Observation.v
