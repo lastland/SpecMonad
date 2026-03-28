@@ -2,10 +2,6 @@
 
     [PureSPost A] is a forward predicate transformer (strongest
     postcondition style), bundled with a monotonicity condition.
-    Three of the four monad laws hold; [bind_bind] holds in the
-    RHS-to-LHS direction by monotonicity, but the converse requires
-    extracting a witness from an existential precondition and is
-    left admitted.
 
     [ProgSPost S = stateT S (optionT PureSPost)] then inherits
     [MonadLawsE] via the generic [optionT] and [stateT] instances
@@ -88,19 +84,14 @@ Section PureSPostFacts.
       + intros [v [Heq Hv]]. subst. exact Hv.
       + intros Ha. exists a. exact (conj eq_refl Ha).
     - (* bind_bind *)
-      (** The RHS-to-LHS direction follows from monotonicity of [g]:
-          a specific [Q(a0,b)] implies [exists a, Q(a,b)], so
-          monotonicity lifts the postcondition.
-
-          The LHS-to-RHS direction requires recovering a specific
-          witness [a0] from the existentially-quantified precondition
-          passed to [g].  Monotonicity only goes in the wrong direction
-          here, so this direction is not provable. *)
       intros A B C m f g.
       unfold eq1, Eq1_PureSPost.
       apply PureSPost_eq. intros pre c. cbn.
       split.
-      + admit.
+      + intros [b0 Hb].
+        pose proof (proj2_sig (proj1_sig (g b0) _) c Hb) as [a0 Ha0].
+        exists a0, b0.
+        exact (proj2_sig (g b0) _ _ (fun _ => Ha0) c Hb).
       + intros [a0 [b0 Hb]]. exists b0.
         exact (proj2_sig (g b0) _ _ (fun h => ex_intro _ a0 h) c Hb).
     - (* Proper_bind *)
@@ -110,7 +101,7 @@ Section PureSPostFacts.
       assert (f = g) as ->
         by (apply functional_extensionality; exact Hfg).
       reflexivity.
-  Admitted.
+  Qed.
 
 End PureSPostFacts.
 
