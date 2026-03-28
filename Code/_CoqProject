@@ -18,3 +18,7 @@ ST/Pred.v
 ST/GuardedPred.v
 STEx/Examples.v
 STEx/STEx.v
+Taxonomy/Prog.v
+Taxonomy/WP.v
+Taxonomy/ProgFacts.v
+Taxonomy/WPFacts.v
