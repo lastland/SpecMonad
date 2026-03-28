@@ -33,7 +33,7 @@ Section ProgSPost.
 
   Definition ProgSPost := stateT S (optionT PureSPost).
 
-  (* Copy-pasted from [Spec.v]. *)
+  (* Copy-pasted from [WP.v]. *)
   #[local] Existing Instance Monad_stateT.
 
   Definition retP {A} (a : A) : ProgSPost A :=

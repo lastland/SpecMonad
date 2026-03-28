@@ -5,20 +5,20 @@ From ExtLib Require Import
   StateMonad OptionMonad List.          
 From Hammer Require Import Tactics.
 
-From Incorrectness.Taxonomy Require Import Prog Spec.
+From Incorrectness.Taxonomy Require Import Prog WP.
 
 Section ObservationWP.
 
   Variable S : Type.
   
-  Definition observationWP {A} (m : prog S A) : ProgSpec S A :=
+  Definition observationWP {A} (m : prog S A) : ProgWP S A :=
     mkStateT
       (fun s => mkOptionT
                (fun post => match runStateT m s with
                         | mkOptionT o => exists r, post r /\ eutt eq o (ret r)
                         end)).
 
-  Definition observationWLP {A} (m : prog S A) : ProgSpec S A :=
+  Definition observationWLP {A} (m : prog S A) : ProgWP S A :=
     mkStateT
       (fun s => mkOptionT
                (fun post => match runStateT m s with
