@@ -24,4 +24,6 @@ Taxonomy/WP.v
 Taxonomy/WPFacts.v
 Taxonomy/SPost.v
 Taxonomy/SPostFacts.v
+Taxonomy/NonDetProg.v
+Taxonomy/NonDetProgFacts.v
 Taxonomy/Observation.v
