@@ -23,4 +23,5 @@ Taxonomy/WP.v
 Taxonomy/ProgFacts.v
 Taxonomy/ProgSpecFacts.v
 Taxonomy/SPost.v
+Taxonomy/SPostFacts.v
 Taxonomy/Observation.v

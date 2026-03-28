@@ -6,8 +6,17 @@ From Hammer Require Import Tactics.
 
 Section PureSPost.
 
-  Definition PureSPost A :=
+  (** Raw forward predicate transformer without monotonicity. *)
+  Definition RawPureSPost A :=
     forall (pre : Prop), {p : A -> Prop | forall a, p a -> pre}.
+
+  (** [PureSPost] bundles a monotonicity condition: a stronger
+      precondition yields a stronger postcondition.  This is needed
+      for the [bind_bind] monad law (RHS -> LHS direction). *)
+  Definition PureSPost A :=
+    { w : RawPureSPost A
+    | forall P Q, (P -> Q) -> forall a,
+        proj1_sig (w P) a -> proj1_sig (w Q) a }.
 
   #[local]
   #[program] Definition retSP {A} (a : A) : PureSPost A :=
@@ -17,8 +26,16 @@ Section PureSPost.
   #[program] Definition bindSP {A B}
     (m : PureSPost A) (k : A -> PureSPost B) : PureSPost B :=
     fun pre => exist _ (fun b =>
-      exists a, proj1_sig (k a (proj1_sig (m pre) a)) b) _.
-  Next Obligation. sfirstorder. Qed.
+      exists a, proj1_sig (proj1_sig (k a) (proj1_sig (proj1_sig m pre) a)) b) _.
+  Next Obligation.
+    eapply (proj2_sig (proj1_sig m pre)).
+    eapply (proj2_sig (proj1_sig (k H) _)).
+    exact H0.
+  Qed.
+  Next Obligation.
+    exists H0.
+    exact (proj2_sig (k H0) _ _ (proj2_sig m P Q H H0) a H1).
+  Qed.
 
   #[global]
     Instance Monad_PureSPost : Monad PureSPost :=
