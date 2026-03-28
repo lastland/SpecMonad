@@ -27,3 +27,4 @@ Taxonomy/SPostFacts.v
 Taxonomy/NonDetProg.v
 Taxonomy/NonDetProgFacts.v
 Taxonomy/Observation.v
+Taxonomy/NonDetObservation.v
