@@ -1,8 +1,6 @@
-From Coq Require Import List.
 From ExtLib Require Import
-  Monad MonadTrans MonadState MonadExc
-  StateMonad OptionMonad List.          
-From Hammer Require Import Tactics.
+  Monad MonadState MonadExc
+  StateMonad OptionMonad.
 
 Section PureWP.
 
@@ -38,7 +36,7 @@ Section ProgWP.
 
   Definition bindP {A B}
     (m : ProgWP A) (k : A -> ProgWP B) : ProgWP B :=
-    @bind (stateT _ _) _ _ _ m k.  
+    @bind (stateT _ _) _ _ _ m k.
 
   #[global]
     Instance Monad__ProgWP : Monad ProgWP :=
@@ -59,12 +57,12 @@ Section ProgWP.
   #[local] Existing Instance OptionTError.
 
   Definition raiseP {A} (_ : unit) : ProgWP A :=
-    @raise _ (stateT _ _) _ _ tt. 
-  
+    @raise _ (stateT _ _) _ _ tt.
+
   Definition catchP {A}
     (m : ProgWP A) (c : unit -> ProgWP A) : ProgWP A :=
     @catch _ (stateT _ _) _ _ m c.
-    
+
   #[global]
     Instance MonadExc__ProgWP : MonadExc unit ProgWP :=
     {| raise := fun _ => raiseP ;

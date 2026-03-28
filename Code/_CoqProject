@@ -19,9 +19,9 @@ ST/GuardedPred.v
 STEx/Examples.v
 STEx/STEx.v
 Taxonomy/Prog.v
-Taxonomy/WP.v
 Taxonomy/ProgFacts.v
-Taxonomy/ProgSpecFacts.v
+Taxonomy/WP.v
+Taxonomy/WPFacts.v
 Taxonomy/SPost.v
 Taxonomy/SPostFacts.v
 Taxonomy/Observation.v

@@ -1,8 +1,7 @@
-From Coq Require Import List.
+From Coq Require Import Program.Tactics.
 From ExtLib Require Import
-  Monad MonadTrans MonadState MonadExc
-  StateMonad OptionMonad List.
-From Hammer Require Import Tactics.
+  Monad MonadState MonadExc
+  StateMonad OptionMonad.
 
 Section PureSPost.
 

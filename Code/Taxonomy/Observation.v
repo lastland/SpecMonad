@@ -1,9 +1,8 @@
-From Coq Require Import List.
+From Coq Require Import Program.Tactics.
 From ITree Require Import ITree Eq Props.Infinite.
 From ExtLib Require Import
-  Monad MonadTrans MonadState MonadExc
-  StateMonad OptionMonad List.          
-From Hammer Require Import Tactics.
+  Monad MonadState MonadExc
+  StateMonad OptionMonad.
 
 From Incorrectness.Taxonomy Require Import
   Prog WP SPost.
@@ -11,7 +10,7 @@ From Incorrectness.Taxonomy Require Import
 Section ObservationWP.
 
   Variable S : Type.
-  
+
   Definition observationWP {A} (m : prog S A) : ProgWP S A :=
     mkStateT
       (fun s => mkOptionT
@@ -26,7 +25,7 @@ Section ObservationWP.
                          | mkOptionT o => (exists r, post r /\ eutt eq o (ret r)) \/
                                            any_infinite o
                         end)).
-  
+
 End ObservationWP.
 
 Section ObservationSP.

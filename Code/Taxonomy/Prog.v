@@ -1,12 +1,7 @@
-From Coq Require Import List.
 From ITree Require Import ITree.
 From ExtLib Require Import
-  Monad MonadTrans MonadState MonadExc
-  StateMonad OptionMonad List.          
-From Hammer Require Import Tactics.
-
-Import ListNotations.
-#[local] Open Scope list_scope.
+  Monad MonadState MonadExc
+  StateMonad OptionMonad.
 
 Section Prog.
 
@@ -20,7 +15,7 @@ Section Prog.
     @ret (stateT _ _) _ _ a.
 
   Definition bindP {A B} (m : prog A) (k : A -> prog B) : prog B :=
-    @bind (stateT _ _) _ _ _ m k.  
+    @bind (stateT _ _) _ _ _ m k.
 
   #[global]
     Instance Monad__prog : Monad prog :=
@@ -41,11 +36,11 @@ Section Prog.
   #[local] Existing Instance OptionTError.
 
   Definition raiseP {A} (_ : unit) : prog A :=
-    @raise _ (stateT _ _) _ _ tt. 
-  
+    @raise _ (stateT _ _) _ _ tt.
+
   Definition catchP {A} (m : prog A) (c : unit -> prog A) : prog A :=
     @catch _ (stateT _ _) _ _ m c.
-    
+
   #[global]
     Instance MonadExc__prog : MonadExc unit prog :=
     {| raise := fun _ => raiseP ;
