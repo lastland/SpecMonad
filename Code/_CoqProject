@@ -30,3 +30,4 @@ Taxonomy/NonDetItProg.v
 Taxonomy/NonDetItProgFacts.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
+Taxonomy/NonDetItObservation.v
