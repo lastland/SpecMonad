@@ -16,6 +16,8 @@ depends: [
   "coq" {>= "8.20"}
   "coq-hammer" {>= "1.3.2"}
   "coq-ext-lib" {>= "0.13.0"}
+  "coq-itree" {>= "5.2.1"}
+  "coq-itree-extra" {>= "5.2.1"}
 ]
 
 tags: []
