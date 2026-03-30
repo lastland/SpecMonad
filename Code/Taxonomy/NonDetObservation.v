@@ -4,7 +4,7 @@ From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
 From ITree Require Import Props.Infinite.
-From Hammer Require Import Hammer Tactics.
+From Hammer Require Import Tactics.
 
 From Incorrectness.Taxonomy Require Import
   NonDetProg WP SPost.

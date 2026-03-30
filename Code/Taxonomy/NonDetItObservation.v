@@ -3,7 +3,7 @@ From Coq Require Import
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
-From Hammer Require Import Hammer Tactics.
+From Hammer Require Import Tactics.
 
 From Incorrectness.Taxonomy Require Import
   NonDetItProg WP SPost.
