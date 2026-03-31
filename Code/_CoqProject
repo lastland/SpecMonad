@@ -31,3 +31,11 @@ Taxonomy/NonDetItProgFacts.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
 Taxonomy/NonDetItObservation.v
+Classes/Arrow.v
+Classes/OptionArrowT.v
+Classes/StateArrowT.v
+Taxonomy/SPostArr.v
+Taxonomy/SPostArrFacts.v
+Taxonomy/ObservationArr.v
+Taxonomy/NonDetObservationArr.v
+Taxonomy/NonDetItObservationArr.v
