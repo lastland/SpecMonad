@@ -39,3 +39,4 @@ Taxonomy/SPostArrFacts.v
 Taxonomy/ObservationArr.v
 Taxonomy/NonDetObservationArr.v
 Taxonomy/NonDetItObservationArr.v
+Taxonomy/SPVariants.v

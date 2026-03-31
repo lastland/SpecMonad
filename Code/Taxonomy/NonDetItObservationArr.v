@@ -1,7 +1,7 @@
 (** * Arrow-based SP observation for [nditprog].
 
     Maps [nditprog S A] (nondeterminism + divergence) to
-    [SPostArr S A], the predicate transformer arrow.
+    [ASPostArr S A], the predicate transformer arrow.
 
     The three-valued outcome space ([Some (Some _)], [Some None],
     [None]) is collapsed into the two-valued [option (A * S)]:
@@ -39,8 +39,8 @@ Section NonDetItObservationArr.
       end.
 
   (** Wrapped as a predicate transformer arrow. *)
-  Definition obsArrowASP {A} (m : nditprog S A) : SPostArr S A :=
-    mkPSA (obsRelASP m).
+  Definition obsArrowASP {A} (m : nditprog S A) : ASPostArr S A :=
+    mkASP (obsRelASP m).
 
 End NonDetItObservationArr.
 

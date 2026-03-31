@@ -1,7 +1,7 @@
 (** * Arrow-based SP observation for [ndprog].
 
     Maps [ndprog S A] (nondeterministic computation) to
-    [SPostArr S A], the predicate transformer arrow.
+    [ASPostArr S A], the predicate transformer arrow.
 
     The angelic SP simply checks membership in the outcome set. *)
 
@@ -28,8 +28,8 @@ Section NonDetObservationArr.
       unOptionT (runStateT m s) r.
 
   (** Wrapped as a predicate transformer arrow. *)
-  Definition obsArrowASP {A} (m : ndprog S A) : SPostArr S A :=
-    mkPSA (obsRelASP m).
+  Definition obsArrowASP {A} (m : ndprog S A) : ASPostArr S A :=
+    mkASP (obsRelASP m).
 
 End NonDetObservationArr.
 
