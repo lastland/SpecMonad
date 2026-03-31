@@ -202,6 +202,73 @@ Proof.
 Qed.
 
 (* ================================================================= *)
+(** ** WP observation inclusions (Theorem 3.7)                        *)
+(* ================================================================= *)
+
+Section NDItWPInclusions.
+
+  Variable S : Type.
+
+  (** Total demonic ⊆ partial demonic: replace [False] with [True]
+      in the divergence branch. *)
+  Theorem obsDWP_incl_obsDWLP :
+    forall A (m : nditprog S A) s post,
+      unOptionT (runStateT (obsDWP m) s) post ->
+      unOptionT (runStateT (obsDWLP m) s) post.
+  Proof.
+    intros A m s post. cbn.
+    destruct (runStateT m s) as [[outcomes]].
+    intros H oa Hoa. specialize (H oa Hoa).
+    destruct oa; [exact H | exact I].
+  Qed.
+
+  (** Total angelic ⊆ partial angelic: left-inject the existential
+      witness into the disjunction. *)
+  Theorem obsAWP_incl_obsAWLP :
+    forall A (m : nditprog S A) s post,
+      unOptionT (runStateT (obsAWP m) s) post ->
+      unOptionT (runStateT (obsAWLP m) s) post.
+  Proof.
+    intros A m s post. cbn.
+    destruct (runStateT m s) as [[outcomes]].
+    intros [r [Hr Hp]]. left. exists r. exact (conj Hr Hp).
+  Qed.
+
+  (** Demonic ⊆ angelic (total): needs at least one outcome.
+      DWP excludes [None], so the witness must be [Some r]. *)
+  Theorem obsDWP_incl_obsAWP :
+    forall A (m : nditprog S A) s post,
+      (exists oa, unOptionT (unOptionT (runStateT m s)) oa) ->
+      unOptionT (runStateT (obsDWP m) s) post ->
+      unOptionT (runStateT (obsAWP m) s) post.
+  Proof.
+    intros A m s post. cbn.
+    destruct (runStateT m s) as [[outcomes]].
+    intros [oa Hoa] H.
+    destruct oa as [r|].
+    - exists r. exact (conj Hoa (H (Some r) Hoa)).
+    - exfalso. exact (H None Hoa).
+  Qed.
+
+  (** Demonic ⊆ angelic (partial): needs at least one outcome.
+      If [Some r], left with witness; if [None], right with divergence. *)
+  Theorem obsDWLP_incl_obsAWLP :
+    forall A (m : nditprog S A) s post,
+      (exists oa, unOptionT (unOptionT (runStateT m s)) oa) ->
+      unOptionT (runStateT (obsDWLP m) s) post ->
+      unOptionT (runStateT (obsAWLP m) s) post.
+  Proof.
+    intros A m s post. cbn.
+    destruct (runStateT m s) as [[outcomes]].
+    intros [oa Hoa] H.
+    destruct oa as [r|].
+    - left. exists r. exact (conj Hoa (H (Some r) Hoa)).
+    - right. exact Hoa.
+  Qed.
+
+End NDItWPInclusions.
+
+(* ================================================================= *)
 (** ** Angelic SP                                                     *)
 (* ================================================================= *)
 
