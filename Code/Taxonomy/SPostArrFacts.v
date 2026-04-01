@@ -253,6 +253,35 @@ Proof.
           destruct x as [b'|d']; [discriminate |].
           injection Heq as Heq. subst.
           exists (inr d'). split; [exact Hpre | reflexivity].
+    - (* first_left_dist *)
+      apply PureASPostArr_eq; intros pre y.
+      destruct y as [[b d]|[c d]]; cbn; unfold sum_prod_dist.
+      + (* inl (b, d) *)
+        destruct (IsASP_rewrite f) as [Rf Hf]. split.
+        * intros [[[b'|c'] d'] [Hleft Hsd]].
+          -- injection Hsd as Hb Hd. subst.
+             cbn in Hleft. rewrite Hf in Hleft. destruct Hleft as [a [Hpre Hra]].
+             rewrite Hf. exists a. split.
+             ++ exists (inl a, d). split; [exact Hpre | reflexivity].
+             ++ exact Hra.
+          -- discriminate.
+        * intros Hfb. rewrite Hf in Hfb. destruct Hfb as [a [Hex Hra]].
+          destruct Hex as [[[a'|c'] d0] [Hpre Hsd]]; cbn in Hsd; [| discriminate].
+          injection Hsd as Ha Hd. subst.
+          exists (inl b, d). split.
+          -- cbn. rewrite Hf. exists a. auto.
+          -- reflexivity.
+      + (* inr (c, d) *)
+        split.
+        * intros [[[b'|c'] d'] [Hleft Hsd]].
+          -- discriminate.
+          -- injection Hsd as Hc Hd. subst. cbn in Hleft.
+             exists (inr c, d). split; [exact Hleft | reflexivity].
+        * intros [[[a'|c'] d'] [Hpre Hsd]]; cbn in Hsd; [discriminate |].
+          injection Hsd as Hc Hd. subst.
+          exists (inr c, d). split.
+          -- cbn. exact Hpre.
+          -- reflexivity.
     - (* left_proper *)
       unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
       intros; subst; reflexivity.
@@ -612,11 +641,31 @@ Proof.
           injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
         * intros H [b'|c'] Heq; [discriminate |].
           injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
-    - admit. (* first_left_dist — proved in later commit *)
+    - (* first_left_dist *)
+      apply PureDSLPostArr_eq; intros pre y.
+      destruct y as [[b d]|[c d]]; cbn; unfold sum_prod_dist.
+      + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
+        * intros H. rewrite Hf. intros a Hra [[a'|c'] d'] Hsd; cbn in Hsd;
+            [| discriminate].
+          injection Hsd as Ha Hd. subst.
+          assert (Hx := H (inl b, d) eq_refl). cbn in Hx. rewrite Hf in Hx.
+          exact (Hx a Hra).
+        * intro Hfb. rewrite Hf in Hfb.
+          intros [[b'|c'] d'] Heq; cbn in Heq; [| discriminate].
+          injection Heq as Hb Hd. subst. cbn.
+          rewrite Hf. intros a Hra.
+          exact (Hfb a Hra (inl a, d) eq_refl).
+      + split.
+        * intros H [[a'|c'] d'] Hsd; cbn in Hsd; [discriminate |].
+          injection Hsd as Hc Hd. subst.
+          exact (H (inr c, d) eq_refl).
+        * intros Hall [[b'|c'] d'] Heq; cbn in Heq; [discriminate |].
+          injection Heq as Hc Hd. subst. cbn.
+          exact (Hall (inr c, d) eq_refl).
     - (* left_proper *)
       unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
       intros; subst; reflexivity.
-Admitted.
+Qed.
 
 (* ================================================================= *)
 (** ** [ArrowLaws] for [optionDSLPArr]                                 *)

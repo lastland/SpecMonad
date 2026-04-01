@@ -555,9 +555,212 @@ Section GenericOptionArrTLaws.
       etransitivity. { apply pcomp. }
       apply arr_pure_ext. intros [a c]. reflexivity.
     - (* first_comp *)
-      (* Requires distributivity naturality: F(Lg) >>> [dist] = [dist] >>> L(Fg)
-         where dist : (A+unit)*D -> (A*D)+unit. *)
-      admit.
+      (* Goal (base level):
+           F(f >>> [ts] >>> Lg >>> [c]) >>> [seq]
+         ≃ (Ff >>> [seq]) >>> [ts] >>> L(Fg >>> [seq]) >>> [c]
+
+         Chain:
+         (1) fcomp x3:   Ff >>> F[ts] >>> F(Lg) >>> F[c] >>> [seq]
+         (2) fpure x2:   Ff >>> [Fts] >>> F(Lg) >>> [Fc] >>> [seq]
+         (3) pcomp:      Ff >>> [Fts] >>> F(Lg) >>> [Fc_seq]
+                          where Fc_seq = seq . (collapse * id)
+         (4) factor:     Ff >>> [Fts] >>> F(Lg) >>> [spd] >>> [cseq]
+                          where cseq (inl p) = seq p, cseq (inr _) = None
+         (5) fldist:     Ff >>> [Fts] >>> [spd] >>> L(Fg) >>> [cseq]
+         (6) L(Fg) >>> [cseq]
+              = L(Fg) >>> L[seq] >>> [sbm id g] >>> [c]   (lpure + pcomp)
+              = L(Fg>>>[seq]) >>> [sbm id g] >>> [c]      (lcomp)
+         (7) lnat:       ... >>> [sbm id g] >>> L(Fg>>>[seq]) >>> [c]
+         (8) pcomp:      [Fts] >>> [spd] >>> [sbm id g] = [seq >>> ts]
+         Final:          Ff >>> [seq] >>> [ts] >>> L(Fg>>>[seq]) >>> [c] *)
+
+      Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
+
+      opt_unfold.
+
+      (* (1) fcomp x3: distribute F over the four-fold composition *)
+      etransitivity.
+      { apply cprop. 2: reflexivity. apply fcomp. }
+      etransitivity. { apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply fcomp. }
+      etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity. apply fcomp. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity. apply cassoc. }
+      (* Ff >>> F[ts] >>> F(Lg) >>> F[c] >>> [seq] *)
+
+      (* (2) fpure on F[ts] and F[c] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity. apply fpure. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+        apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity. apply fpure. }
+      (* Ff >>> [Fts] >>> F(Lg) >>> [Fc] >>> [seq] *)
+
+      (* From here the term is:
+           Ff >>> [Fts] >>> F(Lg) >>> [Fc] >>> [seq]
+         where Fts(ob,d) = (ts ob, d), Fc(x,d) = (collapse x, d).
+
+         We need to reach:
+           Ff >>> [seq] >>> [ts] >>> L(Fg >>> [seq]) >>> [c]
+
+         The proof proceeds by asserting helper equalities and chaining. *)
+
+      (* Helper: [Fc] >>> [seq] = [spd] >>> [cseq]
+         where cseq (inl (oc,d)) = seq(oc,d), cseq (inr _) = None *)
+      set (cseq := fun (x : (option C * D) + (unit * D)) =>
+        match x with
+        | inl p => @sequence_option C D p
+        | inr _ => @None (C * D)
+        end).
+      assert (Hfactor : @arrow_eq arr HE _ _
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (fun p : (option C + unit) * D =>
+            let '(x, d) := p in (collapse x, d)))
+          (@arr_pure arr HA _ _ (@sequence_option C D)))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (@sum_prod_dist (option C) unit D))
+          (@arr_pure arr HA _ _ cseq))).
+      { etransitivity. { apply pcomp. }
+        symmetry. etransitivity. { apply pcomp. }
+        apply arr_pure_ext. intros [[oc|[]] d]; reflexivity. }
+
+      (* Helper: [cseq] = L[seq] >>> [sbm id (fun _ => tt)] >>> [c] *)
+      assert (Hcseq : @arrow_eq arr HE _ _
+        (@arr_pure arr HA _ _ cseq)
+        (@arr_comp arr HA _ _ _
+          (@arr_left arr HA HC _ _ _ (@arr_pure arr HA _ _ (@sequence_option C D)))
+          (@arr_comp arr HA _ _ _
+            (@arr_pure arr HA _ _
+              (fun x : option (C * D) + (unit * D) =>
+                sum_bimap (fun a : option (C * D) => a) (fun _ : unit * D => tt) x))
+            (@arr_pure arr HA _ _ (@collapse (C * D)))))).
+      { symmetry.
+        etransitivity.
+        { apply cprop. 2: reflexivity. apply lpure. }
+        (* [sbm seq id] >>> [sbm id g] >>> [c] *)
+        etransitivity. { symmetry. apply cassoc. }
+        etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+        etransitivity. { apply pcomp. }
+        apply arr_pure_ext. intros [[oc d]|[[] d]]; [destruct oc|]; reflexivity. }
+
+      (* Prove the tail: [Fts] >>> F(Lg) >>> [Fc] >>> [seq]
+                       ≃ [seq] >>> [ts] >>> L(Fg >>> [seq]) >>> [c]
+
+         It suffices to show this since both sides are Ff >>> tail. *)
+      assert (Htail : @arrow_eq arr HE _ _
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (fun p : option B * D =>
+            let '(ob, d) := p in (to_sum ob, d)))
+          (@arr_comp arr HA _ _ _
+            (@arr_first arr HA _ _ D
+              (@arr_left arr HA HC _ _ unit g))
+            (@arr_comp arr HA _ _ _
+              (@arr_pure arr HA _ _ (fun p : (option C + unit) * D =>
+                let '(x, d) := p in (collapse x, d)))
+              (@arr_pure arr HA _ _ (@sequence_option C D)))))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (@sequence_option B D))
+          (@arr_comp arr HA _ _ _
+            (@arr_pure arr HA _ _ (@to_sum (B * D)))
+            (@arr_comp arr HA _ _ _
+              (@arr_left arr HA HC _ _ unit
+                (@arr_comp arr HA _ _ _
+                  (@arr_first arr HA _ _ D g)
+                  (@arr_pure arr HA _ _ (@sequence_option C D))))
+              (@arr_pure arr HA _ _ (@collapse (C * D))))))).
+      {
+        (* Step 1: Merge [Fc] >>> [seq] via pcomp *)
+        etransitivity.
+        { apply cprop. 1: reflexivity.
+          apply cprop. 1: reflexivity. apply pcomp. }
+        (* [Fts] >>> F(Lg) >>> [Fc_seq] *)
+
+        (* Step 2: Factor [Fc_seq] as [spd] >>> [cseq] *)
+        etransitivity.
+        { apply cprop. 1: reflexivity.
+          apply cprop. 1: reflexivity.
+          symmetry.
+          etransitivity.
+          { exact (@pcomp
+              ((option C + unit) * D)%type
+              ((option C * D) + (unit * D))%type
+              (option (C * D))
+              (@sum_prod_dist (option C) unit D)
+              cseq). }
+          apply arr_pure_ext. intros [[oc|[]] d]; reflexivity. }
+        (* [Fts] >>> F(Lg) >>> [spd] >>> [cseq] *)
+
+        (* Step 3: Left-assoc F(Lg)>>>[spd], apply fldist *)
+        etransitivity.
+        { apply cprop. 1: reflexivity.
+          etransitivity. { symmetry. apply cassoc. }
+          apply cprop. 2: reflexivity. apply fldist. }
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply cassoc. }
+        (* [Fts] >>> [spd] >>> L(Fg) >>> [cseq] *)
+
+        (* Step 4: Replace [cseq] with L[seq] >>> [sbm] >>> [c] *)
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+          apply cprop. 1: reflexivity. exact Hcseq. }
+        (* [Fts] >>> [spd] >>> L(Fg) >>> L[seq] >>> [sbm] >>> [c] *)
+
+        (* Step 5: lcomp: L(Fg) >>> L[seq] -> L(Fg>>>[seq]) *)
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+          etransitivity. { symmetry. apply cassoc. }
+          etransitivity. { symmetry. apply cassoc. }
+          apply cprop. 2: reflexivity. apply cprop. 2: reflexivity.
+          symmetry. apply lcomp. }
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+          apply cassoc. }
+        (* [Fts] >>> [spd] >>> L(Fg>>>[seq]) >>> ([sbm] >>> [c]) *)
+
+        (* Step 6: lnat: L(Fg>>>[seq]) >>> [sbm] -> [sbm] >>> L(Fg>>>[seq]) *)
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+          etransitivity. { symmetry. apply cassoc. }
+          apply cprop. 2: reflexivity. apply lnat. }
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity. apply cassoc. }
+        (* [Fts] >>> [spd] >>> [sbm] >>> L(Fg>>>[seq]) >>> [c] *)
+
+        (* Step 7: Merge [Fts]>>>[spd]>>>[sbm] into one pure, then split as [seq]>>>[ts] *)
+        (* Left-associate the three pures *)
+        etransitivity.
+        { etransitivity. { symmetry. apply cassoc. }
+          etransitivity. { symmetry. apply cassoc. }
+          apply cprop. 2: reflexivity.
+          (* ([Fts] >>> [spd]) >>> [sbm] *)
+          etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+          apply pcomp. }
+        (* Now have [merged_3] >>> L(Fg>>>[seq]) >>> [c] *)
+        (* Split [merged_3] as [seq] >>> [ts] *)
+        etransitivity.
+        { apply cprop. 2: reflexivity.
+          symmetry.
+          etransitivity.
+          { exact (@pcomp
+              (option B * D)%type
+              (option (B * D))
+              ((B * D) + unit)%type
+              (@sequence_option B D)
+              (@to_sum (B * D))). }
+          apply arr_pure_ext. intros [[b|] d]; reflexivity. }
+        apply cassoc. }
+
+      (* Right-associate the RHS, then apply Htail under Ff *)
+      symmetry.
+      etransitivity. { apply cassoc. }
+      symmetry.
+      apply cprop. 1: reflexivity. exact Htail.
     - (* first_fst *)
       (* LHS (opt-level): arr_first_opt f >>> arr_pure_opt fst
          RHS (opt-level): arr_pure_opt fst >>> f
@@ -843,7 +1046,7 @@ Section GenericOptionArrTLaws.
       unfold Proper, respectful. intros f' g' Hfg.
       apply cprop; [| reflexivity].
       apply fprop. assumption.
-  Admitted.
+  Qed.
 
 End GenericOptionArrTLaws.
 

@@ -36,6 +36,10 @@ Definition assoc_sum {A B C} (x : (A + B) + C) : A + (B + C) :=
   | inr c => inr (inr c)
   end.
 
+Definition sum_prod_dist {A C D} (p : (A + C) * D) : (A * D) + (C * D) :=
+  let '(ac, d) := p in
+  match ac with inl a => inl (a, d) | inr c => inr (c, d) end.
+
 Definition swap_sum {A B} (x : A + B) : B + A :=
   match x with inl a => inr a | inr b => inl b end.
 
@@ -148,6 +152,12 @@ Class ArrowChoiceLaws (arr : Type -> Type -> Type)
                        (arr_pure (fun x => sum_bimap (fun b : B => b) g x)))
              (arr_comp (arr_pure (fun x => sum_bimap (fun a : A => a) g x))
                        (@arr_left _ _ _ A B D f)) ;
+  first_left_dist : forall {A B C D} (f : arr A B),
+    arrow_eq
+      (arr_comp (@arr_first _ _ _ _ D (@arr_left _ _ _ A B C f))
+                (arr_pure sum_prod_dist))
+      (arr_comp (arr_pure sum_prod_dist)
+                (@arr_left _ _ _ _ _ (C * D)%type (arr_first f))) ;
   left_proper : forall {A B C},
     Proper (@arrow_eq arr _ A B ==> @arrow_eq arr _ (A + C)%type (B + C)%type)
            (@arr_left _ _ _ A B C)
@@ -415,6 +425,31 @@ Section SPArrInstances.
            end.
       1-2: eexists (inl _); simpl; eauto.
       1-2: eexists (inr _); simpl; eauto.
+    - (* first_left_dist *)
+      apply SPArr_eq. intros [[a0|c0] d0] [[b0 d1]|[c1 d1]];
+      unfold_SPArr; unfold sum_prod_dist; simpl.
+      all: split; intro H.
+      all: repeat match goal with
+        | [H : exists _, _ |- _] => destruct H
+        | [H : _ /\ _ |- _] => destruct H
+        | [H : (_ + _)%type |- _] => destruct H
+        | [H : (_ * _)%type |- _] => destruct H
+        | [p : (_ + _)%type |- _] => destruct p
+        end; simpl in *;
+        try contradiction; try discriminate;
+        repeat match goal with
+        | [H : inl _ = inl _ |- _] => injection H; clear H; intros; subst
+        | [H : inr _ = inr _ |- _] => injection H; clear H; intros; subst
+        | [H : (_, _) = (_, _) |- _] => injection H; clear H; intros; subst
+        end.
+      all: try (eexists (inl (_, _)); simpl; split; [reflexivity |]; eexists (_, _); simpl; eauto; fail).
+      all: try (eexists (inr (_, _)); simpl; split; [reflexivity |]; eexists (_, _); simpl; eauto; fail).
+      all: try (eexists (inl _, _); simpl; split; [eexists (inl _); simpl; eauto |]; eauto; fail).
+      all: try (eexists (inr _, _); simpl; split; [eexists (inr _); simpl; eauto |]; eauto; fail).
+      -- exists (inl (a0, d1)). auto.
+      -- exists (inl b0, d1). simpl. auto.
+      -- exists (inr (c1, d1)). auto.
+      -- exists (inr c1, d1). simpl. auto.
     - (* left_proper *)
       unfold Proper, respectful, arrow_eq, ArrowEq_SPArr;
       intros; subst; reflexivity.
