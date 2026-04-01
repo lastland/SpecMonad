@@ -62,7 +62,7 @@ Proof.
   intros. cbn. intros []; sauto.
 Qed.
 
-Theorem progA_DWP_one :
+Theorem progA_DWP_not42 :
   not (forall s, unOptionT (runStateT progA_DWP s)
               (fun r : option (unit * nat) =>
                  match r with
@@ -79,7 +79,7 @@ Proof.
   cbn. right. reflexivity.
 Qed.
 
-Theorem progA_DWP_two :
+Theorem progA_DWP_not43 :
   not (forall s, unOptionT (runStateT progA_DWP s)
               (fun r : option (unit * nat) =>
                  match r with
@@ -110,7 +110,7 @@ Proof.
   cbn. left. reflexivity.
 Qed.
 
-Theorem progA_AWP_one :
+Theorem progA_AWP_42 :
   forall s, unOptionT (runStateT progA_AWP s)
          (fun r : option (unit * nat) =>
             match r with
@@ -124,7 +124,7 @@ Proof.
   cbn. left. reflexivity.
 Qed.
 
-Theorem progA_AWP_two :
+Theorem progA_AWP_43 :
   forall s, unOptionT (runStateT progA_AWP s)
          (fun r : option (unit * nat) =>
             match r with
@@ -151,11 +151,10 @@ Section NDObservationSP.
     Definition obsASP {A} (m : ndprog S A) : ProgSPost S A :=
     mkStateT
       (fun s => @mkOptionT PureSPost _
-                 (fun pre => exist _
-                    (fun r => match runStateT m s with
+                 (fun pre r => match runStateT m s with
                           | mkOptionT outcomes =>
                               outcomes r /\ pre
-                          end) _)).
+                          end)).
   Next Obligation.
     destruct (runStateT m s); exact (proj2 H).
   Qed.
@@ -178,8 +177,7 @@ Section NDObservationSP.
     Definition obsDSLP {A} (m : ndprog S A) : ProgSPost S A :=
     mkStateT
       (fun s => @mkOptionT PureSPost _
-                 (fun pre => exist _
-                    (fun r => not (unOptionT (runStateT (obsASP m) s) (not pre) r)) _)).
+                 (fun pre r => not (unOptionT (runStateT (obsASP m) s) (not pre) r))).
   Next Obligation.
     destruct (runStateT m s).
     assert (Hc: pre \/ ~ pre) by apply classic.

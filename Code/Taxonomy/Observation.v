@@ -36,8 +36,7 @@ Section ObservationSP.
     Definition observationSP {A} (m : prog S A) : ProgSPost S A :=
     mkStateT
       (fun s => mkOptionT
-               (fun pre => exist _
-                  (fun r => eutt eq (unOptionT (runStateT m s)) (ret r) /\ pre) _)).
+               (fun pre r => eutt eq (unOptionT (runStateT m s)) (ret r) /\ pre)).
 
   (** What should [slp] be like? *)
 End ObservationSP.

@@ -19,13 +19,12 @@ Section PureSPost.
 
   #[local]
   #[program] Definition retSP {A} (a : A) : PureSPost A :=
-    fun pre => exist _ (fun v => v = a /\ pre) _.
+    fun pre v => v = a /\ pre.
 
   #[local]
   #[program] Definition bindSP {A B}
     (m : PureSPost A) (k : A -> PureSPost B) : PureSPost B :=
-    fun pre => exist _ (fun b =>
-      exists a, proj1_sig (proj1_sig (k a) (proj1_sig (proj1_sig m pre) a)) b) _.
+    fun pre b => exists a, (k a) ((m pre) a) b.
   Next Obligation.
     eapply (proj2_sig (proj1_sig m pre)).
     eapply (proj2_sig (proj1_sig (k H) _)).

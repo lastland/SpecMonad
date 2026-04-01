@@ -108,9 +108,9 @@ Section NDItSP.
   (** ** Theorem 3.8: Contrapositive transformers                     *)
   (* -------------------------------------------------------------- *)
 
-  Theorem ndit_asp_contrapositive {A} (m : nditprog S A) pre r :
-    sp_pt (proj1_sig (ndit_asp m)) pre r <->
-    ~ sp_pt (proj1_sig (ndit_dslp m)) (fun x => ~ pre x) r.
+  #[program] Theorem ndit_asp_contrapositive {A} (m : nditprog S A) pre r :
+    sp_pt (ndit_asp m) pre r <->
+    ~ sp_pt (ndit_dslp m) (fun x => ~ pre x) r.
   Proof.
     unfold ndit_asp, ndit_dslp; simpl.
     unfold sp, dp. split.
@@ -174,29 +174,29 @@ Section NDSP.
   Definition nd_dslp {A} (m : ndprog S A) : DSPostArr S A :=
     mkDSP (nd_obsRel m).
 
-  Definition nd_dsp {A} (m : ndprog S A)
+  #[program] Definition nd_dsp {A} (m : ndprog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (proj1_sig (nd_asp m)) pre r /\ sp_pt (proj1_sig (nd_dslp m)) pre r.
+    sp_pt (nd_asp m) pre r /\ sp_pt (nd_dslp m) pre r.
 
-  Definition nd_aslp {A} (m : ndprog S A)
+  #[program] Definition nd_aslp {A} (m : ndprog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (proj1_sig (nd_asp m)) pre r \/ sp_pt (proj1_sig (nd_dslp m)) pre r.
+    sp_pt (nd_asp m) pre r \/ sp_pt (nd_dslp m) pre r.
 
   (** Diamond inclusions — same proofs as nditprog. *)
-  Theorem nd_dsp_sub_asp {A} (m : ndprog S A) pre r :
-    nd_dsp m pre r -> sp_pt (proj1_sig (nd_asp m)) pre r.
+  #[program] Theorem nd_dsp_sub_asp {A} (m : ndprog S A) pre r :
+    nd_dsp m pre r -> sp_pt (nd_asp m) pre r.
   Proof. intros [H _]. exact H. Qed.
 
-  Theorem nd_dsp_sub_dslp {A} (m : ndprog S A) pre r :
-    nd_dsp m pre r -> sp_pt (proj1_sig (nd_dslp m)) pre r.
+  #[program] Theorem nd_dsp_sub_dslp {A} (m : ndprog S A) pre r :
+    nd_dsp m pre r -> sp_pt (nd_dslp m) pre r.
   Proof. intros [_ H]. exact H. Qed.
 
-  Theorem nd_asp_sub_aslp {A} (m : ndprog S A) pre r :
-    sp_pt (proj1_sig (nd_asp m)) pre r -> nd_aslp m pre r.
+  #[program] Theorem nd_asp_sub_aslp {A} (m : ndprog S A) pre r :
+    sp_pt (nd_asp m) pre r -> nd_aslp m pre r.
   Proof. intro H. left. exact H. Qed.
 
-  Theorem nd_dslp_sub_aslp {A} (m : ndprog S A) pre r :
-    sp_pt (proj1_sig (nd_dslp m)) pre r -> nd_aslp m pre r.
+  #[program] Theorem nd_dslp_sub_aslp {A} (m : ndprog S A) pre r :
+    sp_pt (nd_dslp m) pre r -> nd_aslp m pre r.
   Proof. intro H. right. exact H. Qed.
 
 End NDSP.
@@ -229,28 +229,28 @@ Section DetSP.
   Definition det_dslp {A} (m : prog S A) : DSPostArr S A :=
     mkDSP (det_obsRel m).
 
-  Definition det_dsp {A} (m : prog S A)
+  #[program] Definition det_dsp {A} (m : prog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (proj1_sig (det_asp m)) pre r /\ sp_pt (proj1_sig (det_dslp m)) pre r.
+    sp_pt (det_asp m) pre r /\ sp_pt (det_dslp m) pre r.
 
-  Definition det_aslp {A} (m : prog S A)
+  #[program] Definition det_aslp {A} (m : prog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (proj1_sig (det_asp m)) pre r \/ sp_pt (proj1_sig (det_dslp m)) pre r.
+    sp_pt (det_asp m) pre r \/ sp_pt (det_dslp m) pre r.
 
-  Theorem det_dsp_sub_asp {A} (m : prog S A) pre r :
-    det_dsp m pre r -> sp_pt (proj1_sig (det_asp m)) pre r.
+  #[program] Theorem det_dsp_sub_asp {A} (m : prog S A) pre r :
+    det_dsp m pre r -> sp_pt (det_asp m) pre r.
   Proof. intros [H _]. exact H. Qed.
 
-  Theorem det_dsp_sub_dslp {A} (m : prog S A) pre r :
-    det_dsp m pre r -> sp_pt (proj1_sig (det_dslp m)) pre r.
+  #[program] Theorem det_dsp_sub_dslp {A} (m : prog S A) pre r :
+    det_dsp m pre r -> sp_pt (det_dslp m) pre r.
   Proof. intros [_ H]. exact H. Qed.
 
-  Theorem det_asp_sub_aslp {A} (m : prog S A) pre r :
-    sp_pt (proj1_sig (det_asp m)) pre r -> det_aslp m pre r.
+  #[program] Theorem det_asp_sub_aslp {A} (m : prog S A) pre r :
+    sp_pt (det_asp m) pre r -> det_aslp m pre r.
   Proof. intro H. left. exact H. Qed.
 
-  Theorem det_dslp_sub_aslp {A} (m : prog S A) pre r :
-    sp_pt (proj1_sig (det_dslp m)) pre r -> det_aslp m pre r.
+  #[program] Theorem det_dslp_sub_aslp {A} (m : prog S A) pre r :
+    sp_pt (det_dslp m) pre r -> det_aslp m pre r.
   Proof. intro H. right. exact H. Qed.
 
 End DetSP.
@@ -280,8 +280,8 @@ Definition P0 : unit * nat -> Prop := fun '(tt, s) => s = 0.
 
 (** -- Class 1: exclusively reachable from P — all four include it -- *)
 
-Theorem progEx_asp_1 :
-  sp_pt (proj1_sig (ndit_asp progEx)) P0 (Some (tt, 1)).
+#[program] Theorem progEx_asp_1 :
+  sp_pt (ndit_asp progEx) P0 (Some (tt, 1)).
 Proof.
   unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
   exists (tt, 0). split; [reflexivity|].
@@ -289,8 +289,8 @@ Proof.
   sauto.
 Qed.
 
-Theorem progEx_dslp_1 :
-  sp_pt (proj1_sig (ndit_dslp progEx)) P0 (Some (tt, 1)).
+#[program] Theorem progEx_dslp_1 :
+  sp_pt (ndit_dslp progEx) P0 (Some (tt, 1)).
 Proof.
   unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
   intros [[] s] Hrel. unfold ndit_obsRel in Hrel. cbn in Hrel.
@@ -310,16 +310,16 @@ Proof. left. exact progEx_asp_1. Qed.
 (** -- Class 2: reachable from P and ¬P — asp and aslp include,
        dsp and dslp exclude -- *)
 
-Theorem progEx_asp_42 :
-  sp_pt (proj1_sig (ndit_asp progEx)) P0 (Some (tt, 42)).
+#[program] Theorem progEx_asp_42 :
+  sp_pt (ndit_asp progEx) P0 (Some (tt, 42)).
 Proof.
   unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
   exists (tt, 0). split; [reflexivity|].
   unfold ndit_obsRel. cbn. sauto.
 Qed.
 
-Theorem progEx_dslp_not_42 :
-  ~ sp_pt (proj1_sig (ndit_dslp progEx)) P0 (Some (tt, 42)).
+#[program] Theorem progEx_dslp_not_42 :
+  ~ sp_pt (ndit_dslp progEx) P0 (Some (tt, 42)).
 Proof.
   unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
   intro H. specialize (H (tt, 1)).
@@ -341,16 +341,16 @@ Proof. left. exact progEx_asp_42. Qed.
 (** -- Class 3: unreachable — dslp and aslp include,
        asp and dsp exclude -- *)
 
-Theorem progEx_asp_not_None :
-  ~ sp_pt (proj1_sig (ndit_asp progEx)) P0 None.
+#[program] Theorem progEx_asp_not_None :
+  ~ sp_pt (ndit_asp progEx) P0 None.
 Proof.
   unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
   intros [[[] s] [HP Hrel]].
   unfold ndit_obsRel in Hrel. cbn in Hrel. sauto.
 Qed.
 
-Theorem progEx_dslp_None :
-  sp_pt (proj1_sig (ndit_dslp progEx)) P0 None.
+#[program] Theorem progEx_dslp_None :
+  sp_pt (ndit_dslp progEx) P0 None.
 Proof.
   unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
   intros [[] s] Hrel.
@@ -370,16 +370,16 @@ Proof. right. exact progEx_dslp_None. Qed.
 
 (** -- Class 4: exclusively reachable from ¬P — none include -- *)
 
-Theorem progEx_asp_not_99 :
-  ~ sp_pt (proj1_sig (ndit_asp progEx)) P0 (Some (tt, 99)).
+#[program] Theorem progEx_asp_not_99 :
+  ~ sp_pt (ndit_asp progEx) P0 (Some (tt, 99)).
 Proof.
   unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
   intros [[[] s] [HP Hrel]]. subst.
   unfold ndit_obsRel in Hrel. cbn in Hrel. sauto lq: on.
 Qed.
 
-Theorem progEx_dslp_not_99 :
-  ~ sp_pt (proj1_sig (ndit_dslp progEx)) P0 (Some (tt, 99)).
+#[program] Theorem progEx_dslp_not_99 :
+  ~ sp_pt (ndit_dslp progEx) P0 (Some (tt, 99)).
 Proof.
   unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
   intro H. specialize (H (tt, 98)).

@@ -283,15 +283,14 @@ Section NDItObservationSP.
     Definition obsASP {A} (m : nditprog S A) : ProgSPost S A :=
     mkStateT
       (fun s => @mkOptionT PureSPost _
-                 (fun pre => exist _
-                    (fun r =>
-                       match runStateT m s with
-                       | mkOptionT inner =>
-                           match inner with
-                           | mkOptionT outcomes =>
-                               outcomes (Some r) /\ pre
-                           end
-                       end) _)).
+                 (fun pre r =>
+                    match runStateT m s with
+                    | mkOptionT inner =>
+                        match inner with
+                        | mkOptionT outcomes =>
+                            outcomes (Some r) /\ pre
+                        end
+                    end)).
   Next Obligation.
     destruct (runStateT m s) as [[outcomes]]; exact (proj2 H).
   Qed.
@@ -305,8 +304,7 @@ Section NDItObservationSP.
     Definition obsDSLP {A} (m : nditprog S A) : ProgSPost S A :=
     mkStateT
       (fun s => @mkOptionT PureSPost _
-                 (fun pre => exist _
-                    (fun r => not (unOptionT (runStateT (obsASP m) s) (not pre) r)) _)).
+                 (fun pre r => not (unOptionT (runStateT (obsASP m) s) (not pre) r))).
   Next Obligation.
     destruct (runStateT m s) as [[outcomes]].
     assert (Hc: pre \/ ~ pre) by apply classic.

@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Development rules
 
 - Always look up ITree and ExtLib libraries first before defining something new, to avoid reinventing the wheel.
-- Prefer `#[program] Definition` over `refine` for subset types; keep tactics for proof obligations only.
+- Prefer `#[program] Definition` over `refine` for subset types; keep tactics for proof obligations only. This lets Coq insert `proj1_sig` coercions automatically (so you don't write `proj1_sig` everywhere) and generate proof obligations (so you don't explicitly use the `exist` constructor).
 
 ## Architecture: Taxonomy/
 
