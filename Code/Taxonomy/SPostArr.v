@@ -177,21 +177,19 @@ Section PureDSPostArr.
   Qed.
 
   #[local]
-  Definition arr_first_DSP {A B C}
-    (f : PureDSPostArr A B) : PureDSPostArr (A * C)%type (B * C)%type.
-  Proof.
-    refine (exist _
-      (mkDSPData _ _
-        (fun pre '(b, d) => dsp_pt (proj1_sig f) (fun a => pre (a, d)) b)
-        (fun '(a, d) '(b, d') => dsp_rel (proj1_sig f) a b /\ d = d')) _).
-    intros pre [b0 d']. unfold dp.
-    split.
+  #[program] Definition arr_first_DSP {A B C}
+    (f : PureDSPostArr A B) : PureDSPostArr (A * C)%type (B * C)%type :=
+    mkDSPData _ _
+      (fun pre '(b, d) => dsp_pt (proj1_sig f) (fun a => pre (a, d)) b)
+      (fun '(a, d) '(b, d') => dsp_rel (proj1_sig f) a b /\ d = d').
+  Next Obligation.
+    unfold dp. split.
     - intro H. apply (proj2_sig f) in H. unfold dp in H.
       intros [a d0] [Hrf Heq]. simpl in *. subst d0.
       exact (H a Hrf).
     - intros Hall. apply (proj2_sig f). unfold dp. intros a Hrf.
-      exact (Hall (a, d') (conj Hrf eq_refl)).
-  Defined.
+      exact (Hall (a, _) (conj Hrf eq_refl)).
+  Qed.
 
   #[global]
   Instance Arrow_PureDSPostArr : Arrow PureDSPostArr := {
@@ -332,37 +330,35 @@ Section OptionDSPArr.
   Definition optionDSPArr := optionArrT PureDSPostArr.
 
   #[local]
-  Definition arr_pure_optDSP {A B}
-    (f : A -> B) : optionDSPArr A B.
-  Proof.
-    refine (exist _
-      (mkDSPData _ _
-        (fun pre ob => match ob with
-          | Some b => forall a, f a = b -> pre a
-          | None => True
-        end)
-        (fun a ob => match ob with Some b => f a = b | None => False end)) _).
-    intros pre [b|]; unfold dp; split; firstorder; discriminate.
-  Defined.
+  #[program] Definition arr_pure_optDSP {A B}
+    (f : A -> B) : optionDSPArr A B :=
+    mkDSPData _ _
+      (fun pre ob => match ob with
+        | Some b => forall a, f a = b -> pre a
+        | None => True
+      end)
+      (fun a ob => match ob with Some b => f a = b | None => False end).
+  Next Obligation.
+    destruct b as [b|]; unfold dp; split; firstorder; discriminate.
+  Qed.
 
   #[local]
-  Definition arr_comp_optDSP {A B C}
+  #[program] Definition arr_comp_optDSP {A B C}
     (f : optionDSPArr A B) (g : optionDSPArr B C)
-    : optionDSPArr A C.
-  Proof.
-    refine (exist _
-      (mkDSPData _ _
-        (fun pre oc => match oc with
-          | Some c => dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) (Some c)
-          | None => dsp_pt (proj1_sig f) pre None /\
-                    dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) None
-        end)
-        (fun a oc => match oc with
-          | Some c => exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b (Some c)
-          | None => dsp_rel (proj1_sig f) a None \/
-                    exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b None
-        end)) _).
-    intros pre [c|]; unfold dp.
+    : optionDSPArr A C :=
+    mkDSPData _ _
+      (fun pre oc => match oc with
+        | Some c => dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) (Some c)
+        | None => dsp_pt (proj1_sig f) pre None /\
+                  dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) None
+      end)
+      (fun a oc => match oc with
+        | Some c => exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b (Some c)
+        | None => dsp_rel (proj1_sig f) a None \/
+                  exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b None
+      end).
+  Next Obligation.
+    destruct b as [c|]; unfold dp.
     - (* Some c *)
       split.
       + intro H. intros a [b0 [Hrfab Hrgbc]].
@@ -386,23 +382,22 @@ Section OptionDSPArr.
         * apply (proj2_sig g). unfold dp. intros b0 Hrgb.
           apply (proj2_sig f). unfold dp. intros a Hrfab.
           exact (Hall a (or_intror (ex_intro _ b0 (conj Hrfab Hrgb)))).
-  Defined.
+  Qed.
 
   #[local]
-  Definition arr_first_optDSP {A B C}
-    (f : optionDSPArr A B) : optionDSPArr (A * C)%type (B * C)%type.
-  Proof.
-    refine (exist _
-      (mkDSPData _ _
-        (fun pre obc => match obc with
-          | Some (b, d) => dsp_pt (proj1_sig f) (fun a => pre (a, d)) (Some b)
-          | None => forall d, dsp_pt (proj1_sig f) (fun a => pre (a, d)) None
-        end)
-        (fun '(a, d) obc => match obc with
-          | Some (b, d') => dsp_rel (proj1_sig f) a (Some b) /\ d = d'
-          | None => dsp_rel (proj1_sig f) a None
-        end)) _).
-    intros pre [[b0 d0] |]; unfold dp.
+  #[program] Definition arr_first_optDSP {A B C}
+    (f : optionDSPArr A B) : optionDSPArr (A * C)%type (B * C)%type :=
+    mkDSPData _ _
+      (fun pre obc => match obc with
+        | Some bd => dsp_pt (proj1_sig f) (fun a => pre (a, snd bd)) (Some (fst bd))
+        | None => forall d, dsp_pt (proj1_sig f) (fun a => pre (a, d)) None
+      end)
+      (fun ad obc => match obc with
+        | Some bd => dsp_rel (proj1_sig f) (fst ad) (Some (fst bd)) /\ snd ad = snd bd
+        | None => dsp_rel (proj1_sig f) (fst ad) None
+      end).
+  Next Obligation.
+    destruct b as [[b0 d0] |]; unfold dp.
     - (* Some (b0, d0) *)
       split.
       + intro H. apply (proj2_sig f) in H. unfold dp in H.
@@ -417,7 +412,7 @@ Section OptionDSPArr.
         exact (H a Hrf).
       + intros Hall d. apply (proj2_sig f). unfold dp. intros a Hrf.
         exact (Hall (a, d) Hrf).
-  Defined.
+  Qed.
 
   #[global]
   Instance Arrow_optionDSPArr : Arrow optionDSPArr := {

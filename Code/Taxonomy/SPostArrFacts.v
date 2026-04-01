@@ -467,7 +467,7 @@ Proof.
     destruct ob as [[b0 d0]|].
     + split.
       * intros H [a c] Heq. inversion Heq; subst. exact (H a eq_refl).
-      * intros H a Heq. subst. exact (H (a, d0) eq_refl).
+      * intros H a Heq. simpl in Heq. subst. exact (H (a, d0) eq_refl).
     + split; [intros _ ; exact I | intros _ d; exact I].
 
   - (* first_comp *)
@@ -504,14 +504,15 @@ Proof.
     cbn. destruct ob as [[b0 [c0 d0]]|].
     + split.
       * intros H. rewrite Hrf. intros a Hra p Hassoc.
-        destruct p as [[a0 c1] d1]; unfold assoc_prod in Hassoc.
+        destruct p as [[a0 c1] d1]; unfold assoc_prod in Hassoc;
+          simpl in Hassoc.
         assert (Ha : a0 = a) by congruence.
         assert (Hc : c1 = c0) by congruence.
         assert (Hd : d1 = d0) by congruence.
         subst. specialize (H ((b0, c0), d0) eq_refl).
         rewrite Hrf in H. exact (H a Hra).
       * intros Hfb p Hassoc. destruct p as [[b1 c1] d1].
-        unfold assoc_prod in Hassoc.
+        unfold assoc_prod in Hassoc; simpl in Hassoc.
         assert (Hb : b1 = b0) by congruence.
         assert (Hc : c1 = c0) by congruence.
         assert (Hd : d1 = d0) by congruence.
@@ -520,7 +521,8 @@ Proof.
     + split.
       * intros [H _]. split; [exact I |].
         intros [c1 d1]. rewrite Hrf. intros a Hra p Hassoc.
-        destruct p as [[a0 c2] d2]; unfold assoc_prod in Hassoc.
+        destruct p as [[a0 c2] d2]; unfold assoc_prod in Hassoc;
+          simpl in Hassoc.
         assert (Ha : a0 = a) by congruence.
         assert (Hc : c2 = c1) by congruence.
         assert (Hd : d2 = d1) by congruence.
@@ -734,7 +736,37 @@ Section PureDSPostArrMonad.
   Instance MonadLawsE_PureDSPostArr
     : @MonadLawsE (PureDSPostArr I) Eq1_PureDSPostArr
                    Monad_PureDSPostArr.
-  Admitted.
+  Proof.
+    constructor; unfold eq1, Eq1_PureDSPostArr.
+    - (* bind_ret_l *)
+      intros A B k x.
+      apply PureDSPostArr_eq; intros pre b. cbn.
+      split.
+      + intros H. apply (proj2_sig (k x)). intros a Hra.
+        exact (H a (ex_intro _ x (conj eq_refl Hra))).
+      + intros Hkx i [b0 [Heq Hrel]]. subst b0.
+        apply (proj2_sig (k x)) in Hkx. exact (Hkx i Hrel).
+    - (* bind_ret_r *)
+      intros A m.
+      apply PureDSPostArr_eq; intros pre b. cbn.
+      split.
+      + intros H. apply (proj2_sig m). intros a Hra.
+        exact (H a (ex_intro _ b (conj Hra eq_refl))).
+      + intros Hm i [b0 [Hrel Heq]]. subst b0.
+        apply (proj2_sig m) in Hm. exact (Hm i Hrel).
+    - (* bind_bind *)
+      intros A B C m f g.
+      apply PureDSPostArr_eq; intros pre c. cbn.
+      split; intros H i Hex; apply H.
+      + destruct Hex as [a [Hm [b0 [Hfa Hgb]]]].
+        exists b0. split; [exists a; auto | exact Hgb].
+      + destruct Hex as [b0 [[a [Hm Hfa]] Hgb]].
+        exists a. split; [exact Hm | exists b0; auto].
+    - (* Proper_bind *)
+      intros A B x y Hxy f g Hfg. subst.
+      assert (f = g) as -> by (apply functional_extensionality; exact Hfg).
+      reflexivity.
+  Qed.
 
 End PureDSPostArrMonad.
 
