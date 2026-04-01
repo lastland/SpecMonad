@@ -124,9 +124,10 @@ End PureASPostArr.
 (* ================================================================= *)
 
 (** Demonic predicate transformer: universal dual of [sp]. This diverges from
-    the strongest postcondition transformer in Kenji's Ph.D. thesis. TODO:
-    Investigate if there's another predicate monad that corresponds to this.
-    *)
+    the strongest postcondition transformer in Kenji's Ph.D. thesis.
+
+    TODO: Investigate if there's another predicate monad that corresponds to
+    this. *)
 Definition dp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
   fun b => forall a, R a b -> pre a.
 
@@ -137,6 +138,7 @@ Record DSPData (A B : Type) := mkDSPData {
   dsp_pt : (A -> Prop) -> B -> Prop ;
   dsp_rel : SPArr A B
 }.
+Arguments mkDSPData {A B}.
 Arguments dsp_pt {A B}.
 Arguments dsp_rel {A B}.
 
@@ -146,7 +148,7 @@ Definition PureDSPostArr (A B : Type) : Type :=
 
 (** Smart constructor: wrap a relation with [dp]. *)
 #[program] Definition mkDSP {A B} (R : SPArr A B) : PureDSPostArr A B :=
-  mkDSPData _ _ (dp R) R.
+  mkDSPData (dp R) R.
 Next Obligation. reflexivity. Qed.
 
 Section PureDSPostArr.
@@ -157,14 +159,14 @@ Section PureDSPostArr.
 
   #[local]
   #[program] Definition arr_pure_DSP {A B} (f : A -> B) : PureDSPostArr A B :=
-    mkDSPData _ _ (fun pre b => forall a, f a = b -> pre a) (fun a b => f a = b).
+    mkDSPData (fun pre b => forall a, f a = b -> pre a) (fun a b => f a = b).
   Next Obligation. reflexivity. Qed.
 
   #[local]
   #[program] Definition arr_comp_DSP {A B C}
     (f : PureDSPostArr A B) (g : PureDSPostArr B C) : PureDSPostArr A C :=
-    mkDSPData _ _ (fun pre c => dsp_pt (proj1_sig g) (dsp_pt (proj1_sig f) pre) c)
-                  (fun a c => exists b, dsp_rel (proj1_sig f) a b /\ dsp_rel (proj1_sig g) b c).
+    mkDSPData (fun pre c => dsp_pt g (dsp_pt f pre) c)
+                  (fun a c => exists b, dsp_rel f a b /\ dsp_rel g b c).
   Next Obligation.
     split.
     - intro H. unfold dp. intros a [b0 [Hrf Hrg]].
@@ -179,9 +181,9 @@ Section PureDSPostArr.
   #[local]
   #[program] Definition arr_first_DSP {A B C}
     (f : PureDSPostArr A B) : PureDSPostArr (A * C)%type (B * C)%type :=
-    mkDSPData _ _
-      (fun pre '(b, d) => dsp_pt (proj1_sig f) (fun a => pre (a, d)) b)
-      (fun '(a, d) '(b, d') => dsp_rel (proj1_sig f) a b /\ d = d').
+    mkDSPData
+      (fun pre '(b, d) => dsp_pt f (fun a => pre (a, d)) b)
+      (fun '(a, d) '(b, d') => dsp_rel f a b /\ d = d').
   Next Obligation.
     unfold dp. split.
     - intro H. apply (proj2_sig f) in H. unfold dp in H.
@@ -201,9 +203,9 @@ Section PureDSPostArr.
   #[local]
   #[program] Definition arr_app_DSP {A B}
     : PureDSPostArr (PureDSPostArr A B * A)%type B :=
-    mkDSPData _ _
+    mkDSPData
       (fun pre b => forall f a, dsp_rel (proj1_sig f) a b -> pre (f, a))
-      (fun '(f, a) b => dsp_rel (proj1_sig f) a b).
+      (fun '(f, a) b => dsp_rel f a b).
   Next Obligation.
     unfold dp. split.
     - intros H [f0 a] Hfab. exact (H f0 a Hfab).
@@ -242,9 +244,9 @@ Section OptionASPArr.
     (f : optionASPArr A B) (g : optionASPArr B C)
     : optionASPArr A C :=
     fun pre oc => match oc with
-      | Some c => proj1_sig g (fun b => proj1_sig f pre (Some b)) (Some c)
-      | None => proj1_sig f pre None \/
-                proj1_sig g (fun b => proj1_sig f pre (Some b)) None
+      | Some c => g (fun b => f pre (Some b)) (Some c)
+      | None => f pre None \/
+                g (fun b => f pre (Some b)) None
     end.
   Next Obligation.
     destruct (proj2_sig f) as [Rf Hf].
@@ -286,8 +288,8 @@ Section OptionASPArr.
   #[program] Definition arr_first_optASP {A B C}
     (f : optionASPArr A B) : optionASPArr (A * C)%type (B * C)%type :=
     fun pre obc => match obc with
-      | Some (b, d) => proj1_sig f (fun a => pre (a, d)) (Some b)
-      | None => exists d, proj1_sig f (fun a => pre (a, d)) None
+      | Some (b, d) => f (fun a => pre (a, d)) (Some b)
+      | None => exists d, f (fun a => pre (a, d)) None
     end.
   Next Obligation.
     destruct (proj2_sig f) as [Rf Hf].
@@ -332,7 +334,7 @@ Section OptionDSPArr.
   #[local]
   #[program] Definition arr_pure_optDSP {A B}
     (f : A -> B) : optionDSPArr A B :=
-    mkDSPData _ _
+    mkDSPData
       (fun pre ob => match ob with
         | Some b => forall a, f a = b -> pre a
         | None => True
@@ -346,16 +348,16 @@ Section OptionDSPArr.
   #[program] Definition arr_comp_optDSP {A B C}
     (f : optionDSPArr A B) (g : optionDSPArr B C)
     : optionDSPArr A C :=
-    mkDSPData _ _
+    mkDSPData
       (fun pre oc => match oc with
-        | Some c => dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) (Some c)
-        | None => dsp_pt (proj1_sig f) pre None /\
-                  dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) None
+        | Some c => dsp_pt g (fun b => dsp_pt f pre (Some b)) (Some c)
+        | None => dsp_pt f pre None /\
+                  dsp_pt g (fun b => dsp_pt f pre (Some b)) None
       end)
       (fun a oc => match oc with
-        | Some c => exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b (Some c)
-        | None => dsp_rel (proj1_sig f) a None \/
-                  exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b None
+        | Some c => exists b, dsp_rel f a (Some b) /\ dsp_rel g b (Some c)
+        | None => dsp_rel f a None \/
+                  exists b, dsp_rel f a (Some b) /\ dsp_rel g b None
       end).
   Next Obligation.
     destruct b as [c|]; unfold dp.
@@ -387,14 +389,14 @@ Section OptionDSPArr.
   #[local]
   #[program] Definition arr_first_optDSP {A B C}
     (f : optionDSPArr A B) : optionDSPArr (A * C)%type (B * C)%type :=
-    mkDSPData _ _
+    mkDSPData
       (fun pre obc => match obc with
-        | Some bd => dsp_pt (proj1_sig f) (fun a => pre (a, snd bd)) (Some (fst bd))
-        | None => forall d, dsp_pt (proj1_sig f) (fun a => pre (a, d)) None
+        | Some bd => dsp_pt f (fun a => pre (a, snd bd)) (Some (fst bd))
+        | None => forall d, dsp_pt f (fun a => pre (a, d)) None
       end)
       (fun ad obc => match obc with
-        | Some bd => dsp_rel (proj1_sig f) (fst ad) (Some (fst bd)) /\ snd ad = snd bd
-        | None => dsp_rel (proj1_sig f) (fst ad) None
+        | Some bd => dsp_rel f (fst ad) (Some (fst bd)) /\ snd ad = snd bd
+        | None => dsp_rel f (fst ad) None
       end).
   Next Obligation.
     destruct b as [[b0 d0] |]; unfold dp.
