@@ -28,8 +28,10 @@ From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 
 Section PureASPostArr.
 
-  (** A predicate transformer is in the image of [sp] iff it equals
-      [sp R] for some relation [R]. *)
+  (** A predicate transformer is in the image of [sp] iff it equals [sp R] for
+      some relation [R]. This seems to be consistent with what's in Kenji's
+      Ph.D. thesis: predicate monads = strongest postcondition transformer
+      monad, but we additionally consider the input due to being an arrow. *)
   Definition IsASP {A B} (f : (A -> Prop) -> B -> Prop) : Prop :=
     exists R : SPArr A B, forall pre b, f pre b <-> sp R pre b.
 
@@ -41,7 +43,7 @@ Section PureASPostArr.
     sp R.
   Next Obligation.
     exists R. reflexivity.
-  Defined.
+  Qed.
 
   (* -------------------------------------------------------------- *)
   (** *** Arrow instance for [PureASPostArr]                          *)
@@ -57,7 +59,7 @@ Section PureASPostArr.
   #[local]
   #[program] Definition arr_comp_ASP {A B C}
     (f : PureASPostArr A B) (g : PureASPostArr B C) : PureASPostArr A C :=
-    fun pre c => proj1_sig g (proj1_sig f pre) c.
+    fun pre c => g (f pre) c.
   Next Obligation.
     destruct (proj2_sig f) as [Rf Hf].
     destruct (proj2_sig g) as [Rg Hg].
@@ -77,7 +79,7 @@ Section PureASPostArr.
   #[local]
   #[program] Definition arr_first_ASP {A B C}
     (f : PureASPostArr A B) : PureASPostArr (A * C)%type (B * C)%type :=
-    fun pre '(b, d) => proj1_sig f (fun a => pre (a, d)) b.
+    fun pre '(b, d) => f (fun a => pre (a, d)) b.
   Next Obligation.
     destruct (proj2_sig f) as [Rf Hf].
     exists (fun '(a, d) '(b, d') => Rf a b /\ d = d').
@@ -99,7 +101,7 @@ Section PureASPostArr.
   #[local]
   #[program] Definition arr_app_ASP {A B}
     : PureASPostArr (PureASPostArr A B * A)%type B :=
-    fun pre b => exists f a, pre (f, a) /\ proj1_sig f (eq a) b.
+    fun pre b => exists f a, pre (f, a) /\ f (eq a) b.
   Next Obligation.
     exists (fun '(f, a) b => proj1_sig f (eq a) b).
     intros pre b. unfold sp. split.
@@ -122,7 +124,10 @@ End PureASPostArr.
 
 Section PureDSPostArr.
 
-  (** Demonic predicate transformer: universal dual of [sp]. *)
+  (** Demonic predicate transformer: universal dual of [sp]. This diverges from
+      the strongest postcondition transformer in Kenji's Ph.D. thesis. TODO:
+      Investigate if there's another predicate monad that corresponds to this.
+      *)
   Definition dp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
     fun b => forall a, R a b -> pre a.
 
@@ -155,7 +160,7 @@ Section PureDSPostArr.
   #[local]
   #[program] Definition arr_comp_DSP {A B C}
     (f : PureDSPostArr A B) (g : PureDSPostArr B C) : PureDSPostArr A C :=
-    fun pre c => proj1_sig g (proj1_sig f pre) c.
+    fun pre c => g (f pre) c.
   Next Obligation.
     destruct (proj2_sig f) as [Rf Hf].
     destruct (proj2_sig g) as [Rg Hg].
@@ -174,7 +179,7 @@ Section PureDSPostArr.
   #[local]
   #[program] Definition arr_first_DSP {A B C}
     (f : PureDSPostArr A B) : PureDSPostArr (A * C)%type (B * C)%type :=
-    fun pre '(b, d) => proj1_sig f (fun a => pre (a, d)) b.
+    fun pre '(b, d) => f (fun a => pre (a, d)) b.
   Next Obligation.
     destruct (proj2_sig f) as [Rf Hf].
     exists (fun '(a, d) '(b, d') => Rf a b /\ d = d').
