@@ -198,26 +198,31 @@ Section PureASPostArr.
   (** *** ArrowChoice instance for [PureASPostArr]                    *)
   (* -------------------------------------------------------------- *)
 
+  Definition left_rel {A B C} (R : SPArr A B) : SPArr (A + C) (B + C) :=
+    fun x y => match x, y with
+      | inl a, inl b => R a b
+      | inr c, inr c' => c = c'
+      | _, _ => False
+    end.
+
   #[local]
   #[program] Definition arr_left_ASP {A B C}
     (f : PureASPostArr A B) : PureASPostArr (A + C)%type (B + C)%type :=
-    fun pre y => match y with
-      | inl b => proj1_sig f (fun a => pre (inl a)) b
-      | inr c => pre (inr c)
-    end.
+    mkSPRecord
+      (fun pre y => match y with
+        | inl b => sp_pt f (fun a => pre (inl a)) b
+        | inr c => pre (inr c)
+      end)
+      (left_rel (sp_rel f)).
   Next Obligation.
-    destruct (proj2_sig f) as [Rf Hf].
-    exists (fun x y => match x, y with
-      | inl a, inl b => Rf a b
-      | inr c, inr c' => c = c'
-      | _, _ => False
-    end).
-    intros pre [b|c]; unfold sp.
-    - rewrite Hf. unfold sp. split.
-      + intros [a [Hpre Hrf]]. exists (inl a). auto.
-      + intros [[a|c'] [Hpre Hrx]]; [exists a; auto | contradiction].
+    destruct b as [b0|c0]; unfold asp, left_rel; cbn.
     - split.
-      + intros Hpre. exists (inr c). auto.
+      + intro H. apply (proj2_sig f) in H. unfold asp in H.
+        destruct H as [a [Hpre Hrf]]. exists (inl a). auto.
+      + intros [[a|c'] [Hpre Hrx]]; [| contradiction].
+        apply (proj2_sig f). unfold asp. exists a; auto.
+    - split.
+      + intros Hpre. exists (inr c0). auto.
       + intros [[a|c'] [Hpre Hrx]]; [contradiction |].
         simpl in Hrx. subst c'. exact Hpre.
   Qed.

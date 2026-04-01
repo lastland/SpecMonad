@@ -226,7 +226,7 @@ Proof.
       apply PureASPostArr_eq; intros pre [b|c']; cbn.
       + (* inl b: both sides should be False *)
         destruct (IsASP_rewrite f) as [Rf Hf].
-        rewrite Hf. unfold sp.
+        rewrite Hf. unfold asp.
         split; intros H; exfalso.
         * destruct H as [a [[c0 [_ Habs]] _]]. discriminate.
         * destruct H as [c0 [_ Habs]]. discriminate.
@@ -1030,9 +1030,9 @@ End PureDSLPostArrMonad.
 (* ================================================================= *)
 
 (** [ASPostArr S = stateArrT S optionASPArr] and
-    [DSPostArr S = stateArrT S optionDSPArr]. Since [stateArrT]
+    [DSPostArr S = stateArrT S optionDSLPArr]. Since [stateArrT]
     preserves arrow laws generically, these inherit arrow laws
-    from [optionASPArr] and [optionDSPArr]. *)
+    from [optionASPArr] and [optionDSLPArr]. *)
 
 Section ComposedArrowLaws.
 
@@ -1047,11 +1047,11 @@ Section ComposedArrowLaws.
     ArrowLaws_stateArrT S.
 
   #[global]
-  Instance ArrowEq_stateOptDSP : ArrowEq (stateArrT S optionDSPArr) :=
+  Instance ArrowEq_stateOptDSP : ArrowEq (stateArrT S optionDSLPArr) :=
     ArrowEq_stateArrT S.
 
   #[global]
-  Instance ArrowLaws_stateOptDSP : ArrowLaws (stateArrT S optionDSPArr) :=
+  Instance ArrowLaws_stateOptDSP : ArrowLaws (stateArrT S optionDSLPArr) :=
     ArrowLaws_stateArrT S.
 
 End ComposedArrowLaws.
