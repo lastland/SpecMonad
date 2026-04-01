@@ -22,28 +22,44 @@ From Incorrectness.Taxonomy Require Import SPostArr ProgFacts.
 (* ================================================================= *)
 
 Lemma PureASPostArr_eq {A B} (f g : PureASPostArr A B) :
-  (forall pre b, proj1_sig f pre b <-> proj1_sig g pre b) -> f = g.
+  (forall pre b, sp_pt (proj1_sig f) pre b <-> sp_pt (proj1_sig g) pre b) -> f = g.
 Proof.
   intro Heq.
-  destruct f as [fv fp], g as [gv gp]; cbn in *.
-  assert (fv = gv) as ->.
+  destruct f as [[fpt frel] fp], g as [[gpt grel] gp]; simpl in *.
+  assert (Hpt : fpt = gpt).
   { extensionality pre. extensionality b.
     apply propositional_extensionality. apply Heq. }
+  subst gpt.
+  assert (Hrel : frel = grel).
+  { extensionality a. extensionality b.
+    apply propositional_extensionality.
+    assert (Hsp : forall pre b0, sp frel pre b0 <-> sp grel pre b0).
+    { intros pre0 b0. split; intro H.
+      - apply gp. apply fp. exact H.
+      - apply fp. apply gp. exact H. }
+    split; intro Hab.
+    - specialize (Hsp (eq a) b). unfold sp in Hsp.
+      destruct (proj1 Hsp (ex_intro _ a (conj eq_refl Hab))) as [a' [Heq' Hrel]].
+      subst a'. exact Hrel.
+    - specialize (Hsp (eq a) b). unfold sp in Hsp.
+      destruct (proj2 Hsp (ex_intro _ a (conj eq_refl Hab))) as [a' [Heq' Hrel]].
+      subst a'. exact Hrel. }
+  subst grel.
   f_equal. apply proof_irrelevance.
 Qed.
 
 Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
   exists R : SPArr A B,
-    forall pre b, proj1_sig f pre b <-> exists a, pre a /\ R a b.
+    forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b.
 Proof.
-  destruct (proj2_sig f) as [R HR]. exists R. intros pre b.
-  rewrite HR. unfold sp. reflexivity.
+  exists (sp_rel (proj1_sig f)). intros pre b.
+  apply (proj2_sig f).
 Qed.
 
-(** [proj1_sig] of any PureASPostArr rewrites to existential form. *)
+(** [sp_pt] of any PureASPostArr rewrites to existential form. *)
 Lemma ASP_sp {A B} (f : PureASPostArr A B) (R : SPArr A B)
-  (HR : forall pre b, proj1_sig f pre b <-> exists a, pre a /\ R a b) :
-  forall P b, proj1_sig f P b <-> exists a, P a /\ R a b.
+  (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b) :
+  forall P b, sp_pt (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
 
 (* ================================================================= *)
@@ -192,8 +208,8 @@ Proof.
     apply PureASPostArr_eq; intros pre ob. cbn.
     destruct ob as [[b0 d0]|].
     + split.
-      * intros [a [Hpre Hf]]; subst. exists (a, d0); auto.
-      * intros [[a c] [Hpre Heq]]; inversion Heq; subst. exists a; auto.
+      * intros [a [Hpre Hf]]. simpl in *. subst. exists (a, d0). simpl. auto.
+      * intros [[a c0] [Hpre Heq]]. simpl in *. inversion Heq; subst. exists a; auto.
     + firstorder.
 
   - (* first_comp *)
@@ -236,7 +252,7 @@ Proof.
     + (* Some (b, (c, d)) *)
       split.
       * intros [[[b1 c1] d1] [Hff Hassoc]]; cbn in Hff.
-        unfold assoc_prod in Hassoc.
+        unfold assoc_prod in Hassoc; simpl in Hassoc.
         assert (Hb : b1 = b0) by congruence.
         assert (Hc : c1 = c0) by congruence.
         assert (Hd : d1 = d0) by congruence.
@@ -245,7 +261,7 @@ Proof.
       * intros Hfb.
         rewrite H in Hfb. destruct Hfb as [a [Hpure Hra]].
         destruct Hpure as [[[a0 c1] d1] [Hpre Hassoc]].
-        unfold assoc_prod in Hassoc.
+        unfold assoc_prod in Hassoc; simpl in Hassoc.
         assert (Ha : a0 = a) by congruence.
         assert (Hc : c1 = c0) by congruence.
         assert (Hd : d1 = d0) by congruence.
@@ -260,7 +276,7 @@ Proof.
       * intros [Habs | [[c1 d1] Hfb]]; [destruct Habs |].
         rewrite H in Hfb. destruct Hfb as [a [Hpure Hra]].
         destruct Hpure as [[[a0 c2] d2] [Hpre Hassoc]].
-        unfold assoc_prod in Hassoc.
+        unfold assoc_prod in Hassoc; simpl in Hassoc.
         assert (Ha : a0 = a) by congruence.
         assert (Hc : c2 = c1) by congruence.
         assert (Hd : d2 = d1) by congruence.
@@ -279,7 +295,7 @@ Qed.
 (* ================================================================= *)
 
 Lemma PureDSPostArr_eq {A B} (f g : PureDSPostArr A B) :
-  (forall pre b, dsp_pt (proj1_sig f) pre b <-> dsp_pt (proj1_sig g) pre b) -> f = g.
+  (forall pre b, sp_pt (proj1_sig f) pre b <-> sp_pt (proj1_sig g) pre b) -> f = g.
 Proof.
   intro Heq.
   destruct f as [[fpt frel] fp], g as [[gpt grel] gp]; simpl in *.
@@ -307,15 +323,15 @@ Qed.
 
 Lemma IsDSP_rewrite {A B} (f : PureDSPostArr A B) :
   exists R : SPArr A B,
-    forall pre b, dsp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a.
+    forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
-  exists (dsp_rel (proj1_sig f)). intros pre b.
+  exists (sp_rel (proj1_sig f)). intros pre b.
   apply (proj2_sig f).
 Qed.
 
 Lemma DSP_dp {A B} (f : PureDSPostArr A B) (R : SPArr A B)
-  (HR : forall pre b, dsp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
-  forall P b, dsp_pt (proj1_sig f) P b <-> forall a, R a b -> P a.
+  (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
+  forall P b, sp_pt (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.
 
 (* ================================================================= *)
@@ -550,16 +566,16 @@ Instance ArrowApplyLaws_PureASPostArr : ArrowApplyLaws PureASPostArr.
 Proof.
   constructor; intros.
   apply PureASPostArr_eq; intros pre b. cbn.
-  destruct (IsASP_rewrite f) as [Rf Hf].
   split.
-  - intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
+  - (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ sp_rel f0 a b) → sp_pt f pre b *)
+    intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
     inversion Hpair; subst f0 a.
-    rewrite Hf in Hfa. destruct Hfa as [a0 [Heq Hra]]. subst a0.
-    rewrite Hf. exists a'. auto.
-  - intros Hfb.
-    rewrite Hf in Hfb. destruct Hfb as [a [Hpre Hra]].
-    exists f, a. split; [exists a; auto|].
-    rewrite Hf. exists a. split; [exact eq_refl | exact Hra].
+    apply (proj2_sig f). unfold sp. exists a'. auto.
+  - (* Backward: sp_pt f pre b → ... *)
+    intros Hfb.
+    apply (proj2_sig f) in Hfb. unfold sp in Hfb.
+    destruct Hfb as [a [Hpre Hra]].
+    exists f, a. split; [exists a; auto | exact Hra].
 Qed.
 
 #[global]
@@ -568,10 +584,10 @@ Proof.
   constructor; intros.
   apply PureDSPostArr_eq; intros pre b. cbn.
   split.
-  - (* Forward: (∀f0 a, dsp_rel (proj1_sig f0) a b → pre (f, a)) → dsp_pt (proj1_sig f) pre b *)
+  - (* Forward: (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) → sp_pt (proj1_sig f) pre b *)
     intros H. apply (proj2_sig f). intros a Hra.
     exact (H f a Hra a eq_refl).
-  - (* Backward: dsp_pt (proj1_sig f) pre b → (∀f0 a, dsp_rel (proj1_sig f0) a b → pre (f, a)) *)
+  - (* Backward: sp_pt (proj1_sig f) pre b → (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) *)
     intros Hfb f0 a0 Hrel a' Heq.
     injection Heq as Hfeq Haeq. subst a' f0.
     apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
@@ -627,28 +643,17 @@ Section PureASPostArrMonad.
   (** Define a direct monad on [PureASPostArr I] using relational
       composition, then show it equals [Monad_Arrow]. *)
 
-  #[program] Definition ret_ASP {A} (a : A) : PureASPostArr I A :=
-    sp (fun _ a' => a = a').
-  Next Obligation. exists (fun _ a' => a = a'). reflexivity. Qed.
+  Definition ret_ASP {A} (a : A) : PureASPostArr I A :=
+    mkASP (fun _ a' => a = a').
 
-  #[program] Definition bind_ASP {A B}
+  (** For the angelic bind, we extract the underlying relation directly
+      via [sp_rel (proj1_sig ...)], mirroring the demonic bind. *)
+  Definition bind_ASP {A B}
     (m : PureASPostArr I A) (k : A -> PureASPostArr I B)
     : PureASPostArr I B :=
-    sp (fun i c => exists b,
-          proj1_sig m (eq i) b /\ proj1_sig (k b) (eq i) c).
-  Next Obligation.
-    destruct (IsASP_rewrite m) as [Rm Hm].
-    exists (fun i c => exists b, Rm i b /\
-      proj1_sig (k b) (eq i) c).
-    intros pre c. unfold sp. split.
-    - intros [i [Hpre [b [Hmb Hkb]]]].
-      rewrite Hm in Hmb. destruct Hmb as [i0 [Heq Hrm]]. subst i0.
-      exists i. split; [exact Hpre |]. exists b. auto.
-    - intros [i [Hpre [b [Hrm Hkb]]]].
-      exists i. split; [exact Hpre |]. exists b. split.
-      + rewrite Hm. exists i. auto.
-      + exact Hkb.
-  Qed.
+    mkASP (fun i c => exists b,
+             sp_rel (proj1_sig m) i b /\
+             sp_rel (proj1_sig (k b)) i c).
 
   Instance Monad_PureASPostArr : Monad (PureASPostArr I) := {
     ret := @ret_ASP ;
@@ -663,33 +668,33 @@ Section PureASPostArrMonad.
     constructor; unfold eq1, Eq1_PureASPostArr.
     - (* bind_ret_l *)
       intros A B k x.
-      apply PureASPostArr_eq; intros pre b. cbn. unfold sp.
-      destruct (IsASP_rewrite (k x)) as [Rkx Hkx].
+      apply PureASPostArr_eq; intros pre b. cbn.
       split.
-      + intros [i [Hpre [b0 [[i0 [Heq Hret]] Hkb]]]]. subst b0 i0.
-        rewrite Hkx in Hkb. destruct Hkb as [i0 [Heq Hrk]]. subst i0.
-        rewrite Hkx. exists i. auto.
-      + intros Hkxb.
-        rewrite Hkx in Hkxb. destruct Hkxb as [i [Hpre Hrk]].
-        exists i. split; [exact Hpre|]. exists x. split.
-        * exists i. auto.
-        * rewrite Hkx. exists i. split; [reflexivity | exact Hrk].
+      + intros [i [Hpre [b0 [Heq Hrel]]]]. subst b0.
+        apply (proj2_sig (k x)). exists i. auto.
+      + intros Hkx.
+        apply (proj2_sig (k x)) in Hkx. destruct Hkx as [i [Hpre Hrel]].
+        exists i. split; [exact Hpre|]. exists x. auto.
     - (* bind_ret_r *)
       intros A m.
-      apply PureASPostArr_eq; intros pre b. cbn. unfold sp.
-      destruct (IsASP_rewrite m) as [Rm Hm].
+      apply PureASPostArr_eq; intros pre b. cbn.
       split.
-      + intros [i [Hpre [b0 [Hmb [i0 [Heq Hret]]]]]]. subst i0 b0.
-        rewrite Hm in Hmb. destruct Hmb as [i0 [Heq Hrm]]. subst i0.
-        rewrite Hm. exists i. auto.
-      + intros Hmb. rewrite Hm in Hmb. destruct Hmb as [i [Hpre Hrm]].
-        exists i. split; [exact Hpre|]. exists b. split.
-        * rewrite Hm. exists i. auto.
-        * exists i. auto.
+      + intros [i [Hpre [b0 [Hrel Heq]]]]. subst b0.
+        apply (proj2_sig m). exists i. auto.
+      + intros Hm.
+        apply (proj2_sig m) in Hm. destruct Hm as [i [Hpre Hrel]].
+        exists i. split; [exact Hpre|]. exists b. auto.
     - (* bind_bind *)
       intros A B C m f g.
-      apply PureASPostArr_eq; intros pre c. cbn. unfold sp.
-      split; intros; firstorder (subst; eauto 10).
+      apply PureASPostArr_eq; intros pre c. cbn.
+      split.
+      + intros [i [Hpre [b0 [[a [Hm Hfa]] Hgb]]]].
+        exists i. split; [exact Hpre|]. exists a. split; [exact Hm|].
+        exists b0. auto.
+      + intros [i [Hpre [a [Hm [b0 [Hfa Hgb]]]]]].
+        exists i. split; [exact Hpre|]. exists b0. split.
+        * exists a. auto.
+        * exact Hgb.
     - (* Proper_bind *)
       intros A B x y Hxy f g Hfg. subst.
       assert (f = g) as -> by (apply functional_extensionality; exact Hfg).
@@ -715,13 +720,13 @@ Section PureDSPostArrMonad.
     mkDSP (fun _ a' => a = a').
 
   (** For the demonic bind, we extract the underlying relation directly
-      via [dsp_rel (proj1_sig ...)], avoiding classical axioms. *)
+      via [sp_rel (proj1_sig ...)], avoiding classical axioms. *)
   Definition bind_DSP {A B}
     (m : PureDSPostArr I A) (k : A -> PureDSPostArr I B)
     : PureDSPostArr I B :=
     mkDSP (fun i c => exists b,
-             dsp_rel (proj1_sig m) i b /\
-             dsp_rel (proj1_sig (k b)) i c).
+             sp_rel (proj1_sig m) i b /\
+             sp_rel (proj1_sig (k b)) i c).
 
   Instance Monad_PureDSPostArr : Monad (PureDSPostArr I) := {
     ret := @ret_DSP ;
@@ -729,7 +734,7 @@ Section PureDSPostArrMonad.
   }.
 
   Lemma proj_mkDSP {J B} (R : SPArr J B) pre b :
-    dsp_pt (proj1_sig (mkDSP R)) pre b <-> dp R pre b.
+    sp_pt (proj1_sig (mkDSP R)) pre b <-> dp R pre b.
   Proof. reflexivity. Qed.
 
   #[global]
