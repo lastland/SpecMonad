@@ -40,7 +40,7 @@ Section PureASPostArr.
   #[program] Definition mkASP {A B} (R : SPArr A B) : PureASPostArr A B :=
     sp R.
   Next Obligation.
-    exists R. intros pre b. reflexivity.
+    exists R. reflexivity.
   Defined.
 
   (* -------------------------------------------------------------- *)
@@ -138,8 +138,8 @@ Section PureDSPostArr.
   #[program] Definition mkDSP {A B} (R : SPArr A B) : PureDSPostArr A B :=
     dp R.
   Next Obligation.
-    exists R. intros pre b. reflexivity.
-  Defined.
+    exists R. reflexivity.
+  Qed.
 
   (* -------------------------------------------------------------- *)
   (** *** Arrow instance for [PureDSPostArr]                          *)
