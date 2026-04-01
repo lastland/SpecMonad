@@ -139,7 +139,18 @@ Class ArrowChoiceLaws (arr : Type -> Type -> Type)
     arrow_eq
       (arr_comp (@arr_left _ _ _ _ _ D (@arr_left _ _ _ A B C f))
                 (arr_pure assoc_sum))
-      (arr_comp (arr_pure assoc_sum) (@arr_left _ _ _ A B (C + D) f))
+      (arr_comp (arr_pure assoc_sum) (@arr_left _ _ _ A B (C + D) f)) ;
+  left_inr : forall {A B C} (f : arr A B),
+    arrow_eq (arr_comp (arr_pure (@inr A C)) (@arr_left _ _ _ A B C f))
+             (arr_pure (@inr B C)) ;
+  left_natural : forall {A B C D} (f : arr A B) (g : C -> D),
+    arrow_eq (arr_comp (@arr_left _ _ _ A B C f)
+                       (arr_pure (fun x => sum_bimap (fun b : B => b) g x)))
+             (arr_comp (arr_pure (fun x => sum_bimap (fun a : A => a) g x))
+                       (@arr_left _ _ _ A B D f)) ;
+  left_proper : forall {A B C},
+    Proper (@arrow_eq arr _ A B ==> @arrow_eq arr _ (A + C)%type (B + C)%type)
+           (@arr_left _ _ _ A B C)
 }.
 
 (* ================================================================= *)
@@ -386,6 +397,27 @@ Section SPArrInstances.
       all: first [ exists (inl a) | exists (inl (inl b))
                   | exists (inr (inl c')) | exists (inl (inr c'))
                   | exists (inr (inr d')) | exists (inr d') ]; eauto.
+    - (* left_inr *)
+      apply SPArr_eq; intros c y; unfold_SPArr.
+      split.
+      + intros [x [Hinr Hleft]]. subst x.
+        destruct y as [b|c']; simpl in Hleft; [contradiction | f_equal; exact Hleft].
+      + intros Heq. subst y. exists (inr c). simpl. auto.
+    - (* left_natural *)
+      apply SPArr_eq. intros x y.
+      destruct x as [a0|c0]; destruct y as [b0|d0]; unfold_SPArr;
+      unfold sum_bimap; simpl.
+      all: split; intros [z [H1 H2]]; destruct z; simpl in *;
+           try contradiction; try discriminate.
+      all: repeat match goal with
+           | [H : inl _ = inl _ |- _] => injection H; clear H; intros; subst
+           | [H : inr _ = inr _ |- _] => injection H; clear H; intros; subst
+           end.
+      1-2: eexists (inl _); simpl; eauto.
+      1-2: eexists (inr _); simpl; eauto.
+    - (* left_proper *)
+      unfold Proper, respectful, arrow_eq, ArrowEq_SPArr;
+      intros; subst; reflexivity.
   Qed.
 
   (* -------------------------------------------------------------- *)

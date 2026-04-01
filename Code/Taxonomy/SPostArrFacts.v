@@ -222,6 +222,40 @@ Proof.
         destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
         injection Hassoc as Hassoc. subst.
         exists (inr d). cbn. auto.
+    - (* left_inr *)
+      apply PureASPostArr_eq; intros pre [b|c']; cbn.
+      + (* inl b: both sides should be False *)
+        destruct (IsASP_rewrite f) as [Rf Hf].
+        rewrite Hf. unfold sp.
+        split; intros H; exfalso.
+        * destruct H as [a [[c0 [_ Habs]] _]]. discriminate.
+        * destruct H as [c0 [_ Habs]]. discriminate.
+      + (* inr c': both sides give pre c' after simplification *)
+        firstorder congruence.
+    - (* left_natural *)
+      apply PureASPostArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
+      + destruct (IsASP_rewrite f) as [Rf Hf].
+        split.
+        * intros [[a'|c'] [Hex Heq]]; [| discriminate].
+          injection Heq as Heq. subst. cbn in Hex. rewrite Hf in Hex.
+          destruct Hex as [a0 [Hpre Hra]].
+          rewrite Hf. exists a0. split.
+          -- exists (inl a0). split; [exact Hpre | reflexivity].
+          -- exact Hra.
+        * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [[x [Hpre Heq]] Hra]].
+          destruct x as [a'|c']; [injection Heq as Heq; subst | discriminate].
+          exists (inl b). split; [cbn; rewrite Hf; exists a; auto | reflexivity].
+      + split.
+        * intros [[b'|d'] [Hex Heq]]; [discriminate |].
+          injection Heq as Heq. subst.
+          exists (inr d'). split; [exact Hex | reflexivity].
+        * intros [x [Hpre Heq]].
+          destruct x as [b'|d']; [discriminate |].
+          injection Heq as Heq. subst.
+          exists (inr d'). split; [exact Hpre | reflexivity].
+    - (* left_proper *)
+      unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
+      intros; subst; reflexivity.
 Qed.
 
 (* ================================================================= *)
@@ -555,12 +589,33 @@ Proof.
         exact (H (inr d) eq_refl).
       * intros Hpre [[b'|c0]|d0] Hassoc; cbn in Hassoc; try discriminate.
         injection Hassoc as Hassoc. subst. exact (Hpre (inr d) eq_refl).
-  - admit. (* left_inr *)
-  - admit. (* left_natural *)
-  - admit. (* first_left_dist *)
-  - (* left_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
-    intros; subst; reflexivity.
+    - (* left_inr *)
+      apply PureDSLPostArr_eq; intros pre [b|c']; cbn.
+      + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
+        * intros _ c0 Habs. discriminate.
+        * intros _. rewrite Hf. intros a _ c0 Habs. discriminate.
+      + split; intros H c0 Heq; injection Heq as Heq; subst; exact (H c' eq_refl).
+    - (* left_natural *)
+      apply PureDSLPostArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
+      + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
+        * intros H. rewrite Hf. intros a Hra [a'|c'] Heq; [| discriminate].
+          injection Heq as Heq. subst.
+          specialize (H (inl b) eq_refl). cbn in H. rewrite Hf in H.
+          exact (H a Hra).
+        * intro Hfb. rewrite Hf in Hfb.
+          intros [b'|c'] Heq; [| discriminate].
+          injection Heq as Heq. subst. cbn.
+          rewrite Hf. intros a Hra.
+          exact (Hfb a Hra (inl a) eq_refl).
+      + split.
+        * intros H [a'|c'] Heq; [discriminate |].
+          injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
+        * intros H [b'|c'] Heq; [discriminate |].
+          injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
+    - admit. (* first_left_dist — proved in later commit *)
+    - (* left_proper *)
+      unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
+      intros; subst; reflexivity.
 Admitted.
 
 (* ================================================================= *)
