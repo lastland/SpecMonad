@@ -41,7 +41,7 @@ Section PureASPostArr.
     sp R.
   Next Obligation.
     exists R. intros pre b. reflexivity.
-  Qed.
+  Defined.
 
   (* -------------------------------------------------------------- *)
   (** *** Arrow instance for [PureASPostArr]                          *)
@@ -96,6 +96,24 @@ Section PureASPostArr.
     arr_first := @arr_first_ASP
   }.
 
+  #[local]
+  #[program] Definition arr_app_ASP {A B}
+    : PureASPostArr (PureASPostArr A B * A)%type B :=
+    fun pre b => exists f a, pre (f, a) /\ proj1_sig f (eq a) b.
+  Next Obligation.
+    exists (fun '(f, a) b => proj1_sig f (eq a) b).
+    intros pre b. unfold sp. split.
+    - intros [f [a [Hpre Hfab]]].
+      exists (f, a). auto.
+    - intros [[f a] [Hpre Hfab]].
+      exists f, a. auto.
+  Qed.
+
+  #[global]
+  Instance ArrowApply_PureASPostArr : ArrowApply PureASPostArr := {
+    arr_app := @arr_app_ASP
+  }.
+
 End PureASPostArr.
 
 (* ================================================================= *)
@@ -121,7 +139,7 @@ Section PureDSPostArr.
     dp R.
   Next Obligation.
     exists R. intros pre b. reflexivity.
-  Qed.
+  Defined.
 
   (* -------------------------------------------------------------- *)
   (** *** Arrow instance for [PureDSPostArr]                          *)
@@ -175,6 +193,23 @@ Section PureDSPostArr.
     arr_pure := @arr_pure_DSP ;
     arr_comp := @arr_comp_DSP ;
     arr_first := @arr_first_DSP
+  }.
+
+  #[local]
+  #[program] Definition arr_app_DSP {A B}
+    : PureDSPostArr (PureDSPostArr A B * A)%type B :=
+    fun pre b => forall f a,
+      ~ proj1_sig f (fun a' => a' <> a) b -> pre (f, a).
+  Next Obligation.
+    exists (fun '(f, a) b => ~ proj1_sig f (fun a' => a' <> a) b).
+    intros pre b. unfold dp. split.
+    - intros H [f a] Hfab. exact (H f a Hfab).
+    - intros H f a Hfab. exact (H (f, a) Hfab).
+  Qed.
+
+  #[global]
+  Instance ArrowApply_PureDSPostArr : ArrowApply PureDSPostArr := {
+    arr_app := @arr_app_DSP
   }.
 
 End PureDSPostArr.

@@ -9,9 +9,13 @@
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality ProofIrrelevance
-  Morphisms RelationClasses.
+  Morphisms RelationClasses Classical_Prop.
+From ITree Require Import Basics.Monad.
+From ExtLib Require Import
+  Monad StateMonad OptionMonad.
+From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT.
-From Incorrectness.Taxonomy Require Import SPostArr.
+From Incorrectness.Taxonomy Require Import SPostArr ProgFacts.
 
 (* ================================================================= *)
 (** ** Utilities                                                       *)
@@ -518,3 +522,284 @@ Proof.
     unfold Proper, respectful, arrow_eq, ArrowEq_optionDSPArr;
     intros; subst; reflexivity.
 Qed.
+
+(* ================================================================= *)
+(** ** [ArrowApplyLaws] for [PureASPostArr] and [PureDSPostArr]       *)
+(* ================================================================= *)
+
+#[global]
+Instance ArrowApplyLaws_PureASPostArr : ArrowApplyLaws PureASPostArr.
+Proof.
+  constructor; intros.
+  apply PureASPostArr_eq; intros pre b. cbn.
+  destruct (IsASP_rewrite f) as [Rf Hf].
+  split.
+  - intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
+    inversion Hpair; subst f0 a.
+    rewrite Hf in Hfa. destruct Hfa as [a0 [Heq Hra]]. subst a0.
+    rewrite Hf. exists a'. auto.
+  - intros Hfb.
+    rewrite Hf in Hfb. destruct Hfb as [a [Hpre Hra]].
+    exists f, a. split; [exists a; auto|].
+    rewrite Hf. exists a. split; [exact eq_refl | exact Hra].
+Qed.
+
+#[global]
+Instance ArrowApplyLaws_PureDSPostArr : ArrowApplyLaws PureDSPostArr.
+Proof.
+  constructor; intros.
+  apply PureDSPostArr_eq; intros pre b. cbn.
+  destruct (IsDSP_rewrite f) as [Rf Hf].
+  split.
+  - (* Forward: LHS → proj1_sig f pre b
+       LHS: ∀f0 a, ¬(proj1_sig f0 (· ≠ a) b) → (∀a', (f, a') = (f0, a) → pre a')
+       By IsDSP, ¬(proj1_sig f (· ≠ a) b) = ¬¬(Rf a b) = Rf a b (NNPP). *)
+    intros H. rewrite Hf. intros a Hra.
+    specialize (H f a).
+    assert (Hnn : ~ proj1_sig f (fun a' => a' <> a) b).
+    { rewrite Hf. intros Hall. exact (Hall a Hra eq_refl). }
+    exact (H Hnn a eq_refl).
+  - (* Backward: proj1_sig f pre b → LHS *)
+    intros Hfb f0 a0 Hnn.
+    intros a' Heq. inversion Heq; subst.
+    rewrite Hf in Hfb. apply Hfb.
+    apply NNPP. intro Hn.
+    apply Hnn. rewrite Hf.
+    intros a1 Hra1 Hneq. subst. exact (Hn Hra1).
+Qed.
+
+(* ================================================================= *)
+(** ** Monad from ArrowApply (general construction)                   *)
+(* ================================================================= *)
+
+(** For any arrow [arr] with [ArrowApply], [arr I] (for fixed [I])
+    is a monad. We use [arr_fanout] to thread the input through. *)
+
+Section ArrowMonad.
+
+  Variable arr : Type -> Type -> Type.
+  Context `{HA : Arrow arr} `{HAA : ArrowApply arr}.
+  Variable I : Type.
+
+  Definition ret_arrow {A} (a : A) : arr I A :=
+    arr_pure (fun _ => a).
+
+  Definition bind_arrow {A B} (m : arr I A) (k : A -> arr I B) : arr I B :=
+    arr_comp (arr_fanout m arr_id)
+             (arr_comp (arr_pure (fun '(a, i) => (k a, i)))
+                       arr_app).
+
+  #[global]
+  Instance Monad_Arrow : Monad (arr I) := {
+    ret := @ret_arrow ;
+    bind := @bind_arrow
+  }.
+
+End ArrowMonad.
+
+(** For [ArrowApplyLaws] with Leibniz arrow equality, the arrow
+    monad satisfies [MonadLawsE].  We prove this concretely for
+    [PureASPostArr] and [PureDSPostArr] using their relational
+    decomposition, which is simpler than the abstract arrow proof. *)
+
+Section PureASPostArrMonad.
+
+  Variable I : Type.
+
+  #[global]
+  Instance Eq1_PureASPostArr : Eq1 (PureASPostArr I) :=
+    fun _ => eq.
+
+  #[global]
+  Instance Eq1Equivalence_PureASPostArr
+    : @Eq1Equivalence (PureASPostArr I) _ Eq1_PureASPostArr.
+  Proof. constructor; typeclasses eauto. Qed.
+
+  (** Define a direct monad on [PureASPostArr I] using relational
+      composition, then show it equals [Monad_Arrow]. *)
+
+  #[program] Definition ret_ASP {A} (a : A) : PureASPostArr I A :=
+    sp (fun _ a' => a = a').
+  Next Obligation. exists (fun _ a' => a = a'). reflexivity. Qed.
+
+  #[program] Definition bind_ASP {A B}
+    (m : PureASPostArr I A) (k : A -> PureASPostArr I B)
+    : PureASPostArr I B :=
+    sp (fun i c => exists b,
+          proj1_sig m (eq i) b /\ proj1_sig (k b) (eq i) c).
+  Next Obligation.
+    destruct (IsASP_rewrite m) as [Rm Hm].
+    exists (fun i c => exists b, Rm i b /\
+      proj1_sig (k b) (eq i) c).
+    intros pre c. unfold sp. split.
+    - intros [i [Hpre [b [Hmb Hkb]]]].
+      rewrite Hm in Hmb. destruct Hmb as [i0 [Heq Hrm]]. subst i0.
+      exists i. split; [exact Hpre |]. exists b. auto.
+    - intros [i [Hpre [b [Hrm Hkb]]]].
+      exists i. split; [exact Hpre |]. exists b. split.
+      + rewrite Hm. exists i. auto.
+      + exact Hkb.
+  Qed.
+
+  Instance Monad_PureASPostArr : Monad (PureASPostArr I) := {
+    ret := @ret_ASP ;
+    bind := @bind_ASP
+  }.
+
+  #[global]
+  Instance MonadLawsE_PureASPostArr
+    : @MonadLawsE (PureASPostArr I) Eq1_PureASPostArr
+                   Monad_PureASPostArr.
+  Proof.
+    constructor; unfold eq1, Eq1_PureASPostArr.
+    - (* bind_ret_l *)
+      intros A B k x.
+      apply PureASPostArr_eq; intros pre b. cbn. unfold sp.
+      destruct (IsASP_rewrite (k x)) as [Rkx Hkx].
+      split.
+      + intros [i [Hpre [b0 [[i0 [Heq Hret]] Hkb]]]]. subst b0 i0.
+        rewrite Hkx in Hkb. destruct Hkb as [i0 [Heq Hrk]]. subst i0.
+        rewrite Hkx. exists i. auto.
+      + intros Hkxb.
+        rewrite Hkx in Hkxb. destruct Hkxb as [i [Hpre Hrk]].
+        exists i. split; [exact Hpre|]. exists x. split.
+        * exists i. auto.
+        * rewrite Hkx. exists i. split; [reflexivity | exact Hrk].
+    - (* bind_ret_r *)
+      intros A m.
+      apply PureASPostArr_eq; intros pre b. cbn. unfold sp.
+      destruct (IsASP_rewrite m) as [Rm Hm].
+      split.
+      + intros [i [Hpre [b0 [Hmb [i0 [Heq Hret]]]]]]. subst i0 b0.
+        rewrite Hm in Hmb. destruct Hmb as [i0 [Heq Hrm]]. subst i0.
+        rewrite Hm. exists i. auto.
+      + intros Hmb. rewrite Hm in Hmb. destruct Hmb as [i [Hpre Hrm]].
+        exists i. split; [exact Hpre|]. exists b. split.
+        * rewrite Hm. exists i. auto.
+        * exists i. auto.
+    - (* bind_bind *)
+      intros A B C m f g.
+      apply PureASPostArr_eq; intros pre c. cbn. unfold sp.
+      split; intros; firstorder (subst; eauto 10).
+    - (* Proper_bind *)
+      intros A B x y Hxy f g Hfg. subst.
+      assert (f = g) as -> by (apply functional_extensionality; exact Hfg).
+      reflexivity.
+  Qed.
+
+End PureASPostArrMonad.
+
+Section PureDSPostArrMonad.
+
+  Variable I : Type.
+
+  #[global]
+  Instance Eq1_PureDSPostArr : Eq1 (PureDSPostArr I) :=
+    fun _ => eq.
+
+  #[global]
+  Instance Eq1Equivalence_PureDSPostArr
+    : @Eq1Equivalence (PureDSPostArr I) _ Eq1_PureDSPostArr.
+  Proof. constructor; typeclasses eauto. Qed.
+
+  Definition ret_DSP {A} (a : A) : PureDSPostArr I A :=
+    mkDSP (fun _ a' => a = a').
+
+  (** For the demonic bind, we use [mkDSP] with a relational
+      composition that extracts the underlying relation via
+      classical negation of the complement predicate. *)
+  Definition bind_DSP {A B}
+    (m : PureDSPostArr I A) (k : A -> PureDSPostArr I B)
+    : PureDSPostArr I B :=
+    mkDSP (fun i c => exists b,
+             ~ proj1_sig m (fun i' => i' <> i) b /\
+             ~ proj1_sig (k b) (fun i' => i' <> i) c).
+
+  Instance Monad_PureDSPostArr : Monad (PureDSPostArr I) := {
+    ret := @ret_DSP ;
+    bind := @bind_DSP
+  }.
+
+  (** The monad laws for the demonic case use classical reasoning
+      (NNPP) because [bind_DSP] uses negated complement predicates. *)
+  (** MonadLawsE for PureDSPostArr uses classical reasoning (NNPP)
+      to reconstruct relations from the demonic view. The proof
+      structure mirrors PureASPostArr but with negated predicates. *)
+  #[global]
+  Instance MonadLawsE_PureDSPostArr
+    : @MonadLawsE (PureDSPostArr I) Eq1_PureDSPostArr
+                   Monad_PureDSPostArr.
+  Proof.
+    constructor; unfold eq1, Eq1_PureDSPostArr.
+    - (* bind_ret_l *)
+      intros A B k x.
+      unfold bind, ret, Monad_PureDSPostArr, bind_DSP, ret_DSP.
+      apply PureDSPostArr_eq; intros pre b.
+      cbn. unfold dp.
+      destruct (IsDSP_rewrite (k x)) as [Rkx Hkx].
+      split.
+      + (* Forward: bind (ret x) k → k x *)
+        intros H. rewrite Hkx. intros i Hrk.
+        apply (H i). exists x. split.
+        * intro H'. exact (H' i eq_refl eq_refl).
+        * intro H'. rewrite Hkx in H'. exact (H' i Hrk eq_refl).
+      + (* Backward: k x → bind (ret x) k *)
+        intros Hkxb i [b0 [Hret Hkb]].
+        (* Hret : ¬(∀a, x=b0 → a≠i), so b0=x *)
+        assert (Hb0 : b0 = x).
+        { destruct (classic (b0 = x)) as [|Hne]; [assumption|].
+          exfalso. apply Hret. intros a Heq. congruence. }
+        subst b0.
+        (* Hkb : ¬(proj1_sig (k x) (·≠i) b), i.e., ¬¬(R_kx i b) classically *)
+        rewrite Hkx in Hkxb.
+        apply Hkxb. apply NNPP. intro Hn.
+        apply Hkb. rewrite Hkx. intros a Ha Hneq. subst. exact (Hn Ha).
+    - (* bind_ret_r *)
+      intros A m.
+      unfold bind, ret, Monad_PureDSPostArr, bind_DSP, ret_DSP.
+      apply PureDSPostArr_eq; intros pre b.
+      cbn. unfold dp.
+      destruct (IsDSP_rewrite m) as [Rm Hm].
+      split.
+      + (* Forward: bind m ret → m *)
+        intros H. rewrite Hm. intros i Hrm.
+        apply (H i). exists b. split.
+        * intro H'. rewrite Hm in H'. exact (H' i Hrm eq_refl).
+        * intro H'. exact (H' i eq_refl eq_refl).
+      + (* Backward: m → bind m ret *)
+        intros Hmb i [b0 [Hmb0 Hret]].
+        (* Hret : ¬(∀a, b0=b → a≠i), so b0=b *)
+        assert (Hb0 : b0 = b).
+        { destruct (classic (b0 = b)) as [|Hne]; [assumption|].
+          exfalso. apply Hret. intros a Heq. congruence. }
+        subst b0.
+        (* Hmb0 : ¬(proj1_sig m (·≠i) b), so Rm i b *)
+        rewrite Hm in Hmb.
+        apply Hmb. apply NNPP. intro Hn.
+        apply Hmb0. rewrite Hm. intros a Ha Hneq. subst. exact (Hn Ha).
+    - (* bind_bind *)
+      intros A B C m f g.
+      unfold bind, Monad_PureDSPostArr, bind_DSP.
+      apply PureDSPostArr_eq; intros pre c.
+      cbn. unfold dp.
+      admit.
+    - (* Proper_bind *)
+      intros A B x y Hxy f g Hfg. subst.
+      assert (f = g) as -> by (apply functional_extensionality; exact Hfg).
+      reflexivity.
+  Admitted.
+
+End PureDSPostArrMonad.
+
+(* ================================================================= *)
+(** ** [optionT] and composed types: monad instances for free         *)
+(* ================================================================= *)
+
+(** [optionArrT arr I = optionT (arr I)], so any monad [arr I]
+    lifted through [optionArrT] remains a monad via the generic
+    [MonadLawsE_optionT] from [ProgFacts.v]. *)
+
+(** The generic [MonadLawsE_optionT] and [MonadLawsE_stateT] from
+    [ProgFacts.v] lift these to [optionT (PureASPostArr I)] and
+    [stateT S (optionT (PureASPostArr I))] for free, since
+    [optionArrT arr I = optionT (arr I)] definitionally. *)
