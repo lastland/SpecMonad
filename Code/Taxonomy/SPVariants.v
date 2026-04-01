@@ -73,35 +73,35 @@ Section NDItSP.
   (** Demonic strongest postcondition (total).
       [dsp = asp ∩ dslp]
       Final states exclusively reachable from [b]. *)
-  Definition ndit_dsp {A} (m : nditprog S A)
+  #[program] Definition ndit_dsp {A} (m : nditprog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (proj1_sig (ndit_asp m)) pre r /\ sp_pt (proj1_sig (ndit_dslp m)) pre r.
+    sp_pt (ndit_asp m) pre r /\ sp_pt (ndit_dslp m) pre r.
 
   (** Angelic strongest liberal postcondition.
       [aslp = asp ∪ dslp]
       Final states reachable from [b], or unreachable. *)
-  Definition ndit_aslp {A} (m : nditprog S A)
+  #[program] Definition ndit_aslp {A} (m : nditprog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (proj1_sig (ndit_asp m)) pre r \/ sp_pt (proj1_sig (ndit_dslp m)) pre r.
+    sp_pt (ndit_asp m) pre r \/ sp_pt (ndit_dslp m) pre r.
 
   (* -------------------------------------------------------------- *)
-  (** ** Theorem 3.7: Diamond inclusions                              *)
+  (** ** Theorem 3.7: Sqaure inclusions                              *)
   (* -------------------------------------------------------------- *)
 
-  Theorem ndit_dsp_sub_asp {A} (m : nditprog S A) pre r :
-    ndit_dsp m pre r -> sp_pt (proj1_sig (ndit_asp m)) pre r.
+  #[program] Theorem ndit_dsp_sub_asp {A} (m : nditprog S A) pre r :
+    ndit_dsp m pre r -> sp_pt (ndit_asp m) pre r.
   Proof. intros [H _]. exact H. Qed.
 
-  Theorem ndit_dsp_sub_dslp {A} (m : nditprog S A) pre r :
-    ndit_dsp m pre r -> sp_pt (proj1_sig (ndit_dslp m)) pre r.
+  #[program] Theorem ndit_dsp_sub_dslp {A} (m : nditprog S A) pre r :
+    ndit_dsp m pre r -> sp_pt (ndit_dslp m) pre r.
   Proof. intros [_ H]. exact H. Qed.
 
-  Theorem ndit_asp_sub_aslp {A} (m : nditprog S A) pre r :
-    sp_pt (proj1_sig (ndit_asp m)) pre r -> ndit_aslp m pre r.
+  #[program] Theorem ndit_asp_sub_aslp {A} (m : nditprog S A) pre r :
+    sp_pt (ndit_asp m) pre r -> ndit_aslp m pre r.
   Proof. intro H. left. exact H. Qed.
 
-  Theorem ndit_dslp_sub_aslp {A} (m : nditprog S A) pre r :
-    sp_pt (proj1_sig (ndit_dslp m)) pre r -> ndit_aslp m pre r.
+  #[program] Theorem ndit_dslp_sub_aslp {A} (m : nditprog S A) pre r :
+    sp_pt (ndit_dslp m) pre r -> ndit_aslp m pre r.
   Proof. intro H. right. exact H. Qed.
 
   (* -------------------------------------------------------------- *)
