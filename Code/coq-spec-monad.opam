@@ -10,7 +10,10 @@ license: "MIT"
 synopsis: "The Coq formalization of spec monads"
 description: "Theory for spec monads, Hoare logic, and incorrectness logic."
 
-build: [make "-j%{jobs}%"]
+build: [
+  ["coq_makefile" "-f" "_CoqProject" "-o" "Makefile"]
+  [make "-j%{jobs}%"]
+]
 install: [make "install"]
 depends: [
   "coq" {>= "8.20"}
