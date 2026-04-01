@@ -37,6 +37,59 @@ Import MonadNotation.
 Open Scope monad_scope.
 
 (* ================================================================= *)
+(** * Characterization of dsp and aslp (paper §3.2.4)                 *)
+(* ================================================================= *)
+
+(** The paper's Definition 3.5 defines [dsp] via a reachability guard:
+
+      dsp(b)(τ) = ∀σ∈⟦p⟧⁻¹(τ). b(σ)   if ⟦p⟧⁻¹(τ) ≠ ∅
+                  false                  otherwise
+
+    which equals [(∃a. R a b) ∧ (∀a. R a b → pre a)].
+
+    Definition 3.6 defines [aslp] similarly:
+
+      aslp(b)(τ) = ∃σ∈⟦p⟧⁻¹(τ). b(σ)  if ⟦p⟧⁻¹(τ) ≠ ∅
+                   true                  otherwise
+
+    which equals [(∃a. pre a ∧ R a b) ∨ ¬(∃a. R a b)].
+
+    We prove these equal [sp ∧ dp] and [sp ∨ dp] respectively. *)
+
+Section SPCharacterizations.
+
+  Variables A B : Type.
+  Variable R : SPArr A B.
+
+  Theorem dsp_sp_dp (pre : A -> Prop) (b : B) :
+    ((exists a, R a b) /\ forall a, R a b -> pre a) <->
+    (sp R pre b /\ dp R pre b).
+  Proof.
+    unfold sp, dp. split.
+    - intros [[a0 HRa0] Hall].
+      split; [exists a0; auto | exact Hall].
+    - intros [[a0 [Hpre HRa0]] Hall].
+      split; [exists a0; exact HRa0 | exact Hall].
+  Qed.
+
+  Theorem aslp_sp_dp (pre : A -> Prop) (b : B) :
+    ((exists a, pre a /\ R a b) \/ ~ exists a, R a b) <->
+    (sp R pre b \/ dp R pre b).
+  Proof.
+    unfold sp, dp. split.
+    - intros [Hsp | Hunreach].
+      + left. exact Hsp.
+      + right. intros a HRab. exfalso. apply Hunreach. exists a. exact HRab.
+    - intros [Hsp | Hdp].
+      + left. exact Hsp.
+      + destruct (classic (exists a, R a b)) as [[a0 HRa0] | Hunreach].
+        * left. exists a0. split; [exact (Hdp a0 HRa0) | exact HRa0].
+        * right. exact Hunreach.
+  Qed.
+
+End SPCharacterizations.
+
+(* ================================================================= *)
 (** * SP variants for [nditprog]                                      *)
 (* ================================================================= *)
 
@@ -103,6 +156,30 @@ Section NDItSP.
   #[program] Theorem ndit_dslp_sub_aslp {A} (m : nditprog S A) pre r :
     sp_pt (ndit_dslp m) pre r -> ndit_aslp m pre r.
   Proof. intro H. right. exact H. Qed.
+
+  (* -------------------------------------------------------------- *)
+  (** ** Characterization: dsp = asp ∩ dslp, aslp = asp ∪ dslp       *)
+  (* -------------------------------------------------------------- *)
+
+  (** Paper §3.2.4: [dsp] matches Definition 3.5. *)
+  Corollary ndit_dsp_char {A} (m : nditprog S A) pre r :
+    ndit_dsp m pre r <->
+    (exists sigma, ndit_obsRel m sigma r) /\
+    (forall sigma, ndit_obsRel m sigma r -> pre sigma).
+  Proof.
+    unfold ndit_dsp, ndit_asp, ndit_dslp; simpl.
+    symmetry. apply dsp_sp_dp.
+  Qed.
+
+  (** Paper §3.2.4: [aslp] matches Definition 3.6. *)
+  Corollary ndit_aslp_char {A} (m : nditprog S A) pre r :
+    ndit_aslp m pre r <->
+    (exists sigma, pre sigma /\ ndit_obsRel m sigma r) \/
+    ~ (exists sigma, ndit_obsRel m sigma r).
+  Proof.
+    unfold ndit_aslp, ndit_asp, ndit_dslp; simpl.
+    symmetry. apply aslp_sp_dp.
+  Qed.
 
   (* -------------------------------------------------------------- *)
   (** ** Theorem 3.8: Contrapositive transformers                     *)
@@ -199,6 +276,24 @@ Section NDSP.
     sp_pt (nd_dslp m) pre r -> nd_aslp m pre r.
   Proof. intro H. right. exact H. Qed.
 
+  Corollary nd_dsp_char {A} (m : ndprog S A) pre r :
+    nd_dsp m pre r <->
+    (exists sigma, nd_obsRel m sigma r) /\
+    (forall sigma, nd_obsRel m sigma r -> pre sigma).
+  Proof.
+    unfold nd_dsp, nd_asp, nd_dslp; simpl.
+    symmetry. apply dsp_sp_dp.
+  Qed.
+
+  Corollary nd_aslp_char {A} (m : ndprog S A) pre r :
+    nd_aslp m pre r <->
+    (exists sigma, pre sigma /\ nd_obsRel m sigma r) \/
+    ~ (exists sigma, nd_obsRel m sigma r).
+  Proof.
+    unfold nd_aslp, nd_asp, nd_dslp; simpl.
+    symmetry. apply aslp_sp_dp.
+  Qed.
+
 End NDSP.
 
 Arguments nd_obsRel {_} {_}.
@@ -252,6 +347,24 @@ Section DetSP.
   #[program] Theorem det_dslp_sub_aslp {A} (m : prog S A) pre r :
     sp_pt (det_dslp m) pre r -> det_aslp m pre r.
   Proof. intro H. right. exact H. Qed.
+
+  Corollary det_dsp_char {A} (m : prog S A) pre r :
+    det_dsp m pre r <->
+    (exists sigma, det_obsRel m sigma r) /\
+    (forall sigma, det_obsRel m sigma r -> pre sigma).
+  Proof.
+    unfold det_dsp, det_asp, det_dslp; simpl.
+    symmetry. apply dsp_sp_dp.
+  Qed.
+
+  Corollary det_aslp_char {A} (m : prog S A) pre r :
+    det_aslp m pre r <->
+    (exists sigma, pre sigma /\ det_obsRel m sigma r) \/
+    ~ (exists sigma, det_obsRel m sigma r).
+  Proof.
+    unfold det_aslp, det_asp, det_dslp; simpl.
+    symmetry. apply aslp_sp_dp.
+  Qed.
 
 End DetSP.
 
