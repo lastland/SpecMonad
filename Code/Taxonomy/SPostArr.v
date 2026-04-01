@@ -22,6 +22,7 @@
 From Coq Require Import Program.Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 
+
 (* ================================================================= *)
 (** ** Angelic: [PureASPostArr]                                       *)
 (* ================================================================= *)
@@ -122,29 +123,33 @@ End PureASPostArr.
 (** ** Demonic: [PureDSPostArr]                                       *)
 (* ================================================================= *)
 
+(** Demonic predicate transformer: universal dual of [sp]. This diverges from
+    the strongest postcondition transformer in Kenji's Ph.D. thesis. TODO:
+    Investigate if there's another predicate monad that corresponds to this.
+    *)
+Definition dp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
+  fun b => forall a, R a b -> pre a.
+
+(** Bundle a predicate transformer with its underlying relation.
+    Using a record avoids universe issues that [prod] causes when
+    combined with [Eq1] from ExtLib. *)
+Record DSPData (A B : Type) := mkDSPData {
+  dsp_pt : (A -> Prop) -> B -> Prop ;
+  dsp_rel : SPArr A B
+}.
+Arguments dsp_pt {A B}.
+Arguments dsp_rel {A B}.
+
+Definition PureDSPostArr (A B : Type) : Type :=
+  { d : DSPData A B |
+    forall pre b, dsp_pt d pre b <-> dp (dsp_rel d) pre b }.
+
+(** Smart constructor: wrap a relation with [dp]. *)
+#[program] Definition mkDSP {A B} (R : SPArr A B) : PureDSPostArr A B :=
+  mkDSPData _ _ (dp R) R.
+Next Obligation. reflexivity. Qed.
+
 Section PureDSPostArr.
-
-  (** Demonic predicate transformer: universal dual of [sp]. This diverges from
-      the strongest postcondition transformer in Kenji's Ph.D. thesis. TODO:
-      Investigate if there's another predicate monad that corresponds to this.
-      *)
-  Definition dp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
-    fun b => forall a, R a b -> pre a.
-
-  (** A predicate transformer is in the image of [dp] iff it equals
-      [dp R] for some relation [R]. *)
-  Definition IsDSP {A B} (f : (A -> Prop) -> B -> Prop) : Prop :=
-    exists R : SPArr A B, forall pre b, f pre b <-> dp R pre b.
-
-  Definition PureDSPostArr (A B : Type) : Type :=
-    { f : (A -> Prop) -> B -> Prop | IsDSP f }.
-
-  (** Smart constructor: wrap a relation with [dp]. *)
-  #[program] Definition mkDSP {A B} (R : SPArr A B) : PureDSPostArr A B :=
-    dp R.
-  Next Obligation.
-    exists R. reflexivity.
-  Qed.
 
   (* -------------------------------------------------------------- *)
   (** *** Arrow instance for [PureDSPostArr]                          *)
@@ -152,46 +157,41 @@ Section PureDSPostArr.
 
   #[local]
   #[program] Definition arr_pure_DSP {A B} (f : A -> B) : PureDSPostArr A B :=
-    fun pre b => forall a, f a = b -> pre a.
-  Next Obligation.
-    exists (fun a b => f a = b). intros pre b. reflexivity.
-  Qed.
+    mkDSPData _ _ (fun pre b => forall a, f a = b -> pre a) (fun a b => f a = b).
+  Next Obligation. reflexivity. Qed.
 
   #[local]
   #[program] Definition arr_comp_DSP {A B C}
     (f : PureDSPostArr A B) (g : PureDSPostArr B C) : PureDSPostArr A C :=
-    fun pre c => g (f pre) c.
+    mkDSPData _ _ (fun pre c => dsp_pt (proj1_sig g) (dsp_pt (proj1_sig f) pre) c)
+                  (fun a c => exists b, dsp_rel (proj1_sig f) a b /\ dsp_rel (proj1_sig g) b c).
   Next Obligation.
-    destruct (proj2_sig f) as [Rf Hf].
-    destruct (proj2_sig g) as [Rg Hg].
-    exists (fun a c => exists b, Rf a b /\ Rg b c).
-    intros pre c. unfold dp.
-    rewrite Hg. unfold dp.
     split.
-    - intros Hgf a [b [Hrf Hrg]].
-      apply Hgf in Hrg. rewrite Hf in Hrg. unfold dp in Hrg.
+    - intro H. unfold dp. intros a [b0 [Hrf Hrg]].
+      apply (proj2_sig g) in H. unfold dp in H.
+      apply H in Hrg. apply (proj2_sig f) in Hrg. unfold dp in Hrg.
       exact (Hrg a Hrf).
-    - intros Hall b Hrg.
-      rewrite Hf. unfold dp. intros a Hrf.
-      exact (Hall a (ex_intro _ b (conj Hrf Hrg))).
+    - intros Hall. apply (proj2_sig g). unfold dp.
+      intros b0 Hrg. apply (proj2_sig f). unfold dp. intros a Hrf.
+      exact (Hall a (ex_intro _ b0 (conj Hrf Hrg))).
   Qed.
 
   #[local]
-  #[program] Definition arr_first_DSP {A B C}
-    (f : PureDSPostArr A B) : PureDSPostArr (A * C)%type (B * C)%type :=
-    fun pre '(b, d) => f (fun a => pre (a, d)) b.
-  Next Obligation.
-    destruct (proj2_sig f) as [Rf Hf].
-    exists (fun '(a, d) '(b, d') => Rf a b /\ d = d').
-    intros pre [b d']. unfold dp.
+  Definition arr_first_DSP {A B C}
+    (f : PureDSPostArr A B) : PureDSPostArr (A * C)%type (B * C)%type.
+  Proof.
+    refine (exist _
+      (mkDSPData _ _
+        (fun pre '(b, d) => dsp_pt (proj1_sig f) (fun a => pre (a, d)) b)
+        (fun '(a, d) '(b, d') => dsp_rel (proj1_sig f) a b /\ d = d')) _).
+    intros pre [b0 d']. unfold dp.
     split.
-    - intro H. rewrite Hf in H. unfold dp in H.
+    - intro H. apply (proj2_sig f) in H. unfold dp in H.
       intros [a d0] [Hrf Heq]. simpl in *. subst d0.
       exact (H a Hrf).
-    - intros Hall.
-      rewrite Hf. unfold dp. intros a Hrf.
+    - intros Hall. apply (proj2_sig f). unfold dp. intros a Hrf.
       exact (Hall (a, d') (conj Hrf eq_refl)).
-  Qed.
+  Defined.
 
   #[global]
   Instance Arrow_PureDSPostArr : Arrow PureDSPostArr := {
@@ -203,13 +203,13 @@ Section PureDSPostArr.
   #[local]
   #[program] Definition arr_app_DSP {A B}
     : PureDSPostArr (PureDSPostArr A B * A)%type B :=
-    fun pre b => forall f a,
-      ~ proj1_sig f (fun a' => a' <> a) b -> pre (f, a).
+    mkDSPData _ _
+      (fun pre b => forall f a, dsp_rel (proj1_sig f) a b -> pre (f, a))
+      (fun '(f, a) b => dsp_rel (proj1_sig f) a b).
   Next Obligation.
-    exists (fun '(f, a) b => ~ proj1_sig f (fun a' => a' <> a) b).
-    intros pre b. unfold dp. split.
-    - intros H [f a] Hfab. exact (H f a Hfab).
-    - intros H f a Hfab. exact (H (f, a) Hfab).
+    unfold dp. split.
+    - intros H [f0 a] Hfab. exact (H f0 a Hfab).
+    - intros H f0 a Hfab. exact (H (f0, a) Hfab).
   Qed.
 
   #[global]
@@ -332,90 +332,92 @@ Section OptionDSPArr.
   Definition optionDSPArr := optionArrT PureDSPostArr.
 
   #[local]
-  #[program] Definition arr_pure_optDSP {A B}
-    (f : A -> B) : optionDSPArr A B :=
-    fun pre ob => match ob with
-      | Some b => forall a, f a = b -> pre a
-      | None => True
-    end.
-  Next Obligation.
-    exists (fun a ob => match ob with Some b => f a = b | None => False end).
+  Definition arr_pure_optDSP {A B}
+    (f : A -> B) : optionDSPArr A B.
+  Proof.
+    refine (exist _
+      (mkDSPData _ _
+        (fun pre ob => match ob with
+          | Some b => forall a, f a = b -> pre a
+          | None => True
+        end)
+        (fun a ob => match ob with Some b => f a = b | None => False end)) _).
     intros pre [b|]; unfold dp; split; firstorder; discriminate.
-  Qed.
+  Defined.
 
   #[local]
-  #[program] Definition arr_comp_optDSP {A B C}
+  Definition arr_comp_optDSP {A B C}
     (f : optionDSPArr A B) (g : optionDSPArr B C)
-    : optionDSPArr A C :=
-    fun pre oc => match oc with
-      | Some c => proj1_sig g (fun b => proj1_sig f pre (Some b)) (Some c)
-      | None => proj1_sig f pre None /\
-                proj1_sig g (fun b => proj1_sig f pre (Some b)) None
-    end.
-  Next Obligation.
-    destruct (proj2_sig f) as [Rf Hf].
-    destruct (proj2_sig g) as [Rg Hg].
-    exists (fun a oc => match oc with
-      | Some c => exists b, Rf a (Some b) /\ Rg b (Some c)
-      | None => Rf a None \/ exists b, Rf a (Some b) /\ Rg b None
-    end).
+    : optionDSPArr A C.
+  Proof.
+    refine (exist _
+      (mkDSPData _ _
+        (fun pre oc => match oc with
+          | Some c => dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) (Some c)
+          | None => dsp_pt (proj1_sig f) pre None /\
+                    dsp_pt (proj1_sig g) (fun b => dsp_pt (proj1_sig f) pre (Some b)) None
+        end)
+        (fun a oc => match oc with
+          | Some c => exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b (Some c)
+          | None => dsp_rel (proj1_sig f) a None \/
+                    exists b, dsp_rel (proj1_sig f) a (Some b) /\ dsp_rel (proj1_sig g) b None
+        end)) _).
     intros pre [c|]; unfold dp.
     - (* Some c *)
-      rewrite Hg. unfold dp.
       split.
-      + intros Hgf a [b [Hrfab Hrgbc]].
-        apply Hgf in Hrgbc. rewrite Hf in Hrgbc. unfold dp in Hrgbc.
+      + intro H. intros a [b0 [Hrfab Hrgbc]].
+        apply (proj2_sig g) in H. unfold dp in H.
+        apply H in Hrgbc. apply (proj2_sig f) in Hrgbc. unfold dp in Hrgbc.
         exact (Hrgbc a Hrfab).
-      + intros Hall b Hrgbc.
-        rewrite Hf. unfold dp. intros a Hrfab.
-        exact (Hall a (ex_intro _ b (conj Hrfab Hrgbc))).
+      + intros Hall. apply (proj2_sig g). unfold dp.
+        intros b0 Hrgbc. apply (proj2_sig f). unfold dp. intros a Hrfab.
+        exact (Hall a (ex_intro _ b0 (conj Hrfab Hrgbc))).
     - (* None *)
       split.
-      + intros [HfNone HgNone] a [Hrf | [b [Hrfab Hrgb]]].
-        * rewrite Hf in HfNone. unfold dp in HfNone.
+      + intros [HfNone HgNone] a [Hrf | [b0 [Hrfab Hrgb]]].
+        * apply (proj2_sig f) in HfNone. unfold dp in HfNone.
           exact (HfNone a Hrf).
-        * rewrite Hg in HgNone. unfold dp in HgNone.
-          apply HgNone in Hrgb.
-          rewrite Hf in Hrgb. unfold dp in Hrgb.
+        * apply (proj2_sig g) in HgNone. unfold dp in HgNone.
+          apply HgNone in Hrgb. apply (proj2_sig f) in Hrgb. unfold dp in Hrgb.
           exact (Hrgb a Hrfab).
       + intros Hall. split.
-        * rewrite Hf. unfold dp. intros a Hrf.
+        * apply (proj2_sig f). unfold dp. intros a Hrf.
           exact (Hall a (or_introl Hrf)).
-        * rewrite Hg. unfold dp. intros b Hrgb.
-          rewrite Hf. unfold dp. intros a Hrfab.
-          exact (Hall a (or_intror (ex_intro _ b (conj Hrfab Hrgb)))).
-  Qed.
+        * apply (proj2_sig g). unfold dp. intros b0 Hrgb.
+          apply (proj2_sig f). unfold dp. intros a Hrfab.
+          exact (Hall a (or_intror (ex_intro _ b0 (conj Hrfab Hrgb)))).
+  Defined.
 
   #[local]
-  #[program] Definition arr_first_optDSP {A B C}
-    (f : optionDSPArr A B) : optionDSPArr (A * C)%type (B * C)%type :=
-    fun pre obc => match obc with
-      | Some (b, d) => proj1_sig f (fun a => pre (a, d)) (Some b)
-      | None => forall d, proj1_sig f (fun a => pre (a, d)) None
-    end.
-  Next Obligation.
-    destruct (proj2_sig f) as [Rf Hf].
-    exists (fun '(a, d) obc => match obc with
-      | Some (b, d') => Rf a (Some b) /\ d = d'
-      | None => Rf a None
-    end).
+  Definition arr_first_optDSP {A B C}
+    (f : optionDSPArr A B) : optionDSPArr (A * C)%type (B * C)%type.
+  Proof.
+    refine (exist _
+      (mkDSPData _ _
+        (fun pre obc => match obc with
+          | Some (b, d) => dsp_pt (proj1_sig f) (fun a => pre (a, d)) (Some b)
+          | None => forall d, dsp_pt (proj1_sig f) (fun a => pre (a, d)) None
+        end)
+        (fun '(a, d) obc => match obc with
+          | Some (b, d') => dsp_rel (proj1_sig f) a (Some b) /\ d = d'
+          | None => dsp_rel (proj1_sig f) a None
+        end)) _).
     intros pre [[b0 d0] |]; unfold dp.
     - (* Some (b0, d0) *)
-      rewrite Hf. unfold dp.
       split.
-      + intros H [a d1] [Hrf Heq]. simpl in *. subst d1.
+      + intro H. apply (proj2_sig f) in H. unfold dp in H.
+        intros [a d1] [Hrf Heq]. simpl in *. subst d1.
         exact (H a Hrf).
-      + intros Hall a Hrf.
+      + intros Hall. apply (proj2_sig f). unfold dp. intros a Hrf.
         exact (Hall (a, d0) (conj Hrf eq_refl)).
     - (* None *)
       split.
       + intros H [a d] Hrf. simpl in *.
-        specialize (H d). rewrite Hf in H. unfold dp in H.
+        specialize (H d). apply (proj2_sig f) in H. unfold dp in H.
         exact (H a Hrf).
-      + intros Hall d.
-        rewrite Hf. unfold dp. intros a Hrf.
+      + intros Hall d. apply (proj2_sig f). unfold dp. intros a Hrf.
         exact (Hall (a, d) Hrf).
-  Qed.
+  Defined.
 
   #[global]
   Instance Arrow_optionDSPArr : Arrow optionDSPArr := {

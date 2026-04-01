@@ -9,7 +9,7 @@
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality ProofIrrelevance
-  Morphisms RelationClasses Classical_Prop.
+  Morphisms RelationClasses.
 From ITree Require Import Basics.Monad.
 From ExtLib Require Import
   Monad StateMonad OptionMonad.
@@ -278,39 +278,44 @@ Qed.
 (** ** Utilities for [PureDSPostArr]                                   *)
 (* ================================================================= *)
 
-(** Key classical lemma: [¬(∀j, P j → j ≠ i) ↔ P i].
-    Collapses the negated complement used in demonic relation extraction. *)
-Lemma not_forall_neq {I : Type} (P : I -> Prop) (i : I) :
-  ~ (forall j, P j -> j <> i) <-> P i.
-Proof.
-  split.
-  - intro H. apply NNPP. intro Hn.
-    apply H. intros j Hpj Heq. subst. exact (Hn Hpj).
-  - intros Hpi Hall. exact (Hall i Hpi eq_refl).
-Qed.
-
 Lemma PureDSPostArr_eq {A B} (f g : PureDSPostArr A B) :
-  (forall pre b, proj1_sig f pre b <-> proj1_sig g pre b) -> f = g.
+  (forall pre b, dsp_pt (proj1_sig f) pre b <-> dsp_pt (proj1_sig g) pre b) -> f = g.
 Proof.
   intro Heq.
-  destruct f as [fv fp], g as [gv gp]; cbn in *.
-  assert (fv = gv) as ->.
+  destruct f as [[fpt frel] fp], g as [[gpt grel] gp]; simpl in *.
+  assert (Hpt : fpt = gpt).
   { extensionality pre. extensionality b.
     apply propositional_extensionality. apply Heq. }
+  subst gpt.
+  assert (Hrel : frel = grel).
+  { extensionality a. extensionality b.
+    apply propositional_extensionality.
+    assert (Hdp : forall pre b0, dp frel pre b0 <-> dp grel pre b0).
+    { intros pre0 b0. split; intro H.
+      - apply gp. apply fp. exact H.
+      - apply fp. apply gp. exact H. }
+    split; intro Hab.
+    - assert (Htmp : dp frel (fun a' => grel a' b) b).
+      { apply Hdp. unfold dp. auto. }
+      unfold dp in Htmp. exact (Htmp a Hab).
+    - assert (Htmp : dp grel (fun a' => frel a' b) b).
+      { apply Hdp. unfold dp. auto. }
+      unfold dp in Htmp. exact (Htmp a Hab). }
+  subst grel.
   f_equal. apply proof_irrelevance.
 Qed.
 
 Lemma IsDSP_rewrite {A B} (f : PureDSPostArr A B) :
   exists R : SPArr A B,
-    forall pre b, proj1_sig f pre b <-> forall a, R a b -> pre a.
+    forall pre b, dsp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
-  destruct (proj2_sig f) as [R HR]. exists R. intros pre b.
-  rewrite HR. unfold dp. reflexivity.
+  exists (dsp_rel (proj1_sig f)). intros pre b.
+  apply (proj2_sig f).
 Qed.
 
 Lemma DSP_dp {A B} (f : PureDSPostArr A B) (R : SPArr A B)
-  (HR : forall pre b, proj1_sig f pre b <-> forall a, R a b -> pre a) :
-  forall P b, proj1_sig f P b <-> forall a, R a b -> P a.
+  (HR : forall pre b, dsp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
+  forall P b, dsp_pt (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.
 
 (* ================================================================= *)
@@ -560,23 +565,14 @@ Instance ArrowApplyLaws_PureDSPostArr : ArrowApplyLaws PureDSPostArr.
 Proof.
   constructor; intros.
   apply PureDSPostArr_eq; intros pre b. cbn.
-  destruct (IsDSP_rewrite f) as [Rf Hf].
   split.
-  - (* Forward: LHS → proj1_sig f pre b
-       LHS: ∀f0 a, ¬(proj1_sig f0 (· ≠ a) b) → (∀a', (f, a') = (f0, a) → pre a')
-       By IsDSP, ¬(proj1_sig f (· ≠ a) b) = ¬¬(Rf a b) = Rf a b (NNPP). *)
-    intros H. rewrite Hf. intros a Hra.
-    specialize (H f a).
-    assert (Hnn : ~ proj1_sig f (fun a' => a' <> a) b).
-    { rewrite Hf. intros Hall. exact (Hall a Hra eq_refl). }
-    exact (H Hnn a eq_refl).
-  - (* Backward: proj1_sig f pre b → LHS *)
-    intros Hfb f0 a0 Hnn.
-    intros a' Heq. inversion Heq; subst.
-    rewrite Hf in Hfb. apply Hfb.
-    apply NNPP. intro Hn.
-    apply Hnn. rewrite Hf.
-    intros a1 Hra1 Hneq. subst. exact (Hn Hra1).
+  - (* Forward: (∀f0 a, dsp_rel (proj1_sig f0) a b → pre (f, a)) → dsp_pt (proj1_sig f) pre b *)
+    intros H. apply (proj2_sig f). intros a Hra.
+    exact (H f a Hra a eq_refl).
+  - (* Backward: dsp_pt (proj1_sig f) pre b → (∀f0 a, dsp_rel (proj1_sig f0) a b → pre (f, a)) *)
+    intros Hfb f0 a0 Hrel a' Heq.
+    injection Heq as Hfeq Haeq. subst a' f0.
+    apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
 Qed.
 
 (* ================================================================= *)
@@ -716,48 +712,23 @@ Section PureDSPostArrMonad.
   Definition ret_DSP {A} (a : A) : PureDSPostArr I A :=
     mkDSP (fun _ a' => a = a').
 
-  (** For the demonic bind, we use [mkDSP] with a relational
-      composition that extracts the underlying relation via
-      classical negation of the complement predicate. *)
+  (** For the demonic bind, we extract the underlying relation directly
+      via [dsp_rel (proj1_sig ...)], avoiding classical axioms. *)
   Definition bind_DSP {A B}
     (m : PureDSPostArr I A) (k : A -> PureDSPostArr I B)
     : PureDSPostArr I B :=
     mkDSP (fun i c => exists b,
-             ~ proj1_sig m (fun i' => i' <> i) b /\
-             ~ proj1_sig (k b) (fun i' => i' <> i) c).
+             dsp_rel (proj1_sig m) i b /\
+             dsp_rel (proj1_sig (k b)) i c).
 
   Instance Monad_PureDSPostArr : Monad (PureDSPostArr I) := {
     ret := @ret_DSP ;
     bind := @bind_DSP
   }.
 
-  (** The [not_forall_neq] lemma collapses the negated complement
-      predicates in [bind_DSP]: [¬(f (· ≠ i) b) ↔ R i b]. *)
-
-  Local Ltac simp_neg :=
-    repeat match goal with
-    | [H : ~ (forall _, _ -> _ <> _) |- _] => apply not_forall_neq in H
-    | [|- ~ (forall _, _ -> _ <> _)] => apply not_forall_neq
-    end.
-
   Lemma proj_mkDSP {J B} (R : SPArr J B) pre b :
-    proj1_sig (mkDSP R) pre b <-> dp R pre b.
+    dsp_pt (proj1_sig (mkDSP R)) pre b <-> dp R pre b.
   Proof. reflexivity. Qed.
-
-  (** Convert [¬(proj1_sig f (· ≠ i) b)] to [R i b]
-      given an [IsDSP_rewrite] witness. *)
-  Lemma neg_dsp_rel {J B} (f : PureDSPostArr J B)
-    (R : SPArr J B)
-    (HR : forall pre b0, proj1_sig f pre b0 <-> forall a, R a b0 -> pre a)
-    (i : J) (b : B) :
-    (~ proj1_sig f (fun a => a <> i) b) <-> R i b.
-  Proof.
-    split.
-    - intro Hn. apply NNPP. intro Hni.
-      apply Hn. rewrite HR. intros a Ha Hneq. subst. exact (Hni Ha).
-    - intros Hri Habs. rewrite HR in Habs.
-      exact (Habs i Hri eq_refl).
-  Qed.
 
   #[global]
   Instance MonadLawsE_PureDSPostArr
