@@ -14,7 +14,7 @@ From ITree Require Import Basics.Monad.
 From ExtLib Require Import
   Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
-From Incorrectness.Classes Require Import Arrow OptionArrowT.
+From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy Require Import SPostArr ProgFacts.
 
 (* ================================================================= *)
@@ -155,6 +155,73 @@ Proof.
   - (* first_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
     intros; subst; reflexivity.
+Qed.
+
+(* ================================================================= *)
+(** ** [ArrowChoiceLaws] for [PureASPostArr]                           *)
+(* ================================================================= *)
+
+#[global]
+Instance ArrowChoiceLaws_PureASPostArr : ArrowChoiceLaws PureASPostArr.
+Proof.
+  constructor; intros.
+  - (* left_pure *)
+    apply PureASPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap.
+    + split.
+      * intros [a [Hp Hf]]. exists (inl a); split; [exact Hp | f_equal; exact Hf].
+      * intros [[a|c'] [Hp Heq]]; [| discriminate].
+        injection Heq as Heq. subst. exists a; auto.
+    + split.
+      * intros Hp. exists (inr c); auto.
+      * intros [[a|c'] [Hp Heq]]; [discriminate |].
+        injection Heq as Heq. subst. exact Hp.
+  - (* left_comp *)
+    apply PureASPostArr_eq; intros pre [c|d]; cbn; reflexivity.
+  - (* left_inl *)
+    apply PureASPostArr_eq; intros pre [b|c]; cbn.
+    + destruct (IsASP_rewrite f) as [Rf Hf]. split.
+      * intros [b0 [Hfb Hinl]].
+        injection Hinl as Hinl. subst.
+        rewrite Hf in Hfb. destruct Hfb as [a [Hp Hra]].
+        rewrite Hf. exists a. split; [exists a; auto | exact Hra].
+      * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [[a0 [Hp Hinl]] Hra]].
+        injection Hinl as Hinl. subst.
+        exists b. split; [rewrite Hf; exists a; auto | reflexivity].
+    + split; intros [? [_ H]]; discriminate.
+  - (* left_assoc *)
+    apply PureASPostArr_eq; intros pre [b | [c | d]]; cbn.
+    + (* inl b *)
+      destruct (IsASP_rewrite f) as [Rf Hf]. split.
+      * intros [x [Hleft Hassoc]].
+        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        cbn in Hleft. rewrite Hf in Hleft. destruct Hleft as [a [Hp Hra]].
+        rewrite Hf. exists a. split; [exists (inl (inl a)); auto | exact Hra].
+      * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [Hex Hra]].
+        destruct Hex as [x [Hp Hassoc]].
+        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exists (inl (inl b)). split; [cbn; rewrite Hf; exists a; auto | reflexivity].
+    + (* inr (inl c) *)
+      split.
+      * intros [x [Hleft Hassoc]].
+        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exists (inl (inr c)). cbn. auto.
+      * intros [x [Hp Hassoc]].
+        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exists (inl (inr c)). cbn. auto.
+    + (* inr (inr d) *)
+      split.
+      * intros [x [Hleft Hassoc]].
+        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exists (inr d). cbn. auto.
+      * intros [x [Hp Hassoc]].
+        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exists (inr d). cbn. auto.
 Qed.
 
 (* ================================================================= *)
@@ -429,6 +496,72 @@ Proof.
     unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
     intros; subst; reflexivity.
 Qed.
+
+(* ================================================================= *)
+(** ** [ArrowChoiceLaws] for [PureDSLPostArr]                          *)
+(* ================================================================= *)
+
+#[global]
+Instance ArrowChoiceLaws_PureDSLPostArr : ArrowChoiceLaws PureDSLPostArr.
+Proof.
+  constructor; intros.
+  - (* left_pure *)
+    apply PureDSLPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap.
+    + split.
+      * intros H [a|c'] Hbm; [| discriminate].
+        injection Hbm as Hbm. subst. exact (H a eq_refl).
+      * intros H a Heq. subst. exact (H (inl a) eq_refl).
+    + split.
+      * intros Hpre [a|c'] Hbm; [discriminate |].
+        injection Hbm as Hbm. subst. exact Hpre.
+      * intros H. exact (H (inr c) eq_refl).
+  - (* left_comp *)
+    apply PureDSLPostArr_eq; intros pre [c|d]; cbn; reflexivity.
+  - (* left_inl *)
+    apply PureDSLPostArr_eq; intros pre [b|c]; cbn.
+    + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
+      * intros H. rewrite Hf. intros a Hra a0 Hinl.
+        injection Hinl as Hinl. subst.
+        assert (Hfa := H b eq_refl).
+        rewrite Hf in Hfa. exact (Hfa a Hra).
+      * intro Hfb. intros b0 Heq.
+        injection Heq as Heq. subst.
+        rewrite Hf. intros a Hra.
+        rewrite Hf in Hfb. specialize (Hfb a Hra (a) eq_refl). exact Hfb.
+    + split; intros _ ? H; discriminate H.
+  - (* left_assoc *)
+    apply PureDSLPostArr_eq; intros pre [b | [c | d]]; cbn.
+    + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
+      * intro H. rewrite Hf. intros a Hra x Hassoc.
+        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        assert (Hfa := H (inl (inl b)) eq_refl).
+        cbn in Hfa. rewrite Hf in Hfa. exact (Hfa a Hra).
+      * intro Hfb. rewrite Hf in Hfb. intros x Hassoc.
+        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        cbn. rewrite Hf. intros a Hra. exact (Hfb a Hra (inl (inl a)) eq_refl).
+    + split.
+      * intros H x Hassoc.
+        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exact (H (inl (inr c)) eq_refl).
+      * intros Hpre [[b'|c0]|d0] Hassoc; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst. exact (Hpre (inl (inr c)) eq_refl).
+    + split.
+      * intros H x Hassoc.
+        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst.
+        exact (H (inr d) eq_refl).
+      * intros Hpre [[b'|c0]|d0] Hassoc; cbn in Hassoc; try discriminate.
+        injection Hassoc as Hassoc. subst. exact (Hpre (inr d) eq_refl).
+  - admit. (* left_inr *)
+  - admit. (* left_natural *)
+  - admit. (* first_left_dist *)
+  - (* left_proper *)
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
+    intros; subst; reflexivity.
+Admitted.
 
 (* ================================================================= *)
 (** ** [ArrowLaws] for [optionDSLPArr]                                 *)
@@ -787,3 +920,34 @@ End PureDSLPostArrMonad.
     [ProgFacts.v] lift these to [optionT (PureASPostArr I)] and
     [stateT S (optionT (PureASPostArr I))] for free, since
     [optionArrT arr I = optionT (arr I)] definitionally. *)
+
+(* ================================================================= *)
+(** ** Arrow laws for composed types: [ASPostArr] and [DSPostArr]      *)
+(* ================================================================= *)
+
+(** [ASPostArr S = stateArrT S optionASPArr] and
+    [DSPostArr S = stateArrT S optionDSPArr]. Since [stateArrT]
+    preserves arrow laws generically, these inherit arrow laws
+    from [optionASPArr] and [optionDSPArr]. *)
+
+Section ComposedArrowLaws.
+
+  Variable S : Type.
+
+  #[global]
+  Instance ArrowEq_stateOptASP : ArrowEq (stateArrT S optionASPArr) :=
+    ArrowEq_stateArrT S.
+
+  #[global]
+  Instance ArrowLaws_stateOptASP : ArrowLaws (stateArrT S optionASPArr) :=
+    ArrowLaws_stateArrT S.
+
+  #[global]
+  Instance ArrowEq_stateOptDSP : ArrowEq (stateArrT S optionDSPArr) :=
+    ArrowEq_stateArrT S.
+
+  #[global]
+  Instance ArrowLaws_stateOptDSP : ArrowLaws (stateArrT S optionDSPArr) :=
+    ArrowLaws_stateArrT S.
+
+End ComposedArrowLaws.

@@ -194,6 +194,39 @@ Section PureASPostArr.
     arr_app := @arr_app_ASP
   }.
 
+  (* -------------------------------------------------------------- *)
+  (** *** ArrowChoice instance for [PureASPostArr]                    *)
+  (* -------------------------------------------------------------- *)
+
+  #[local]
+  #[program] Definition arr_left_ASP {A B C}
+    (f : PureASPostArr A B) : PureASPostArr (A + C)%type (B + C)%type :=
+    fun pre y => match y with
+      | inl b => proj1_sig f (fun a => pre (inl a)) b
+      | inr c => pre (inr c)
+    end.
+  Next Obligation.
+    destruct (proj2_sig f) as [Rf Hf].
+    exists (fun x y => match x, y with
+      | inl a, inl b => Rf a b
+      | inr c, inr c' => c = c'
+      | _, _ => False
+    end).
+    intros pre [b|c]; unfold sp.
+    - rewrite Hf. unfold sp. split.
+      + intros [a [Hpre Hrf]]. exists (inl a). auto.
+      + intros [[a|c'] [Hpre Hrx]]; [exists a; auto | contradiction].
+    - split.
+      + intros Hpre. exists (inr c). auto.
+      + intros [[a|c'] [Hpre Hrx]]; [contradiction |].
+        simpl in Hrx. subst c'. exact Hpre.
+  Qed.
+
+  #[global]
+  Instance ArrowChoice_PureASPostArr : ArrowChoice PureASPostArr := {
+    arr_left := @arr_left_ASP
+  }.
+
 End PureASPostArr.
 
 (* ================================================================= *)
@@ -273,6 +306,37 @@ Section PureDSLPostArr.
   #[global]
   Instance ArrowApply_PureDSLPostArr : ArrowApply PureDSLPostArr := {
     arr_app := @arr_app_DSLP
+  }.
+
+  (* -------------------------------------------------------------- *)
+  (** *** ArrowChoice instance for [PureDSLPostArr]                   *)
+  (* -------------------------------------------------------------- *)
+
+  #[local]
+  #[program] Definition arr_left_DSLP {A B C}
+    (f : PureDSLPostArr A B) : PureDSLPostArr (A + C)%type (B + C)%type :=
+    mkSPRecord
+      (fun pre y => match y with
+        | inl b => sp_pt f (fun a => pre (inl a)) b
+        | inr c => pre (inr c)
+      end)
+      (left_rel (sp_rel f)).
+  Next Obligation.
+    destruct b as [b0|c0]; unfold dslp, left_rel; cbn.
+    - split.
+      + intro H. apply (proj2_sig f) in H. unfold dslp in H.
+        intros [a|c'] Hrx; [exact (H a Hrx) | contradiction].
+      + intros Hall. apply (proj2_sig f). unfold dslp.
+        intros a Hrf. exact (Hall (inl a) Hrf).
+    - split.
+      + intros Hpre [a|c'] Hrx; [contradiction |].
+        simpl in Hrx. subst c'. exact Hpre.
+      + intros Hall. exact (Hall (inr c0) eq_refl).
+  Qed.
+
+  #[global]
+  Instance ArrowChoice_PureDSLPostArr : ArrowChoice PureDSLPostArr := {
+    arr_left := @arr_left_DSLP
   }.
 
 End PureDSLPostArr.

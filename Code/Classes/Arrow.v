@@ -460,3 +460,15 @@ Section SPArrInstances.
   Qed.
 
 End SPArrInstances.
+
+(* ================================================================= *)
+(** ** Arrow Transformer                                              *)
+(* ================================================================= *)
+
+(** An arrow transformer lifts arrows from one type to another,
+    analogous to monad transformers. *)
+
+Class ArrowT (T : (Type -> Type -> Type) -> Type -> Type -> Type) := {
+  arrowT_lift : forall {arr : Type -> Type -> Type} `{Arrow arr} {A B},
+    arr A B -> T arr A B
+}.
