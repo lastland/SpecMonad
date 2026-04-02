@@ -30,10 +30,21 @@ From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 (** ** Predicate transformers and shared record                         *)
 (* ================================================================= *)
 
-(** Predicate transformer view: strongest postcondition (angelic / existential). *)
+(** Predicate transformer view: strongest postcondition (angelic / existential).
+  *)
 Definition sp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
   fun b => exists a, pre a /\ R a b.
 
+(* [sp] goes from predicate arrow to strongest postcondition arrow; [sp_inv] is
+   the inverse. Similar to the relation described in Kenji's Ph.D. thesis, we
+   can show that predicate monads and strongest postcondition monads are
+   equivalent, by showing [sp_sp_inv] and [sp_inv_sp] below.
+
+   TODO: Is the definition [sp_inv] the most general form? [dp_inv] seems to be
+   more flexible with a [forall] on [pre].
+
+   TODO: Show that lawful arrow transformers preserve this equivalence.
+ *)
 Definition sp_inv {A B} (sp : (A -> Prop) -> B -> Prop) : SPArr A B :=
   fun a b => sp (fun a' => a = a') b.
 
@@ -45,12 +56,43 @@ Proof.
   - intros. exists a. tauto.
 Qed.
 
-(** Demonic predicate transformer: universal dual of [sp].
+(* Cannot prove this for arbitrary [(A -> Prop) -> B -> Prop]. *)
+Theorem sp_inv_sp : forall {A B} (R : SPArr A B) pre b,
+    sp (sp_inv (sp R)) pre b <-> sp R pre b.
+Proof.
+  intros. unfold sp_inv, sp. split.
+  - intros [? [? [? [? ?]]]]. subst.
+    exists x0. tauto.
+  - intros [? [? ?]].
+    exists x. split; [assumption |].
+    exists x. tauto.
+Qed.
 
-    TODO: Investigate if there's another predicate monad that corresponds to
-    this. *)
+(** Demonic predicate transformer: universal dual of [sp]. *)
 Definition dp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
   fun b => forall a, R a b -> pre a.
+
+(* This shows a different equivalence between predicate arrows and strongest
+   postcondition arrows. We can figure this out be "reverse engineering"
+   [dp_dp_inv], but why does this one make sense? *)
+Definition dp_inv {A B} (dp : (A -> Prop) -> B -> Prop) : SPArr A B :=
+  fun a b => forall pre, dp pre b -> pre a.
+
+Theorem dp_dp_inv : forall {A B} (R : SPArr A B) a b,
+    dp_inv (dp R) a b <-> R a b.
+Proof.
+  intros. unfold dp_inv, dp. split.
+  - intros ?. apply H. auto.
+  - intros. auto.
+Qed.
+
+Theorem dp_inv_dp : forall {A B} (R : SPArr A B) pre b,
+    dp (dp_inv (dp R)) pre b <-> dp R pre b.
+Proof.
+  intros. unfold dp_inv, dp. split.
+  - intros. apply H; intros. auto.
+  - intros. apply H0. apply H.
+Qed.
 
 (** Bundle a predicate transformer with its underlying relation.
     Using a record avoids universe issues that [prod] causes when
