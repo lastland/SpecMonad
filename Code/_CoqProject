@@ -34,6 +34,8 @@ Taxonomy/NonDetItObservation.v
 Classes/Arrow.v
 Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
+Classes/OptionArrowT/ArrowChoiceLaws.v
+Classes/OptionArrowT/ArrowApplyLaws.v
 Classes/OptionArrowT/SPArr.v
 Classes/OptionArrowT.v
 Classes/StateArrowT/Core.v

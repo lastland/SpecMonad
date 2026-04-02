@@ -802,9 +802,18 @@ Section ComposedArrowLaws.
   #[global] Instance ArrowApply_stateOptDSLP :
     ArrowApply (stateArrT S optionDSLPArr) := _.
 
-  (* ArrowChoiceLaws + ArrowApplyLaws for composed types require
-     ArrowChoiceLaws_optionArrT and ArrowApplyLaws_optionArrT,
-     which will be added in OptionArrowT/ArrowChoiceLaws.v and
-     OptionArrowT/ArrowApplyLaws.v respectively. *)
+  (* --- ArrowChoiceLaws + ArrowApplyLaws (via generic optionArrT + stateArrT) --- *)
+  #[global] Instance ArrowChoiceLaws_stateOptASP :
+    ArrowChoiceLaws (stateArrT S optionASPArr) :=
+    ArrowChoiceLaws_stateArrT S.
+  #[global] Instance ArrowApplyLaws_stateOptASP :
+    ArrowApplyLaws (stateArrT S optionASPArr) :=
+    ArrowApplyLaws_stateArrT S.
+  #[global] Instance ArrowChoiceLaws_stateOptDSLP :
+    ArrowChoiceLaws (stateArrT S optionDSLPArr) :=
+    ArrowChoiceLaws_stateArrT S.
+  #[global] Instance ArrowApplyLaws_stateOptDSLP :
+    ArrowApplyLaws (stateArrT S optionDSLPArr) :=
+    ArrowApplyLaws_stateArrT S.
 
 End ComposedArrowLaws.
