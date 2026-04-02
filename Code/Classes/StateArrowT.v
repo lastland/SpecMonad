@@ -297,3 +297,324 @@ Section StateArrowTEqLaws.
   Qed.
 
 End StateArrowTEqLaws.
+
+(* ================================================================= *)
+(** ** Helper functions for state/sum distribution                    *)
+(* ================================================================= *)
+
+Definition sum_distribute {A C S} (p : (A + C) * S) : (A * S) + (C * S) :=
+  let '(ac, s) := p in match ac with inl a => inl (a, s) | inr c => inr (c, s) end.
+
+Definition sum_undistribute {B C S} (x : (B * S) + (C * S)) : (B + C) * S :=
+  match x with inl (b, s) => (inl b, s) | inr (c, s) => (inr c, s) end.
+
+(* ================================================================= *)
+(** ** ArrowChoice for [stateArrT]                                    *)
+(* ================================================================= *)
+
+Section StateArrowTChoice.
+  Variable S : Type.
+  Context {arr : Type -> Type -> Type} `{HA : Arrow arr} `{HC : @ArrowChoice arr HA}.
+
+  #[global]
+  Instance ArrowChoice_stateArrT : ArrowChoice (stateArrT S arr) := {
+    arr_left := fun A B C f =>
+      @arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (sum_distribute (S:=S)))
+        (@arr_comp arr HA _ _ _
+          (@arr_left arr HA HC _ _ _ f)
+          (@arr_pure arr HA _ _ (sum_undistribute (S:=S))))
+  }.
+
+End StateArrowTChoice.
+
+Arguments ArrowChoice_stateArrT {_} {_} {_} {_}.
+
+(* ================================================================= *)
+(** ** ArrowApply for [stateArrT]                                     *)
+(* ================================================================= *)
+
+Section StateArrowTApply.
+  Variable S : Type.
+  Context {arr : Type -> Type -> Type} `{HA : Arrow arr}
+          `{HAA : @ArrowApply arr HA}.
+
+  #[global]
+  Instance ArrowApply_stateArrT : ArrowApply (stateArrT S arr) := {
+    arr_app := fun A B =>
+      @arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (fun '((f, a), s) => (f, (a, s))))
+        (@arr_app arr HA HAA (A * S)%type (B * S)%type)
+  }.
+
+End StateArrowTApply.
+
+Arguments ArrowApply_stateArrT {_} {_} {_} {_}.
+
+(* ================================================================= *)
+(** ** ArrowChoiceLaws for [stateArrT]                                *)
+(* ================================================================= *)
+
+Section StateArrowTChoiceLaws.
+
+  Variable S : Type.
+  Context {arr : Type -> Type -> Type}
+          `{HA : Arrow arr} `{HC : @ArrowChoice arr HA}
+          `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
+          `{HCL : @ArrowChoiceLaws arr HA HC HE}.
+
+  Local Notation cassoc := (@comp_assoc arr HA HE HL).
+  Local Notation cidl   := (@comp_id_l arr HA HE HL).
+  Local Notation cidr   := (@comp_id_r arr HA HE HL).
+  Local Notation pcomp  := (@pure_comp arr HA HE HL).
+  Local Notation cprop  := (@comp_proper arr HA HE HL).
+  Local Notation fprop  := (@first_proper arr HA HE HL).
+  Local Notation fpure  := (@first_pure arr HA HE HL).
+  Local Notation fcomp  := (@first_comp arr HA HE HL).
+  Local Notation ffst   := (@first_fst arr HA HE HL).
+  Local Notation fassoc := (@first_assoc arr HA HE HL).
+  Local Notation lpure  := (@left_pure arr HA HC HE HCL).
+  Local Notation lcomp  := (@left_comp arr HA HC HE HCL).
+  Local Notation linl   := (@left_inl arr HA HC HE HCL).
+  Local Notation lassoc := (@left_assoc arr HA HC HE HCL).
+  Local Notation linr   := (@left_inr arr HA HC HE HCL).
+  Local Notation lnat   := (@left_natural arr HA HC HE HCL).
+  Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
+  Local Notation lprop  := (@left_proper arr HA HC HE HCL).
+
+  Local Lemma arr_pure_ext' {A B} (f g : A -> B) :
+    (forall x, f x = g x) ->
+    @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
+  Proof.
+    intro Hext. replace g with f by (extensionality x; apply Hext).
+    reflexivity.
+  Qed.
+
+  Local Ltac pure_ext :=
+    apply arr_pure_ext'; intro;
+    unfold sum_distribute, sum_undistribute,
+           state_shuffle_in, state_shuffle_out, assoc_prod,
+           sum_bimap, assoc_sum, sum_prod_dist;
+    repeat match goal with
+    | [p : _ * _ |- _] => destruct p
+    | [s : _ + _ |- _] => destruct s
+    end;
+    simpl; reflexivity.
+
+  (** Unfold the stateArrT operations to base-arrow terms. *)
+  Local Ltac st_unfold :=
+    unfold arr_id, arr_comp, arr_pure, arr_first, arr_left,
+           Arrow_stateArrT, ArrowChoice_stateArrT,
+           arrow_eq, ArrowEq_stateArrT;
+    fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
+         (@arr_left arr HA HC) (@arrow_eq arr HE).
+
+  (** The key identity: [sd] >>> left f >>> [su] distributes state
+      across a left-mapped arrow. We prove many choice laws by
+      reducing to the base arrow law plus shuffling [sd]/[su]. *)
+
+  #[global]
+  Instance ArrowChoiceLaws_stateArrT : ArrowChoiceLaws (stateArrT S arr).
+  Proof.
+    constructor; intros; st_unfold.
+    - (* left_pure *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity.
+        apply lpure. }
+      etransitivity.
+      { etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+      etransitivity. { apply pcomp. }
+      pure_ext.
+    - (* left_comp *)
+      set (Lf := @arr_left arr HA HC (A*S) (B*S) (D*S) f).
+      set (Lg := @arr_left arr HA HC (B*S) (C*S) (D*S) g).
+      set (sd_A := @arr_pure arr HA _ _ (@sum_distribute A D S)).
+      set (su_B := @arr_pure arr HA _ _ (@sum_undistribute B D S)).
+      set (sd_B := @arr_pure arr HA _ _ (@sum_distribute B D S)).
+      set (su_C := @arr_pure arr HA _ _ (@sum_undistribute C D S)).
+      assert (Hlhs : @arrow_eq arr HE _ _
+        (@arr_comp arr HA _ _ _ sd_A
+          (@arr_comp arr HA _ _ _
+            (@arr_left arr HA HC _ _ _ (@arr_comp arr HA _ _ _ f g))
+            su_C))
+        (@arr_comp arr HA _ _ _ sd_A
+          (@arr_comp arr HA _ _ _ Lf
+            (@arr_comp arr HA _ _ _ Lg su_C)))).
+      { apply cprop. 1: reflexivity.
+        etransitivity.
+        { apply cprop. 2: reflexivity. apply lcomp. }
+        apply cassoc. }
+      assert (Hcancel : @arrow_eq arr HE _ _
+        (@arr_comp arr HA _ _ _ su_B sd_B)
+        (@arr_id arr HA _)).
+      { etransitivity. {
+          apply (@pure_comp arr HA HE HL _ _ _
+            (@sum_undistribute B D S) (@sum_distribute B D S)). }
+        apply arr_pure_ext'. intros [(b,s0)|(d,s0)]; reflexivity. }
+      assert (Hrhs : @arrow_eq arr HE _ _
+        (@arr_comp arr HA _ _ _
+          (@arr_comp arr HA _ _ _ sd_A
+            (@arr_comp arr HA _ _ _ Lf su_B))
+          (@arr_comp arr HA _ _ _ sd_B
+            (@arr_comp arr HA _ _ _ Lg su_C)))
+        (@arr_comp arr HA _ _ _ sd_A
+          (@arr_comp arr HA _ _ _ Lf
+            (@arr_comp arr HA _ _ _ Lg su_C)))).
+      { etransitivity. { apply cassoc. }
+        apply cprop. 1: reflexivity.
+        etransitivity. { apply cassoc. }
+        apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        etransitivity. { apply cprop. 2: reflexivity. exact Hcancel. }
+        apply cidl. }
+      etransitivity. { exact Hlhs. }
+      symmetry. exact Hrhs.
+    - (* left_inl *)
+      symmetry.
+      etransitivity.
+      { etransitivity. { symmetry. apply cassoc. }
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply cprop. 2: reflexivity.
+        etransitivity. { apply pcomp. }
+        apply arr_pure_ext'. intros (a0, s0); reflexivity. }
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        symmetry. apply linl. }
+      etransitivity. { apply cassoc. }
+      apply cprop. 1: reflexivity.
+      etransitivity. { apply pcomp. }
+      pure_ext.
+    - (* left_assoc *) admit.
+    - (* left_inr *)
+      (* [inr_s] >>> [sd] >>> Lf >>> [su] ≃ [inr_s] *)
+      (* Right-associate then collapse [inr_s]>>>[sd] = [inr] *)
+      etransitivity. { symmetry. apply cassoc. }
+      etransitivity. { symmetry. apply cassoc. }
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        apply cprop. 2: reflexivity.
+        apply pcomp. }
+      (* [inr_combined] >>> Lf >>> [su] *)
+      (* [inr_combined] = [inr] *)
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        apply cprop. 2: reflexivity.
+        apply arr_pure_ext'. intros (c0, s0); reflexivity. }
+      (* [inr] >>> Lf >>> [su] *)
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        apply linr. }
+      (* [inr] >>> [su] *)
+      etransitivity. { apply pcomp. }
+      pure_ext.
+    - (* left_natural *)
+      (* LHS: ([sd] >>> Lf >>> [su]) >>> [ps (sbm id g)]
+         RHS: [ps (sbm id g)] >>> ([sd'] >>> Lf' >>> [su']) *)
+      (* Flatten and collapse pure parts, then use base lnat *)
+      set (h := fun (p : C * S) => let '(c0, s0) := p in (g c0, s0)).
+
+      (* LHS: flatten *)
+      etransitivity. { apply cassoc. }
+      etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
+      (* [sd] >>> Lf >>> ([su] >>> [ps (sbm id g)]) *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+        apply pcomp. }
+      (* [sd] >>> Lf >>> [su >>> ps(sbm id g)] *)
+      (* Factor tail: su >>> ps(sbm id g) = [sbm id h] >>> [su'] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+        symmetry.
+        etransitivity. {
+          apply (@pure_comp arr HA HE HL _ _ _
+            (fun x => @sum_bimap (B*S) (C*S) (B*S) (D*S) (fun b => b) h x)
+            (@sum_undistribute B D S)). }
+        apply arr_pure_ext'. intros [(b0,s0)|(c0,s0)]; reflexivity. }
+      (* [sd] >>> Lf >>> [sbm id h] >>> [su'] *)
+
+      (* Use lnat: Lf >>> [sbm id h] = [sbm id h] >>> Lf' *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply lnat. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cassoc. }
+      (* [sd] >>> [sbm id h] >>> Lf' >>> [su'] *)
+
+      (* Collapse head: [sd] >>> [sbm id h] *)
+      etransitivity.
+      { etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+
+      (* RHS: flatten and collapse *)
+      (* RHS is [ps_sbm] >>> ([sd'] >>> (Lf' >>> [su']))  *)
+      symmetry.
+      etransitivity. { symmetry. apply cassoc. }
+      (* ([ps_sbm] >>> [sd']) >>> (Lf' >>> [su']) *)
+      apply cprop. 2: reflexivity.
+      etransitivity. { apply pcomp. }
+      apply arr_pure_ext'. intro x; destruct x as [[a0|c0] s0]; reflexivity.
+
+    - (* first_left_dist *) admit.
+    - (* left_proper *)
+      unfold Proper, respectful; intros.
+      apply cprop. 1: reflexivity.
+      apply cprop. 2: reflexivity.
+      apply lprop. assumption.
+  Admitted.
+
+End StateArrowTChoiceLaws.
+
+(* ================================================================= *)
+(** ** ArrowApplyLaws for [stateArrT]                                 *)
+(* ================================================================= *)
+
+Section StateArrowTApplyLaws.
+
+  Variable S : Type.
+  Context {arr : Type -> Type -> Type}
+          `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
+          `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
+          `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
+
+  Local Notation cassoc := (@comp_assoc arr HA HE HL).
+  Local Notation cidl   := (@comp_id_l arr HA HE HL).
+  Local Notation cidr   := (@comp_id_r arr HA HE HL).
+  Local Notation pcomp  := (@pure_comp arr HA HE HL).
+  Local Notation cprop  := (@comp_proper arr HA HE HL).
+  Local Notation alaw   := (@app_law arr HA HAA HE HAAL).
+
+  Local Lemma arr_pure_ext'' {A B} (f g : A -> B) :
+    (forall x, f x = g x) ->
+    @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
+  Proof.
+    intro Hext. replace g with f by (extensionality x; apply Hext).
+    reflexivity.
+  Qed.
+
+  #[global]
+  Instance ArrowApplyLaws_stateArrT : ArrowApplyLaws (stateArrT S arr).
+  Proof.
+    constructor; intros.
+    unfold arr_id, arr_comp, arr_pure, arr_first, arr_app,
+           Arrow_stateArrT, ArrowApply_stateArrT,
+           arrow_eq, ArrowEq_stateArrT;
+    fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
+         (@arr_app arr HA HAA) (@arrow_eq arr HE).
+    (* Goal: [fun '(a,s) => (f, (a,s))] >>> app ≃ f *)
+    (* = [fun '(a,s) => ((f, a), s)] ... wait, let me check:
+       stateArrT pure (fun a => (f, a)) = arr_pure (fun '(a,s) => ((f,a), s))
+       Then stateArrT app = [fun '((g,a),s) => (g, (a,s))] >>> base_app
+       LHS = [fun '(a,s) => ((f,a),s)] >>> [fun '((g,a),s) => (g,(a,s))] >>> base_app *)
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+    (* [fun '(a,s) => (f, (a,s))] >>> base_app *)
+    etransitivity.
+    { apply cprop. 2: reflexivity.
+      apply arr_pure_ext''. intros (a0, s0); reflexivity. }
+    apply alaw.
+  Qed.
+
+End StateArrowTApplyLaws.
