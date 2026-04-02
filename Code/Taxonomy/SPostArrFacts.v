@@ -778,20 +778,33 @@ Section ComposedArrowLaws.
 
   Variable S : Type.
 
+  (* --- ArrowEq + ArrowLaws --- *)
   #[global]
   Instance ArrowEq_stateOptASP : ArrowEq (stateArrT S optionASPArr) :=
     ArrowEq_stateArrT S.
-
   #[global]
   Instance ArrowLaws_stateOptASP : ArrowLaws (stateArrT S optionASPArr) :=
     ArrowLaws_stateArrT S.
-
   #[global]
-  Instance ArrowEq_stateOptDSP : ArrowEq (stateArrT S optionDSLPArr) :=
+  Instance ArrowEq_stateOptDSLP : ArrowEq (stateArrT S optionDSLPArr) :=
     ArrowEq_stateArrT S.
-
   #[global]
-  Instance ArrowLaws_stateOptDSP : ArrowLaws (stateArrT S optionDSLPArr) :=
+  Instance ArrowLaws_stateOptDSLP : ArrowLaws (stateArrT S optionDSLPArr) :=
     ArrowLaws_stateArrT S.
+
+  (* --- ArrowChoice + ArrowApply (derived from generic transformers) --- *)
+  #[global] Instance ArrowChoice_stateOptASP :
+    ArrowChoice (stateArrT S optionASPArr) := _.
+  #[global] Instance ArrowApply_stateOptASP :
+    ArrowApply (stateArrT S optionASPArr) := _.
+  #[global] Instance ArrowChoice_stateOptDSLP :
+    ArrowChoice (stateArrT S optionDSLPArr) := _.
+  #[global] Instance ArrowApply_stateOptDSLP :
+    ArrowApply (stateArrT S optionDSLPArr) := _.
+
+  (* ArrowChoiceLaws + ArrowApplyLaws for composed types require
+     ArrowChoiceLaws_optionArrT and ArrowApplyLaws_optionArrT,
+     which will be added in OptionArrowT/ArrowChoiceLaws.v and
+     OptionArrowT/ArrowApplyLaws.v respectively. *)
 
 End ComposedArrowLaws.

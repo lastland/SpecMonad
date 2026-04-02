@@ -32,7 +32,13 @@ Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
 Taxonomy/NonDetItObservation.v
 Classes/Arrow.v
+Classes/OptionArrowT/Core.v
+Classes/OptionArrowT/ArrowLaws.v
+Classes/OptionArrowT/SPArr.v
 Classes/OptionArrowT.v
+Classes/StateArrowT/Core.v
+Classes/StateArrowT/ArrowChoiceLaws.v
+Classes/StateArrowT/ArrowApplyLaws.v
 Classes/StateArrowT.v
 Taxonomy/SPostArr.v
 Taxonomy/SPostArrFacts.v
