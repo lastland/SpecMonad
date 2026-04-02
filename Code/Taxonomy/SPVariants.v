@@ -16,8 +16,8 @@
     states are included.
 
     The key arrow types are:
-    - [ASPostArr]  (via [sp], existential) for [asp]
-    - [DSPostArr] (via [dp], universal)    for [dslp]
+    - [ASPostArr]  (via [asp], existential) for [asp]
+    - [DSLPostArr] (via [dslp], universal)  for [dslp]
 
     [dsp] and [aslp] are pointwise ∧ and ∨ of these two. *)
 
@@ -54,29 +54,29 @@ Open Scope monad_scope.
 
     which equals [(∃a. pre a ∧ R a b) ∨ ¬(∃a. R a b)].
 
-    We prove these equal [sp ∧ dp] and [sp ∨ dp] respectively. *)
+    We prove these equal [asp ∧ dslp] and [asp ∨ dslp] respectively. *)
 
 Section SPCharacterizations.
 
   Variables A B : Type.
   Variable R : SPArr A B.
 
-  Theorem dsp_sp_dp (pre : A -> Prop) (b : B) :
+  Theorem dsp_asp_dslp (pre : A -> Prop) (b : B) :
     ((exists a, R a b) /\ forall a, R a b -> pre a) <->
-    (sp R pre b /\ dp R pre b).
+    (asp R pre b /\ dslp R pre b).
   Proof.
-    unfold sp, dp. split.
+    unfold asp, dslp. split.
     - intros [[a0 HRa0] Hall].
       split; [exists a0; auto | exact Hall].
     - intros [[a0 [Hpre HRa0]] Hall].
       split; [exists a0; exact HRa0 | exact Hall].
   Qed.
 
-  Theorem aslp_sp_dp (pre : A -> Prop) (b : B) :
+  Theorem aslp_asp_dslp (pre : A -> Prop) (b : B) :
     ((exists a, pre a /\ R a b) \/ ~ exists a, R a b) <->
-    (sp R pre b \/ dp R pre b).
+    (asp R pre b \/ dslp R pre b).
   Proof.
-    unfold sp, dp. split.
+    unfold asp, dslp. split.
     - intros [Hsp | Hunreach].
       + left. exact Hsp.
       + right. intros a HRab. exfalso. apply Hunreach. exists a. exact HRab.
@@ -120,8 +120,8 @@ Section NDItSP.
   (** Demonic strongest liberal postcondition.
       [dslp(b)(r) = ∀s. reachable(s, r) → b(s)]
       Final states exclusively reachable from [b], or unreachable. *)
-  Definition ndit_dslp {A} (m : nditprog S A) : DSPostArr S A :=
-    mkDSP (ndit_obsRel m).
+  Definition ndit_dslp {A} (m : nditprog S A) : DSLPostArr S A :=
+    mkDSLP (ndit_obsRel m).
 
   (** Demonic strongest postcondition (total).
       [dsp = asp ∩ dslp]
@@ -168,7 +168,7 @@ Section NDItSP.
     (forall sigma, ndit_obsRel m sigma r -> pre sigma).
   Proof.
     unfold ndit_dsp, ndit_asp, ndit_dslp; simpl.
-    symmetry. apply dsp_sp_dp.
+    symmetry. apply dsp_asp_dslp.
   Qed.
 
   (** Paper §3.2.4: [aslp] matches Definition 3.6. *)
@@ -178,7 +178,7 @@ Section NDItSP.
     ~ (exists sigma, ndit_obsRel m sigma r).
   Proof.
     unfold ndit_aslp, ndit_asp, ndit_dslp; simpl.
-    symmetry. apply aslp_sp_dp.
+    symmetry. apply aslp_asp_dslp.
   Qed.
 
   (* -------------------------------------------------------------- *)
@@ -190,7 +190,7 @@ Section NDItSP.
     ~ sp_pt (ndit_dslp m) (fun x => ~ pre x) r.
   Proof.
     unfold ndit_asp, ndit_dslp; simpl.
-    unfold sp, dp. split.
+    unfold asp, dslp. split.
     - intros [a [Hpre Hrel]] Hall.
       exact (Hall a Hrel Hpre).
     - intro Hnn.
@@ -204,7 +204,7 @@ Section NDItSP.
     ~ ndit_aslp m (fun x => ~ pre x) r.
   Proof.
     unfold ndit_dsp, ndit_aslp, ndit_asp, ndit_dslp.
-    simpl. unfold sp, dp.
+    simpl. unfold asp, dslp.
     split.
     - intros [[a [Hpre Hrel]] Hall] [Hasp | Hdslp].
       + destruct Hasp as [a' [Hnpre Hrel']].
@@ -248,8 +248,8 @@ Section NDSP.
   Definition nd_asp {A} (m : ndprog S A) : ASPostArr S A :=
     mkASP (nd_obsRel m).
 
-  Definition nd_dslp {A} (m : ndprog S A) : DSPostArr S A :=
-    mkDSP (nd_obsRel m).
+  Definition nd_dslp {A} (m : ndprog S A) : DSLPostArr S A :=
+    mkDSLP (nd_obsRel m).
 
   #[program] Definition nd_dsp {A} (m : ndprog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
@@ -282,7 +282,7 @@ Section NDSP.
     (forall sigma, nd_obsRel m sigma r -> pre sigma).
   Proof.
     unfold nd_dsp, nd_asp, nd_dslp; simpl.
-    symmetry. apply dsp_sp_dp.
+    symmetry. apply dsp_asp_dslp.
   Qed.
 
   Corollary nd_aslp_char {A} (m : ndprog S A) pre r :
@@ -291,7 +291,7 @@ Section NDSP.
     ~ (exists sigma, nd_obsRel m sigma r).
   Proof.
     unfold nd_aslp, nd_asp, nd_dslp; simpl.
-    symmetry. apply aslp_sp_dp.
+    symmetry. apply aslp_asp_dslp.
   Qed.
 
 End NDSP.
@@ -321,8 +321,8 @@ Section DetSP.
   Definition det_asp {A} (m : prog S A) : ASPostArr S A :=
     mkASP (det_obsRel m).
 
-  Definition det_dslp {A} (m : prog S A) : DSPostArr S A :=
-    mkDSP (det_obsRel m).
+  Definition det_dslp {A} (m : prog S A) : DSLPostArr S A :=
+    mkDSLP (det_obsRel m).
 
   #[program] Definition det_dsp {A} (m : prog S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
@@ -354,7 +354,7 @@ Section DetSP.
     (forall sigma, det_obsRel m sigma r -> pre sigma).
   Proof.
     unfold det_dsp, det_asp, det_dslp; simpl.
-    symmetry. apply dsp_sp_dp.
+    symmetry. apply dsp_asp_dslp.
   Qed.
 
   Corollary det_aslp_char {A} (m : prog S A) pre r :
@@ -363,7 +363,7 @@ Section DetSP.
     ~ (exists sigma, det_obsRel m sigma r).
   Proof.
     unfold det_aslp, det_asp, det_dslp; simpl.
-    symmetry. apply aslp_sp_dp.
+    symmetry. apply aslp_asp_dslp.
   Qed.
 
 End DetSP.
@@ -396,7 +396,7 @@ Definition P0 : unit * nat -> Prop := fun '(tt, s) => s = 0.
 #[program] Theorem progEx_asp_1 :
   sp_pt (ndit_asp progEx) P0 (Some (tt, 1)).
 Proof.
-  unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
+  unfold ndit_asp, P0. simpl proj1_sig. unfold asp.
   exists (tt, 0). split; [reflexivity|].
   unfold ndit_obsRel. cbn.
   sauto.
@@ -405,7 +405,7 @@ Qed.
 #[program] Theorem progEx_dslp_1 :
   sp_pt (ndit_dslp progEx) P0 (Some (tt, 1)).
 Proof.
-  unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
+  unfold ndit_dslp, P0. simpl proj1_sig. unfold dslp.
   intros [[] s] Hrel. unfold ndit_obsRel in Hrel. cbn in Hrel.
   f_equal. f_equal. sauto lq: on.
 Qed.
@@ -426,7 +426,7 @@ Proof. left. exact progEx_asp_1. Qed.
 #[program] Theorem progEx_asp_42 :
   sp_pt (ndit_asp progEx) P0 (Some (tt, 42)).
 Proof.
-  unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
+  unfold ndit_asp, P0. simpl proj1_sig. unfold asp.
   exists (tt, 0). split; [reflexivity|].
   unfold ndit_obsRel. cbn. sauto.
 Qed.
@@ -434,7 +434,7 @@ Qed.
 #[program] Theorem progEx_dslp_not_42 :
   ~ sp_pt (ndit_dslp progEx) P0 (Some (tt, 42)).
 Proof.
-  unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
+  unfold ndit_dslp, P0. simpl proj1_sig. unfold dslp.
   intro H. specialize (H (tt, 1)).
   assert (Hreach : ndit_obsRel progEx (tt, 1) (Some (tt, 42))).
   { unfold ndit_obsRel. cbn. sauto. }
@@ -457,7 +457,7 @@ Proof. left. exact progEx_asp_42. Qed.
 #[program] Theorem progEx_asp_not_None :
   ~ sp_pt (ndit_asp progEx) P0 None.
 Proof.
-  unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
+  unfold ndit_asp, P0. simpl proj1_sig. unfold asp.
   intros [[[] s] [HP Hrel]].
   unfold ndit_obsRel in Hrel. cbn in Hrel. sauto.
 Qed.
@@ -465,7 +465,7 @@ Qed.
 #[program] Theorem progEx_dslp_None :
   sp_pt (ndit_dslp progEx) P0 None.
 Proof.
-  unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
+  unfold ndit_dslp, P0. simpl proj1_sig. unfold dslp.
   intros [[] s] Hrel.
   (** None (exception) is unreachable — the ∀ is vacuously true. *)
   unfold ndit_obsRel in Hrel. cbn in Hrel. sauto.
@@ -486,7 +486,7 @@ Proof. right. exact progEx_dslp_None. Qed.
 #[program] Theorem progEx_asp_not_99 :
   ~ sp_pt (ndit_asp progEx) P0 (Some (tt, 99)).
 Proof.
-  unfold ndit_asp, P0. simpl proj1_sig. unfold sp.
+  unfold ndit_asp, P0. simpl proj1_sig. unfold asp.
   intros [[[] s] [HP Hrel]]. subst.
   unfold ndit_obsRel in Hrel. cbn in Hrel. sauto lq: on.
 Qed.
@@ -494,7 +494,7 @@ Qed.
 #[program] Theorem progEx_dslp_not_99 :
   ~ sp_pt (ndit_dslp progEx) P0 (Some (tt, 99)).
 Proof.
-  unfold ndit_dslp, P0. simpl proj1_sig. unfold dp.
+  unfold ndit_dslp, P0. simpl proj1_sig. unfold dslp.
   intro H. specialize (H (tt, 98)).
   assert (Hreach : ndit_obsRel progEx (tt, 98) (Some (tt, 99))).
   { unfold ndit_obsRel. cbn. sauto. }

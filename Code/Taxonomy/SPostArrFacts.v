@@ -4,8 +4,8 @@
     [PureASPostArr_eq] and then transferring through [IsASP] to work
     with raw existentials.
 
-    Demonic laws ([PureDSPostArr], [optionDSPArr]) follow the same
-    structure, using [IsDSP] and raw universals. *)
+    Demonic laws ([PureDSLPostArr], [optionDSLPArr]) follow the same
+    structure, using [IsDSLP] and raw universals. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality ProofIrrelevance
@@ -33,15 +33,15 @@ Proof.
   assert (Hrel : frel = grel).
   { extensionality a. extensionality b.
     apply propositional_extensionality.
-    assert (Hsp : forall pre b0, sp frel pre b0 <-> sp grel pre b0).
+    assert (Hsp : forall pre b0, asp frel pre b0 <-> asp grel pre b0).
     { intros pre0 b0. split; intro H.
       - apply gp. apply fp. exact H.
       - apply fp. apply gp. exact H. }
     split; intro Hab.
-    - specialize (Hsp (eq a) b). unfold sp in Hsp.
+    - specialize (Hsp (eq a) b). unfold asp in Hsp.
       destruct (proj1 Hsp (ex_intro _ a (conj eq_refl Hab))) as [a' [Heq' Hrel]].
       subst a'. exact Hrel.
-    - specialize (Hsp (eq a) b). unfold sp in Hsp.
+    - specialize (Hsp (eq a) b). unfold asp in Hsp.
       destruct (proj2 Hsp (ex_intro _ a (conj eq_refl Hab))) as [a' [Heq' Hrel]].
       subst a'. exact Hrel. }
   subst grel.
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 (** [sp_pt] of any PureASPostArr rewrites to existential form. *)
-Lemma ASP_sp {A B} (f : PureASPostArr A B) (R : SPArr A B)
+Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : SPArr A B)
   (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b) :
   forall P b, sp_pt (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
@@ -184,7 +184,7 @@ Proof.
   (** Helper: rewrite a PureASPostArr application using its IsASP witness. *)
   Local Ltac isp f :=
     let R := fresh "R" in let H := fresh "H" in
-    destruct (IsASP_rewrite f) as [R H]; rewrite ?H; unfold sp in *.
+    destruct (IsASP_rewrite f) as [R H]; rewrite ?H; unfold asp in *.
 
   constructor; intros.
 
@@ -291,10 +291,10 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** Utilities for [PureDSPostArr]                                   *)
+(** ** Utilities for [PureDSLPostArr]                                   *)
 (* ================================================================= *)
 
-Lemma PureDSPostArr_eq {A B} (f g : PureDSPostArr A B) :
+Lemma PureDSLPostArr_eq {A B} (f g : PureDSLPostArr A B) :
   (forall pre b, sp_pt (proj1_sig f) pre b <-> sp_pt (proj1_sig g) pre b) -> f = g.
 Proof.
   intro Heq.
@@ -306,22 +306,22 @@ Proof.
   assert (Hrel : frel = grel).
   { extensionality a. extensionality b.
     apply propositional_extensionality.
-    assert (Hdp : forall pre b0, dp frel pre b0 <-> dp grel pre b0).
+    assert (Hdp : forall pre b0, dslp frel pre b0 <-> dslp grel pre b0).
     { intros pre0 b0. split; intro H.
       - apply gp. apply fp. exact H.
       - apply fp. apply gp. exact H. }
     split; intro Hab.
-    - assert (Htmp : dp frel (fun a' => grel a' b) b).
-      { apply Hdp. unfold dp. auto. }
-      unfold dp in Htmp. exact (Htmp a Hab).
-    - assert (Htmp : dp grel (fun a' => frel a' b) b).
-      { apply Hdp. unfold dp. auto. }
-      unfold dp in Htmp. exact (Htmp a Hab). }
+    - assert (Htmp : dslp frel (fun a' => grel a' b) b).
+      { apply Hdp. unfold dslp. auto. }
+      unfold dslp in Htmp. exact (Htmp a Hab).
+    - assert (Htmp : dslp grel (fun a' => frel a' b) b).
+      { apply Hdp. unfold dslp. auto. }
+      unfold dslp in Htmp. exact (Htmp a Hab). }
   subst grel.
   f_equal. apply proof_irrelevance.
 Qed.
 
-Lemma IsDSP_rewrite {A B} (f : PureDSPostArr A B) :
+Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
   exists R : SPArr A B,
     forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
@@ -329,21 +329,21 @@ Proof.
   apply (proj2_sig f).
 Qed.
 
-Lemma DSP_dp {A B} (f : PureDSPostArr A B) (R : SPArr A B)
+Lemma DSLP_dslp {A B} (f : PureDSLPostArr A B) (R : SPArr A B)
   (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
   forall P b, sp_pt (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.
 
 (* ================================================================= *)
-(** ** [ArrowLaws] for [PureDSPostArr]                                *)
+(** ** [ArrowLaws] for [PureDSLPostArr]                                *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowEq_PureDSPostArr : ArrowEq PureDSPostArr := {
-  arrow_eq := fun A B => @eq (PureDSPostArr A B)
+Instance ArrowEq_PureDSLPostArr : ArrowEq PureDSLPostArr := {
+  arrow_eq := fun A B => @eq (PureDSLPostArr A B)
 }.
 
-Lemma id_pred_dp {A} (pre : A -> Prop) :
+Lemma id_pred_dslp {A} (pre : A -> Prop) :
   (fun b => forall a, a = b -> pre a) = pre.
 Proof.
   extensionality b. apply propositional_extensionality.
@@ -351,43 +351,43 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowLaws_PureDSPostArr : ArrowLaws PureDSPostArr.
+Instance ArrowLaws_PureDSLPostArr : ArrowLaws PureDSLPostArr.
 Proof.
   constructor; intros.
 
   - (* comp_id_l: arr_comp arr_id f = f *)
-    apply PureDSPostArr_eq; intros pre b. cbn.
-    rewrite id_pred_dp. reflexivity.
+    apply PureDSLPostArr_eq; intros pre b. cbn.
+    rewrite id_pred_dslp. reflexivity.
 
   - (* comp_id_r: arr_comp f arr_id = f *)
-    apply PureDSPostArr_eq; intros pre b. cbn.
+    apply PureDSLPostArr_eq; intros pre b. cbn.
     split.
     + intros Hf0. exact (Hf0 b eq_refl).
     + intros Hf0 a Heq. subst. exact Hf0.
 
   - (* comp_assoc *)
-    apply PureDSPostArr_eq; intros pre d0. cbn. reflexivity.
+    apply PureDSLPostArr_eq; intros pre d0. cbn. reflexivity.
 
   - (* pure_comp: arr_comp (arr_pure f) (arr_pure g) = arr_pure (g ∘ f) *)
-    apply PureDSPostArr_eq; intros pre c. cbn.
+    apply PureDSLPostArr_eq; intros pre c. cbn.
     split.
     + intros H a Hgf. subst. exact (H (f a) eq_refl a eq_refl).
     + intros H b Hg a Hf. subst. exact (H a eq_refl).
 
   - (* first_pure *)
-    apply PureDSPostArr_eq; intros pre [b d]. cbn.
+    apply PureDSLPostArr_eq; intros pre [b d]. cbn.
     split.
     + intros H [a c] Hfa. inversion Hfa; subst. exact (H a eq_refl).
     + intros H a Heq. subst. exact (H (a, d) eq_refl).
 
   - (* first_comp *)
-    apply PureDSPostArr_eq; intros pre [c d]. cbn. reflexivity.
+    apply PureDSLPostArr_eq; intros pre [c d]. cbn. reflexivity.
 
-  - (* first_fst — requires IsDSP for multiplicativity.
-       Both sides reduce (via IsDSP) to quantifier reordering:
+  - (* first_fst — requires IsDSLP for multiplicativity.
+       Both sides reduce (via IsDSLP) to quantifier reordering:
        ∀c ∀a, R a b → pre(a,c) ↔ ∀a, R a b → ∀c, pre(a,c). *)
-    apply PureDSPostArr_eq; intros pre b.
-    destruct (IsDSP_rewrite f) as [R_f H_f].
+    apply PureDSLPostArr_eq; intros pre b.
+    destruct (IsDSLP_rewrite f) as [R_f H_f].
     cbn. split.
     + intros H. rewrite H_f. intros a Hra p Heq.
       destruct p as [a0 c]; cbn in Heq; subst.
@@ -399,8 +399,8 @@ Proof.
       exact (Hfb (a, c) eq_refl).
 
   - (* first_assoc *)
-    apply PureDSPostArr_eq; intros pre [b [c d]].
-    destruct (IsDSP_rewrite f) as [R_f H_f].
+    apply PureDSLPostArr_eq; intros pre [b [c d]].
+    destruct (IsDSLP_rewrite f) as [R_f H_f].
     cbn. split.
     + intros H. rewrite H_f. intros a Hra p Hassoc.
       destruct p as [[a0 c0] d0].
@@ -423,31 +423,31 @@ Proof.
       exact (Hfb ((a, c), d) eq_refl).
 
   - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSPostArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
     intros; subst; reflexivity.
   - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSPostArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
     intros; subst; reflexivity.
 Qed.
 
 (* ================================================================= *)
-(** ** [ArrowLaws] for [optionDSPArr]                                 *)
+(** ** [ArrowLaws] for [optionDSLPArr]                                 *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowEq_optionDSPArr : ArrowEq optionDSPArr := {
-  arrow_eq := fun A B => @eq (optionDSPArr A B)
+Instance ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr := {
+  arrow_eq := fun A B => @eq (optionDSLPArr A B)
 }.
 
 #[global]
-Instance ArrowLaws_optionDSPArr : ArrowLaws optionDSPArr.
+Instance ArrowLaws_optionDSLPArr : ArrowLaws optionDSLPArr.
 Proof.
   constructor; intros.
 
   - (* comp_id_l *)
-    apply PureDSPostArr_eq; intros pre ob. cbn.
-    destruct (IsDSP_rewrite f) as [Rf Hrf].
-    destruct ob as [b0|]; rewrite !Hrf; unfold dp.
+    apply PureDSLPostArr_eq; intros pre ob. cbn.
+    destruct (IsDSLP_rewrite f) as [Rf Hrf].
+    destruct ob as [b0|]; rewrite !Hrf; unfold dslp.
     + split.
       * intros H a Hra. exact (H a Hra a eq_refl).
       * intros H a Hra a' Heq. subst. exact (H a Hra).
@@ -456,7 +456,7 @@ Proof.
       * intro H. split; [exact I | intros a Hra a' Heq; subst; exact (H a Hra)].
 
   - (* comp_id_r *)
-    apply PureDSPostArr_eq; intros pre ob. cbn.
+    apply PureDSLPostArr_eq; intros pre ob. cbn.
     destruct ob as [b0|].
     + split.
       * intros H. exact (H b0 eq_refl).
@@ -464,14 +464,14 @@ Proof.
     + tauto.
 
   - (* comp_assoc *)
-    apply PureDSPostArr_eq; intros pre ob. cbn.
-    destruct (IsDSP_rewrite f) as [Rf Hrf].
-    destruct (IsDSP_rewrite g) as [Rg Hrg].
-    destruct (IsDSP_rewrite h) as [Rh Hrh].
-    destruct ob; rewrite ?Hrf, ?Hrg, ?Hrh; unfold dp; firstorder.
+    apply PureDSLPostArr_eq; intros pre ob. cbn.
+    destruct (IsDSLP_rewrite f) as [Rf Hrf].
+    destruct (IsDSLP_rewrite g) as [Rg Hrg].
+    destruct (IsDSLP_rewrite h) as [Rh Hrh].
+    destruct ob; rewrite ?Hrf, ?Hrg, ?Hrh; unfold dslp; firstorder.
 
   - (* pure_comp *)
-    apply PureDSPostArr_eq; intros pre ob. cbn.
+    apply PureDSLPostArr_eq; intros pre ob. cbn.
     destruct ob as [c|].
     + split.
       * intros H a Hgf. subst. exact (H (f a) eq_refl a eq_refl).
@@ -479,7 +479,7 @@ Proof.
     + split; tauto.
 
   - (* first_pure *)
-    apply PureDSPostArr_eq; intros pre ob. cbn.
+    apply PureDSLPostArr_eq; intros pre ob. cbn.
     destruct ob as [[b0 d0]|].
     + split.
       * intros H [a c] Heq. inversion Heq; subst. exact (H a eq_refl).
@@ -487,14 +487,14 @@ Proof.
     + split; [intros _ ; exact I | intros _ d; exact I].
 
   - (* first_comp *)
-    apply PureDSPostArr_eq; intros pre ob. cbn.
-    destruct (IsDSP_rewrite f) as [Rf Hrf].
-    destruct (IsDSP_rewrite g) as [Rg Hrg].
-    destruct ob; rewrite ?Hrf, ?Hrg; unfold dp; firstorder.
+    apply PureDSLPostArr_eq; intros pre ob. cbn.
+    destruct (IsDSLP_rewrite f) as [Rf Hrf].
+    destruct (IsDSLP_rewrite g) as [Rg Hrg].
+    destruct ob; rewrite ?Hrf, ?Hrg; unfold dslp; firstorder.
 
   - (* first_fst *)
-    apply PureDSPostArr_eq; intros pre ob.
-    destruct (IsDSP_rewrite f) as [Rf Hrf].
+    apply PureDSLPostArr_eq; intros pre ob.
+    destruct (IsDSLP_rewrite f) as [Rf Hrf].
     cbn. destruct ob as [b0|].
     + split.
       * intros H. rewrite Hrf. intros a Hra p Heq.
@@ -515,8 +515,8 @@ Proof.
         -- exact I.
 
   - (* first_assoc *)
-    apply PureDSPostArr_eq; intros pre ob.
-    destruct (IsDSP_rewrite f) as [Rf Hrf].
+    apply PureDSLPostArr_eq; intros pre ob.
+    destruct (IsDSLP_rewrite f) as [Rf Hrf].
     cbn. destruct ob as [[b0 [c0 d0]]|].
     + split.
       * intros H. rewrite Hrf. intros a Hra p Hassoc.
@@ -550,15 +550,15 @@ Proof.
         -- exact I.
 
   - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_optionDSPArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_optionDSLPArr;
     intros; subst; reflexivity.
   - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_optionDSPArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_optionDSLPArr;
     intros; subst; reflexivity.
 Qed.
 
 (* ================================================================= *)
-(** ** [ArrowApplyLaws] for [PureASPostArr] and [PureDSPostArr]       *)
+(** ** [ArrowApplyLaws] for [PureASPostArr] and [PureDSLPostArr]       *)
 (* ================================================================= *)
 
 #[global]
@@ -570,19 +570,19 @@ Proof.
   - (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ sp_rel f0 a b) → sp_pt f pre b *)
     intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
     inversion Hpair; subst f0 a.
-    apply (proj2_sig f). unfold sp. exists a'. auto.
+    apply (proj2_sig f). unfold asp. exists a'. auto.
   - (* Backward: sp_pt f pre b → ... *)
     intros Hfb.
-    apply (proj2_sig f) in Hfb. unfold sp in Hfb.
+    apply (proj2_sig f) in Hfb. unfold asp in Hfb.
     destruct Hfb as [a [Hpre Hra]].
     exists f, a. split; [exists a; auto | exact Hra].
 Qed.
 
 #[global]
-Instance ArrowApplyLaws_PureDSPostArr : ArrowApplyLaws PureDSPostArr.
+Instance ArrowApplyLaws_PureDSLPostArr : ArrowApplyLaws PureDSLPostArr.
 Proof.
   constructor; intros.
-  apply PureDSPostArr_eq; intros pre b. cbn.
+  apply PureDSLPostArr_eq; intros pre b. cbn.
   split.
   - (* Forward: (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) → sp_pt (proj1_sig f) pre b *)
     intros H. apply (proj2_sig f). intros a Hra.
@@ -624,7 +624,7 @@ End ArrowMonad.
 
 (** For [ArrowApplyLaws] with Leibniz arrow equality, the arrow
     monad satisfies [MonadLawsE].  We prove this concretely for
-    [PureASPostArr] and [PureDSPostArr] using their relational
+    [PureASPostArr] and [PureDSLPostArr] using their relational
     decomposition, which is simpler than the abstract arrow proof. *)
 
 Section PureASPostArrMonad.
@@ -703,49 +703,49 @@ Section PureASPostArrMonad.
 
 End PureASPostArrMonad.
 
-Section PureDSPostArrMonad.
+Section PureDSLPostArrMonad.
 
   Variable I : Type.
 
   #[global]
-  Instance Eq1_PureDSPostArr : Eq1 (PureDSPostArr I) :=
+  Instance Eq1_PureDSLPostArr : Eq1 (PureDSLPostArr I) :=
     fun _ => eq.
 
   #[global]
-  Instance Eq1Equivalence_PureDSPostArr
-    : @Eq1Equivalence (PureDSPostArr I) _ Eq1_PureDSPostArr.
+  Instance Eq1Equivalence_PureDSLPostArr
+    : @Eq1Equivalence (PureDSLPostArr I) _ Eq1_PureDSLPostArr.
   Proof. constructor; typeclasses eauto. Qed.
 
-  Definition ret_DSP {A} (a : A) : PureDSPostArr I A :=
-    mkDSP (fun _ a' => a = a').
+  Definition ret_DSLP {A} (a : A) : PureDSLPostArr I A :=
+    mkDSLP (fun _ a' => a = a').
 
   (** For the demonic bind, we extract the underlying relation directly
       via [sp_rel (proj1_sig ...)], avoiding classical axioms. *)
-  Definition bind_DSP {A B}
-    (m : PureDSPostArr I A) (k : A -> PureDSPostArr I B)
-    : PureDSPostArr I B :=
-    mkDSP (fun i c => exists b,
+  Definition bind_DSLP {A B}
+    (m : PureDSLPostArr I A) (k : A -> PureDSLPostArr I B)
+    : PureDSLPostArr I B :=
+    mkDSLP (fun i c => exists b,
              sp_rel (proj1_sig m) i b /\
              sp_rel (proj1_sig (k b)) i c).
 
-  Instance Monad_PureDSPostArr : Monad (PureDSPostArr I) := {
-    ret := @ret_DSP ;
-    bind := @bind_DSP
+  Instance Monad_PureDSLPostArr : Monad (PureDSLPostArr I) := {
+    ret := @ret_DSLP ;
+    bind := @bind_DSLP
   }.
 
-  Lemma proj_mkDSP {J B} (R : SPArr J B) pre b :
-    sp_pt (proj1_sig (mkDSP R)) pre b <-> dp R pre b.
+  Lemma proj_mkDSLP {J B} (R : SPArr J B) pre b :
+    sp_pt (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
   Proof. reflexivity. Qed.
 
   #[global]
-  Instance MonadLawsE_PureDSPostArr
-    : @MonadLawsE (PureDSPostArr I) Eq1_PureDSPostArr
-                   Monad_PureDSPostArr.
+  Instance MonadLawsE_PureDSLPostArr
+    : @MonadLawsE (PureDSLPostArr I) Eq1_PureDSLPostArr
+                   Monad_PureDSLPostArr.
   Proof.
-    constructor; unfold eq1, Eq1_PureDSPostArr.
+    constructor; unfold eq1, Eq1_PureDSLPostArr.
     - (* bind_ret_l *)
       intros A B k x.
-      apply PureDSPostArr_eq; intros pre b. cbn.
+      apply PureDSLPostArr_eq; intros pre b. cbn.
       split.
       + intros H. apply (proj2_sig (k x)). intros a Hra.
         exact (H a (ex_intro _ x (conj eq_refl Hra))).
@@ -753,7 +753,7 @@ Section PureDSPostArrMonad.
         apply (proj2_sig (k x)) in Hkx. exact (Hkx i Hrel).
     - (* bind_ret_r *)
       intros A m.
-      apply PureDSPostArr_eq; intros pre b. cbn.
+      apply PureDSLPostArr_eq; intros pre b. cbn.
       split.
       + intros H. apply (proj2_sig m). intros a Hra.
         exact (H a (ex_intro _ b (conj Hra eq_refl))).
@@ -761,7 +761,7 @@ Section PureDSPostArrMonad.
         apply (proj2_sig m) in Hm. exact (Hm i Hrel).
     - (* bind_bind *)
       intros A B C m f g.
-      apply PureDSPostArr_eq; intros pre c. cbn.
+      apply PureDSLPostArr_eq; intros pre c. cbn.
       split; intros H i Hex; apply H.
       + destruct Hex as [a [Hm [b0 [Hfa Hgb]]]].
         exists b0. split; [exists a; auto | exact Hgb].
@@ -773,7 +773,7 @@ Section PureDSPostArrMonad.
       reflexivity.
   Qed.
 
-End PureDSPostArrMonad.
+End PureDSLPostArrMonad.
 
 (* ================================================================= *)
 (** ** [optionT] and composed types: monad instances for free         *)
