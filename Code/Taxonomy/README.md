@@ -47,16 +47,16 @@ its underlying relation) and differ only in the correctness condition:
 
 | Arrow | Condition | Quantifier |
 |---|---|---|
-| `PureASPostArr A B` | `sp_pt d pre b <-> sp (sp_rel d) pre b` | `sp R pre b = exists a, pre a /\ R a b` (angelic) |
-| `PureDSPostArr A B` | `sp_pt d pre b <-> dp (sp_rel d) pre b` | `dp R pre b = forall a, R a b -> pre a` (demonic) |
+| `PureASPostArr A B` | `sp_pt d pre b <-> asp (sp_rel d) pre b` | `asp R pre b = exists a, pre a /\ R a b` (angelic) |
+| `PureDSLPostArr A B` | `sp_pt d pre b <-> dslp (sp_rel d) pre b` | `dslp R pre b = forall a, R a b -> pre a` (demonic) |
 
 Composed types for stateful specifications with exceptions:
 
     ASPostArr S A = stateArrT S (optionArrT PureASPostArr) unit A
-    DSPostArr S A = stateArrT S (optionArrT PureDSPostArr) unit A
+    DSLPostArr S A = stateArrT S (optionArrT PureDSLPostArr) unit A
 
 `SPostArrFacts.v` proves `ArrowLaws` for both `PureASPostArr` and
-`PureDSPostArr`.
+`PureDSLPostArr`.
 
 ## Observation functions
 
@@ -104,8 +104,8 @@ reachability relation but differing in quantifier structure:
 
 | Variant | Definition | Meaning |
 |---|---|---|
-| `asp` | `sp` (existential) | Angelic, total — reachable from precondition |
-| `dslp` | `dp` (universal) | Demonic, liberal — exclusively reachable, or unreachable |
+| `asp` | `asp` (existential) | Angelic, total — reachable from precondition |
+| `dslp` | `dslp` (universal) | Demonic, liberal — exclusively reachable, or unreachable |
 | `dsp` | `asp /\ dslp` | Demonic, total — exclusively reachable |
 | `aslp` | `asp \/ dslp` | Angelic, liberal — reachable or unreachable |
 

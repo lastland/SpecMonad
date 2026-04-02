@@ -73,7 +73,7 @@ Definition dslp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
   fun b => forall a, R a b -> pre a.
 
 (* This shows a different equivalence between predicate arrows and strongest
-   postcondition arrows. We can figure this out be "reverse engineering"
+   postcondition arrows. We can figure this out by "reverse engineering"
    [dslp_dslp_inv], but why does this one make sense? *)
 Definition dslp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : SPArr A B :=
   fun a b => forall pre, pt pre b -> pre a.

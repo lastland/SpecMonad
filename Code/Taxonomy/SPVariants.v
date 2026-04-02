@@ -138,7 +138,7 @@ Section NDItSP.
     sp_pt (ndit_asp m) pre r \/ sp_pt (ndit_dslp m) pre r.
 
   (* -------------------------------------------------------------- *)
-  (** ** Theorem 3.7: Sqaure inclusions                              *)
+  (** ** Theorem 3.7: Square inclusions                              *)
   (* -------------------------------------------------------------- *)
 
   #[program] Theorem ndit_dsp_sub_asp {A} (m : nditprog S A) pre r :
