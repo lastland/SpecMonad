@@ -34,6 +34,17 @@ From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 Definition sp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
   fun b => exists a, pre a /\ R a b.
 
+Definition sp_inv {A B} (sp : (A -> Prop) -> B -> Prop) : SPArr A B :=
+  fun a b => sp (fun a' => a = a') b.
+
+Theorem sp_sp_inv : forall {A B} (R : SPArr A B) a b,
+    sp_inv (sp R) a b <-> R a b.
+Proof.
+  intros. unfold sp_inv, sp. split.
+  - intros [? [? ?]]. subst. assumption.
+  - intros. exists a. tauto.
+Qed.
+
 (** Demonic predicate transformer: universal dual of [sp].
 
     TODO: Investigate if there's another predicate monad that corresponds to
