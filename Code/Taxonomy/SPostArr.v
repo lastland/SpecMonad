@@ -1,4 +1,9 @@
-(** * Bundled predicate transformer arrows: angelic and demonic.
+(** * Predicate transformers and bundled predicate transformer arrows.
+
+    We define the two predicate transformers on [SPArr] relations:
+
+    [sp R pre b = exists a, pre a /\ R a b]   (angelic / existential)
+    [dp R pre b = forall a, R a b -> pre a]    (demonic / universal)
 
     Both [PureASPostArr] and [PureDSPostArr] are sigma types over
     [SPRecord], a record that bundles a predicate transformer with
@@ -7,9 +12,6 @@
 
     [PureASPostArr A B] requires [sp_pt d pre b <-> sp (sp_rel d) pre b]
     [PureDSPostArr A B] requires [sp_pt d pre b <-> dp (sp_rel d) pre b]
-
-    [sp R pre b = exists a, pre a /\ R a b]   (angelic / existential)
-    [dp R pre b = forall a, R a b -> pre a]    (demonic / universal)
 
     Both use the same relational composition, so both satisfy
     the arrow laws (proved in [SPostArrFacts.v]).
@@ -25,8 +27,12 @@ From Coq Require Import Program.Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 
 (* ================================================================= *)
-(** ** Shared record and demonic PT                                    *)
+(** ** Predicate transformers and shared record                         *)
 (* ================================================================= *)
+
+(** Predicate transformer view: strongest postcondition (angelic / existential). *)
+Definition sp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
+  fun b => exists a, pre a /\ R a b.
 
 (** Demonic predicate transformer: universal dual of [sp].
 

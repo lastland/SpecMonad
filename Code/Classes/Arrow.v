@@ -5,9 +5,6 @@
     the category of relations interpreted as forward predicate
     transformers (strongest postcondition arrows).
 
-    The predicate transformer view is derived via [sp]:
-    [sp R pre b := exists a, pre a /\ R a b].
-
     Using relations as the base ensures all arrow laws are provable
     without requiring monotonicity or additivity constraints. *)
 
@@ -198,14 +195,10 @@ Class ArrowLoopLaws (arr : Type -> Type -> Type)
 (** ** [SPArr]: The relational strongest-postcondition arrow          *)
 (* ================================================================= *)
 
-(** [SPArr A B] is a relation from [A] to [B], interpreted as a
-    forward predicate transformer via [sp].  All arrow laws hold. *)
+(** [SPArr A B] is a relation from [A] to [B].  The predicate
+    transformer view ([sp], [dp]) is defined in [SPostArr.v]. *)
 
 Definition SPArr (A B : Type) : Type := A -> B -> Prop.
-
-(** Predicate transformer view: strongest postcondition. *)
-Definition sp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
-  fun b => exists a, pre a /\ R a b.
 
 (* ================================================================= *)
 (** ** [SPArr] instances                                              *)
