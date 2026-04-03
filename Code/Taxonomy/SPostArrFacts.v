@@ -769,51 +769,60 @@ End PureDSLPostArrMonad.
 (** ** Arrow laws for composed types: [ASPostArr] and [DSPostArr]      *)
 (* ================================================================= *)
 
-(** [ASPostArr S = stateArrT S optionASPArr] and
-    [DSPostArr S = stateArrT S optionDSLPArr]. Since [stateArrT]
-    preserves arrow laws generically, these inherit arrow laws
-    from [optionASPArr] and [optionDSLPArr]. *)
+(** All law instances below follow from the generic transformer laws
+    in [OptionArrowT] and [StateArrowT].  We declare them explicitly
+    to document which composed types carry which structure, and use
+    [typeclasses eauto] or [:= _] to show that automatic resolution
+    finds the proof. *)
+
+Section OptionArrowLaws.
+
+  (** Option-level laws: direct consequences of [ArrowLaws_optionArrT],
+      [ArrowChoiceLaws_optionArrT], and [ArrowApplyLaws_optionArrT]
+      applied to [PureASPostArr] / [PureDSLPostArr]. *)
+
+  Local Instance ArrowEq_optionASPArr : ArrowEq optionASPArr := _.
+  Local Instance ArrowLaws_optionASPArr : ArrowLaws optionASPArr := _.
+  Local Instance ArrowChoiceLaws_optionASPArr : ArrowChoiceLaws optionASPArr := _.
+  Local Instance ArrowApplyLaws_optionASPArr : ArrowApplyLaws optionASPArr := _.
+
+  Local Instance ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr := _.
+  Local Instance ArrowLaws_optionDSLPArr : ArrowLaws optionDSLPArr := _.
+  Local Instance ArrowChoiceLaws_optionDSLPArr : ArrowChoiceLaws optionDSLPArr := _.
+  Local Instance ArrowApplyLaws_optionDSLPArr : ArrowApplyLaws optionDSLPArr := _.
+
+End OptionArrowLaws.
 
 Section ComposedArrowLaws.
 
   Variable S : Type.
 
-  (* --- ArrowEq + ArrowLaws --- *)
-  #[global]
-  Instance ArrowEq_stateOptASP : ArrowEq (stateArrT S optionASPArr) :=
-    ArrowEq_stateArrT S.
-  #[global]
-  Instance ArrowLaws_stateOptASP : ArrowLaws (stateArrT S optionASPArr) :=
-    ArrowLaws_stateArrT S.
-  #[global]
-  Instance ArrowEq_stateOptDSLP : ArrowEq (stateArrT S optionDSLPArr) :=
-    ArrowEq_stateArrT S.
-  #[global]
-  Instance ArrowLaws_stateOptDSLP : ArrowLaws (stateArrT S optionDSLPArr) :=
-    ArrowLaws_stateArrT S.
+  (** Composed-type laws: [stateArrT] applied to the option types above. *)
 
-  (* --- ArrowChoice + ArrowApply (derived from generic transformers) --- *)
+  #[global] Instance ArrowEq_stateOptASP :
+    ArrowEq (stateArrT S optionASPArr) := _.
+  #[global] Instance ArrowLaws_stateOptASP :
+    ArrowLaws (stateArrT S optionASPArr) := _.
   #[global] Instance ArrowChoice_stateOptASP :
     ArrowChoice (stateArrT S optionASPArr) := _.
   #[global] Instance ArrowApply_stateOptASP :
     ArrowApply (stateArrT S optionASPArr) := _.
+  #[global] Instance ArrowChoiceLaws_stateOptASP :
+    ArrowChoiceLaws (stateArrT S optionASPArr) := _.
+  #[global] Instance ArrowApplyLaws_stateOptASP :
+    ArrowApplyLaws (stateArrT S optionASPArr) := _.
+
+  #[global] Instance ArrowEq_stateOptDSLP :
+    ArrowEq (stateArrT S optionDSLPArr) := _.
+  #[global] Instance ArrowLaws_stateOptDSLP :
+    ArrowLaws (stateArrT S optionDSLPArr) := _.
   #[global] Instance ArrowChoice_stateOptDSLP :
     ArrowChoice (stateArrT S optionDSLPArr) := _.
   #[global] Instance ArrowApply_stateOptDSLP :
     ArrowApply (stateArrT S optionDSLPArr) := _.
-
-  (* --- ArrowChoiceLaws + ArrowApplyLaws (via generic optionArrT + stateArrT) --- *)
-  #[global] Instance ArrowChoiceLaws_stateOptASP :
-    ArrowChoiceLaws (stateArrT S optionASPArr) :=
-    ArrowChoiceLaws_stateArrT S.
-  #[global] Instance ArrowApplyLaws_stateOptASP :
-    ArrowApplyLaws (stateArrT S optionASPArr) :=
-    ArrowApplyLaws_stateArrT S.
   #[global] Instance ArrowChoiceLaws_stateOptDSLP :
-    ArrowChoiceLaws (stateArrT S optionDSLPArr) :=
-    ArrowChoiceLaws_stateArrT S.
+    ArrowChoiceLaws (stateArrT S optionDSLPArr) := _.
   #[global] Instance ArrowApplyLaws_stateOptDSLP :
-    ArrowApplyLaws (stateArrT S optionDSLPArr) :=
-    ArrowApplyLaws_stateArrT S.
+    ArrowApplyLaws (stateArrT S optionDSLPArr) := _.
 
 End ComposedArrowLaws.
