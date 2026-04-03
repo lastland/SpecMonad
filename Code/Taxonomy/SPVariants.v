@@ -31,7 +31,7 @@ From Hammer Require Import Tactics.
 
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy Require Import
-  Prog NonDetProg NonDetItProg SPostArr.
+  Prog NonDetProg NonDetItProg SPost.
 
 Import MonadNotation.
 Open Scope monad_scope.

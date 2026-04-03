@@ -10,37 +10,20 @@ and varying only in the base monad.
 |---|---|---|---|
 | `itree void1` | `prog` | `Prog.v` | Deterministic computation |
 | `PureWP` = `(A -> Prop) -> Prop` | `ProgWP` | `WP.v` | Weakest precondition spec |
-| `PureSPost` = `forall pre, {p : A -> Prop \| ...}` | `ProgSPost` | `SPost.v` | Strongest postcondition spec |
 | `SetM` = `A -> Prop` | `ndprog` | `NonDetProg.v` | Nondeterministic computation |
 | `optionT SetM` (double `optionT`) | `nditprog` | `NonDetItProg.v` | Nondeterminism + divergence |
 
-The first two rows are *computation* monads (programs that can be executed); the
-remaining three are *specification* monads (predicate transformers for reasoning).
+The first row is a *computation* monad (programs that can be executed); the
+remaining rows are *specification* monads (predicate transformers for reasoning).
 
 `nditprog` uses a double `optionT` stack: the inner layer distinguishes
 divergence (`None`) from convergence (`Some`), while the outer layer handles
 exceptions.
 
-## Monad laws (`*Facts.v`)
+## Strongest postcondition arrows (`SPost.v`)
 
-Each monad has a companion `*Facts.v` file proving `MonadLawsE` (monad laws up
-to `Eq1` equivalence). `ProgFacts.v` provides generic `optionT` and `stateT`
-law instances that the other Facts files reuse — most higher-level proofs are
-just instance chaining.
-
-| File | Proves laws for |
-|---|---|
-| `ProgFacts.v` | `optionT M` (generic), `stateT S M` (generic), `prog` |
-| `WPFacts.v` | `PureWP`, `ProgWP` |
-| `SPostFacts.v` | `PureSPost`, `ProgSPost` |
-| `NonDetProgFacts.v` | `SetM`, `ndprog` |
-| `NonDetItProgFacts.v` | `nditprog` |
-
-## Arrow-based specification (`SPostArr*.v`)
-
-`SPostArr.v` defines predicate transformer *arrows* — an alternative to the
-monadic `PureSPost` that works with binary relations `A -> B -> Prop` instead
-of unary postconditions.
+`SPost.v` defines predicate transformer *arrows* using binary relations
+`A -> B -> Prop` (`SPArr`).
 
 Two variants share a common `SPRecord` (bundles a predicate transformer with
 its underlying relation) and differ only in the correctness condition:
@@ -55,45 +38,47 @@ Composed types for stateful specifications with exceptions:
     ASPostArr S A = stateArrT S (optionArrT PureASPostArr) unit A
     DSLPostArr S A = stateArrT S (optionArrT PureDSLPostArr) unit A
 
-`SPostArrFacts.v` proves `ArrowLaws` for both `PureASPostArr` and
+`SPostFacts.v` proves `ArrowLaws` for both `PureASPostArr` and
 `PureDSLPostArr`.
+
+## Law proofs (`*Facts.v`)
+
+Each monad has a companion `*Facts.v` file proving `MonadLawsE` (monad laws up
+to `Eq1` equivalence). `ProgFacts.v` provides generic `optionT` and `stateT`
+law instances that the other Facts files reuse — most higher-level proofs are
+just instance chaining.
+
+| File | Proves laws for |
+|---|---|
+| `ProgFacts.v` | `optionT M` (generic), `stateT S M` (generic), `prog` |
+| `WPFacts.v` | `PureWP`, `ProgWP` |
+| `SPostFacts.v` | `ArrowLaws` for `PureASPostArr`, `PureDSLPostArr` |
+| `NonDetProgFacts.v` | `SetM`, `ndprog` |
+| `NonDetItProgFacts.v` | `nditprog` |
 
 ## Observation functions
 
-Observation functions bridge computation monads to specification monads,
+Observation functions bridge computation monads to specification types,
 extracting program semantics as weakest preconditions (WP) or strongest
 postconditions (SP).
 
-### Monadic observations (into `ProgWP` / `ProgSPost`)
-
 **`Observation.v`** — maps `prog` to specs:
+- `obsArrowSP`: SP via relational observation wrapped with `mkASP`
 - `observationWP`: strongest WP of a deterministic program
 - `observationWLP`: WP with divergence tolerance (uses `any_infinite` from ITree)
-- `observationSP`: forward extraction into `ProgSPost`
 
 **`NonDetObservation.v`** — maps `ndprog` to specs:
+- `obsArrowASP`: angelic SP via set membership
 - `obsDWP` / `obsAWP`: demonic (all outcomes) / angelic (some outcome) WP
-- `obsASP`: angelic strongest postcondition
-- `obsDSLP`: demonic strongest liberal postcondition (incomplete)
 
-**`NonDetItObservation.v`** — maps `nditprog` to `ProgWP`:
+**`NonDetItObservation.v`** — maps `nditprog` to specs:
+- `obsArrowASP`: collapses the three-valued outcome space into two — `Some
+  (a, s')` for convergence, `None` for exceptions or divergence
 - `obsDWP` / `obsDWLP`: demonic total / partial WP
 - `obsAWP` / `obsAWLP`: angelic total / partial WP
 
 The total variants (`obsDWP`, `obsAWP`) reject divergence; the partial variants
 (`obsDWLP`, `obsAWLP`) accept it.
-
-### Arrow-based observations (into `ASPostArr`)
-
-**`ObservationArr.v`** — maps `prog` to `ASPostArr`:
-- `obsArrowSP`: wraps reachability relation via `mkASP`
-
-**`NonDetObservationArr.v`** — maps `ndprog` to `ASPostArr`:
-- `obsArrowASP`: angelic SP via set membership
-
-**`NonDetItObservationArr.v`** — maps `nditprog` to `ASPostArr`:
-- `obsArrowASP`: collapses the three-valued outcome space into two — `Some
-  (a, s')` for convergence, `None` for exceptions or divergence
 
 ## SP variants (`SPVariants.v`)
 
@@ -120,25 +105,15 @@ transformers: `asp` ↔ ¬`dslp`(¬), `dsp` ↔ ¬`aslp`(¬)).
 ## Dependency graph
 
 ```
-Prog ──► ProgFacts ──┬──► WP ──► WPFacts
-                     │         ╲
-                     │          ► Observation
-                     │         ╱
-                     ├──► SPost ──► SPostFacts
-                     │
-                     ├──► NonDetProg ──► NonDetProgFacts
-                     │              ╲
-                     │               ► NonDetObservation (uses WP, SPost)
-                     │
-                     └──► NonDetItProg ──► NonDetItProgFacts
-                                      ╲
-                                       ► NonDetItObservation (uses WP, SPost)
-
-SPostArr ──► SPostArrFacts
-         │
-         ├──► ObservationArr (uses Prog)
-         ├──► NonDetObservationArr (uses NonDetProg)
-         ├──► NonDetItObservationArr (uses NonDetItProg)
-         │
-         └──► SPVariants (uses Prog, NonDetProg, NonDetItProg)
+Prog ──► ProgFacts
+                   ╲
+WP ──► WPFacts      ► SPost ──► SPostFacts
+                   ╱        │
+NonDetProg ──► NonDetProgFacts
+                             ├──► Observation (uses Prog, WP, SPost)
+NonDetItProg ──► NonDetItProgFacts
+                             ├──► NonDetObservation (uses NonDetProg, WP, SPost)
+                             ├──► NonDetItObservation (uses NonDetItProg, WP, SPost)
+                             │
+                             └──► SPVariants (uses Prog, NonDetProg, NonDetItProg, SPost)
 ```

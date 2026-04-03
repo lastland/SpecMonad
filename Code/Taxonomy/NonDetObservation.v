@@ -1,13 +1,45 @@
-From Coq Require Import
-  Lia Program.Tactics.
+(** * Observation functions for [ndprog].
+
+    SP observation: maps [ndprog S A] to [ASPostArr S A] via
+    set membership in the outcome set.
+
+    WP observations: [obsDWP] (demonic, all outcomes) and
+    [obsAWP] (angelic, some outcome) map into [ProgWP S A]. *)
+
+From Coq Require Import Lia.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
-From ITree Require Import Props.Infinite.
 From Hammer Require Import Tactics.
+From Incorrectness.Classes Require Import Arrow StateArrowT.
+From Incorrectness.Taxonomy Require Import NonDetProg WP SPost.
 
-From Incorrectness.Taxonomy Require Import
-  NonDetProg WP SPost.
+Import MonadNotation.
+Open Scope monad_scope.
+
+Section NonDetObservation.
+
+  Variable S : Type.
+
+  (** Underlying relation: result [r] is a reachable outcome of [m]
+      from state [s]. *)
+  Definition obsRelASP {A} (m : ndprog S A)
+    : SPArr (unit * S) (option (A * S)) :=
+    fun '(tt, s) r =>
+      unOptionT (runStateT m s) r.
+
+  (** Wrapped as a predicate transformer arrow. *)
+  Definition obsArrowASP {A} (m : ndprog S A) : ASPostArr S A :=
+    mkASP (obsRelASP m).
+
+End NonDetObservation.
+
+Arguments obsRelASP {_} {_}.
+Arguments obsArrowASP {_} {_}.
+
+(* ================================================================= *)
+(** ** WP observations                                                *)
+(* ================================================================= *)
 
 Section NDObservationWP.
 
@@ -38,15 +70,50 @@ End NDObservationWP.
 Arguments obsDWP {_} {_}.
 Arguments obsAWP {_} {_}.
 
-Import MonadNotation.
-Open Scope monad_scope.
-
-(** * Some examples using DWP and AWP. *)
+(* ================================================================= *)
+(** ** SP examples                                                    *)
+(* ================================================================= *)
 
 Example progA : ndprog nat unit :=
   put 42 ;;
   s <- get ;;
   orP _ (put s) (put (s + 1)).
+
+(** All reachable results from precondition [True] have state >= 42. *)
+Theorem progA_all :
+  forall s r,
+    obsRelASP progA (tt, s) r ->
+    match r with
+    | Some (_, s') => s' >= 42
+    | None => False
+    end.
+Proof.
+  intros s [[[] s']|] H; cbn in H; sauto.
+Qed.
+
+(** State 42 is reachable. *)
+Theorem progA_42 :
+  forall s, obsRelASP progA (tt, s) (Some (tt, 42)).
+Proof.
+  intros. cbn.
+  exists (Some (tt, 42)). split; [reflexivity|].
+  exists (Some (42, 42)). split; [reflexivity|].
+  left. reflexivity.
+Qed.
+
+(** State 43 is also reachable. *)
+Theorem progA_43 :
+  forall s, obsRelASP progA (tt, s) (Some (tt, 43)).
+Proof.
+  intros. cbn.
+  exists (Some (tt, 42)). split; [reflexivity|].
+  exists (Some (42, 42)). split; [reflexivity|].
+  right. reflexivity.
+Qed.
+
+(* ================================================================= *)
+(** ** WP examples                                                    *)
+(* ================================================================= *)
 
 Example progA_DWP := obsDWP progA.
 Example progA_AWP := obsAWP progA.
@@ -136,72 +203,4 @@ Proof.
   exists (Some (tt, 42)). split; [reflexivity| ].
   cbn. exists (Some (42, 42)). split; [reflexivity| ].
   cbn. right. reflexivity.
-Qed.
-
-(** * Import excluded middle. *)
-Require Import Coq.Logic.Classical_Prop.
-
-Section NDObservationSP.
-
-  Variable S : Type.
-
-  (** Angelic SP: result [r] is reachable from [pre]. *)
-  (** I'm not sure if this is correct.  *)
-  #[program]
-    Definition obsASP {A} (m : ndprog S A) : ProgSPost S A :=
-    mkStateT
-      (fun s => @mkOptionT PureSPost _
-                 (fun pre r => match runStateT m s with
-                          | mkOptionT outcomes =>
-                              outcomes r /\ pre
-                          end)).
-  Next Obligation.
-    destruct (runStateT m s); exact (proj2 H).
-  Qed.
-  Next Obligation.
-    destruct (runStateT m s) in *; split;
-      [exact (proj1 H0) | exact (H (proj2 H0))].
-  Qed.
-
-  (** Demonic SLP. *)
-  (** * TODO: I do not know how to write this one.
-
-  According to "A Taxonomy of Hoare-Like Logics", this should include (1)
-  exclusively from (initial) states in Σ or (2) entirely unreachable (i.e. from
-  any initial state in Σ) by the computation of the program.
-
-  This is using the fact that DSLP is the contrapositive of ASP. However, we can
-  no longer show that the postcondition implies pre, a key for showing that
-  SPost satisfies monad laws.  *)
-  #[program]
-    Definition obsDSLP {A} (m : ndprog S A) : ProgSPost S A :=
-    mkStateT
-      (fun s => @mkOptionT PureSPost _
-                 (fun pre r => not (unOptionT (runStateT (obsASP m) s) (not pre) r))).
-  Next Obligation.
-    destruct (runStateT m s).
-    assert (Hc: pre \/ ~ pre) by apply classic.
-    destruct Hc; [assumption |].
-    exfalso. apply H. split; [| tauto]. (* Stuck *)
-  Admitted.
-  Next Obligation.
-  Admitted.
-  
-End NDObservationSP.
-
-Arguments obsASP {_} {_}.
-Arguments obsDSLP {_} {_}.
-
-Example progA_ASP := obsASP progA.
-
-Theorem progA_ASP_all :
-  forall s r,
-    proj1_sig
-      (proj1_sig (unOptionT (runStateT progA_ASP s)) True) r ->
-    (exists n, r = Some (tt, n) /\ n >= 42).
-Proof.
-  intros. cbn in H. destruct H as [[a [? Hsp]] _].
-  subst. cbn in Hsp. destruct Hsp as [a [? Hsp]]. subst.
-  cbn in Hsp. destruct Hsp; subst;
-    eapply ex_intro; (split; [reflexivity | lia]).
 Qed.

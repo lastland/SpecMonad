@@ -1,12 +1,57 @@
-From Coq Require Import
-  Lia Program.Tactics.
+(** * Observation functions for [nditprog].
+
+    SP observation: maps [nditprog S A] to [ASPostArr S A].
+    The three-valued outcome space ([Some (Some _)], [Some None],
+    [None]) is collapsed into [option (A * S)]:
+    - [Some (a, s')] from converging outcomes
+    - [None] from exceptions OR divergence
+
+    WP observations: [obsDWP] / [obsDWLP] (demonic total / partial)
+    and [obsAWP] / [obsAWLP] (angelic total / partial) map into
+    [ProgWP S A].  Inclusion proofs: Theorem 3.7. *)
+
+From Coq Require Import Lia.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
 From Hammer Require Import Tactics.
+From Incorrectness.Classes Require Import Arrow StateArrowT.
+From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg WP SPost.
 
-From Incorrectness.Taxonomy Require Import
-  NonDetItProg WP SPost.
+Import MonadNotation.
+Open Scope monad_scope.
+
+Section NonDetItObservation.
+
+  Variable S : Type.
+
+  (** Underlying relation: angelic SP.
+
+      For [Some (a, s')]: there is a converging path.
+      For [None]: there is an exception path OR a divergent path. *)
+  Definition obsRelASP {A} (m : nditprog S A)
+    : SPArr (unit * S) (option (A * S)) :=
+    fun '(tt, s) r =>
+      match r with
+      | Some (a, s') =>
+          unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
+      | None =>
+          unOptionT (unOptionT (runStateT m s)) (Some None) \/
+          unOptionT (unOptionT (runStateT m s)) None
+      end.
+
+  (** Wrapped as a predicate transformer arrow. *)
+  Definition obsArrowASP {A} (m : nditprog S A) : ASPostArr S A :=
+    mkASP (obsRelASP m).
+
+End NonDetItObservation.
+
+Arguments obsRelASP {_} {_}.
+Arguments obsArrowASP {_} {_}.
+
+(* ================================================================= *)
+(** ** WP observations                                                *)
+(* ================================================================= *)
 
 Section NDItObservationWP.
 
@@ -84,17 +129,63 @@ Arguments obsDWLP {_} {_}.
 Arguments obsAWP {_} {_}.
 Arguments obsAWLP {_} {_}.
 
-Import MonadNotation.
-Open Scope monad_scope.
-
 (* ================================================================= *)
-(** ** Examples: pure nondeterminism (no divergence)                  *)
+(** ** SP examples: pure nondeterminism (no divergence)               *)
 (* ================================================================= *)
 
 Example progA : nditprog nat unit :=
   put 42 ;;
   s <- get ;;
   orP _ (put s) (put (s + 1)).
+
+(** All reachable converging results have state >= 42. *)
+Theorem progA_all :
+  forall s r,
+    obsRelASP progA (tt, s) r ->
+    match r with
+    | Some (_, s') => s' >= 42
+    | None => False
+    end.
+Proof.
+  intros s [[] |] H; cbn in H.
+  - sauto.
+  - destruct H as [H | H]; sauto.
+Qed.
+
+(** State 42 is reachable. *)
+Theorem progA_42 :
+  forall s, obsRelASP progA (tt, s) (Some (tt, 42)).
+Proof. intros. cbn. sauto. Qed.
+
+(** State 43 is also reachable. *)
+Theorem progA_43 :
+  forall s, obsRelASP progA (tt, s) (Some (tt, 43)).
+Proof. intros. cbn. sauto. Qed.
+
+(* ================================================================= *)
+(** ** Examples: nondeterminism + divergence                          *)
+(* ================================================================= *)
+
+Example progB : nditprog nat unit :=
+  put 42 ;;
+  s <- get ;;
+  orP _ (put s) (spinP _).
+
+(** State 42 is reachable (via the converging branch). *)
+Theorem progB_42 :
+  forall s, obsRelASP progB (tt, s) (Some (tt, 42)).
+Proof. intros. cbn. sauto. Qed.
+
+(** Failure (divergence) is reachable (via the spinning branch). *)
+Theorem progB_None :
+  forall s, obsRelASP progB (tt, s) None.
+Proof.
+  intros. cbn. right. sauto.
+Qed.
+
+(* ================================================================= *)
+(** ** WP examples: pure nondeterminism (no divergence)               *)
+(* ================================================================= *)
 
 Example progA_DWP := obsDWP progA.
 Example progA_AWP := obsAWP progA.
@@ -151,13 +242,8 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** Examples: nondeterminism + divergence                          *)
+(** ** WP examples: nondeterminism + divergence                       *)
 (* ================================================================= *)
-
-Example progB : nditprog nat unit :=
-  put 42 ;;
-  s <- get ;;
-  orP _ (put s) (spinP _).
 
 Example progB_DWP := obsDWP progB.
 Example progB_DWLP := obsDWLP progB.
@@ -209,7 +295,7 @@ Section NDItWPInclusions.
 
   Variable S : Type.
 
-  (** Total demonic ⊆ partial demonic: replace [False] with [True]
+  (** Total demonic <= partial demonic: replace [False] with [True]
       in the divergence branch. *)
   Theorem obsDWP_incl_obsDWLP :
     forall A (m : nditprog S A) s post,
@@ -222,7 +308,7 @@ Section NDItWPInclusions.
     destruct oa; [exact H | exact I].
   Qed.
 
-  (** Total angelic ⊆ partial angelic: left-inject the existential
+  (** Total angelic <= partial angelic: left-inject the existential
       witness into the disjunction. *)
   Theorem obsAWP_incl_obsAWLP :
     forall A (m : nditprog S A) s post,
@@ -234,7 +320,7 @@ Section NDItWPInclusions.
     intros [r [Hr Hp]]. left. exists r. exact (conj Hr Hp).
   Qed.
 
-  (** Demonic ⊆ angelic (total): needs at least one outcome.
+  (** Demonic <= angelic (total): needs at least one outcome.
       DWP excludes [None], so the witness must be [Some r]. *)
   Theorem obsDWP_incl_obsAWP :
     forall A (m : nditprog S A) s post,
@@ -250,7 +336,7 @@ Section NDItWPInclusions.
     - exfalso. exact (H None Hoa).
   Qed.
 
-  (** Demonic ⊆ angelic (partial): needs at least one outcome.
+  (** Demonic <= angelic (partial): needs at least one outcome.
       If [Some r], left with witness; if [None], right with divergence. *)
   Theorem obsDWLP_incl_obsAWLP :
     forall A (m : nditprog S A) s post,
@@ -267,65 +353,3 @@ Section NDItWPInclusions.
   Qed.
 
 End NDItWPInclusions.
-
-(* ================================================================= *)
-(** ** Angelic SP                                                     *)
-(* ================================================================= *)
-
-Require Import Coq.Logic.Classical_Prop.
-
-Section NDItObservationSP.
-
-  Variable S : Type.
-
-  (** Angelic SP: result [r] is reachable from [pre]. *)
-  #[program]
-    Definition obsASP {A} (m : nditprog S A) : ProgSPost S A :=
-    mkStateT
-      (fun s => @mkOptionT PureSPost _
-                 (fun pre r =>
-                    match runStateT m s with
-                    | mkOptionT inner =>
-                        match inner with
-                        | mkOptionT outcomes =>
-                            outcomes (Some r) /\ pre
-                        end
-                    end)).
-  Next Obligation.
-    destruct (runStateT m s) as [[outcomes]]; exact (proj2 H).
-  Qed.
-  Next Obligation.
-    destruct (runStateT m s) as [[outcomes]] eqn:? in *;
-      split; [exact (proj1 H0) | exact (H (proj2 H0))].
-  Qed.
-
-  (** Demonic SLP: contrapositive of ASP. *)
-  #[program]
-    Definition obsDSLP {A} (m : nditprog S A) : ProgSPost S A :=
-    mkStateT
-      (fun s => @mkOptionT PureSPost _
-                 (fun pre r => not (unOptionT (runStateT (obsASP m) s) (not pre) r))).
-  Next Obligation.
-    destruct (runStateT m s) as [[outcomes]].
-    assert (Hc: pre \/ ~ pre) by apply classic.
-    destruct Hc; [assumption |].
-    exfalso. apply H. split; [| tauto].
-  Admitted.
-  Next Obligation.
-  Admitted.
-
-End NDItObservationSP.
-
-Arguments obsASP {_} {_}.
-Arguments obsDSLP {_} {_}.
-
-Example progA_ASP := obsASP progA.
-
-Theorem progA_ASP_all :
-  forall s r,
-    proj1_sig
-      (proj1_sig (unOptionT (runStateT progA_ASP s)) True) r ->
-    (exists n, r = Some (tt, n) /\ n >= 42).
-Proof.
-  intros. cbn in H. sauto.
-Qed.

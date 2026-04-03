@@ -37,15 +37,17 @@ The `Code/Taxonomy/` directory is the core of the project. All monads share the 
 |---|---|---|---|
 | `itree void1` | `prog` | `Prog.v` | Deterministic computation |
 | `PureWP` = `(A -> Prop) -> Prop` | `ProgWP` | `WP.v` | Weakest precondition spec |
-| `PureSPost` = `forall pre, {p : A -> Prop \| ...}` | `ProgSPost` | `SPost.v` | Strongest postcondition spec |
 | `SetM` = `A -> Prop` | `ndprog` | `NonDetProg.v` | Nondeterministic computation |
 | `optionT SetM` (double optionT) | `nditprog` | `NonDetItProg.v` | Nondeterminism + divergence |
 
-**Observation functions** bridge computation monads to specification monads:
-- `Observation.v`: maps `prog` to `ProgWP` / `ProgSPost`
-- `NonDetObservation.v`: maps `ndprog` to `ProgWP` / `ProgSPost` with demonic/angelic interpretations
+`SPost.v` defines strongest postcondition *arrows* (`PureASPostArr`, `PureDSLPostArr`) using `SPRecord` over `SPArr` relations. Composed types: `ASPostArr S A = stateArrT S (optionArrT PureASPostArr) unit A`.
 
-**Facts files** (`*Facts.v`) prove monad laws. Generic proofs for `optionT`/`stateT` in `ProgFacts.v` are reused by all composed monads — most higher-level law proofs are just instance chaining.
+**Observation functions** bridge computation monads to specification types (both WP and SP):
+- `Observation.v`: maps `prog` to `ASPostArr` (SP) and `ProgWP` (WP)
+- `NonDetObservation.v`: maps `ndprog` to `ASPostArr` (SP) and `ProgWP` (demonic/angelic WP)
+- `NonDetItObservation.v`: maps `nditprog` to `ASPostArr` (SP) and `ProgWP` (4 WP variants)
+
+**Facts files** (`*Facts.v`) prove laws. `ProgFacts.v` provides generic `optionT`/`stateT` monad law instances. `SPostFacts.v` proves `ArrowLaws` for the SP arrows.
 
 ## CI
 
