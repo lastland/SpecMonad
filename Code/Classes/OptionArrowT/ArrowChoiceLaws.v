@@ -404,7 +404,135 @@ Section GenericOptionArrTChoiceLaws.
       reflexivity.
 
     - (* 4. left_assoc *)
-      admit.
+      (* Both sides reduce to [assoc] >>> L_{C+D}(f) >>> [rr_{B(C+D)}].
+         LHS: (L_D(L_C(f)>>>[rr])>>>[rr]) >>> [ts] >>> L_1([Some.assoc]) >>> [c]
+         RHS: [Some.assoc] >>> [ts] >>> L_1(L_{C+D}(f)>>>[rr]) >>> [c] *)
+
+      (* === LHS: decompose L_D(L_C(f)>>>[rr]) via lcomp+lpure === *)
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        apply cprop. 2: reflexivity.
+        etransitivity. { apply lcomp. }
+        apply cprop. 1: reflexivity. apply lpure. }
+      (* (L_D(L_C f) >>> [sbm rr id] >>> [rr]) >>> [ts] >>> L_1([Some.assoc]) >>> [c] *)
+
+      (* Simplify L_1([Some.assoc]) via lpure *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity. apply lpure. }
+      (* (L_D(L_C f) >>> [sbm rr id] >>> [rr]) >>> [ts] >>> [sbm(Some.assoc) id] >>> [c] *)
+
+      (* Assert LHS = [assoc]>>>L_{C+D}(f)>>>[rr] *)
+      (* Step 1: right-associate ((A>>>B)>>>C)>>>(D>>>(E>>>F)) to A>>>(B>>>C>>>D>>>E>>>F) *)
+      etransitivity. { apply cassoc. }
+      etransitivity. { apply cassoc. }
+      (* L_D(L_C f) >>> ([sbm rr id] >>> [rr]) >>> [ts] >>> [sbm(...) id] >>> [c] *)
+      (* Step 2: fuse [sbm rr id] >>> [rr] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+      (* L_D(L_C f) >>> [rr.sbm] >>> [ts] >>> [sbm(...) id] >>> [c] *)
+      (* Step 3: fuse [rr.sbm] >>> [ts] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+      (* L_D(L_C f) >>> [ts.rr.sbm] >>> [sbm(...) id] >>> [c] *)
+      (* Step 4: fuse [ts.rr.sbm] >>> [sbm(...) id] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+      (* L_D(L_C f) >>> [fused4] >>> [c] *)
+      (* Step 5: fuse [fused4] >>> [c] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply pcomp. }
+      (* L_D(L_C f) >>> [fused5] *)
+
+      (* Assert: fused5 = assoc >>> rr *)
+      assert (Hpe_lhs : forall x : (option B + C) + D,
+        (fun x0 : (option B + C) + D =>
+          collapse
+            (sum_bimap (fun a : (B + C) + D => Some (assoc_sum a))
+               (fun c0 : unit => c0)
+               (to_sum
+                  (opt_rearrange
+                     (sum_bimap (@opt_rearrange B C) (fun d : D => d) x0))))) x
+        = (fun x0 : (option B + C) + D =>
+            @opt_rearrange B (C + D) (@assoc_sum (option B) C D x0)) x).
+      { intros [[[?|]|?]|?]; reflexivity. }
+
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { apply pure_ext. exact Hpe_lhs. }
+        symmetry. apply pcomp. }
+      (* L_D(L_C f) >>> [assoc] >>> [rr_{B(C+D)}] *)
+
+      (* Apply lassoc_law *)
+      etransitivity.
+      { symmetry. apply cassoc. }
+      etransitivity.
+      { apply cprop. 2: reflexivity. apply lassoc_law. }
+      etransitivity. { apply cassoc. }
+      (* LHS = [assoc] >>> L_{C+D}(f) >>> [rr_{B(C+D)}] *)
+
+      (* === RHS === *)
+      symmetry.
+      (* [Some.assoc] >>> [ts] >>> L_1(L_{C+D}(f)>>>[rr]) >>> [c] *)
+
+      (* Fuse [Some.assoc] >>> [ts] *)
+      etransitivity.
+      { etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+
+      (* Goal: [ts.Some.assoc] >>> L_1(h) >>> [c] = [assoc] >>> h
+         where h = L_{C+D}(f) >>> [rr] *)
+
+      (* Step 1: replace [ts.Some.assoc] with [assoc]>>>[inl] *)
+      assert (Hpe_rhs_head : forall x : (A + C) + D,
+        (fun x0 : (A + C) + D =>
+          @to_sum (A + (C + D)) (Some (@assoc_sum A C D x0))) x
+        = (fun x0 : (A + C) + D =>
+            @inl (A + (C + D)) unit (@assoc_sum A C D x0)) x).
+      { intros [[?|?]|?]; reflexivity. }
+
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        etransitivity. { apply pure_ext. exact Hpe_rhs_head. }
+        symmetry. apply pcomp. }
+      (* [assoc] >>> [inl] >>> L_1(h) >>> [c] *)
+
+      (* Step 2: use linl reversed: [inl]>>>L_1(h) = h>>>[inl] *)
+      etransitivity. { apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity.
+        symmetry. apply linl. }
+      (* [assoc] >>> h >>> [inl] >>> [c] *)
+
+      (* [assoc] >>> (h>>>[inl]) >>> [c]  where h = L(f)>>>[rr] *)
+
+      (* Step 3: right-associate: (h>>>[inl])>>>[c] -> h>>>([inl]>>>[c]) *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cassoc. }
+      (* [assoc] >>> h >>> ([inl]>>>[c]) *)
+
+      (* Step 4: fuse [inl]>>>[c] into id *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity. apply pcomp. }
+      (* [assoc] >>> h >>> [collapse.inl] = [assoc] >>> h >>> [id] *)
+
+      (* Step 5: [collapse.inl] = id, so h >>> [id] = h *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity.
+        { apply cprop. 1: reflexivity.
+          apply pure_ext. intro x. reflexivity. }
+        apply cidr. }
+      (* [assoc] >>> h = [assoc] >>> L(f) >>> [rr] *)
+      reflexivity.
 
     - (* 5. left_inr *)
       etransitivity.
@@ -519,70 +647,141 @@ Section GenericOptionArrTChoiceLaws.
         etransitivity. { symmetry. apply cassoc. }
         etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
         apply pcomp. }
-      (* F(Lf>>>[rr]) >>> [combined_pure] *)
-      (* combined = fun p => collapse(sbm(Some.spd)(id)(ts p))
-         where p : option(B*D)... hmm, F(Lf>>>[rr]) maps (A+C)*D -> option(B+C)*D.
-         Actually wait, F is arr_first. *)
-      (* Actually after opt_unfold:
-         arr_first_opt (arr_left_opt f) = F(Lf>>>[rr]) >>> [seq]
-         where F = arr_first at base level, [seq] = [sequence_option].
+      (* Goal after previous lpure+pcomp fusions:
+         (F(Lf>>>[rr])>>>[seq]) >>> [fused_tail] = [Some.spd]>>>[ts]>>>L(L(Ff>>>[seq])>>>[rr])>>>[c]
+         where fused_tail = fun x => collapse(sbm(Some.spd)(id)(ts x)).
 
-         The full LHS is opt_comp (F_opt(L_opt f)) (opt_pure spd).
-         F_opt g = F(g) >>> [seq].
-         L_opt f = Lf >>> [rr].
-         So F_opt(L_opt f) = F(Lf >>> [rr]) >>> [seq].
+         Strategy: both sides reduce to [spd] >>> L(Ff) >>> [sbm seq id] >>> [rr].
+         LHS: fcomp + fpure + pure fusions + fldist.
+         RHS: pcomp fusions + linl + lcomp + lpure. *)
 
-         opt_comp (F(Lf>>>[rr])>>>[seq]) ([Some.spd])
-         = (F(Lf>>>[rr])>>>[seq]) >>> [ts] >>> L[Some.spd] >>> [c]
+      (* === LHS: (F(Lf>>>[rr])>>>[seq]) >>> [fused_tail] === *)
 
-         This is right-associated: F(Lf>>>[rr]) >>> ([seq] >>> ([ts] >>> (L[Some.spd] >>> [c]))).
+      (* Assert: the 3-pure tail F[rr]>>>[seq]>>>[fused_tail] = [spd]>>>[sbm seq id]>>>[rr].
+         After fpure, the structure is right-associated:
+         [fun '(a,c)=>(rr a,c)] >>> ([seq] >>> [fused_tail]) *)
+      assert (Hpure_chain : @arrow_eq arr HE
+        ((option B + C) * D)%type (option (B * D + C * D))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (fun '(a, c) => (opt_rearrange a, c)))
+          (@arr_comp arr HA _ _ _
+            (@arr_pure arr HA _ _ sequence_option)
+            (@arr_pure arr HA _ _
+              (fun x : option ((B + C) * D) =>
+                collapse
+                  (sum_bimap (fun a : (B + C) * D => Some (sum_prod_dist a))
+                     (fun c0 : unit => c0) (to_sum x))))))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (@sum_prod_dist (option B) C D))
+          (@arr_comp arr HA _ _ _
+            (@arr_pure arr HA _ _
+              (fun x : (option B * D) + (C * D) =>
+                sum_bimap sequence_option (fun cd : C * D => cd) x))
+            (@arr_pure arr HA _ _ (@opt_rearrange (B * D) (C * D)))))).
+      { (* Fuse LHS: [pair_rr]>>>([seq]>>>[fused_tail]) into single pure *)
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply pcomp. }
+        etransitivity. { apply pcomp. }
+        (* Fuse RHS: [spd]>>>([sbm seq id]>>>[rr]) into single pure *)
+        symmetry.
+        etransitivity.
+        { apply cprop. 1: reflexivity. apply pcomp. }
+        etransitivity. { apply pcomp. }
+        apply pure_ext. intros [[[?|]|?] ?]; reflexivity. }
 
-         After lpure and fusing pures, the tail [seq]>>>[ts]>>>L[Some.spd]>>>[c] becomes a combined pure.
-         Let me compute this combined pure:
+      (* Step 1: right-associate LHS *)
+      etransitivity. { apply cassoc. }
 
-         seq : option(B+C) * D -> option((B+C)*D)
-         ts : option((B+C)*D) -> (B+C)*D + unit
-         L[Some.spd] via lpure = [sbm (Some.spd) id]
-         c : option((B*D)+(C*D)) + unit -> option((B*D)+(C*D))
+      (* Step 2: fcomp *)
+      etransitivity.
+      { apply cprop. 2: reflexivity. apply fcomp. }
 
-         For (Some(inl b), d):
-           seq(Some(inl b), d) = Some(inl b, d)
-           ts(Some(inl b, d)) = inl(inl b, d)
-           sbm(Some.spd)(id)(inl(inl b, d)) = inl(Some(spd(inl b, d))) = inl(Some(inl(b,d)))
-           c(inl(Some(inl(b,d)))) = Some(inl(b,d))
+      (* Step 3: right-associate *)
+      etransitivity. { apply cassoc. }
 
-         For (Some(inr c0), d):
-           seq = Some(inr c0, d), ts = inl(inr c0, d),
-           sbm = inl(Some(spd(inr c0, d))) = inl(Some(inr(c0,d))),
-           c = Some(inr(c0,d))
+      (* Step 4: fpure on F[rr] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply fpure. }
 
-         For (None, d):
-           seq = None, ts = inr tt, sbm = inr tt, c = None
+      (* Step 5: rewrite F[rr]>>>[seq]>>>[fused_tail] using Hpure_chain *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. exact Hpure_chain. }
+      (* F(Lf) >>> [spd] >>> [sbm seq id] >>> [rr] *)
 
-         So combined: (optB+C)*D -> opt((B*D)+(C*D))
-           (Some(inl b), d) -> Some(inl(b,d))
-           (Some(inr c0), d) -> Some(inr(c0,d))
-           (None, d) -> None
+      (* Step 6: left-associate to apply fldist *)
+      etransitivity.
+      { symmetry. apply cassoc. }
+      (* (F(Lf) >>> [spd]) >>> ([sbm seq id] >>> [rr]) *)
 
-         This is [fun p => option_map spd (seq(fst p, snd p))]
-         = [fun p => match fst p with Some x => Some(spd(x,snd p)) | None => None end]
-         = [spd] >>> [seq] applied after some rearrangement.
+      (* Step 7: fldist on (F(Lf) >>> [spd]) *)
+      etransitivity.
+      { apply cprop. 2: reflexivity. apply fldist. }
+      (* ([spd] >>> L(Ff)) >>> ([sbm seq id] >>> [rr]) *)
 
-         Hmm, this is getting complex. Let me try using fcomp and fldist directly.
+      (* Step 8: right-associate *)
+      etransitivity. { apply cassoc. }
+      (* [spd] >>> L(Ff) >>> ([sbm seq id] >>> [rr]) *)
 
-         fcomp: F(f >>> g) = F(f) >>> F(g)
-         fpure: F[f] = [fun (a,c) => (f a, c)]
-         fldist: F(Lf) >>> [spd] = [spd] >>> L(Ff)
+      (* === RHS: [Some.spd]>>>[ts]>>>L(L(Ff>>>[seq])>>>[rr])>>>[c] === *)
+      symmetry.
 
-         So: F(Lf>>>[rr]) = F(Lf) >>> F[rr] = F(Lf) >>> [fun (p : (optB+C)*D) => (rr(fst p), snd p)]
+      (* Step R1: fuse [Some.spd]>>>[ts] into [ts.Some.spd] *)
+      etransitivity.
+      { etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. apply pcomp. }
+      (* [ts.Some.spd] >>> L(h) >>> [c] *)
 
-         LHS = F(Lf) >>> F[rr] >>> [seq] >>> ... (tail pure)
+      (* Step R1b: assert ts(Some(spd x)) = inl(spd x), then split as [spd]>>>[inl] *)
+      assert (Hpe_rhs_head : forall x : (A + C) * D,
+        (fun x0 : (A + C) * D =>
+          @to_sum ((A * D) + (C * D)) (Some (@sum_prod_dist A C D x0))) x
+        = (fun x0 : (A + C) * D =>
+            @inl ((A * D) + (C * D)) unit (@sum_prod_dist A C D x0)) x).
+      { intros [[?|?] ?]; reflexivity. }
 
-         By fldist: F(Lf) >>> [spd] = [spd] >>> L(Ff).
-         But F(Lf) is followed by F[rr], not [spd]. So I need to relate
-         F[rr] >>> [seq] >>> tail to something involving [spd].
-       *)
-      admit.
-  Admitted.
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        etransitivity. { apply pure_ext. exact Hpe_rhs_head. }
+        symmetry. apply pcomp. }
+      (* ([spd] >>> [inl]) >>> L(h) >>> [c] *)
+      etransitivity. { apply cassoc. }
+      (* [spd] >>> [inl] >>> L(h) >>> [c] where h = L(Ff>>>[seq])>>>[rr] *)
+
+      (* Step R2: linl: [inl]>>>L(h) = h>>>[inl] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity. { symmetry. apply cassoc. }
+        apply cprop. 2: reflexivity. symmetry. apply linl. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cassoc. }
+      (* [spd] >>> h >>> [inl] >>> [c] *)
+
+      (* Step R3: fuse [inl]>>>[c] into [id], then cidr *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity. apply pcomp. }
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        etransitivity.
+        { apply cprop. 1: reflexivity.
+          apply pure_ext. intro x. reflexivity. }
+        apply cidr. }
+      (* [spd] >>> h where h = L(Ff>>>[seq])>>>[rr] *)
+
+      (* Step R4: lcomp on L(Ff>>>[seq]) *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply lcomp. }
+
+      (* Step R5: lpure on L[seq] *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity.
+        apply cprop. 1: reflexivity. apply lpure. }
+
+      (* Step R6: right-associate *)
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cassoc. }
+      (* [spd] >>> L(Ff) >>> [sbm seq id] >>> [rr] *)
+
+      reflexivity.
+  Qed.
 
 End GenericOptionArrTChoiceLaws.
