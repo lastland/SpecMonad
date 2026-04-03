@@ -17,26 +17,6 @@ From Incorrectness.Taxonomy Require Import NonDetProg WP SPost.
 Import MonadNotation.
 Open Scope monad_scope.
 
-Section NonDetObservation.
-
-  Variable S : Type.
-
-  (** Underlying relation: result [r] is a reachable outcome of [m]
-      from state [s]. *)
-  Definition obsRelASP {A} (m : ndprog S A)
-    : SPArr (unit * S) (option (A * S)) :=
-    fun '(tt, s) r =>
-      unOptionT (runStateT m s) r.
-
-  (** Wrapped as a predicate transformer arrow. *)
-  Definition obsArrowASP {A} (m : ndprog S A) : ASPostArr S A :=
-    mkASP (obsRelASP m).
-
-End NonDetObservation.
-
-Arguments obsRelASP {_} {_}.
-Arguments obsArrowASP {_} {_}.
-
 (* ================================================================= *)
 (** ** WP observations                                                *)
 (* ================================================================= *)
@@ -63,7 +43,8 @@ Section NDObservationWP.
                               exists oa, outcomes oa /\ post oa
                            end)).
 
-  (** No WLP because no divergence.  *)
+  (** No WLP because no divergence. In this case, they are not even definable.
+  *)
 
 End NDObservationWP.
 
@@ -71,45 +52,40 @@ Arguments obsDWP {_} {_}.
 Arguments obsAWP {_} {_}.
 
 (* ================================================================= *)
-(** ** SP examples                                                    *)
+(** ** SP observations                                                *)
 (* ================================================================= *)
+
+
+Section NDObservationSP.
+
+  Variable S : Type.
+
+  Definition obsASP {A} (m : ndprog S A) : ASPostArr S A :=
+    mkASP (fun '(_, s0) r => unOptionT (runStateT m s0) r).
+
+  Definition obsDSLP {A} (m : ndprog S A) : DSLPostArr S A :=
+    mkDSLP (fun '(_, s0) r => unOptionT (runStateT m s0) r). 
+
+  #[program] Definition obsASLP {A} (m : ndprog S A) :
+    (unit * S -> Prop) -> (option (A * S) -> Prop) :=
+    fun pre r => sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r. 
+
+  #[program] Definition obsDSP {A} (m : ndprog S A) :
+    (unit * S -> Prop) -> (option (A * S) -> Prop) :=
+    fun pre r => sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
+  
+End NDObservationSP.
+
+Arguments obsASP {_} {_}.
+Arguments obsASLP {_} {_}.
+Arguments obsDSP {_} {_}.
+Arguments obsDSLP {_} {_}.
+
 
 Example progA : ndprog nat unit :=
   put 42 ;;
   s <- get ;;
   orP _ (put s) (put (s + 1)).
-
-(** All reachable results from precondition [True] have state >= 42. *)
-Theorem progA_all :
-  forall s r,
-    obsRelASP progA (tt, s) r ->
-    match r with
-    | Some (_, s') => s' >= 42
-    | None => False
-    end.
-Proof.
-  intros s [[[] s']|] H; cbn in H; sauto.
-Qed.
-
-(** State 42 is reachable. *)
-Theorem progA_42 :
-  forall s, obsRelASP progA (tt, s) (Some (tt, 42)).
-Proof.
-  intros. cbn.
-  exists (Some (tt, 42)). split; [reflexivity|].
-  exists (Some (42, 42)). split; [reflexivity|].
-  left. reflexivity.
-Qed.
-
-(** State 43 is also reachable. *)
-Theorem progA_43 :
-  forall s, obsRelASP progA (tt, s) (Some (tt, 43)).
-Proof.
-  intros. cbn.
-  exists (Some (tt, 42)). split; [reflexivity|].
-  exists (Some (42, 42)). split; [reflexivity|].
-  right. reflexivity.
-Qed.
 
 (* ================================================================= *)
 (** ** WP examples                                                    *)
@@ -204,3 +180,42 @@ Proof.
   cbn. exists (Some (42, 42)). split; [reflexivity| ].
   cbn. right. reflexivity.
 Qed.
+
+(* ================================================================= *)
+(** ** SP examples                                                    *)
+(* ================================================================= *)
+
+(** All reachable results from precondition [True] have state >= 42. *)
+#[program] Theorem progA_all :
+  forall (s : nat) r,
+    sp_pt (obsASP progA) (fun _ => True) r ->
+    match r with
+    | Some (_, s') => s' >= 42
+    | None => False
+    end.
+Proof.
+  intros s [[[] s']|] H; cbn in H; sauto.
+Qed.
+
+(** State 42 is reachable. *)
+#[program] Theorem progA_42 :
+  sp_pt (obsASP progA) (fun _ => True) (Some (tt, 42)).
+Proof.
+  intros. cbn. unfold asp.
+  exists (tt, 42). split; [reflexivity|].
+  eapply ex_intro. split; [reflexivity|]. cbn.
+  eapply ex_intro. split; [reflexivity|]. cbn.
+  left. reflexivity.
+Qed.
+
+(** State 43 is also reachable. *)
+#[program] Theorem progA_43 :
+  sp_pt (obsASP progA) (fun _ => True) (Some (tt, 43)).
+Proof.
+  intros. cbn. unfold asp.
+  exists (tt, 42). split; [reflexivity|].
+  eapply ex_intro. split; [reflexivity|]. cbn.
+  eapply ex_intro. split; [reflexivity|]. cbn.
+  right. reflexivity.
+Qed.
+
