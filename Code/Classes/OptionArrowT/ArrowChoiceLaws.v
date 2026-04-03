@@ -33,6 +33,9 @@ Section GenericOptionArrTChoiceLaws.
     intro H. replace g with f by (extensionality x; apply H). reflexivity.
   Qed.
 
+  Definition rev_assoc {A B C} (x : A + (B + C)) : (A + B) + C :=
+    match x with inl a => inl (inl a) | inr (inl b) => inl (inr b) | inr (inr c) => inr c end.
+
   Local Ltac destruct_sums :=
     repeat match goal with
     | [ x : (_ + _)%type |- _ ] => destruct x
@@ -44,7 +47,7 @@ Section GenericOptionArrTChoiceLaws.
   Local Ltac solve_pure_eq :=
     apply pure_ext; intro x; destruct_sums;
     unfold sum_bimap, to_sum, opt_rearrange, assoc_sum, swap_sum,
-           collapse, sequence_option, sum_prod_dist;
+           collapse, sequence_option, sum_prod_dist, rev_assoc;
     try reflexivity.
 
   Local Ltac opt_unfold :=
@@ -101,8 +104,92 @@ Section GenericOptionArrTChoiceLaws.
     symmetry. etransitivity. { apply pcomp. } reflexivity.
   Qed.
 
-  Definition rev_assoc {A B C} (x : A + (B + C)) : (A + B) + C :=
-    match x with inl a => inl (inl a) | inr (inl b) => inl (inr b) | inr (inr c) => inr c end.
+  (* Helper: decompose L_D(L_1(g)) via lassoc_law + lnat *)
+  Local Lemma ll_decompose {B C D} (g : arr B (option C)) :
+    @arrow_eq arr HE _ _
+      (@arr_left arr HA HC _ _ D (@arr_left arr HA HC _ _ unit g))
+      (@arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (@assoc_sum B unit D))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (fun x : B + (unit + D) =>
+            sum_bimap (fun b : B => b)
+              (fun y : unit + D => match y with inl u => @inr D unit u | inr d => @inl D unit d end) x))
+          (@arr_comp arr HA _ _ _
+            (@arr_left arr HA HC _ _ (D + unit) g)
+            (@arr_comp arr HA _ _ _
+              (@arr_pure arr HA _ _ (fun x : option C + (D + unit) =>
+                sum_bimap (fun c0 : option C => c0)
+                  (fun y : D + unit => match y with inl d => @inr unit D d | inr u => @inl unit D u end) x))
+              (@arr_pure arr HA _ _ (@rev_assoc (option C) unit D)))))).
+  Proof.
+    etransitivity. { symmetry. apply cidr. }
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      symmetry. unfold arr_id.
+      etransitivity.
+      { exact (@pcomp
+          ((option C + unit) + D)%type
+          (option C + (unit + D))%type
+          ((option C + unit) + D)%type
+          (@assoc_sum (option C) unit D) (@rev_assoc (option C) unit D)). }
+      apply pure_ext. intros [[?|[]]|?]; reflexivity. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply lassoc_law. }
+    etransitivity. { apply cassoc. }
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        etransitivity. { symmetry. apply cidr. }
+        apply cprop. 1: reflexivity.
+        symmetry. unfold arr_id.
+        etransitivity.
+        { exact (@pcomp
+            (option C + (unit + D))%type
+            (option C + (D + unit))%type
+            (option C + (unit + D))%type
+            (fun x : option C + (unit + D) =>
+              sum_bimap (fun c0 : option C => c0)
+                (fun y : unit + D => match y with inl u => @inr D unit u | inr d => @inl D unit d end) x)
+            (fun x : option C + (D + unit) =>
+              sum_bimap (fun c0 : option C => c0)
+                (fun y : D + unit => match y with inl d => @inr unit D d | inr u => @inl unit D u end) x)). }
+        apply pure_ext. intros [?|[[]|?]]; reflexivity. }
+      etransitivity.
+      { apply cprop. 2: reflexivity. symmetry. apply cassoc. }
+      etransitivity. { apply cassoc. }
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        apply (lnat g (fun x : unit + D => match x with inl u => @inr D unit u | inr d => @inl D unit d end)). }
+      apply cassoc. }
+    reflexivity.
+  Qed.
+
+  (* Similar decomposition for L_1(L_D(g)) *)
+  Local Lemma ll_decompose2 {B C D} (g : arr B (option C)) :
+    @arrow_eq arr HE _ _
+      (@arr_left arr HA HC _ _ unit (@arr_left arr HA HC _ _ D g))
+      (@arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (@assoc_sum B D unit))
+        (@arr_comp arr HA _ _ _
+          (@arr_left arr HA HC _ _ (D + unit) g)
+          (@arr_pure arr HA _ _ (@rev_assoc (option C) D unit)))).
+  Proof.
+    etransitivity. { symmetry. apply cidr. }
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      symmetry. unfold arr_id.
+      etransitivity.
+      { exact (@pcomp
+          ((option C + D) + unit)%type
+          (option C + (D + unit))%type
+          ((option C + D) + unit)%type
+          (@assoc_sum (option C) D unit) (@rev_assoc (option C) D unit)). }
+      apply pure_ext. intros [[?|?]|[]]; reflexivity. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply lassoc_law. }
+    apply cassoc.
+  Qed.
 
   Local Lemma core_opt_left {B C D} (g : arr B (option C)) :
     @arrow_eq arr HE (option B + D) (option (C + D))
@@ -124,8 +211,155 @@ Section GenericOptionArrTChoiceLaws.
                 (@arr_pure arr HA _ _ (@opt_rearrange C D))))
             (@arr_pure arr HA _ _ (@collapse (C + D)))))).
   Proof.
-    admit.
-  Admitted.
+    (* Both sides reduce to [p]>>>L_{D+1}(g)>>>[q] using lcomp, lpure,
+       ll_decompose/ll_decompose2, and pcomp fusions. *)
+
+    (* LHS: L_D([ts]>>>L_1(g)>>>[c]) >>> [rr] *)
+    (* = [sbm ts id] >>> L_D(L_1 g) >>> [sbm c id] >>> [rr]  by lcomp+lpure *)
+
+    (* Assert LHS = [head_L] >>> L_{D+1}(g) >>> [tail_L] *)
+    assert (HLHS : @arrow_eq arr HE (option B + D) (option (C + D))
+      (@arr_comp arr HA _ _ _
+        (@arr_left arr HA HC _ _ D
+          (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (@to_sum B))
+            (@arr_comp arr HA _ _ _
+              (@arr_left arr HA HC _ _ unit g)
+              (@arr_pure arr HA _ _ (@collapse C)))))
+        (@arr_pure arr HA _ _ (@opt_rearrange C D)))
+      (@arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (fun x : option B + D => sum_bimap (@to_sum B) (fun d : D => d) x))
+        (@arr_comp arr HA _ _ _
+          (@arr_comp arr HA _ _ _
+            (@arr_pure arr HA _ _ (@assoc_sum B unit D))
+            (@arr_comp arr HA _ _ _
+              (@arr_pure arr HA _ _ (fun x : B + (unit + D) =>
+                sum_bimap (fun b : B => b)
+                  (fun y : unit + D => match y with inl u => @inr D unit u | inr d => @inl D unit d end) x))
+              (@arr_comp arr HA _ _ _
+                (@arr_left arr HA HC _ _ (D + unit) g)
+                (@arr_comp arr HA _ _ _
+                  (@arr_pure arr HA _ _ (fun x : option C + (D + unit) =>
+                    sum_bimap (fun c0 : option C => c0)
+                      (fun y : D + unit => match y with inl d => @inr unit D d | inr u => @inl unit D u end) x))
+                  (@arr_pure arr HA _ _ (@rev_assoc (option C) unit D))))))
+          (@arr_comp arr HA _ _ _
+            (@arr_pure arr HA _ _ (fun x : (option C + unit) + D => sum_bimap (@collapse C) (fun d : D => d) x))
+            (@arr_pure arr HA _ _ (@opt_rearrange C D)))))).
+    { etransitivity.
+      { apply cprop. 2: reflexivity.
+        etransitivity. { apply lcomp. }
+        etransitivity. { apply cprop. 2: reflexivity. apply lpure. }
+        apply cprop. 1: reflexivity.
+        etransitivity. { apply lcomp. }
+        apply cprop. 1: reflexivity. apply lpure. }
+      etransitivity. { apply cassoc. }
+      etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
+      apply cprop. 1: reflexivity.
+      apply cprop. 2: reflexivity.
+      apply (ll_decompose g). }
+
+    (* Assert RHS = [head_R] >>> L_{D+1}(g) >>> [tail_R] *)
+    assert (HRHS : @arrow_eq arr HE (option B + D) (option (C + D))
+      (@arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (@opt_rearrange B D))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (@to_sum (B + D)))
+          (@arr_comp arr HA _ _ _
+            (@arr_left arr HA HC _ _ unit
+              (@arr_comp arr HA _ _ _
+                (@arr_left arr HA HC _ _ D g)
+                (@arr_pure arr HA _ _ (@opt_rearrange C D))))
+            (@arr_pure arr HA _ _ (@collapse (C + D))))))
+      (@arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (@opt_rearrange B D))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (@to_sum (B + D)))
+          (@arr_comp arr HA _ _ _
+            (@arr_comp arr HA _ _ _
+              (@arr_pure arr HA _ _ (@assoc_sum B D unit))
+              (@arr_comp arr HA _ _ _
+                (@arr_left arr HA HC _ _ (D + unit) g)
+                (@arr_pure arr HA _ _ (@rev_assoc (option C) D unit))))
+            (@arr_comp arr HA _ _ _
+              (@arr_pure arr HA _ _ (fun x : (option C + D) + unit =>
+                sum_bimap (@opt_rearrange C D) (fun u : unit => u) x))
+              (@arr_pure arr HA _ _ (@collapse (C + D)))))))).
+    { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+      (* focus: L_1(L_D(g)>>>[rr]) >>> [c] *)
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        etransitivity. { apply lcomp. }
+        apply cprop. 1: reflexivity. apply lpure. }
+      (* (L_1(L_D(g)) >>> [sbm rr id]) >>> [c] *)
+      etransitivity. { apply cassoc. }
+      (* L_1(L_D(g)) >>> [sbm rr id] >>> [c] *)
+      apply cprop. 2: reflexivity.
+      apply (ll_decompose2 g). }
+
+    etransitivity. { exact HLHS. }
+    symmetry. etransitivity. { exact HRHS. } symmetry.
+
+    (* LHS side: [sbm ts id] >>> ([assoc]>>>[swap]>>>L(g)>>>([swap']>>>[rev])) >>> ([sbm c id]>>>[rr])
+       Fuse [sbm ts id] >>> [assoc] >>> [swap] into one pure *)
+    etransitivity.
+    { etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity.
+      etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity. apply pcomp. }
+    etransitivity.
+    { apply cprop. 2: reflexivity.
+      etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity. apply pcomp. }
+    etransitivity. { apply cassoc. }
+    (* [head3] >>> L(g) >>> ([swap']>>>[rev]) >>> ([sbm c id]>>>[rr]) *)
+
+    (* Fuse tail: ([swap']>>>[rev]) >>> ([sbm c id]>>>[rr]) -> one pure
+       Structure: (A>>>B) >>> (C>>>D)
+       Use: pcomp to fuse A>>>B, pcomp to fuse C>>>D, then pcomp to fuse results *)
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      etransitivity. { apply cassoc. }
+      apply cprop. 1: reflexivity.
+      etransitivity.
+      { apply cprop. 2: reflexivity. apply pcomp. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply pcomp. }
+      apply pcomp. }
+
+    symmetry.
+
+    (* RHS side: [rr]>>>[ts] >>> ([assoc']>>>L(g)>>>[rev']) >>> ([sbm rr id]>>>[c])
+       = (([rr]>>>[ts]) >>> ([assoc']>>>L(g)>>>[rev'])) >>> ([sbm rr id]>>>[c])
+       Fuse head: [rr]>>>[ts]>>>[assoc'] and tail: [rev']>>>([sbm rr id]>>>[c]) *)
+
+    (* Fuse head: [rr]>>>[ts] then [rr_ts]>>>[assoc'] *)
+    etransitivity.
+    { etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity. apply pcomp. }
+    (* [rr_ts] >>> (([assoc']>>>L(g)>>>[rev']) >>> ([sbm rr id]>>>[c])) *)
+    etransitivity.
+    { etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity.
+      etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity. apply pcomp. }
+    (* (([head_R] >>> L(g)) >>> [rev']) >>> ([sbm rr id]>>>[c]) *)
+
+    (* Right-associate *)
+    etransitivity. { apply cassoc. }
+    etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
+    (* [head_R] >>> L(g) >>> [rev'] >>> ([sbm rr id]>>>[c]) *)
+
+    (* Fuse tail: [rev'] >>> [sbm rr id] >>> [c] — 3 pures *)
+    etransitivity.
+    { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply pcomp. }
+      apply pcomp. }
+
+    apply cprop.
+    + solve_pure_eq.
+    + apply cprop. 1: reflexivity. solve_pure_eq.
+  Qed.
 
   #[global]
   Instance ArrowChoiceLaws_optionArrT : ArrowChoiceLaws (optionArrT arr).
@@ -170,7 +404,6 @@ Section GenericOptionArrTChoiceLaws.
       reflexivity.
 
     - (* 4. left_assoc *)
-      (* Both sides reduce to [assoc] >>> L(Lf>>>[rr]) >>> [rr] using base lassoc + core *)
       admit.
 
     - (* 5. left_inr *)
