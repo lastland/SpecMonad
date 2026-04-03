@@ -14,6 +14,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Always look up ITree and ExtLib libraries first before defining something new, to avoid reinventing the wheel.
 - Prefer `#[program] Definition` over `refine` for subset types; keep tactics for proof obligations only. This lets Coq insert `proj1_sig` coercions automatically (so you don't write `proj1_sig` everywhere) and generate proof obligations (so you don't explicitly use the `exist` constructor).
 - Coq typeclass resolution can cause infinite loops; if you see unusually long compile time, do not wait — try to figure out if there is a typeclass resolution issue. For a project of this size, compilation time should NOT be very long.
+  - **Known pattern**: Multiple recursive `#[global] Instance` of the form `Foo ?base → Foo (T ?base)` (e.g., `ArrowChoice_stateArrT` + `ArrowChoice_optionArrT`) cause exponential search. Fix: use explicit `@` references to base instances in instance bodies and proof tactics, bypassing typeclass resolution. See `StateArrowT/Core.v` for the pattern.
+  - **`arr_pure_ext` inside `comp_proper` blocks**: Creates unresolvable evars. Pre-assert the equality with `assert (H := ...)` outside the block, then use `exact H` inside.
+  - `#[export]` is not supported for `Instance` inside `Section` — use `#[global]`.
+
+## Architecture: Classes/
+
+`Code/Classes/` defines Hughes-style arrow typeclasses and generic transformer laws:
+
+- `Arrow.v`: Core typeclasses (`Arrow`, `ArrowChoice`, `ArrowApply`, `ArrowLoop`) + laws + `SPArr` (relational arrow) instances.
+- `OptionArrowT/`: Generic `optionArrT arr A B := arr A (option B)` transformer. Split into `Core.v` (instances), `ArrowLaws.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`, `SPArr.v` (concrete). `OptionArrowT.v` is a thin re-export.
+- `StateArrowT/`: Generic `stateArrT S arr A B := arr (A*S) (B*S)` transformer. Split into `Core.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`. `StateArrowT.v` is a thin re-export.
+
+All generic law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type.
 
 ## Architecture: Taxonomy/
 
@@ -36,3 +49,8 @@ The `Code/Taxonomy/` directory is the core of the project. All monads share the 
 ## CI
 
 See `.github/workflows/SpecMonad.yml` (Coq 8.20, docker-coq-action via opam).
+
+## Build
+
+`Makefile` is gitignored; regenerate with `coq_makefile -f _CoqProject -o Makefile` in `Code/`.
+Single file: `make Classes/StateArrowT/Core.vo`. Use `timeout 30 make ...` to catch typeclass loops.
