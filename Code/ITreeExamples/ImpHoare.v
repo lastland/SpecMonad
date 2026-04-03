@@ -56,9 +56,6 @@ Definition is_true (b : bexp) (s : env) : Prop :=
 Definition is_false  (b : bexp) (s : env) : Prop :=
   is_bool void1 false b s.
 
-(*
-Ltac unf_intep := unfold interp_imp, interp_map, interp_state, interp, Basics.iter, MonadIter_stateT0, interp, Basics.iter, MonadIter_stateT0.
-*)
 
 Lemma aexp_term : forall (E : Type -> Type) (ae : aexp) (s : env),
     exists (n : nat), @interp_imp void1 _ (denote_aexp ae) s ≈ Ret (s,n).

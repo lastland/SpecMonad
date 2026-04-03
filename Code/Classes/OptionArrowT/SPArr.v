@@ -122,21 +122,6 @@ Section OptionSPArrInstances.
   (** *** ArrowLaws for [optionSPArr]                                  *)
   (* -------------------------------------------------------------- *)
 
-  Local Ltac unfold_optionSPArr :=
-    unfold optionSPArr, optionArrT, arr_id, arr_second;
-    try rewrite optionArrT_comp_SPArr;
-    try rewrite optionArrT_first_SPArr;
-    unfold arr_comp, arr_first, arr_pure, arr_loop,
-           arr_left, arr_app, Arrow_optionArrT,
-           swap; simpl.
-
-  Local Ltac destruct_options :=
-    repeat match goal with
-    | [ob : option _ |- _] => destruct ob
-    | [p : _ * _ |- _] => destruct p
-    | [s : _ + _ |- _] => destruct s
-    end; simpl in *.
-
   #[global]
   Instance ArrowLaws_optionSPArr : ArrowLaws optionSPArr.
   Proof.

@@ -90,9 +90,12 @@ Section StateArrowTEqLaws.
   Qed.
 
   (** Tactic: prove [arrow_eq (arr_pure f) (arr_pure g)] by computation. *)
+  Create HintDb state_ops.
+  #[local] Hint Unfold state_shuffle_in state_shuffle_out assoc_prod : state_ops.
+
   Local Ltac pure_ext :=
     apply arr_pure_ext; intro;
-    unfold state_shuffle_in, state_shuffle_out, assoc_prod;
+    autounfold with state_ops;
     repeat match goal with [p : _ * _ |- _] => destruct p end;
     simpl; reflexivity.
 

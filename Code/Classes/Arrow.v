@@ -284,30 +284,25 @@ Section SPArrInstances.
       exists (b, c'). simpl. split; [exact (conj Hf eq_refl)|reflexivity].
   Qed.
 
-  (** Tactic: rewrite all derived operations for [SPArr]. *)
+  Create HintDb SPArr_ops.
+  #[local] Hint Unfold arr_id arr_comp arr_first arr_pure arr_loop
+    arr_left arr_app assoc_prod unassoc_prod swap : SPArr_ops.
+
   Ltac unfold_SPArr :=
-    unfold arr_id, arr_comp, arr_first, arr_pure, arr_loop,
-           arr_left, arr_app, assoc_prod, unassoc_prod, swap; cbn;
+    autounfold with SPArr_ops; cbn;
     try rewrite arr_second_SPArr.
 
   (* -------------------------------------------------------------- *)
   (** *** ArrowLaws                                                   *)
   (* -------------------------------------------------------------- *)
 
-  (** Tactic to destruct all pairs in hypotheses and goal. *)
-  Local Ltac destruct_pairs :=
+  Local Ltac unfold_SPArr_full :=
+    autounfold with SPArr_ops; unfold Arrow_SPArr; simpl;
+    repeat match goal with [p : _ * _ |- _] => destruct p end;
     repeat match goal with
     | [H : context[let '(_, _) := ?p in _] |- _] => destruct p
     | [|- context[let '(_, _) := ?p in _]] => destruct p
     end.
-
-  (** Helper: fully unfold [SPArr] instances and destruct all pairs. *)
-  Local Ltac unfold_SPArr_full :=
-    unfold arr_id, arr_comp, arr_first, arr_pure, arr_loop,
-           arr_left, arr_app, assoc_prod, unassoc_prod, swap,
-           Arrow_SPArr; simpl;
-    repeat match goal with [p : _ * _ |- _] => destruct p end;
-    destruct_pairs.
 
   #[global]
   Instance ArrowLaws_SPArr : ArrowLaws SPArr.
@@ -349,22 +344,6 @@ Section SPArrInstances.
   (* -------------------------------------------------------------- *)
   (** *** ArrowChoiceLaws                                             *)
   (* -------------------------------------------------------------- *)
-
-  (** Tactic for sum-type arrow proofs: destruct sum witnesses and
-      discharge contradictions, then provide explicit witnesses. *)
-  Local Ltac solve_sum :=
-    repeat match goal with
-    | [x : _ + _ |- _] => destruct x; simpl in *; try contradiction; try discriminate
-    end;
-    subst;
-    repeat match goal with
-    | [H : inl _ = inl _ |- _] => injection H as ->
-    | [H : inr _ = inr _ |- _] => injection H as ->
-    end;
-    first [ exists (inl (inl _)) | exists (inl (inr _))
-          | exists (inr (inl _)) | exists (inr (inr _))
-          | exists (inl _) | exists (inr _) | idtac ];
-    simpl; eauto.
 
   #[global]
   Instance ArrowChoiceLaws_SPArr : ArrowChoiceLaws SPArr.

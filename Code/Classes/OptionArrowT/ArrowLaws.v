@@ -41,19 +41,14 @@ Section GenericOptionArrTLaws.
     intro H. replace f with g by (extensionality x; symmetry; apply H). reflexivity.
   Qed.
 
-  Local Ltac pure_ext :=
-    apply arr_pure_ext; intros; try reflexivity; simpl;
-    repeat (match goal with [p : _ * _ |- _] => destruct p end);
-    try reflexivity.
+  Create HintDb opt_ops.
+  #[local] Hint Unfold arr_id arr_comp arr_pure arr_first Arrow_optionArrT
+    arrow_eq arrow_eq_equiv ArrowEq_optionArrT : opt_ops.
 
   Local Ltac opt_unfold :=
-    unfold arr_id, arr_comp, arr_pure, arr_first, Arrow_optionArrT,
-           arrow_eq, arrow_eq_equiv, ArrowEq_optionArrT;
+    autounfold with opt_ops;
     fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
          (@arr_left arr HA HC) (@arrow_eq arr HE) (@arrow_eq_equiv arr HE).
-
-  Local Ltac oetrans :=
-    etransitivity; [opt_unfold |]; opt_unfold.
 
   #[global]
   Instance ArrowLaws_optionArrT : ArrowLaws (optionArrT arr).

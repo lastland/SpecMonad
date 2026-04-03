@@ -43,24 +43,19 @@ Section StateArrowTChoiceLaws.
     reflexivity.
   Qed.
 
+  Create HintDb state_choice_ops.
+  #[local] Hint Unfold sum_distribute sum_undistribute
+    state_shuffle_in state_shuffle_out assoc_prod
+    sum_bimap assoc_sum sum_prod_dist : state_choice_ops.
+
   Local Ltac pure_ext :=
     apply arr_pure_ext'; intro;
-    unfold sum_distribute, sum_undistribute,
-           state_shuffle_in, state_shuffle_out, assoc_prod,
-           sum_bimap, assoc_sum, sum_prod_dist;
+    autounfold with state_choice_ops;
     repeat match goal with
     | [p : _ * _ |- _] => destruct p
     | [s : _ + _ |- _] => destruct s
     end;
     simpl; reflexivity.
-
-  (** Unfold the stateArrT operations to base-arrow terms. *)
-  Local Ltac st_unfold :=
-    unfold arr_id, arr_comp, arr_pure, arr_first, arr_left,
-           Arrow_stateArrT, ArrowChoice_stateArrT,
-           arrow_eq, ArrowEq_stateArrT;
-    fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
-         (@arr_left arr HA HC) (@arrow_eq arr HE).
 
   (** The key identity: [sd] >>> left f >>> [su] distributes state
       across a left-mapped arrow. We prove many choice laws by
@@ -69,7 +64,12 @@ Section StateArrowTChoiceLaws.
   #[global]
   Instance ArrowChoiceLaws_stateArrT : ArrowChoiceLaws (stateArrT S arr).
   Proof.
-    constructor; intros; st_unfold.
+    constructor; intros;
+      unfold arr_id, arr_comp, arr_pure, arr_first, arr_left,
+             Arrow_stateArrT, ArrowChoice_stateArrT,
+             arrow_eq, ArrowEq_stateArrT;
+      fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
+           (@arr_left arr HA HC) (@arrow_eq arr HE).
     - (* left_pure *)
       etransitivity.
       { apply cprop. 1: reflexivity.

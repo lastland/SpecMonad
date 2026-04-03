@@ -36,26 +36,20 @@ Section GenericOptionArrTChoiceLaws.
   Definition rev_assoc {A B C} (x : A + (B + C)) : (A + B) + C :=
     match x with inl a => inl (inl a) | inr (inl b) => inl (inr b) | inr (inr c) => inr c end.
 
-  Local Ltac destruct_sums :=
+  Create HintDb opt_choice_ops.
+  #[local] Hint Unfold sum_bimap to_sum opt_rearrange assoc_sum swap_sum
+    collapse sequence_option sum_prod_dist rev_assoc : opt_choice_ops.
+
+  Local Ltac solve_pure_eq :=
+    apply pure_ext; intro x;
     repeat match goal with
     | [ x : (_ + _)%type |- _ ] => destruct x
     | [ x : option _ |- _ ] => destruct x
     | [ x : unit |- _ ] => destruct x
     | [ x : (_ * _)%type |- _ ] => destruct x
-    end.
-
-  Local Ltac solve_pure_eq :=
-    apply pure_ext; intro x; destruct_sums;
-    unfold sum_bimap, to_sum, opt_rearrange, assoc_sum, swap_sum,
-           collapse, sequence_option, sum_prod_dist, rev_assoc;
+    end;
+    autounfold with opt_choice_ops;
     try reflexivity.
-
-  Local Ltac opt_unfold :=
-    unfold arr_id, arr_comp, arr_pure, arr_first, arr_left,
-           Arrow_optionArrT, ArrowChoice_optionArrT,
-           arrow_eq, ArrowEq_optionArrT;
-    fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
-         (@arr_left arr HA HC) (@arrow_eq arr HE).
 
   Local Lemma opt_tail_inl {B C} :
     @arrow_eq arr HE (option B) (option (B + C))
@@ -365,7 +359,12 @@ Section GenericOptionArrTChoiceLaws.
   Instance ArrowChoiceLaws_optionArrT : ArrowChoiceLaws (optionArrT arr).
   Proof.
     Local Transparent ArrowEq_optionArrT.
-    constructor; intros; opt_unfold.
+    constructor; intros;
+      unfold arr_id, arr_comp, arr_pure, arr_first, arr_left,
+             Arrow_optionArrT, ArrowChoice_optionArrT,
+             arrow_eq, ArrowEq_optionArrT;
+      fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
+           (@arr_left arr HA HC) (@arrow_eq arr HE).
     all: try (unfold Proper, respectful; intros;
               apply cprop; [apply lprop; assumption | reflexivity]).
 

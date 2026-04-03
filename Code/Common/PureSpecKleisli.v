@@ -252,17 +252,6 @@ Section PredMonadComonad.
   (** TODO: Monad and comonad laws. *)
 End PredMonadComonad.
 
-(* Tactic for destructing a PurePred. *)
-Ltac destruct_p p :=
-       let a  := fresh "a" in
-       let fa := fresh "fa" in
-       let Ha := fresh "Ha" in
-       destruct p as [[a fa] Ha] ;
-       let b  := fresh "b" in
-       let fb := fresh "fb" in
-       let eqfa := fresh "Heqfa" in 
-       destruct (fa a) as [b fb] eqn:eqfa.
-
 (* TODO: at some point, refactor this codebase to be based on two types of
      predicates: normal predicate [A -> Prop] and nonempty predicate [A * (A ->
      Prop)]. *)
