@@ -1,6 +1,6 @@
 (** * Arrow law proofs for angelic and demonic predicate transformer arrows.
 
-    Angelic laws ([PureASPostArr], [optionASPArr]) are proved by
+    Angelic laws ([PureASPostArr], [optionAPred]) are proved by
     [PureASPostArr_eq] and then transferring through [IsASP] to work
     with raw existentials.
 
@@ -49,7 +49,7 @@ Proof.
 Qed.
 
 Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
-  exists R : SPArr A B,
+  exists R : Pred A B,
     forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b.
 Proof.
   exists (sp_rel (proj1_sig f)). intros pre b.
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 (** [sp_pt] of any PureASPostArr rewrites to existential form. *)
-Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : SPArr A B)
+Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : Pred A B)
   (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b) :
   forall P b, sp_pt (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
@@ -318,14 +318,14 @@ Proof.
 Qed.
 
 Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
-  exists R : SPArr A B,
+  exists R : Pred A B,
     forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
   exists (sp_rel (proj1_sig f)). intros pre b.
   apply (proj2_sig f).
 Qed.
 
-Lemma DSLP_dslp {A B} (f : PureDSLPostArr A B) (R : SPArr A B)
+Lemma DSLP_dslp {A B} (f : PureDSLPostArr A B) (R : Pred A B)
   (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
   forall P b, sp_pt (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.
@@ -710,7 +710,7 @@ Section PureDSLPostArrMonad.
     bind := @bind_DSLP
   }.
 
-  Lemma proj_mkDSLP {J B} (R : SPArr J B) pre b :
+  Lemma proj_mkDSLP {J B} (R : Pred J B) pre b :
     sp_pt (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
   Proof. reflexivity. Qed.
 
@@ -781,10 +781,10 @@ Section OptionArrowLaws.
       [ArrowChoiceLaws_optionArrT], and [ArrowApplyLaws_optionArrT]
       applied to [PureASPostArr] / [PureDSLPostArr]. *)
 
-  Local Instance ArrowEq_optionASPArr : ArrowEq optionASPArr := _.
-  Local Instance ArrowLaws_optionASPArr : ArrowLaws optionASPArr := _.
-  Local Instance ArrowChoiceLaws_optionASPArr : ArrowChoiceLaws optionASPArr := _.
-  Local Instance ArrowApplyLaws_optionASPArr : ArrowApplyLaws optionASPArr := _.
+  Local Instance ArrowEq_optionAPred : ArrowEq optionAPred := _.
+  Local Instance ArrowLaws_optionAPred : ArrowLaws optionAPred := _.
+  Local Instance ArrowChoiceLaws_optionAPred : ArrowChoiceLaws optionAPred := _.
+  Local Instance ArrowApplyLaws_optionAPred : ArrowApplyLaws optionAPred := _.
 
   Local Instance ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr := _.
   Local Instance ArrowLaws_optionDSLPArr : ArrowLaws optionDSLPArr := _.
@@ -800,17 +800,17 @@ Section ComposedArrowLaws.
   (** Composed-type laws: [stateArrT] applied to the option types above. *)
 
   #[global] Instance ArrowEq_stateOptASP :
-    ArrowEq (stateArrT S optionASPArr) := _.
+    ArrowEq (stateArrT S optionAPred) := _.
   #[global] Instance ArrowLaws_stateOptASP :
-    ArrowLaws (stateArrT S optionASPArr) := _.
+    ArrowLaws (stateArrT S optionAPred) := _.
   #[global] Instance ArrowChoice_stateOptASP :
-    ArrowChoice (stateArrT S optionASPArr) := _.
+    ArrowChoice (stateArrT S optionAPred) := _.
   #[global] Instance ArrowApply_stateOptASP :
-    ArrowApply (stateArrT S optionASPArr) := _.
+    ArrowApply (stateArrT S optionAPred) := _.
   #[global] Instance ArrowChoiceLaws_stateOptASP :
-    ArrowChoiceLaws (stateArrT S optionASPArr) := _.
+    ArrowChoiceLaws (stateArrT S optionAPred) := _.
   #[global] Instance ArrowApplyLaws_stateOptASP :
-    ArrowApplyLaws (stateArrT S optionASPArr) := _.
+    ArrowApplyLaws (stateArrT S optionAPred) := _.
 
   #[global] Instance ArrowEq_stateOptDSLP :
     ArrowEq (stateArrT S optionDSLPArr) := _.

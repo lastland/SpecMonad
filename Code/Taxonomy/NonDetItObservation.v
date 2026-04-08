@@ -38,7 +38,7 @@ Section NonDetItObservationSP.
       reaching any final state (dual to how divergence in WP is the
       absence of termination). *)
   Definition obsRel {A} (m : nditprog S A)
-    : SPArr (unit * S) (option (A * S)) :=
+    : Pred (unit * S) (option (A * S)) :=
     fun '(tt, s) r =>
       match r with
       | Some (a, s') =>

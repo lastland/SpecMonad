@@ -1,6 +1,6 @@
 (** * Predicate transformers and bundled predicate transformer arrows.
 
-    We define the two predicate transformers on [SPArr] relations:
+    We define the two predicate transformers on [Pred] relations:
 
     [asp R pre b = exists a, pre a /\ R a b]   (angelic / existential)
     [dslp R pre b = forall a, R a b -> pre a]  (demonic / universal)
@@ -32,7 +32,7 @@ From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 
 (** Predicate transformer view: strongest postcondition (angelic / existential).
   *)
-Definition asp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
+Definition asp {A B} (R : Pred A B) (pre : A -> Prop) : B -> Prop :=
   fun b => exists a, pre a /\ R a b.
 
 (* [asp] goes from predicate arrow to strongest postcondition arrow; [asp_inv] is
@@ -45,10 +45,10 @@ Definition asp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
 
    TODO: Show that lawful arrow transformers preserve this equivalence.
  *)
-Definition asp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : SPArr A B :=
+Definition asp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : Pred A B :=
   fun a b => pt (fun a' => a = a') b.
 
-Theorem asp_asp_inv : forall {A B} (R : SPArr A B) a b,
+Theorem asp_asp_inv : forall {A B} (R : Pred A B) a b,
     asp_inv (asp R) a b <-> R a b.
 Proof.
   intros. unfold asp_inv, asp. split.
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 (* Cannot prove this for arbitrary [(A -> Prop) -> B -> Prop]. *)
-Theorem asp_inv_asp : forall {A B} (R : SPArr A B) pre b,
+Theorem asp_inv_asp : forall {A B} (R : Pred A B) pre b,
     asp (asp_inv (asp R)) pre b <-> asp R pre b.
 Proof.
   intros. unfold asp_inv, asp. split.
@@ -69,16 +69,16 @@ Proof.
 Qed.
 
 (** Demonic predicate transformer: universal dual of [asp]. *)
-Definition dslp {A B} (R : SPArr A B) (pre : A -> Prop) : B -> Prop :=
+Definition dslp {A B} (R : Pred A B) (pre : A -> Prop) : B -> Prop :=
   fun b => forall a, R a b -> pre a.
 
 (* This shows a different equivalence between predicate arrows and strongest
    postcondition arrows. We can figure this out by "reverse engineering"
    [dslp_dslp_inv], but why does this one make sense? *)
-Definition dslp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : SPArr A B :=
+Definition dslp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : Pred A B :=
   fun a b => forall pre, pt pre b -> pre a.
 
-Theorem dslp_dslp_inv : forall {A B} (R : SPArr A B) a b,
+Theorem dslp_dslp_inv : forall {A B} (R : Pred A B) a b,
     dslp_inv (dslp R) a b <-> R a b.
 Proof.
   intros. unfold dslp_inv, dslp. split.
@@ -86,7 +86,7 @@ Proof.
   - intros. auto.
 Qed.
 
-Theorem dslp_inv_dslp : forall {A B} (R : SPArr A B) pre b,
+Theorem dslp_inv_dslp : forall {A B} (R : Pred A B) pre b,
     dslp (dslp_inv (dslp R)) pre b <-> dslp R pre b.
 Proof.
   intros. unfold dslp_inv, dslp. split.
@@ -114,7 +114,7 @@ Qed.
 Section SPCharacterizations.
 
   Variables A B : Type.
-  Variable R : SPArr A B.
+  Variable R : Pred A B.
 
   Theorem dsp_asp_dslp (pre : A -> Prop) (b : B) :
     ((exists a, R a b) /\ forall a, R a b -> pre a) <->
@@ -149,7 +149,7 @@ End SPCharacterizations.
     combined with [Eq1] from ExtLib. *)
 Record SPRecord (A B : Type) := mkSPRecord {
   sp_pt : (A -> Prop) -> B -> Prop ;
-  sp_rel : SPArr A B
+  sp_rel : Pred A B
 }.
 Arguments mkSPRecord {A B}.
 Arguments sp_pt {A B}.
@@ -169,7 +169,7 @@ Definition PureASPostArr (A B : Type) : Type :=
     forall pre b, sp_pt d pre b <-> asp (sp_rel d) pre b }.
 
 (** Smart constructor: wrap a relation with [asp]. *)
-#[program] Definition mkASP {A B} (R : SPArr A B) : PureASPostArr A B :=
+#[program] Definition mkASP {A B} (R : Pred A B) : PureASPostArr A B :=
   mkSPRecord (asp R) R.
 Next Obligation. reflexivity. Qed.
 
@@ -248,7 +248,7 @@ Section PureASPostArr.
   (** *** ArrowChoice instance for [PureASPostArr]                    *)
   (* -------------------------------------------------------------- *)
 
-  Definition left_rel {A B C} (R : SPArr A B) : SPArr (A + C) (B + C) :=
+  Definition left_rel {A B C} (R : Pred A B) : Pred (A + C) (B + C) :=
     fun x y => match x, y with
       | inl a, inl b => R a b
       | inr c, inr c' => c = c'
@@ -293,7 +293,7 @@ Definition PureDSLPostArr (A B : Type) : Type :=
     forall pre b, sp_pt d pre b <-> dslp (sp_rel d) pre b }.
 
 (** Smart constructor: wrap a relation with [dslp]. *)
-#[program] Definition mkDSLP {A B} (R : SPArr A B) : PureDSLPostArr A B :=
+#[program] Definition mkDSLP {A B} (R : Pred A B) : PureDSLPostArr A B :=
   mkSPRecord (dslp R) R.
 Next Obligation. reflexivity. Qed.
 
@@ -400,12 +400,12 @@ End PureDSLPostArr.
 (** ** Angelic and demonic option transformers                        *)
 (* ================================================================= *)
 
-(** [optionASPArr] and [optionDSLPArr] get their [Arrow], [ArrowChoice],
+(** [optionAPred] and [optionDSLPArr] get their [Arrow], [ArrowChoice],
     and [ArrowApply] instances from the generic transformers in
     [OptionArrowT.v], via [ArrowChoice_PureASPostArr] and
     [ArrowChoice_PureDSLPostArr]. *)
 
-Definition optionASPArr := optionArrT PureASPostArr.
+Definition optionAPred := optionArrT PureASPostArr.
 Definition optionDSLPArr := optionArrT PureDSLPostArr.
 
 (* ================================================================= *)
@@ -419,7 +419,7 @@ Section ComposedTypes.
   (** [ASPostArr S A] is the angelic strongest postcondition arrow.
       [ASPostArr S A = PureASPostArr (unit * S) (option (A * S))] *)
   Definition ASPostArr (A : Type) : Type :=
-    stateArrT S optionASPArr unit A.
+    stateArrT S optionAPred unit A.
 
   (** [DSLPostArr S A] is the demonic strongest liberal postcondition arrow.
       [DSLPostArr S A = PureDSLPostArr (unit * S) (option (A * S))] *)

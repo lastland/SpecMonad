@@ -1,7 +1,7 @@
 (** * Arrow typeclasses, laws, and the relational SP arrow.
 
     We define Hughes-style Arrow typeclasses with their laws,
-    then instantiate them with [SPArr A B = A -> B -> Prop],
+    then instantiate them with [Pred A B = A -> B -> Prop],
     the category of relations interpreted as forward predicate
     transformers (strongest postcondition arrows).
 
@@ -213,21 +213,21 @@ Class ArrowLoopLaws (arr : Type -> Type -> Type)
 }.
 
 (* ================================================================= *)
-(** ** [SPArr]: The relational strongest-postcondition arrow          *)
+(** ** [Pred]: The relational strongest-postcondition arrow          *)
 (* ================================================================= *)
 
-(** [SPArr A B] is a relation from [A] to [B].  The predicate
+(** [Pred A B] is a relation from [A] to [B].  The predicate
     transformer view ([sp], [dp]) is defined in [SPostArr.v]. *)
 
-Definition SPArr (A B : Type) : Type := A -> B -> Prop.
+Definition Pred (A B : Type) : Type := A -> B -> Prop.
 
 (* ================================================================= *)
-(** ** [SPArr] instances                                              *)
+(** ** [Pred] instances                                              *)
 (* ================================================================= *)
 
-Section SPArrInstances.
+Section PredInstances.
 
-  Lemma SPArr_eq {A B} (f g : SPArr A B) :
+  Lemma Pred_eq {A B} (f g : Pred A B) :
     (forall a b, f a b <-> g a b) -> f = g.
   Proof.
     intros H. extensionality a. extensionality b.
@@ -235,12 +235,12 @@ Section SPArrInstances.
   Qed.
 
   #[global]
-  Instance ArrowEq_SPArr : ArrowEq SPArr := {
-    arrow_eq := fun A B => @eq (SPArr A B)
+  Instance ArrowEq_Pred : ArrowEq Pred := {
+    arrow_eq := fun A B => @eq (Pred A B)
   }.
 
   #[global]
-  Instance Arrow_SPArr : Arrow SPArr := {
+  Instance Arrow_Pred : Arrow Pred := {
     arr_pure := fun A B f a b => f a = b ;
     arr_comp := fun A B C f g a c => exists b, f a b /\ g b c ;
     arr_first := fun A B C f p q =>
@@ -248,7 +248,7 @@ Section SPArrInstances.
   }.
 
   #[global]
-  Instance ArrowChoice_SPArr : ArrowChoice SPArr := {
+  Instance ArrowChoice_Pred : ArrowChoice Pred := {
     arr_left := fun A B C f x y =>
       match x, y with
       | inl a, inl b => f a b
@@ -258,23 +258,23 @@ Section SPArrInstances.
   }.
 
   #[global]
-  Instance ArrowApply_SPArr : ArrowApply SPArr := {
+  Instance ArrowApply_Pred : ArrowApply Pred := {
     arr_app := fun A B p b =>
       let '(f, a) := p in f a b
   }.
 
   #[global]
-  Instance ArrowLoop_SPArr : ArrowLoop SPArr := {
+  Instance ArrowLoop_Pred : ArrowLoop Pred := {
     arr_loop := fun A B C f a b => exists c, f (a, c) (b, c)
   }.
 
-  (** Helper: [arr_second] simplifies for [SPArr]. *)
-  Lemma arr_second_SPArr {A B C} (f : SPArr A B) :
+  (** Helper: [arr_second] simplifies for [Pred]. *)
+  Lemma arr_second_Pred {A B C} (f : Pred A B) :
     @arr_second _ _ A B C f =
     fun (p : C * A) (q : C * B) =>
       let '(c, a) := p in let '(c', b) := q in f a b /\ c = c'.
   Proof.
-    apply SPArr_eq; intros [c a] [c' b].
+    apply Pred_eq; intros [c a] [c' b].
     unfold arr_second, arr_comp, arr_first, arr_pure, swap; cbn.
     split.
     - intros [[a0 c0] [Heq [[b1 c1] [Hf Hswap]]]].
@@ -284,20 +284,20 @@ Section SPArrInstances.
       exists (b, c'). simpl. split; [exact (conj Hf eq_refl)|reflexivity].
   Qed.
 
-  Create HintDb SPArr_ops.
+  Create HintDb Pred_ops.
   #[local] Hint Unfold arr_id arr_comp arr_first arr_pure arr_loop
-    arr_left arr_app assoc_prod unassoc_prod swap : SPArr_ops.
+    arr_left arr_app assoc_prod unassoc_prod swap : Pred_ops.
 
-  Ltac unfold_SPArr :=
-    autounfold with SPArr_ops; cbn;
-    try rewrite arr_second_SPArr.
+  Ltac unfold_Pred :=
+    autounfold with Pred_ops; cbn;
+    try rewrite arr_second_Pred.
 
   (* -------------------------------------------------------------- *)
   (** *** ArrowLaws                                                   *)
   (* -------------------------------------------------------------- *)
 
-  Local Ltac unfold_SPArr_full :=
-    autounfold with SPArr_ops; unfold Arrow_SPArr; simpl;
+  Local Ltac unfold_Pred_full :=
+    autounfold with Pred_ops; unfold Arrow_Pred; simpl;
     repeat match goal with [p : _ * _ |- _] => destruct p end;
     repeat match goal with
     | [H : context[let '(_, _) := ?p in _] |- _] => destruct p
@@ -305,29 +305,29 @@ Section SPArrInstances.
     end.
 
   #[global]
-  Instance ArrowLaws_SPArr : ArrowLaws SPArr.
+  Instance ArrowLaws_Pred : ArrowLaws Pred.
   Proof.
     constructor; intros.
-    1-4: apply SPArr_eq; intros; unfold_SPArr_full;
+    1-4: apply Pred_eq; intros; unfold_Pred_full;
          firstorder (subst; eauto; try congruence).
     - (* first_pure *)
-      apply SPArr_eq; intros [? ?] [? ?]; unfold_SPArr_full;
+      apply Pred_eq; intros [? ?] [? ?]; unfold_Pred_full;
       firstorder congruence.
     - (* first_comp *)
-      apply SPArr_eq; intros [? ?] [? ?]; unfold_SPArr_full.
+      apply Pred_eq; intros [? ?] [? ?]; unfold_Pred_full.
       split.
       + intros [[b [Hf Hg]] Heq]. subst.
         exists (b, d0); simpl; eauto.
       + intros [[b0 d1] [H1 H2]]; simpl in *.
         destruct H1, H2; subst; split; [exists b0|]; eauto.
     - (* first_fst *)
-      apply SPArr_eq; intros [? ?] ?; unfold_SPArr_full.
+      apply Pred_eq; intros [? ?] ?; unfold_Pred_full.
       split.
       + intros [[b0 c0] [H1 H2]]; simpl in *.
         destruct H1; subst; exists a; eauto.
       + intros [a0 [? ?]]; subst. exists (b, c); simpl; eauto.
     - (* first_assoc *)
-      apply SPArr_eq; intros [[? ?] ?] [? [? ?]]; unfold_SPArr_full.
+      apply Pred_eq; intros [[? ?] ?] [? [? ?]]; unfold_Pred_full.
       split.
       + intros [[[? ?] ?] [H1 H2]]; simpl in *.
         destruct H1 as [[? ?] ?]; inversion H2; subst.
@@ -335,9 +335,9 @@ Section SPArrInstances.
       + intros [[? [? ?]] [H1 H2]]; simpl in *.
         inversion H1; subst. destruct H2 as [? H2]; inversion H2; subst.
         eexists (_, _, _); simpl; eauto.
-    - unfold Proper, respectful, arrow_eq, ArrowEq_SPArr;
+    - unfold Proper, respectful, arrow_eq, ArrowEq_Pred;
       intros; subst; reflexivity.
-    - unfold Proper, respectful, arrow_eq, ArrowEq_SPArr;
+    - unfold Proper, respectful, arrow_eq, ArrowEq_Pred;
       intros; subst; reflexivity.
   Qed.
 
@@ -346,14 +346,14 @@ Section SPArrInstances.
   (* -------------------------------------------------------------- *)
 
   #[global]
-  Instance ArrowChoiceLaws_SPArr : ArrowChoiceLaws SPArr.
+  Instance ArrowChoiceLaws_Pred : ArrowChoiceLaws Pred.
   Proof.
     constructor; intros.
     - (* left_pure *)
-      apply SPArr_eq; intros [a|c] [b|c']; unfold_SPArr;
+      apply Pred_eq; intros [a|c] [b|c']; unfold_Pred;
       unfold sum_bimap; firstorder congruence.
     - (* left_comp *)
-      apply SPArr_eq; intros [a|d] [c|d']; unfold_SPArr.
+      apply Pred_eq; intros [a|d] [c|d']; unfold_Pred.
       + split.
         * intros [b [Hf Hg]]. exists (inl b); eauto.
         * intros [x [H1 H2]]; destruct x as [b|d0];
@@ -364,7 +364,7 @@ Section SPArrInstances.
         * intros Heq; subst; exists (inr d'); eauto.
         * intros [[b|d0] [H1 H2]]; simpl in *; [contradiction | congruence].
     - (* left_inl *)
-      apply SPArr_eq; intros a [b|c]; unfold_SPArr.
+      apply Pred_eq; intros a [b|c]; unfold_Pred.
       + split.
         * intros [b0 [Hf Heq]]; injection Heq as ->;
           exists (inl a); eauto.
@@ -375,7 +375,7 @@ Section SPArrInstances.
         * intros [[a0|c0] [Heq Hf]]; [injection Heq as ->; simpl in *; destruct Hf |
           discriminate Heq].
     - (* left_assoc *)
-      apply SPArr_eq; intros [[a|c]|d] [b|[c'|d']]; unfold_SPArr;
+      apply Pred_eq; intros [[a|c]|d] [b|[c'|d']]; unfold_Pred;
       unfold assoc_sum; (split; intro H; destruct H as [x [H1 H2]];
         (destruct x as [[?|?]|?] || destruct x as [?|[?|?]]);
         simpl in *; try contradiction; try discriminate; subst;
@@ -387,14 +387,14 @@ Section SPArrInstances.
                   | exists (inr (inl c')) | exists (inl (inr c'))
                   | exists (inr (inr d')) | exists (inr d') ]; eauto.
     - (* left_inr *)
-      apply SPArr_eq; intros c y; unfold_SPArr.
+      apply Pred_eq; intros c y; unfold_Pred.
       split.
       + intros [x [Hinr Hleft]]. subst x.
         destruct y as [b|c']; simpl in Hleft; [contradiction | f_equal; exact Hleft].
       + intros Heq. subst y. exists (inr c). simpl. auto.
     - (* left_natural *)
-      apply SPArr_eq. intros x y.
-      destruct x as [a0|c0]; destruct y as [b0|d0]; unfold_SPArr;
+      apply Pred_eq. intros x y.
+      destruct x as [a0|c0]; destruct y as [b0|d0]; unfold_Pred;
       unfold sum_bimap; simpl.
       all: split; intros [z [H1 H2]]; destruct z; simpl in *;
            try contradiction; try discriminate.
@@ -405,8 +405,8 @@ Section SPArrInstances.
       1-2: eexists (inl _); simpl; eauto.
       1-2: eexists (inr _); simpl; eauto.
     - (* first_left_dist *)
-      apply SPArr_eq. intros [[a0|c0] d0] [[b0 d1]|[c1 d1]];
-      unfold_SPArr; unfold sum_prod_dist; simpl.
+      apply Pred_eq. intros [[a0|c0] d0] [[b0 d1]|[c1 d1]];
+      unfold_Pred; unfold sum_prod_dist; simpl.
       all: split; intro H.
       all: repeat match goal with
         | [H : exists _, _ |- _] => destruct H
@@ -430,7 +430,7 @@ Section SPArrInstances.
       -- exists (inr (c1, d1)). auto.
       -- exists (inr c1, d1). simpl. auto.
     - (* left_proper *)
-      unfold Proper, respectful, arrow_eq, ArrowEq_SPArr;
+      unfold Proper, respectful, arrow_eq, ArrowEq_Pred;
       intros; subst; reflexivity.
   Qed.
 
@@ -439,10 +439,10 @@ Section SPArrInstances.
   (* -------------------------------------------------------------- *)
 
   #[global]
-  Instance ArrowApplyLaws_SPArr : ArrowApplyLaws SPArr.
+  Instance ArrowApplyLaws_Pred : ArrowApplyLaws Pred.
   Proof.
     constructor; intros.
-    apply SPArr_eq; intros a b; unfold_SPArr.
+    apply Pred_eq; intros a b; unfold_Pred.
     split.
     - intros [[g a'] [Heq Happ]]. inversion Heq; subst. exact Happ.
     - intros Hf. exists (f, a). exact (conj eq_refl Hf).
@@ -453,30 +453,30 @@ Section SPArrInstances.
   (* -------------------------------------------------------------- *)
 
   #[global]
-  Instance ArrowLoopLaws_SPArr : ArrowLoopLaws SPArr.
+  Instance ArrowLoopLaws_Pred : ArrowLoopLaws Pred.
   Proof.
-    constructor; intros; apply SPArr_eq; intros.
+    constructor; intros; apply Pred_eq; intros.
     - (* loop_left_tightening *)
-      unfold_SPArr. split.
+      unfold_Pred. split.
       + intros [c [[b0 c0] [[Hh Heq] Hf]]]. subst c0.
         exists b0; split; [exact Hh | exists c; exact Hf].
       + intros [b0 [Hh [c Hf]]].
         exists c; exists (b0, c); split; [split; [exact Hh | reflexivity] | exact Hf].
     - (* loop_right_tightening *)
-      unfold_SPArr. split.
+      unfold_Pred. split.
       + intros [d [[b0 d0] [Hf [Hg Heq]]]]. subst d0.
         exists b0; split; [exists d; exact Hf | exact Hg].
       + intros [b0 [[d Hf] Hg]].
         exists d; exists (b0, d); split; [exact Hf | split; [exact Hg | reflexivity]].
     - (* loop_sliding *)
-      rewrite !arr_second_SPArr.
-      unfold arr_loop, arr_comp, arr_pure, Arrow_SPArr; simpl. split.
+      rewrite !arr_second_Pred.
+      unfold arr_loop, arr_comp, arr_pure, Arrow_Pred; simpl. split.
       + intros [c [[b0 c0] [Hf [Hk Heq]]]]. subst b0.
         subst c. exists c0; exists (a, k c0); split; [split; reflexivity | exact Hf].
       + intros [c [[a0 c0] [[Hk Heq] Hf]]]. subst a0.
         exists c0; exists (b, c); split; [exact Hf | split; [exact Hk | reflexivity]].
     - (* loop_vanishing *)
-      unfold arr_loop, arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_SPArr; simpl.
+      unfold arr_loop, arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_Pred; simpl.
       split.
       + intros [c [d Hf]]. exists (c, d); exists ((a, c), d); split; [reflexivity|].
         exists ((b, c), d); split; [exact Hf | reflexivity].
@@ -485,9 +485,9 @@ Section SPArrInstances.
         destruct q as [[? ?] ?]; simpl in Heq2; inversion Heq2; subst.
         exists c; exists d; exact Hf.
     - (* loop_superposing *)
-      rewrite arr_second_SPArr.
+      rewrite arr_second_Pred.
       unfold arr_loop; cbn.
-      unfold arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_SPArr, swap; cbn.
+      unfold arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_Pred, swap; cbn.
       destruct a as [c a0]; destruct b as [c' b0]. split.
       + intros [[d Hf] Heq]. subst c'.
         exists d; exists (c, (a0, d)); split; [reflexivity|].
@@ -505,7 +505,7 @@ Section SPArrInstances.
         split; [eexists; exact Hf | reflexivity].
   Qed.
 
-End SPArrInstances.
+End PredInstances.
 
 (* ================================================================= *)
 (** ** Arrow Transformer                                              *)

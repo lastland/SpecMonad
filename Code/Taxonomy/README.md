@@ -23,7 +23,7 @@ exceptions.
 ## Strongest postcondition arrows (`SPost.v`)
 
 `SPost.v` defines predicate transformer *arrows* using binary relations
-`A -> B -> Prop` (`SPArr`).
+`A -> B -> Prop` (`Pred`).
 
 Two variants share a common `SPRecord` (bundles a predicate transformer with
 its underlying relation) and differ only in the correctness condition:

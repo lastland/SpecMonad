@@ -64,7 +64,7 @@ Section NDObservationSP.
   (** Reachability relation for [ndprog]: initial state [(tt, s0)] reaches
       outcome [r] iff [r] is in the outcome set. *)
   Definition obsRel {A} (m : ndprog S A)
-    : SPArr (unit * S) (option (A * S)) :=
+    : Pred (unit * S) (option (A * S)) :=
     fun '(_, s0) r => unOptionT (runStateT m s0) r.
 
   Definition obsASP {A} (m : ndprog S A) : ASPostArr S A :=

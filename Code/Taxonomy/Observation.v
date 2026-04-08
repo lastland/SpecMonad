@@ -118,7 +118,7 @@ Section ObservationSP.
   (** Reachability relation for a deterministic [prog]: an initial state
       [(tt, s)] reaches outcome [r] iff the computation converges to [ret r]. *)
   Definition obsRel {A} (m : prog S A)
-    : SPArr (unit * S) (option (A * S)) :=
+    : Pred (unit * S) (option (A * S)) :=
     fun '(tt, s) r => eutt eq (unOptionT (runStateT m s)) (ret r).
 
   Definition obsASP {A} (m : prog S A) : ASPostArr S A :=

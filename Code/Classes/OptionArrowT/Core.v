@@ -6,7 +6,7 @@
     A generic [Arrow] instance is provided for any base arrow with
     [ArrowChoice], using the encoding [option B ≅ B + unit].
 
-    Concrete instances for [optionArrT SPArr] are also given. *)
+    Concrete instances for [optionArrT Pred] are also given. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality
