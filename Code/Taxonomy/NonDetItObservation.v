@@ -10,7 +10,7 @@
     and [obsAWP] / [obsAWLP] (angelic total / partial) map into
     [ProgWP S A].  Inclusion proofs: Theorem 3.7. *)
 
-From Coq Require Import Lia.
+From Coq Require Import Lia Classical_Prop.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
@@ -21,33 +21,139 @@ From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg WP SPost.
 Import MonadNotation.
 Open Scope monad_scope.
 
-Section NonDetItObservation.
+(* ================================================================= *)
+(** ** SP observations                                                *)
+(* ================================================================= *)
+
+Section NonDetItObservationSP.
 
   Variable S : Type.
 
-  (** Underlying relation: angelic SP.
+  (** Reachability relation.
 
       For [Some (a, s')]: there is a converging path.
-      For [None]: there is an exception path OR a divergent path. *)
-  Definition obsRelASP {A} (m : nditprog S A)
+      For [None]: there is an exception path.
+
+      Divergence is NOT a reachable final state — it is the absence of
+      reaching any final state (dual to how divergence in WP is the
+      absence of termination). *)
+  Definition obsRel {A} (m : nditprog S A)
     : SPArr (unit * S) (option (A * S)) :=
     fun '(tt, s) r =>
       match r with
       | Some (a, s') =>
           unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
       | None =>
-          unOptionT (unOptionT (runStateT m s)) (Some None) \/
-          unOptionT (unOptionT (runStateT m s)) None
+          unOptionT (unOptionT (runStateT m s)) (Some None)
       end.
 
-  (** Wrapped as a predicate transformer arrow. *)
-  Definition obsArrowASP {A} (m : nditprog S A) : ASPostArr S A :=
-    mkASP (obsRelASP m).
+  (** Angelic strongest postcondition (total). *)
+  Definition obsASP {A} (m : nditprog S A) : ASPostArr S A :=
+    mkASP (obsRel m).
 
-End NonDetItObservation.
+  (** Demonic strongest liberal postcondition. *)
+  Definition obsDSLP {A} (m : nditprog S A) : DSLPostArr S A :=
+    mkDSLP (obsRel m).
 
-Arguments obsRelASP {_} {_}.
-Arguments obsArrowASP {_} {_}.
+  #[program] Definition obsDSP {A} (m : nditprog S A)
+    (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
+    sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
+
+  #[program] Definition obsASLP {A} (m : nditprog S A)
+    (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
+    sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Theorem 3.7: Square inclusions                             *)
+  (* -------------------------------------------------------------- *)
+
+  #[program] Theorem obsDSP_sub_obsASP {A} (m : nditprog S A) pre r :
+    obsDSP m pre r -> sp_pt (obsASP m) pre r.
+  Proof. intros [H _]. exact H. Qed.
+
+  #[program] Theorem obsDSP_sub_obsDSLP {A} (m : nditprog S A) pre r :
+    obsDSP m pre r -> sp_pt (obsDSLP m) pre r.
+  Proof. intros [_ H]. exact H. Qed.
+
+  #[program] Theorem obsASP_sub_obsASLP {A} (m : nditprog S A) pre r :
+    sp_pt (obsASP m) pre r -> obsASLP m pre r.
+  Proof. intro H. left. exact H. Qed.
+
+  #[program] Theorem obsDSLP_sub_obsASLP {A} (m : nditprog S A) pre r :
+    sp_pt (obsDSLP m) pre r -> obsASLP m pre r.
+  Proof. intro H. right. exact H. Qed.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Characterizations (paper Definitions 3.5 and 3.6)          *)
+  (* -------------------------------------------------------------- *)
+
+  Corollary obsDSP_char {A} (m : nditprog S A) pre r :
+    obsDSP m pre r <->
+    (exists sigma, obsRel m sigma r) /\
+    (forall sigma, obsRel m sigma r -> pre sigma).
+  Proof.
+    unfold obsDSP, obsASP, obsDSLP; simpl.
+    symmetry. apply dsp_asp_dslp.
+  Qed.
+
+  Corollary obsASLP_char {A} (m : nditprog S A) pre r :
+    obsASLP m pre r <->
+    (exists sigma, pre sigma /\ obsRel m sigma r) \/
+    ~ (exists sigma, obsRel m sigma r).
+  Proof.
+    unfold obsASLP, obsASP, obsDSLP; simpl.
+    symmetry. apply aslp_asp_dslp.
+  Qed.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Theorem 3.8: Contrapositive transformers                   *)
+  (* -------------------------------------------------------------- *)
+
+  #[program] Theorem obsASP_contrapositive {A} (m : nditprog S A) pre r :
+    sp_pt (obsASP m) pre r <->
+    ~ sp_pt (obsDSLP m) (fun x => ~ pre x) r.
+  Proof.
+    unfold obsASP, obsDSLP; simpl.
+    unfold asp, dslp. split.
+    - intros [a [Hpre Hrel]] Hall.
+      exact (Hall a Hrel Hpre).
+    - intro Hnn.
+      apply NNPP. intro Habs.
+      apply Hnn. intros a Hrel Hpre.
+      apply Habs. exists a. exact (conj Hpre Hrel).
+  Qed.
+
+  Theorem obsDSP_contrapositive {A} (m : nditprog S A) pre r :
+    obsDSP m pre r <->
+    ~ obsASLP m (fun x => ~ pre x) r.
+  Proof.
+    unfold obsDSP, obsASLP, obsASP, obsDSLP.
+    simpl. unfold asp, dslp.
+    split.
+    - intros [[a [Hpre Hrel]] Hall] [Hasp | Hdslp].
+      + destruct Hasp as [a' [Hnpre Hrel']].
+        exact (Hnpre (Hall a' Hrel')).
+      + exact (Hdslp a Hrel Hpre).
+    - intro Hnaslp.
+      assert (Hnasp : ~ exists a, ~ pre a /\ obsRel m a r)
+        by (intro; apply Hnaslp; left; assumption).
+      assert (Hndslp : ~ forall a, obsRel m a r -> ~ pre a)
+        by (intro; apply Hnaslp; right; assumption).
+      split.
+      + apply NNPP. intro Habs. apply Hndslp.
+        intros a Hrel Hpre. apply Habs.
+        exists a. exact (conj Hpre Hrel).
+      + intros a Hrel. apply NNPP. intro Hn.
+        apply Hnasp. exists a. exact (conj Hn Hrel).
+  Qed.
+
+End NonDetItObservationSP.
+
+Arguments obsRel {_} {_}.
+Arguments obsASP {_} {_}.
+Arguments obsDSLP {_} {_}.
+Arguments obsDSP {_} {_}.
+Arguments obsASLP {_} {_}.
 
 (* ================================================================= *)
 (** ** WP observations                                                *)
@@ -141,25 +247,23 @@ Example progA : nditprog nat unit :=
 (** All reachable converging results have state >= 42. *)
 Theorem progA_all :
   forall s r,
-    obsRelASP progA (tt, s) r ->
+    obsRel progA (tt, s) r ->
     match r with
     | Some (_, s') => s' >= 42
     | None => False
     end.
 Proof.
-  intros s [[] |] H; cbn in H.
-  - sauto.
-  - destruct H as [H | H]; sauto.
+  intros s [[] |] H; cbn in H; sauto.
 Qed.
 
 (** State 42 is reachable. *)
 Theorem progA_42 :
-  forall s, obsRelASP progA (tt, s) (Some (tt, 42)).
+  forall s, obsRel progA (tt, s) (Some (tt, 42)).
 Proof. intros. cbn. sauto. Qed.
 
 (** State 43 is also reachable. *)
 Theorem progA_43 :
-  forall s, obsRelASP progA (tt, s) (Some (tt, 43)).
+  forall s, obsRel progA (tt, s) (Some (tt, 43)).
 Proof. intros. cbn. sauto. Qed.
 
 (* ================================================================= *)
@@ -173,14 +277,16 @@ Example progB : nditprog nat unit :=
 
 (** State 42 is reachable (via the converging branch). *)
 Theorem progB_42 :
-  forall s, obsRelASP progB (tt, s) (Some (tt, 42)).
+  forall s, obsRel progB (tt, s) (Some (tt, 42)).
 Proof. intros. cbn. sauto. Qed.
 
-(** Failure (divergence) is reachable (via the spinning branch). *)
-Theorem progB_None :
-  forall s, obsRelASP progB (tt, s) None.
+(** Failure ([None]) is NOT reachable: the divergent branch does not
+    contribute an exception, and divergence is the absence of reaching
+    any final state. *)
+Theorem progB_not_None :
+  forall s, ~ obsRel progB (tt, s) None.
 Proof.
-  intros. cbn. right. sauto.
+  intros s H. cbn in H. sauto.
 Qed.
 
 (* ================================================================= *)
@@ -353,3 +459,141 @@ Section NDItWPInclusions.
   Qed.
 
 End NDItWPInclusions.
+
+(* ================================================================= *)
+(** ** SP examples: the four reachability classes                    *)
+(* ================================================================= *)
+
+(** Program: [s <- get; orP (put (s + 1)) (put 42)]
+    From state s, outcomes are: {(tt, s+1), (tt, 42)}.
+    - [Some (tt, 1)] is exclusively reachable from s=0 (class 1)
+    - [Some (tt, 42)] is reachable from all states (class 2)
+    - [None] (exception) is unreachable (class 3)
+    - [Some (tt, 99)] is exclusively reachable from s=98 (class 4) *)
+
+Example progEx : nditprog nat unit :=
+  s <- get ;;
+  orP _ (put (s + 1)) (put 42).
+
+Definition P0 : unit * nat -> Prop := fun '(tt, s) => s = 0.
+
+(** -- Class 1: exclusively reachable from P — all four include it -- *)
+
+#[program] Theorem progEx_asp_1 :
+  sp_pt (obsASP progEx) P0 (Some (tt, 1)).
+Proof.
+  unfold obsASP, P0. simpl proj1_sig. unfold asp.
+  exists (tt, 0). split; [reflexivity|].
+  unfold obsRel. cbn.
+  sauto.
+Qed.
+
+#[program] Theorem progEx_dslp_1 :
+  sp_pt (obsDSLP progEx) P0 (Some (tt, 1)).
+Proof.
+  unfold obsDSLP, P0. simpl proj1_sig. unfold dslp.
+  intros [[] s] Hrel. unfold obsRel in Hrel. cbn in Hrel.
+  f_equal. f_equal. sauto lq: on.
+Qed.
+
+Theorem progEx_dsp_1 :
+  obsDSP progEx P0 (Some (tt, 1)).
+Proof.
+  split; [exact progEx_asp_1 | exact progEx_dslp_1].
+Qed.
+
+Theorem progEx_aslp_1 :
+  obsASLP progEx P0 (Some (tt, 1)).
+Proof. left. exact progEx_asp_1. Qed.
+
+(** -- Class 2: reachable from P and ¬P — asp and aslp include,
+       dsp and dslp exclude -- *)
+
+#[program] Theorem progEx_asp_42 :
+  sp_pt (obsASP progEx) P0 (Some (tt, 42)).
+Proof.
+  unfold obsASP, P0. simpl proj1_sig. unfold asp.
+  exists (tt, 0). split; [reflexivity|].
+  unfold obsRel. cbn. sauto.
+Qed.
+
+#[program] Theorem progEx_dslp_not_42 :
+  ~ sp_pt (obsDSLP progEx) P0 (Some (tt, 42)).
+Proof.
+  unfold obsDSLP, P0. simpl proj1_sig. unfold dslp.
+  intro H. specialize (H (tt, 1)).
+  assert (Hreach : obsRel progEx (tt, 1) (Some (tt, 42))).
+  { unfold obsRel. cbn. sauto. }
+  specialize (H Hreach). simpl in H. discriminate.
+Qed.
+
+Theorem progEx_dsp_not_42 :
+  ~ obsDSP progEx P0 (Some (tt, 42)).
+Proof.
+  intros [_ H]. exact (progEx_dslp_not_42 H).
+Qed.
+
+Theorem progEx_aslp_42 :
+  obsASLP progEx P0 (Some (tt, 42)).
+Proof. left. exact progEx_asp_42. Qed.
+
+(** -- Class 3: unreachable — dslp and aslp include,
+       asp and dsp exclude -- *)
+
+#[program] Theorem progEx_asp_not_None :
+  ~ sp_pt (obsASP progEx) P0 None.
+Proof.
+  unfold obsASP, P0. simpl proj1_sig. unfold asp.
+  intros [[[] s] [HP Hrel]].
+  unfold obsRel in Hrel. cbn in Hrel. sauto.
+Qed.
+
+#[program] Theorem progEx_dslp_None :
+  sp_pt (obsDSLP progEx) P0 None.
+Proof.
+  unfold obsDSLP, P0. simpl proj1_sig. unfold dslp.
+  intros [[] s] Hrel.
+  (** None (exception) is unreachable — the ∀ is vacuously true. *)
+  unfold obsRel in Hrel. cbn in Hrel. sauto.
+Qed.
+
+Theorem progEx_dsp_not_None :
+  ~ obsDSP progEx P0 None.
+Proof.
+  intros [H _]. exact (progEx_asp_not_None H).
+Qed.
+
+Theorem progEx_aslp_None :
+  obsASLP progEx P0 None.
+Proof. right. exact progEx_dslp_None. Qed.
+
+(** -- Class 4: exclusively reachable from ¬P — none include -- *)
+
+#[program] Theorem progEx_asp_not_99 :
+  ~ sp_pt (obsASP progEx) P0 (Some (tt, 99)).
+Proof.
+  unfold obsASP, P0. simpl proj1_sig. unfold asp.
+  intros [[[] s] [HP Hrel]]. subst.
+  unfold obsRel in Hrel. cbn in Hrel. sauto lq: on.
+Qed.
+
+#[program] Theorem progEx_dslp_not_99 :
+  ~ sp_pt (obsDSLP progEx) P0 (Some (tt, 99)).
+Proof.
+  unfold obsDSLP, P0. simpl proj1_sig. unfold dslp.
+  intro H. specialize (H (tt, 98)).
+  assert (Hreach : obsRel progEx (tt, 98) (Some (tt, 99))).
+  { unfold obsRel. cbn. sauto. }
+  specialize (H Hreach). simpl in H. discriminate.
+Qed.
+
+Theorem progEx_dsp_not_99 :
+  ~ obsDSP progEx P0 (Some (tt, 99)).
+Proof. intros [H _]. exact (progEx_asp_not_99 H). Qed.
+
+Theorem progEx_aslp_not_99 :
+  ~ obsASLP progEx P0 (Some (tt, 99)).
+Proof.
+  intros [H | H]; [exact (progEx_asp_not_99 H) |
+                    exact (progEx_dslp_not_99 H)].
+Qed.

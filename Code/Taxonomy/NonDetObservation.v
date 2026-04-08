@@ -12,6 +12,7 @@ From ExtLib Require Import
   StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
+From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy Require Import NonDetProg WP SPost.
 
 Import MonadNotation.
@@ -60,22 +61,71 @@ Section NDObservationSP.
 
   Variable S : Type.
 
+  (** Reachability relation for [ndprog]: initial state [(tt, s0)] reaches
+      outcome [r] iff [r] is in the outcome set. *)
+  Definition obsRel {A} (m : ndprog S A)
+    : SPArr (unit * S) (option (A * S)) :=
+    fun '(_, s0) r => unOptionT (runStateT m s0) r.
+
   Definition obsASP {A} (m : ndprog S A) : ASPostArr S A :=
-    mkASP (fun '(_, s0) r => unOptionT (runStateT m s0) r).
+    mkASP (obsRel m).
 
   Definition obsDSLP {A} (m : ndprog S A) : DSLPostArr S A :=
-    mkDSLP (fun '(_, s0) r => unOptionT (runStateT m s0) r). 
+    mkDSLP (obsRel m).
 
   #[program] Definition obsASLP {A} (m : ndprog S A) :
     (unit * S -> Prop) -> (option (A * S) -> Prop) :=
-    fun pre r => sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r. 
+    fun pre r => sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
 
   #[program] Definition obsDSP {A} (m : ndprog S A) :
     (unit * S -> Prop) -> (option (A * S) -> Prop) :=
     fun pre r => sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
-  
+
+  (* -------------------------------------------------------------- *)
+  (** *** Theorem 3.7: Square inclusions                             *)
+  (* -------------------------------------------------------------- *)
+
+  #[program] Theorem obsDSP_sub_obsASP {A} (m : ndprog S A) pre r :
+    obsDSP m pre r -> sp_pt (obsASP m) pre r.
+  Proof. intros [H _]. exact H. Qed.
+
+  #[program] Theorem obsDSP_sub_obsDSLP {A} (m : ndprog S A) pre r :
+    obsDSP m pre r -> sp_pt (obsDSLP m) pre r.
+  Proof. intros [_ H]. exact H. Qed.
+
+  #[program] Theorem obsASP_sub_obsASLP {A} (m : ndprog S A) pre r :
+    sp_pt (obsASP m) pre r -> obsASLP m pre r.
+  Proof. intro H. left. exact H. Qed.
+
+  #[program] Theorem obsDSLP_sub_obsASLP {A} (m : ndprog S A) pre r :
+    sp_pt (obsDSLP m) pre r -> obsASLP m pre r.
+  Proof. intro H. right. exact H. Qed.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Characterizations (paper Definitions 3.5 and 3.6)          *)
+  (* -------------------------------------------------------------- *)
+
+  Corollary obsDSP_char {A} (m : ndprog S A) pre r :
+    obsDSP m pre r <->
+    (exists sigma, obsRel m sigma r) /\
+    (forall sigma, obsRel m sigma r -> pre sigma).
+  Proof.
+    unfold obsDSP, obsASP, obsDSLP; simpl.
+    symmetry. apply dsp_asp_dslp.
+  Qed.
+
+  Corollary obsASLP_char {A} (m : ndprog S A) pre r :
+    obsASLP m pre r <->
+    (exists sigma, pre sigma /\ obsRel m sigma r) \/
+    ~ (exists sigma, obsRel m sigma r).
+  Proof.
+    unfold obsASLP, obsASP, obsDSLP; simpl.
+    symmetry. apply aslp_asp_dslp.
+  Qed.
+
 End NDObservationSP.
 
+Arguments obsRel {_} {_}.
 Arguments obsASP {_} {_}.
 Arguments obsASLP {_} {_}.
 Arguments obsDSP {_} {_}.

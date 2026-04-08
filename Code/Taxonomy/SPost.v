@@ -23,7 +23,7 @@
 
     Both unfold to [Pure(A/DSL)PostArr (unit * S) (option (A * S))]. *)
 
-From Coq Require Import Program.Tactics.
+From Coq Require Import Program.Tactics Classical_Prop.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 
 (* ================================================================= *)
@@ -93,6 +93,56 @@ Proof.
   - intros. apply H; intros. auto.
   - intros. apply H0. apply H.
 Qed.
+
+(* ================================================================= *)
+(** ** Characterizations of [dsp] and [aslp] (paper §3.2.4)           *)
+(* ================================================================= *)
+
+(** The four SP variants of the Verscht & Kaminski taxonomy are built
+    from the same reachability relation [R] but differ in quantifier
+    structure:
+
+    - [asp]  = existential (angelic, total)
+    - [dslp] = universal   (demonic, liberal)
+    - [dsp]  = [asp /\ dslp] (demonic, total)
+    - [aslp] = [asp \/ dslp] (angelic, liberal)
+
+    These two theorems match [dsp] and [aslp] with the paper's
+    Definitions 3.5 and 3.6, which guard the quantifier by whether the
+    inverse image is empty. *)
+
+Section SPCharacterizations.
+
+  Variables A B : Type.
+  Variable R : SPArr A B.
+
+  Theorem dsp_asp_dslp (pre : A -> Prop) (b : B) :
+    ((exists a, R a b) /\ forall a, R a b -> pre a) <->
+    (asp R pre b /\ dslp R pre b).
+  Proof.
+    unfold asp, dslp. split.
+    - intros [[a0 HRa0] Hall].
+      split; [exists a0; auto | exact Hall].
+    - intros [[a0 [Hpre HRa0]] Hall].
+      split; [exists a0; exact HRa0 | exact Hall].
+  Qed.
+
+  Theorem aslp_asp_dslp (pre : A -> Prop) (b : B) :
+    ((exists a, pre a /\ R a b) \/ ~ exists a, R a b) <->
+    (asp R pre b \/ dslp R pre b).
+  Proof.
+    unfold asp, dslp. split.
+    - intros [Hsp | Hunreach].
+      + left. exact Hsp.
+      + right. intros a HRab. exfalso. apply Hunreach. exists a. exact HRab.
+    - intros [Hsp | Hdp].
+      + left. exact Hsp.
+      + destruct (classic (exists a, R a b)) as [[a0 HRa0] | Hunreach].
+        * left. exists a0. split; [exact (Hdp a0 HRa0) | exact HRa0].
+        * right. exact Hunreach.
+  Qed.
+
+End SPCharacterizations.
 
 (** Bundle a predicate transformer with its underlying relation.
     Using a record avoids universe issues that [prod] causes when

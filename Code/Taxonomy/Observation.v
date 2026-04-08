@@ -16,6 +16,7 @@
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
+From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy Require Import Prog WP SPost.
 From Paco Require Import paco.
 From Hammer Require Import Tactics.
@@ -104,7 +105,7 @@ Arguments obsDWLP {_} {_}.
 (** ** SP observations                                                *)
 (* ================================================================= *)
 
-Section ObservationSP. 
+Section ObservationSP.
 
   Variable S : Type.
 
@@ -113,24 +114,72 @@ Section ObservationSP.
 
       TODO: Question: Is there a type that we can use to represent reversible
       definitions? *)
+
+  (** Reachability relation for a deterministic [prog]: an initial state
+      [(tt, s)] reaches outcome [r] iff the computation converges to [ret r]. *)
+  Definition obsRel {A} (m : prog S A)
+    : SPArr (unit * S) (option (A * S)) :=
+    fun '(tt, s) r => eutt eq (unOptionT (runStateT m s)) (ret r).
+
   Definition obsASP {A} (m : prog S A) : ASPostArr S A :=
-    mkASP (fun '(tt, s) r =>
-             eutt eq (unOptionT (runStateT m s)) (ret r)).
+    mkASP (obsRel m).
 
   Definition obsDSLP {A} (m : prog S A) : DSLPostArr S A :=
-    mkDSLP (fun '(tt, s) r =>
-              eutt eq (unOptionT (runStateT m s)) (ret r)).
+    mkDSLP (obsRel m).
 
   #[program] Definition obsASLP {A} (m : prog S A) :
     (unit * S -> Prop) -> (option (A * S) -> Prop) :=
-    fun pre r => sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r. 
+    fun pre r => sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
 
   #[program] Definition obsDSP {A} (m : prog S A) :
     (unit * S -> Prop) -> (option (A * S) -> Prop) :=
-    fun pre r => sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r. 
+    fun pre r => sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Theorem 3.7: Square inclusions                             *)
+  (* -------------------------------------------------------------- *)
+
+  #[program] Theorem obsDSP_sub_obsASP {A} (m : prog S A) pre r :
+    obsDSP m pre r -> sp_pt (obsASP m) pre r.
+  Proof. intros [H _]. exact H. Qed.
+
+  #[program] Theorem obsDSP_sub_obsDSLP {A} (m : prog S A) pre r :
+    obsDSP m pre r -> sp_pt (obsDSLP m) pre r.
+  Proof. intros [_ H]. exact H. Qed.
+
+  #[program] Theorem obsASP_sub_obsASLP {A} (m : prog S A) pre r :
+    sp_pt (obsASP m) pre r -> obsASLP m pre r.
+  Proof. intro H. left. exact H. Qed.
+
+  #[program] Theorem obsDSLP_sub_obsASLP {A} (m : prog S A) pre r :
+    sp_pt (obsDSLP m) pre r -> obsASLP m pre r.
+  Proof. intro H. right. exact H. Qed.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Characterizations (paper Definitions 3.5 and 3.6)          *)
+  (* -------------------------------------------------------------- *)
+
+  Corollary obsDSP_char {A} (m : prog S A) pre r :
+    obsDSP m pre r <->
+    (exists sigma, obsRel m sigma r) /\
+    (forall sigma, obsRel m sigma r -> pre sigma).
+  Proof.
+    unfold obsDSP, obsASP, obsDSLP; simpl.
+    symmetry. apply dsp_asp_dslp.
+  Qed.
+
+  Corollary obsASLP_char {A} (m : prog S A) pre r :
+    obsASLP m pre r <->
+    (exists sigma, pre sigma /\ obsRel m sigma r) \/
+    ~ (exists sigma, obsRel m sigma r).
+  Proof.
+    unfold obsASLP, obsASP, obsDSLP; simpl.
+    symmetry. apply aslp_asp_dslp.
+  Qed.
 
 End ObservationSP.
 
+Arguments obsRel {_} {_}.
 Arguments obsASP {_} {_}.
 Arguments obsASLP {_} {_}.
 Arguments obsDSP {_} {_}.

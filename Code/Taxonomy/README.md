@@ -62,45 +62,47 @@ Observation functions bridge computation monads to specification types,
 extracting program semantics as weakest preconditions (WP) or strongest
 postconditions (SP).
 
-**`Observation.v`** — maps `prog` to specs:
-- `obsArrowSP`: SP via relational observation wrapped with `mkASP`
-- `observationWP`: strongest WP of a deterministic program
-- `observationWLP`: WP with divergence tolerance (uses `any_infinite` from ITree)
-
-**`NonDetObservation.v`** — maps `ndprog` to specs:
-- `obsArrowASP`: angelic SP via set membership
-- `obsDWP` / `obsAWP`: demonic (all outcomes) / angelic (some outcome) WP
-
-**`NonDetItObservation.v`** — maps `nditprog` to specs:
-- `obsArrowASP`: collapses the three-valued outcome space into two — `Some
-  (a, s')` for convergence, `None` for exceptions or divergence
-- `obsDWP` / `obsDWLP`: demonic total / partial WP
-- `obsAWP` / `obsAWLP`: angelic total / partial WP
-
-The total variants (`obsDWP`, `obsAWP`) reject divergence; the partial variants
-(`obsDWLP`, `obsAWLP`) accept it.
-
-## SP variants (`SPVariants.v`)
-
-Implements the taxonomy from Verscht & Kaminski ("A Taxonomy of Hoare-Like
-Logics", POPL 2025). Four strongest postcondition transformers for each
-computation monad (`prog`, `ndprog`, `nditprog`), all built from the same
-reachability relation but differing in quantifier structure:
+All three observation files implement the four-variant SP taxonomy from
+Verscht & Kaminski ("A Taxonomy of Hoare-Like Logics", POPL 2025), built from
+a common reachability relation `obsRel` but differing in quantifier structure:
 
 | Variant | Definition | Meaning |
 |---|---|---|
-| `asp` | `asp` (existential) | Angelic, total — reachable from precondition |
-| `dslp` | `dslp` (universal) | Demonic, liberal — exclusively reachable, or unreachable |
-| `dsp` | `asp /\ dslp` | Demonic, total — exclusively reachable |
-| `aslp` | `asp \/ dslp` | Angelic, liberal — reachable or unreachable |
+| `obsASP` | `asp` (existential) | Angelic, total — reachable from precondition |
+| `obsDSLP` | `dslp` (universal) | Demonic, liberal — exclusively reachable, or unreachable |
+| `obsDSP` | `obsASP /\ obsDSLP` | Demonic, total — exclusively reachable |
+| `obsASLP` | `obsASP \/ obsDSLP` | Angelic, liberal — reachable or unreachable |
 
 Angelic vs demonic concerns confluence (exists vs forall over initial states
 reaching a final state). Liberal vs total concerns whether unreachable final
-states are included.
+states are included. Each file provides the square inclusions (Theorem 3.7)
+and characterizations (paper Definitions 3.5 and 3.6).
 
-For `nditprog`, the file proves Theorem 3.7 (square inclusions: `dsp` ⊆ `asp`
-⊆ `aslp`, `dsp` ⊆ `dslp` ⊆ `aslp`) and Theorem 3.8 (contrapositive
-transformers: `asp` ↔ ¬`dslp`(¬), `dsp` ↔ ¬`aslp`(¬)).
+**`Observation.v`** — maps `prog` to specs:
+- `obsRel`: initial state reaches outcome `r` iff the computation converges
+  to `ret r`
+- SP: `obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`
+- WP: `obsAWP` / `obsDWP` (total) and `obsAWLP` / `obsDWLP` (partial, tolerate
+  divergence via `any_infinite` from ITree). Because `prog` is deterministic,
+  `obsWPCollapse` and `obsWLPCollapse` show angelic and demonic collapse.
+
+**`NonDetObservation.v`** — maps `ndprog` to specs:
+- `obsRel`: set membership in the outcome set
+- SP: `obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`
+- WP: `obsDWP` (all outcomes) / `obsAWP` (some outcome). No WLP — no
+  divergence.
+
+**`NonDetItObservation.v`** — maps `nditprog` to specs:
+- `obsRel`: `Some (a, s')` for convergence, `Some None` for exceptions.
+  Divergence is **not** a reachable final state — it is the absence of
+  reaching any final state (dual to how divergence in WP is the absence of
+  termination).
+- SP: `obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`, plus Theorem 3.8
+  contrapositive transformers (`obsASP` ↔ ¬`obsDSLP`(¬), `obsDSP` ↔
+  ¬`obsASLP`(¬))
+- WP: `obsDWP` / `obsDWLP` (demonic total / partial) and `obsAWP` /
+  `obsAWLP` (angelic total / partial). Total variants reject divergence;
+  partial variants accept it. WP inclusions correspond to Theorem 3.7.
 
 ## Dependency graph
 
@@ -113,7 +115,5 @@ NonDetProg ──► NonDetProgFacts
                              ├──► Observation (uses Prog, WP, SPost)
 NonDetItProg ──► NonDetItProgFacts
                              ├──► NonDetObservation (uses NonDetProg, WP, SPost)
-                             ├──► NonDetItObservation (uses NonDetItProg, WP, SPost)
-                             │
-                             └──► SPVariants (uses Prog, NonDetProg, NonDetItProg, SPost)
+                             └──► NonDetItObservation (uses NonDetItProg, WP, SPost)
 ```
