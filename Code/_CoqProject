@@ -31,7 +31,6 @@ Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
 Classes/OptionArrowT/ArrowChoiceLaws.v
 Classes/OptionArrowT/ArrowApplyLaws.v
-Classes/OptionArrowT/Pred.v
 Classes/OptionArrowT.v
 Classes/StateArrowT/Core.v
 Classes/StateArrowT/ArrowChoiceLaws.v
