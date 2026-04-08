@@ -39,6 +39,7 @@ Classes/StateArrowT.v
 Taxonomy/SPost.v
 Taxonomy/SPostFacts.v
 Taxonomy/Pred.v
+Taxonomy/PrePost.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
 Taxonomy/NonDetItObservation.v
