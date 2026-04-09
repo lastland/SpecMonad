@@ -1,6 +1,6 @@
 (** * Galois connections among the Taxonomy spec types.
 
-    Four connections, expressed via the lightweight [Galois] class
+    Six connections, expressed via the lightweight [Galois] class
     from [Classes/Galois.v]:
 
     1. [Galois_Pred_PrePost] — existential abstraction
@@ -8,7 +8,7 @@
        (γ : PrePost → Pred).  Both orders covariant.  Registered as
        the canonical [Galois PrePost Pred] instance.
 
-    2. [Galois_Pred_PrePost_proj] — a *second* adjunction in the same
+    2. [Galois_Pred_PrePost_False] — a *second* adjunction in the same
        direction as (1) but with a different choice of maps:
        [α R := (False, R)] (empty precondition) and [γ := snd]
        (forget the precondition).  Mathematically distinct from (1)
@@ -16,12 +16,27 @@
        is exposed as a [Definition] rather than an [Instance] to keep
        (1) the canonical typeclass instance.
 
-    3. [Galois_PrePost_WPArr] — "weakest spec" abstraction
+    3. [Galois_Pred_PrePost_True] — a True-pre variant of (2):
+       [α R := (True, R)] paired with the same [forget_pre] as γ.
+       To absorb the trivial pre, this uses a non-standard PrePost
+       order ([PrePost_le_contra_pre]) that is contravariant in the
+       pre and covariant in the post (Dijkstra refinement).  Exposed
+       as a [Definition].  Mirrors connection (5) on the PW side.
+
+    4. [Galois_PrePost_WPArr] — "weakest spec" abstraction
        (α : WPArr → PrePost) paired with demonic concretization
        (γ : PrePost → WPArr).  Mixed order on PrePost: covariant in
        pre, contravariant in post.  Pointwise order on WPArr.
 
-    4. [Galois_RelPrePost_WPArr] — Yoneda abstraction
+    5. [Galois_PrePost_WPArr_True] — a True-pre variant of (4):
+       [α w := (True, R_w)] where [R_w a b := ∀ Q, w a Q → Q b].
+       To keep the adjunction exact with a trivial pre, this uses a
+       non-standard PrePost order ([PrePost_le_R_refine]) that
+       ignores the pre and treats the post contravariantly.  Exposed
+       as a [Definition], not an [Instance], since its PrePost order
+       differs from (4).
+
+    6. [Galois_RelPrePost_WPArr] — Yoneda abstraction
        (α : RelPrePost → WPArr) paired with the [γ] that lifts a WP
        transformer to a Hoare-spec validator.  Both orders are
        pointwise.  This is an exact Galois insertion: [α ∘ γ = id]
@@ -128,7 +143,7 @@ Instance Galois_Pred_PrePost
 }.
 
 (* ================================================================= *)
-(** ** [Galois_Pred_PrePost_proj]: forget the precondition            *)
+(** ** [Galois_Pred_PrePost_False]: forget the precondition            *)
 (* ================================================================= *)
 
 (** A second Galois adjunction between [Pred] and [PrePost] in the
@@ -167,12 +182,86 @@ Qed.
     instance for [Galois PrePost Pred].  Use this connection
     explicitly when you specifically want the projection
     abstraction. *)
-Definition Galois_Pred_PrePost_proj
+Definition Galois_Pred_PrePost_False
   : Galois PrePost Pred (@PrePost_le) (@Pred_le) :=
 {|
   galois_alpha := @empty_pre ;
   galois_gamma := @forget_pre ;
   galois_adjunction := @adjunction_Pred_PrePost_proj
+|}.
+
+(* ================================================================= *)
+(** ** [Galois_Pred_PrePost_True]: True-pre variant                   *)
+(* ================================================================= *)
+
+(** A third Pred ↔ PrePost adjunction in the same [α] direction as
+    (1) and (2), with:
+
+    [α R := (fun _ => True, R)]   (trivially-true precondition)
+    [γ pq := snd pq]              (= [forget_pre] from (2) above)
+
+    The adjunction is exact once we use the **Dijkstra refinement**
+    order on [PrePost]: contravariant in the pre, covariant in the
+    post.  Under that order the [(True, _)] component is vacuously
+    minimal — since [(P → True)] is always true, the pre check on
+    [(True, R) ≤_contra_pre (P, R')] trivializes and leaves only the
+    post comparison [R ⊆ R'], which matches [Pred_le R (forget_pre
+    pq)].
+
+    This mirrors [Galois_PrePost_WPArr_True] on the PW side: both
+    use a trivially-true pre on [α] and absorb it via a non-standard
+    order.  Compared to [Galois_Pred_PrePost_False] (which uses
+    [False] as the pre under the covariant order), this one uses
+    [True] on the dual ordering — the other "vacuous" slot on the
+    pre lattice. *)
+
+Definition PrePost_le_contra_pre {A B} (pq1 pq2 : PrePost A B) : Prop :=
+  (forall a,   fst pq2 a   -> fst pq1 a) /\
+  (forall a b, snd pq1 a b -> snd pq2 a b).
+
+#[global]
+Instance PrePost_le_contra_pre_PreOrder {A B}
+  : PreOrder (@PrePost_le_contra_pre A B).
+Proof.
+  constructor.
+  - intros [P R]. split; intros; assumption.
+  - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
+    split; intros.
+    + apply HP12, HP23. assumption.
+    + apply HR23, HR12. assumption.
+Qed.
+
+Definition alpha_True_Pred_PrePost {A B} (R : Pred A B) : PrePost A B :=
+  (fun _ => True, R).
+
+(** [γ] is just [forget_pre] from [Galois_Pred_PrePost_False] — we
+    reuse the same projection. *)
+
+Lemma adjunction_Pred_PrePost_True {A B}
+  (R : Pred A B) (pq : PrePost A B) :
+  PrePost_le_contra_pre (alpha_True_Pred_PrePost R) pq
+  <-> Pred_le R (forget_pre pq).
+Proof.
+  destruct pq as [P R'].
+  unfold PrePost_le_contra_pre, Pred_le,
+         alpha_True_Pred_PrePost, forget_pre.
+  cbn.
+  split.
+  - intros [_ HR]. exact HR.
+  - intros HR. split; [intros a _; exact I | exact HR].
+Qed.
+
+(** Exposed as a [Definition] (not [Instance]) for the same reason as
+    [Galois_Pred_PrePost_False]: keep [Galois_Pred_PrePost] the
+    canonical typeclass instance.  This one also uses a different
+    PrePost order from (1) and (2), so there would be no clash, but
+    we keep the convention. *)
+Definition Galois_Pred_PrePost_True
+  : Galois PrePost Pred (@PrePost_le_contra_pre) (@Pred_le) :=
+{|
+  galois_alpha := @alpha_True_Pred_PrePost ;
+  galois_gamma := @forget_pre ;
+  galois_adjunction := @adjunction_Pred_PrePost_True
 |}.
 
 (* ================================================================= *)
@@ -221,6 +310,76 @@ Instance Galois_PrePost_WPArr
   galois_gamma := @gamma_PrePost_WPArr ;
   galois_adjunction := @adjunction_PrePost_WPArr
 }.
+
+(* ================================================================= *)
+(** ** [Galois_PrePost_WPArr_True]: True-pre variant                  *)
+(* ================================================================= *)
+
+(** A variant of [Galois_PrePost_WPArr] where [α] uses the
+    trivially-true precondition, dropping the "w accepts something"
+    information from the existing [alpha_WPArr_PrePost]:
+
+    [α w := (True, fun a b => ∀ Q, w a Q → Q b)]
+    [γ (P, R) a Q := ∀ b, R a b → Q b]  (demonic, ignoring P)
+
+    Note that [γ] also drops the precondition, using only the
+    post-relation.  To accommodate the trivial pre on the [α] side
+    and the lack of a pre check on the [γ] side, this adjunction
+    uses a non-standard ordering on [PrePost] — [PrePost_le_R_refine]
+    — which ignores the precondition entirely and treats the
+    post-relation contravariantly (a more refined spec has a smaller
+    post).
+
+    Under this ordering the adjunction holds exactly: both sides of
+    [α w ≤ (P, R) ⟺ w ≤ γ (P, R)] reduce to [R ⊆ R_w]
+    (equivalently, [∀ a b Q, R a b → w a Q → Q b]).  The [True]
+    component of [α w] is absorbed vacuously because the order
+    ignores it. *)
+
+Definition PrePost_le_R_refine {A B} (pq1 pq2 : PrePost A B) : Prop :=
+  forall a b, snd pq2 a b -> snd pq1 a b.
+
+#[global]
+Instance PrePost_le_R_refine_PreOrder {A B}
+  : PreOrder (@PrePost_le_R_refine A B).
+Proof.
+  constructor.
+  - intros pq a b H. exact H.
+  - intros pq1 pq2 pq3 H12 H23 a b H. apply H12, H23, H.
+Qed.
+
+Definition alpha_True_WPArr_PrePost {A B} (w : WPArr A B) : PrePost A B :=
+  (fun _ => True, fun a b => forall Q, w a Q -> Q b).
+
+Definition gamma_True_PrePost_WPArr {A B} (pq : PrePost A B) : WPArr A B :=
+  fun a Q => forall b, snd pq a b -> Q b.
+
+Lemma adjunction_PrePost_WPArr_True {A B}
+  (w : WPArr A B) (pq : PrePost A B) :
+  PrePost_le_R_refine (alpha_True_WPArr_PrePost w) pq
+  <-> WPArr_le w (gamma_True_PrePost_WPArr pq).
+Proof.
+  destruct pq as [P R].
+  unfold PrePost_le_R_refine, WPArr_le,
+         alpha_True_WPArr_PrePost, gamma_True_PrePost_WPArr.
+  cbn.
+  split.
+  - intros H a Q HwQ b HRab. exact (H a b HRab Q HwQ).
+  - intros H a b HRab Q HwQ. exact (H a Q HwQ b HRab).
+Qed.
+
+(** Exposed as a [Definition] (not [Instance]) so that
+    [Galois_PrePost_WPArr] above remains the canonical typeclass
+    instance for [Galois PrePost WPArr] with [PrePost_le_dem]; this
+    one uses a different PrePost order so there would be no clash,
+    but we keep the convention from [Galois_Pred_PrePost_False]. *)
+Definition Galois_PrePost_WPArr_True
+  : Galois PrePost WPArr (@PrePost_le_R_refine) (@WPArr_le) :=
+{|
+  galois_alpha := @alpha_True_WPArr_PrePost ;
+  galois_gamma := @gamma_True_PrePost_WPArr ;
+  galois_adjunction := @adjunction_PrePost_WPArr_True
+|}.
 
 (* ================================================================= *)
 (** ** [Galois_RelPrePost_WPArr]: Yoneda abstraction                  *)
