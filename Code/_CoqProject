@@ -36,10 +36,13 @@ Classes/StateArrowT/Core.v
 Classes/StateArrowT/ArrowChoiceLaws.v
 Classes/StateArrowT/ArrowApplyLaws.v
 Classes/StateArrowT.v
+Classes/Galois.v
 Taxonomy/SPost.v
 Taxonomy/SPostFacts.v
 Taxonomy/Pred.v
 Taxonomy/PrePost.v
+Taxonomy/WPArr.v
+Taxonomy/WPArrPrePost.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
 Taxonomy/NonDetItObservation.v
