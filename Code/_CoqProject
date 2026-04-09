@@ -42,6 +42,7 @@ Taxonomy/SPostFacts.v
 Taxonomy/Pred.v
 Taxonomy/PrePost.v
 Taxonomy/WPArr.v
+Taxonomy/RelPrePost.v
 Taxonomy/Galois.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v

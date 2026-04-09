@@ -1,6 +1,6 @@
 (** * Galois connections among the Taxonomy spec types.
 
-    Three connections, expressed via the lightweight [Galois] class
+    Four connections, expressed via the lightweight [Galois] class
     from [Classes/Galois.v]:
 
     1. [Galois_Pred_PrePost] — existential abstraction
@@ -19,13 +19,21 @@
     3. [Galois_PrePost_WPArr] — "weakest spec" abstraction
        (α : WPArr → PrePost) paired with demonic concretization
        (γ : PrePost → WPArr).  Mixed order on PrePost: covariant in
-       pre, contravariant in post.  Pointwise order on WPArr. *)
+       pre, contravariant in post.  Pointwise order on WPArr.
 
-From Coq Require Import Relation_Definitions RelationClasses Morphisms.
+    4. [Galois_RelPrePost_WPArr] — Yoneda abstraction
+       (α : RelPrePost → WPArr) paired with the [γ] that lifts a WP
+       transformer to a Hoare-spec validator.  Both orders are
+       pointwise.  This is an exact Galois insertion: [α ∘ γ = id]
+       on [WPArr], so [γ] embeds [WPArr] into [RelPrePost]. *)
+
+From Coq Require Import
+  FunctionalExtensionality PropExtensionality
+  Relation_Definitions RelationClasses Morphisms.
 From Incorrectness.Classes Require Import Arrow Galois.
 From Incorrectness Require Import
   Taxonomy.WP Taxonomy.WPFacts
-  Taxonomy.Pred Taxonomy.PrePost Taxonomy.WPArr.
+  Taxonomy.Pred Taxonomy.PrePost Taxonomy.WPArr Taxonomy.RelPrePost.
 
 (* ================================================================= *)
 (** ** Component-wise inclusion orders                                *)
@@ -212,4 +220,60 @@ Instance Galois_PrePost_WPArr
   galois_alpha := @alpha_WPArr_PrePost ;
   galois_gamma := @gamma_PrePost_WPArr ;
   galois_adjunction := @adjunction_PrePost_WPArr
+}.
+
+(* ================================================================= *)
+(** ** [Galois_RelPrePost_WPArr]: Yoneda abstraction                  *)
+(* ================================================================= *)
+
+(** [γ] sends a WP transformer [w] to the [RelPrePost] that says
+    "(P, R) is valid iff at every state in P, the post-relation [R]
+    is accepted by [w]".  [α] is the [yoneda_at] from [RelPrePost.v]:
+    it sends a [RelPrePost] to the WP that holds at [(a, Q)] iff [r]
+    validates some pre/post pair whose pre contains [a] and whose
+    post-row at [a] is pointwise iff [Q].
+
+    The adjunction holds exactly (no monotonicity assumption needed),
+    using [funext] + [propext] to convert pointwise iff to function
+    equality.  This is in fact a Galois insertion: [α ∘ γ = id] on
+    [WPArr], so [γ] embeds [WPArr] into [RelPrePost]. *)
+
+Definition gamma_WPArr_RelPrePost {A B} (w : WPArr A B) : RelPrePost A B :=
+  fun P R => forall a, P a -> w a (R a).
+
+Definition alpha_RelPrePost_WPArr {A B} (r : RelPrePost A B) : WPArr A B :=
+  fun a Q => yoneda_at r a Q.
+
+Definition RelPrePost_le {A B} (r1 r2 : RelPrePost A B) : Prop :=
+  forall P R, r1 P R -> r2 P R.
+
+#[global]
+Instance RelPrePost_le_PreOrder {A B} : PreOrder (@RelPrePost_le A B).
+Proof. constructor; cbv; auto. Qed.
+
+Lemma adjunction_RelPrePost_WPArr {A B}
+  (r : RelPrePost A B) (w : WPArr A B) :
+  WPArr_le (alpha_RelPrePost_WPArr r) w
+  <-> RelPrePost_le r (gamma_WPArr_RelPrePost w).
+Proof.
+  unfold WPArr_le, RelPrePost_le, alpha_RelPrePost_WPArr,
+         gamma_WPArr_RelPrePost, yoneda_at.
+  split.
+  - intros H P R Hr a HPa.
+    apply H. exists P, R. split; [exact Hr | split; [exact HPa | reflexivity]].
+  - intros H a Q [P [R [Hr [HPa Hiff]]]].
+    specialize (H P R Hr a HPa).
+    (* w a (R a), and Hiff : forall b, R a b <-> Q b.
+       Use propext + funext to convert R a = Q. *)
+    replace Q with (R a); [exact H|].
+    extensionality b. apply propositional_extensionality. apply Hiff.
+Qed.
+
+#[global]
+Instance Galois_RelPrePost_WPArr
+  : Galois WPArr RelPrePost (@WPArr_le) (@RelPrePost_le) :=
+{
+  galois_alpha := @alpha_RelPrePost_WPArr ;
+  galois_gamma := @gamma_WPArr_RelPrePost ;
+  galois_adjunction := @adjunction_RelPrePost_WPArr
 }.
