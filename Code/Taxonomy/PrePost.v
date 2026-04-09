@@ -1,5 +1,4 @@
-(** * The pre/post relational arrow [PrePost] and its Galois connection
-      with [Pred].
+(** * The pre/post relational arrow [PrePost].
 
     [PrePost A B := (A -> Prop) * (A -> B -> Prop)] packages a Hoare
     triple [{P} _ {R}] where the post-relation [R] may reference the
@@ -12,17 +11,17 @@
     - [Arrow] / [ArrowLaws] for [PrePost], with [arrow_eq = @eq]
       (bridged from pointwise iff via funext + propext);
     - a [Monad] in the second argument (for fixed [A]), with
-      [Eq1] = pointwise iff and the standard [MonadLawsE];
-    - a Galois connection [alpha_PrePost] / [gamma_PrePost] between
-      [Pred A B] and [PrePost A B], with the adjunction
-      [PrePost_le (alpha_PrePost R) pq <-> Pred_le R (gamma_PrePost pq)]. *)
+      [Eq1] = pointwise iff and the standard [MonadLawsE].
+
+    Galois connections relating [PrePost] to [Pred] and [WPArr] are
+    collected in [Taxonomy/Galois.v]. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality
   Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow Galois.
+From Incorrectness.Classes Require Import Arrow.
 
 (* ================================================================= *)
 (** ** Type definition                                                *)
@@ -305,76 +304,5 @@ Section PrePostMonad.
 
 End PrePostMonad.
 
-(* ================================================================= *)
-(** ** Galois connection with [Pred]                                  *)
-(* ================================================================= *)
-
-(** Existential abstraction: the precondition is the domain of [R],
-    and the post-relation is [R] itself. *)
-Definition alpha_PrePost {A B} (R : Pred A B) : PrePost A B :=
-  (fun a => exists b, R a b, R).
-
-(** Concretization: a pre/post pair denotes the relation "input
-    satisfies the precondition AND the post-relation holds". *)
-Definition gamma_PrePost {A B} (pq : PrePost A B) : Pred A B :=
-  fun a b => fst pq a /\ snd pq a b.
-
-(** Componentwise inclusion order on [PrePost] (covariant in both). *)
-Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=
-  (forall a,   fst pq1 a   -> fst pq2 a) /\
-  (forall a b, snd pq1 a b -> snd pq2 a b).
-
-(** Pointwise inclusion order on [Pred]. *)
-Definition Pred_le {A B} (R1 R2 : Pred A B) : Prop :=
-  forall a b, R1 a b -> R2 a b.
-
-#[global]
-Instance PrePost_le_PreOrder {A B} : PreOrder (@PrePost_le A B).
-Proof.
-  constructor.
-  - intros [P R]. split; intros; assumption.
-  - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
-    split; intros.
-    + apply HP23, HP12, H.
-    + apply HR23, HR12, H.
-Qed.
-
-#[global]
-Instance Pred_le_PreOrder {A B} : PreOrder (@Pred_le A B).
-Proof.
-  constructor.
-  - intros R a b H. exact H.
-  - intros R1 R2 R3 H12 H23 a b H. apply H23, H12, H.
-Qed.
-
-(** The key adjunction: [alpha_PrePost] is left adjoint to
-    [gamma_PrePost].  Both sides unfold to
-    [forall a b, R a b -> fst pq a /\ snd pq a b]. *)
-Lemma adjunction_PrePost {A B} (R : Pred A B) (pq : PrePost A B) :
-  PrePost_le (alpha_PrePost R) pq <-> Pred_le R (gamma_PrePost pq).
-Proof.
-  unfold PrePost_le, Pred_le, alpha_PrePost, gamma_PrePost; simpl.
-  split.
-  - intros [HP HR] a b Hab. split.
-    + apply HP. exists b. exact Hab.
-    + apply HR. exact Hab.
-  - intros H. split.
-    + intros a [b Hab]. exact (proj1 (H a b Hab)).
-    + intros a b Hab. exact (proj2 (H a b Hab)).
-Qed.
-
-(** Package the connection as a [Galois] instance.  Note the type
-    arguments: [F = PrePost] and [G = Pred] (since [galois_alpha] in
-    the class goes [G -> F], matching [alpha_PrePost : Pred -> PrePost]).
-    Monotonicity, deflation, and inflation are all available
-    generically as [galois_alpha_monotone], [galois_gamma_monotone],
-    [galois_alpha_gamma_deflation], [galois_gamma_alpha_inflation]
-    on this instance. *)
-#[global]
-Instance Galois_Pred_PrePost
-  : Galois PrePost Pred (@PrePost_le) (@Pred_le) :=
-{
-  galois_alpha := @alpha_PrePost ;
-  galois_gamma := @gamma_PrePost ;
-  galois_adjunction := @adjunction_PrePost
-}.
+(** Galois connections with other spec types are collected in
+    [Taxonomy/Galois.v]. *)
