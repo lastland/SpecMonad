@@ -22,7 +22,7 @@ From Coq Require Import
   Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes Require Import Arrow Galois.
 
 (* ================================================================= *)
 (** ** Type definition                                                *)
@@ -309,105 +309,72 @@ End PrePostMonad.
 (** ** Galois connection with [Pred]                                  *)
 (* ================================================================= *)
 
-Section PrePostPredGalois.
+(** Existential abstraction: the precondition is the domain of [R],
+    and the post-relation is [R] itself. *)
+Definition alpha_PrePost {A B} (R : Pred A B) : PrePost A B :=
+  (fun a => exists b, R a b, R).
 
-  (** [alpha_PrePost] is the existential abstraction: the precondition
-      is the domain of [R], and the post-relation is [R] itself. *)
-  Definition alpha_PrePost {A B} (R : Pred A B) : PrePost A B :=
-    (fun a => exists b, R a b, R).
+(** Concretization: a pre/post pair denotes the relation "input
+    satisfies the precondition AND the post-relation holds". *)
+Definition gamma_PrePost {A B} (pq : PrePost A B) : Pred A B :=
+  fun a b => fst pq a /\ snd pq a b.
 
-  (** [gamma_PrePost] interprets a pre/post pair as the relation
-      "input satisfies the precondition AND the post-relation holds". *)
-  Definition gamma_PrePost {A B} (pq : PrePost A B) : Pred A B :=
-    fun a b => fst pq a /\ snd pq a b.
+(** Componentwise inclusion order on [PrePost] (covariant in both). *)
+Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=
+  (forall a,   fst pq1 a   -> fst pq2 a) /\
+  (forall a b, snd pq1 a b -> snd pq2 a b).
 
-  (** Componentwise inclusion order on [PrePost]. *)
-  Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=
-    (forall a,   fst pq1 a   -> fst pq2 a) /\
-    (forall a b, snd pq1 a b -> snd pq2 a b).
+(** Pointwise inclusion order on [Pred]. *)
+Definition Pred_le {A B} (R1 R2 : Pred A B) : Prop :=
+  forall a b, R1 a b -> R2 a b.
 
-  (** Pointwise inclusion order on [Pred]. *)
-  Definition Pred_le {A B} (R1 R2 : Pred A B) : Prop :=
-    forall a b, R1 a b -> R2 a b.
+#[global]
+Instance PrePost_le_PreOrder {A B} : PreOrder (@PrePost_le A B).
+Proof.
+  constructor.
+  - intros [P R]. split; intros; assumption.
+  - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
+    split; intros.
+    + apply HP23, HP12, H.
+    + apply HR23, HR12, H.
+Qed.
 
-  (** Both orders are reflexive and transitive. *)
-  #[global]
-  Instance PrePost_le_PreOrder {A B} : PreOrder (@PrePost_le A B).
-  Proof.
-    constructor.
-    - intros [P R]. split; intros; assumption.
-    - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
-      split; intros.
-      + apply HP23, HP12, H.
-      + apply HR23, HR12, H.
-  Qed.
+#[global]
+Instance Pred_le_PreOrder {A B} : PreOrder (@Pred_le A B).
+Proof.
+  constructor.
+  - intros R a b H. exact H.
+  - intros R1 R2 R3 H12 H23 a b H. apply H23, H12, H.
+Qed.
 
-  #[global]
-  Instance Pred_le_PreOrder {A B} : PreOrder (@Pred_le A B).
-  Proof.
-    constructor.
-    - intros R a b H. exact H.
-    - intros R1 R2 R3 H12 H23 a b H. apply H23, H12, H.
-  Qed.
+(** The key adjunction: [alpha_PrePost] is left adjoint to
+    [gamma_PrePost].  Both sides unfold to
+    [forall a b, R a b -> fst pq a /\ snd pq a b]. *)
+Lemma adjunction_PrePost {A B} (R : Pred A B) (pq : PrePost A B) :
+  PrePost_le (alpha_PrePost R) pq <-> Pred_le R (gamma_PrePost pq).
+Proof.
+  unfold PrePost_le, Pred_le, alpha_PrePost, gamma_PrePost; simpl.
+  split.
+  - intros [HP HR] a b Hab. split.
+    + apply HP. exists b. exact Hab.
+    + apply HR. exact Hab.
+  - intros H. split.
+    + intros a [b Hab]. exact (proj1 (H a b Hab)).
+    + intros a b Hab. exact (proj2 (H a b Hab)).
+Qed.
 
-  (** *** The adjunction *)
-
-  (** The key Galois adjunction: [alpha_PrePost] is left adjoint to
-      [gamma_PrePost]. *)
-  Lemma adjunction_PrePost {A B} (R : Pred A B) (pq : PrePost A B) :
-    PrePost_le (alpha_PrePost R) pq <-> Pred_le R (gamma_PrePost pq).
-  Proof.
-    unfold PrePost_le, Pred_le, alpha_PrePost, gamma_PrePost; simpl.
-    split.
-    - intros [HP HR] a b Hab. split.
-      + apply HP. exists b. exact Hab.
-      + apply HR. exact Hab.
-    - intros H. split.
-      + intros a [b Hab]. exact (proj1 (H a b Hab)).
-      + intros a b Hab. exact (proj2 (H a b Hab)).
-  Qed.
-
-  (** *** Monotonicity and closure laws *)
-
-  Lemma alpha_monotone_PrePost {A B} :
-    Proper (@Pred_le A B ==> PrePost_le) alpha_PrePost.
-  Proof.
-    intros R1 R2 H. unfold PrePost_le, alpha_PrePost; simpl.
-    split.
-    - intros a [b Hab]. exists b. apply H. exact Hab.
-    - intros a b Hab. apply H. exact Hab.
-  Qed.
-
-  Lemma gamma_monotone_PrePost {A B} :
-    Proper (@PrePost_le A B ==> Pred_le) gamma_PrePost.
-  Proof.
-    intros [P1 R1] [P2 R2] [HP HR]. unfold Pred_le, gamma_PrePost; simpl.
-    intros a b [HPa HRb]. split.
-    - apply HP. exact HPa.
-    - apply HR. exact HRb.
-  Qed.
-
-  (** [alpha ∘ gamma] is deflationary: abstracting the concretization
-      of [pq] gives back something below [pq]. *)
-  Lemma alpha_gamma_deflation_PrePost {A B} (pq : PrePost A B) :
-    PrePost_le (alpha_PrePost (gamma_PrePost pq)) pq.
-  Proof.
-    destruct pq as [P R].
-    unfold PrePost_le, alpha_PrePost, gamma_PrePost; simpl.
-    split.
-    - intros a [b [HP _]]. exact HP.
-    - intros a b [_ HR]. exact HR.
-  Qed.
-
-  (** [gamma ∘ alpha] is inflationary: concretizing the abstraction
-      of [R] yields a relation containing [R]. *)
-  Lemma gamma_alpha_inflation_PrePost {A B} (R : Pred A B) :
-    Pred_le R (gamma_PrePost (alpha_PrePost R)).
-  Proof.
-    unfold Pred_le, gamma_PrePost, alpha_PrePost; simpl.
-    intros a b Hab. split.
-    - exists b. exact Hab.
-    - exact Hab.
-  Qed.
-
-End PrePostPredGalois.
+(** Package the connection as a [Galois] instance.  Note the type
+    arguments: [F = PrePost] and [G = Pred] (since [galois_alpha] in
+    the class goes [G -> F], matching [alpha_PrePost : Pred -> PrePost]).
+    Monotonicity, deflation, and inflation are all available
+    generically as [galois_alpha_monotone], [galois_gamma_monotone],
+    [galois_alpha_gamma_deflation], [galois_gamma_alpha_inflation]
+    on this instance. *)
+#[global]
+Instance Galois_Pred_PrePost
+  : Galois PrePost Pred (@PrePost_le) (@Pred_le) :=
+{
+  galois_alpha := @alpha_PrePost ;
+  galois_gamma := @gamma_PrePost ;
+  galois_adjunction := @adjunction_PrePost
+}.
