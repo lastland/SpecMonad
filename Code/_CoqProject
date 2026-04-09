@@ -40,9 +40,13 @@ Classes/Galois.v
 Taxonomy/SPost.v
 Taxonomy/SPostFacts.v
 Taxonomy/Pred.v
+Taxonomy/PredFacts.v
 Taxonomy/PrePost.v
+Taxonomy/PrePostFacts.v
 Taxonomy/WPArr.v
+Taxonomy/WPArrFacts.v
 Taxonomy/RelPrePost.v
+Taxonomy/RelPrePostFacts.v
 Taxonomy/Galois.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v

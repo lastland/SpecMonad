@@ -8,8 +8,10 @@
     monad instance to ExtLib's reader machinery and only develop the
     Hughes-style [Arrow] interface here.
 
-    All [Arrow] laws hold definitionally up to Coq's eta conversion;
-    the proofs are [reflexivity] modulo product destructuring. *)
+    This file defines the type and instances ([ArrowEq], [Arrow],
+    [ArrowChoice], [ArrowApply]).  All their laws are proved in
+    [Taxonomy/WPArrFacts.v], where they mostly hold definitionally
+    up to Coq's eta conversion. *)
 
 From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
 From ExtLib Require Import Monad.
@@ -18,7 +20,7 @@ From Incorrectness.Classes Require Import Arrow.
 From Incorrectness Require Import Taxonomy.WP Taxonomy.WPFacts.
 
 (* ================================================================= *)
-(** ** Type definition and Arrow instance                             *)
+(** ** Type definition and Arrow instances                            *)
 (* ================================================================= *)
 
 Definition WPArr (A B : Type) : Type := A -> PureWP B.
@@ -37,29 +39,17 @@ Instance Arrow_WPArr : Arrow WPArr := {
 }.
 
 #[global]
-Instance ArrowLaws_WPArr : ArrowLaws WPArr.
-Proof.
-  constructor; intros.
-  - (* comp_id_l *) reflexivity.
-  - (* comp_id_r *) reflexivity.
-  - (* comp_assoc *) reflexivity.
-  - (* pure_comp *) reflexivity.
-  - (* first_pure *)
-    apply functional_extensionality; intros [a c].
-    apply functional_extensionality; intros Q. reflexivity.
-  - (* first_comp *)
-    apply functional_extensionality; intros [a c].
-    apply functional_extensionality; intros Q. reflexivity.
-  - (* first_fst *)
-    apply functional_extensionality; intros [a c].
-    apply functional_extensionality; intros Q. reflexivity.
-  - (* first_assoc *)
-    apply functional_extensionality; intros [[a c] d].
-    apply functional_extensionality; intros Q. reflexivity.
-  - (* comp_proper *)
-    intros f1 f2 Hf g1 g2 Hg.
-    cbv [arrow_eq ArrowEq_WPArr] in *. subst. reflexivity.
-  - (* first_proper *)
-    intros f1 f2 Hf.
-    cbv [arrow_eq ArrowEq_WPArr] in *. subst. reflexivity.
-Qed.
+Instance ArrowChoice_WPArr : ArrowChoice WPArr := {
+  arr_left := fun A B C f =>
+    fun x Q =>
+      match x with
+      | inl a => f a (fun b => Q (inl b))
+      | inr c => Q (inr c)
+      end
+}.
+
+#[global]
+Instance ArrowApply_WPArr : ArrowApply WPArr := {
+  arr_app := fun A B =>
+    fun p Q => let '(f, a) := p in f a Q
+}.
