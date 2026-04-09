@@ -23,7 +23,7 @@ Instance ArrowLaws_PrePost : ArrowLaws PrePost.
 Proof.
   constructor; intros.
   - (* comp_id_l: arr_pure id ⨟ f = f *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros a. split.
       * intros [_ HP]. exact (HP a eq_refl).
       * intros HP. split; [exact I |]. intros b ->. exact HP.
@@ -31,7 +31,7 @@ Proof.
       * intros [b [-> HR]]. exact HR.
       * intros HR. exists a. split; [reflexivity | exact HR].
   - (* comp_id_r: f ⨟ arr_pure id = f *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros a. split.
       * intros [HP _]. exact HP.
       * intros HP. split; [exact HP | intros _ _; exact I].
@@ -39,7 +39,7 @@ Proof.
       * intros [b [HR ->]]. exact HR.
       * intros HR. exists c. split; [exact HR | reflexivity].
   - (* comp_assoc *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros a. split.
       * intros [[HP HQ] HFh]. split; [exact HP |]. intros b HRf.
         split; [exact (HQ b HRf) |]. intros c HRg.
@@ -53,7 +53,7 @@ Proof.
       * intros [b [HRf [c [HRg HRh]]]].
         exists c. split; [exists b; split; [exact HRf | exact HRg] | exact HRh].
   - (* pure_comp *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros a. split.
       * intros _. exact I.
       * intros _. split; [exact I | intros _ _; exact I].
@@ -61,13 +61,13 @@ Proof.
       * intros [b [<- ->]]. reflexivity.
       * intros <-. exists (f a). split; reflexivity.
   - (* first_pure *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros [a c]. simpl. reflexivity.
     + intros [a c] [b c']. simpl. split.
       * intros [-> ->]. reflexivity.
       * intros Heq. inversion Heq. subst. split; reflexivity.
   - (* first_comp *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros [a d]. simpl. split.
       * intros [HP HQ]. split; [exact HP |].
         intros [b d'] [HRf Hd]. simpl in *. subst d'. apply HQ. exact HRf.
@@ -83,7 +83,7 @@ Proof.
         subst d'' d'.
         split; [| reflexivity]. exists b. split; [exact HRf | exact HRg].
   - (* first_fst *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros [a0 c]. simpl. split.
       * intros [HP _]. split; [exact I |]. intros a ->. exact HP.
       * intros [_ HQ]. split.
@@ -95,7 +95,7 @@ Proof.
       * intros [a [Haa HRf]]. subst a. exists (b, c). simpl.
         split; [split; [exact HRf | reflexivity] | reflexivity].
   - (* first_assoc *)
-    apply PrePost_eq; simpl.
+    split; cbn.
     + intros [[a c] d]. simpl. split.
       * intros [HP _]. split; [exact I |].
         intros q Heq. unfold assoc_prod in Heq. subst q. simpl. exact HP.
@@ -117,11 +117,19 @@ Proof.
            replace a' with a in HRf by congruence. exact HRf.
         -- unfold assoc_prod. congruence.
   - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PrePost.
-    intros; subst; reflexivity.
+    intros f1 f2 [HfP HfR] g1 g2 [HgP HgR].
+    cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
+    + intros a. rewrite HfP. split; intros [H1 H2]; split; try assumption.
+      * intros b Hr. apply HgP, H2, HfR, Hr.
+      * intros b Hr. apply HgP, H2, HfR, Hr.
+    + intros a c. split; intros [b [Hr1 Hr2]]; exists b;
+        split; solve [apply HfR; assumption | apply HgR; assumption].
   - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PrePost.
-    intros; subst; reflexivity.
+    intros f1 f2 [HfP HfR].
+    cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
+    + intros [a c]. apply HfP.
+    + intros [a c] [b c']. cbn. split; intros [Hf Hc]; split;
+        solve [apply HfR; assumption | assumption].
 Qed.
 
 (* ================================================================= *)
@@ -133,15 +141,15 @@ Instance ArrowChoiceLaws_PrePost : ArrowChoiceLaws PrePost.
 Proof.
   constructor; intros.
   - (* left_pure *)
-    apply PrePost_eq; intros; cbn;
-    [ destruct a as [a|c]; cbn; reflexivity
-    | destruct a as [a|c]; destruct b as [b|c']; cbn;
+    split; cbn.
+    + intros a. destruct a as [a|c]; cbn; reflexivity.
+    + intros a b. destruct a as [a|c]; destruct b as [b|c']; cbn;
       (split; [intros Heq; subst; reflexivity | intros Heq; inversion Heq; reflexivity])
       || (split; [intros []; reflexivity | intros Heq; inversion Heq])
       || (split; [intros Heq; inversion Heq; reflexivity | intros Heq; subst; reflexivity])
-      || (split; intros Heq; inversion Heq) ].
+      || (split; intros Heq; inversion Heq).
   - (* left_comp *)
-    apply PrePost_eq.
+    split.
     + intros [a|d]; cbn.
       * split.
         -- intros [HPf HFg]. split; [exact HPf |].
@@ -160,7 +168,7 @@ Proof.
           [intros ->; exists (inr d'); cbn; exact (conj eq_refl eq_refl)
           | intros [[b|d''] [Hr Hs]]; cbn in *; [contradiction | subst d'' d'; reflexivity]]).
   - (* left_inl *)
-    apply PrePost_eq.
+    split.
     + intros a. cbn. split.
       * intros [HP _]. split; [exact I|]. intros x Heq. subst x. exact HP.
       * intros [_ HQ]. split; [exact (HQ (inl a) eq_refl) | intros _ _; exact I].
@@ -169,7 +177,7 @@ Proof.
       * intros [x [Heq Hr]]. subst x. destruct y as [b|c]; cbn in Hr; [| contradiction].
         exists b. split; [exact Hr | reflexivity].
   - (* left_assoc *)
-    apply PrePost_eq.
+    split.
     + intros x. cbn. split.
       * intros [HP _]. split; [exact I |].
         intros y Heq. destruct x as [[a|c]|d]; unfold assoc_sum in Heq; subst y; cbn; try exact I; exact HP.
@@ -191,7 +199,7 @@ Proof.
         -- inversion Hr. subst. exists (inl (inr c')). cbn. split; reflexivity.
         -- inversion Hr. subst. exists (inr d'). cbn. split; reflexivity.
   - (* left_inr *)
-    apply PrePost_eq.
+    split.
     + intros c. cbn. split.
       * intros _. exact I.
       * intros _. split; [exact I|]. intros x Heq. subst x. cbn. exact I.
@@ -200,7 +208,7 @@ Proof.
         destruct y as [b|c']; [contradiction | subst c'; reflexivity].
       * intros Heq. subst y. exists (inr c). cbn. split; reflexivity.
   - (* left_natural *)
-    apply PrePost_eq.
+    split.
     + intros x. cbn. split.
       * intros [HP _]. split.
         -- exact I.
@@ -221,7 +229,7 @@ Proof.
         -- exists (inl b). cbn. split; [exact Hr | reflexivity].
         -- subst d'. exists (inr c). cbn. split; [reflexivity | reflexivity].
   - (* first_left_dist *)
-    apply PrePost_eq.
+    split.
     + intros [x d]. cbn. split.
       * intros [HP _]. split.
         -- exact I.
@@ -245,8 +253,10 @@ Proof.
            inversion Hr. subst.
            exists (inr c', d'). cbn. split; [split; reflexivity | reflexivity].
   - (* left_proper *)
-    intros f1 f2 Hf.
-    cbv [arrow_eq ArrowEq_PrePost] in *. subst. reflexivity.
+    intros f1 f2 [HfP HfR].
+    cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
+    + intros [a|c]; [apply HfP | reflexivity].
+    + intros [a|c] [b|c']; cbn; try reflexivity. apply HfR.
 Qed.
 
 (* ================================================================= *)
@@ -257,7 +267,7 @@ Qed.
 Instance ArrowApplyLaws_PrePost : ArrowApplyLaws PrePost.
 Proof.
   constructor; intros.
-  apply PrePost_eq.
+  split.
   - intros a. cbn. split.
     + intros [_ HP]. exact (HP (f, a) eq_refl).
     + intros HP. split; [exact I|]. intros [f' a'] Heq. inversion Heq. subst. exact HP.

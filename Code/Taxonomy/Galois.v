@@ -52,48 +52,10 @@ From Incorrectness Require Import
   Taxonomy.WP Taxonomy.WPFacts
   Taxonomy.Pred Taxonomy.PrePost Taxonomy.WPArr Taxonomy.RelPrePost.
 
-(* ================================================================= *)
-(** ** Dijkstra refinement orders                                     *)
-(* ================================================================= *)
-
-(** Pred refinement (contravariant inclusion): [R1 ≤ R2] iff
-    [R2 ⊆ R1].  The refined side [R2] has fewer allowed outcomes. *)
-Definition Pred_le {A B} (R1 R2 : Pred A B) : Prop :=
-  forall a b, R2 a b -> R1 a b.
-
-#[global]
-Instance Pred_le_PreOrder {A B} : PreOrder (@Pred_le A B).
-Proof.
-  constructor.
-  - intros R a b H. exact H.
-  - intros R1 R2 R3 H12 H23 a b H. apply H12, H23, H.
-Qed.
-
-(** PrePost Dijkstra refinement: covariant in pre (weaken), contra-
-    variant in post (strengthen). *)
-Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=
-  (forall a,   fst pq1 a   -> fst pq2 a) /\
-  (forall a b, snd pq2 a b -> snd pq1 a b).
-
-#[global]
-Instance PrePost_le_PreOrder {A B} : PreOrder (@PrePost_le A B).
-Proof.
-  constructor.
-  - intros [P R]. split; intros; assumption.
-  - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
-    split; intros.
-    + apply HP23, HP12. assumption.
-    + apply HR12, HR23. assumption.
-Qed.
-
-(** WPArr refinement: pointwise implication.  Reads as "the refined
-    [w2] accepts at least as many [(a, Q)] pairs as [w1]". *)
-Definition WPArr_le {A B} (w1 w2 : WPArr A B) : Prop :=
-  forall a Q, w1 a Q -> w2 a Q.
-
-#[global]
-Instance WPArr_le_PreOrder {A B} : PreOrder (@WPArr_le A B).
-Proof. constructor; cbv; auto. Qed.
+(** The Dijkstra refinement orders [Pred_le], [PrePost_le],
+    [WPArr_le], and [RelPrePost_le] live in the respective type
+    files: [Taxonomy/Pred.v], [Taxonomy/PrePost.v], [Taxonomy/WPArr.v],
+    and [Taxonomy/RelPrePost.v]. *)
 
 (* ================================================================= *)
 (** ** [Galois_Pred_PrePost]: empty-pre / forget-pre                  *)
@@ -202,13 +164,6 @@ Definition gamma_WPArr_RelPrePost {A B} (w : WPArr A B) : RelPrePost A B :=
 
 Definition alpha_RelPrePost_WPArr {A B} (r : RelPrePost A B) : WPArr A B :=
   fun a Q => yoneda_at r a Q.
-
-Definition RelPrePost_le {A B} (r1 r2 : RelPrePost A B) : Prop :=
-  forall P R, r1 P R -> r2 P R.
-
-#[global]
-Instance RelPrePost_le_PreOrder {A B} : PreOrder (@RelPrePost_le A B).
-Proof. constructor; cbv; auto. Qed.
 
 Lemma adjunction_RelPrePost_WPArr {A B}
   (r : RelPrePost A B) (w : WPArr A B) :

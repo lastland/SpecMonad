@@ -7,9 +7,9 @@
     [fun a b => a = b], so a strict Hughes-style [Arrow] instance
     works without coarsening the equivalence.
 
-    This file defines the type [PrePost], the [PrePost_eq] helper
-    (bridging pointwise iff to structural equality via funext +
-    propext), and the [ArrowEq] / [Arrow] / [ArrowChoice] /
+    This file defines the type [PrePost], the pointwise-iff
+    equivalence [PrePost_eq], the Dijkstra refinement order
+    [PrePost_le], and the [ArrowEq] / [Arrow] / [ArrowChoice] /
     [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding
     laws ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
     [Eq1Equivalence], [MonadLawsE]) are proved in
@@ -19,7 +19,6 @@
     collected in [Taxonomy/Galois.v]. *)
 
 From Coq Require Import
-  FunctionalExtensionality PropExtensionality
   Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
@@ -32,16 +31,38 @@ From Incorrectness.Classes Require Import Arrow.
 Definition PrePost (A B : Type) : Type :=
   ((A -> Prop) * (A -> B -> Prop))%type.
 
-Lemma PrePost_eq {A B} (pq1 pq2 : PrePost A B) :
-  (forall a, fst pq1 a <-> fst pq2 a) ->
-  (forall a b, snd pq1 a b <-> snd pq2 a b) ->
-  pq1 = pq2.
+(** Pointwise iff equivalence on both components — no extensionality
+    axioms required. *)
+Definition PrePost_eq {A B} (pq1 pq2 : PrePost A B) : Prop :=
+  (forall a, fst pq1 a <-> fst pq2 a) /\
+  (forall a b, snd pq1 a b <-> snd pq2 a b).
+
+#[global]
+Instance PrePost_eq_Equivalence {A B} : Equivalence (@PrePost_eq A B).
 Proof.
-  destruct pq1 as [P1 R1]; destruct pq2 as [P2 R2]; simpl; intros HP HR.
-  f_equal.
-  - extensionality a. apply propositional_extensionality, HP.
-  - extensionality a. extensionality b.
-    apply propositional_extensionality, HR.
+  constructor.
+  - intros pq. split; reflexivity.
+  - intros pq1 pq2 [HP HR]. split; intros; [symmetry; apply HP | symmetry; apply HR].
+  - intros pq1 pq2 pq3 [HP12 HR12] [HP23 HR23]. split; intros.
+    + etransitivity; [apply HP12 | apply HP23].
+    + etransitivity; [apply HR12 | apply HR23].
+Qed.
+
+(** Dijkstra refinement order: weaken the precondition, strengthen
+    the post-relation. *)
+Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=
+  (forall a,   fst pq1 a   -> fst pq2 a) /\
+  (forall a b, snd pq2 a b -> snd pq1 a b).
+
+#[global]
+Instance PrePost_le_PreOrder {A B} : PreOrder (@PrePost_le A B).
+Proof.
+  constructor.
+  - intros [P R]. split; intros; assumption.
+  - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
+    split; intros.
+    + apply HP23, HP12. assumption.
+    + apply HR12, HR23. assumption.
 Qed.
 
 (* ================================================================= *)
@@ -50,7 +71,7 @@ Qed.
 
 #[global]
 Instance ArrowEq_PrePost : ArrowEq PrePost := {
-  arrow_eq := fun A B => @eq (PrePost A B)
+  arrow_eq := @PrePost_eq
 }.
 
 #[global]

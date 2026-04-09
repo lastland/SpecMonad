@@ -1,9 +1,11 @@
 (** * Laws for [Pred] and [optionPred].
 
-    This file collects [Eq1Equivalence] and [MonadLawsE] for [Pred],
-    the direct relational characterizations of [arr_comp] and
-    [arr_first] for [optionPred], and the [ArrowLaws],
-    [ArrowChoiceLaws], and [ArrowApplyLaws] instances. *)
+    This file proves [ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
+    and [ArrowLoopLaws] for the relational arrow [Pred], plus
+    [Eq1Equivalence] and [MonadLawsE] for the second-argument monad
+    instance on [Pred A].  The [ArrowLaws] / [ArrowChoiceLaws] /
+    [ArrowApplyLaws] for [optionPred] are inherited from the generic
+    transformer laws in [Classes/OptionArrowT] applied to these. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality
@@ -11,12 +13,253 @@ From Coq Require Import
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
-From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import
   Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy Require Import ProgFacts.
 From Incorrectness Require Import Taxonomy.Pred.
+
+(* ================================================================= *)
+(** ** Arrow laws for [Pred]                                          *)
+(* ================================================================= *)
+
+(** Helper: [arr_second] simplifies for [Pred].  This is stated as a
+    Leibniz equality (using [funext] + [propext] internally) so that
+    plain [rewrite] works on it.  [X] is the "extra" (untouched) type. *)
+Lemma arr_second_Pred {X A B} (f : Pred A B) :
+  @arr_second _ _ A B X f =
+  fun (p : X * A) (q : X * B) =>
+    let '(c, a) := p in let '(c', b) := q in f a b /\ c = c'.
+Proof.
+  extensionality p. extensionality q.
+  apply propositional_extensionality.
+  destruct p as [c a], q as [c' b].
+  unfold arr_second, arr_comp, arr_first, arr_pure, swap; cbn.
+  split.
+  - intros [[a0 c0] [Heq [[b1 c1] [Hf Hswap]]]].
+    inversion Heq; subst. simpl in *. inversion Hswap; subst. exact Hf.
+  - intros [Hf Heq]. subst.
+    exists (a, c'). split; [reflexivity|].
+    exists (b, c'). simpl. split; [exact (conj Hf eq_refl)|reflexivity].
+Qed.
+
+Create HintDb Pred_ops.
+#[local] Hint Unfold arr_id arr_comp arr_first arr_pure arr_loop
+  arr_left arr_app assoc_prod unassoc_prod swap : Pred_ops.
+
+Local Ltac unfold_Pred_full :=
+  autounfold with Pred_ops; unfold Arrow_Pred; simpl;
+  repeat match goal with [p : _ * _ |- _] => destruct p end;
+  repeat match goal with
+  | [H : context[let '(_, _) := ?p in _] |- _] => destruct p
+  | [|- context[let '(_, _) := ?p in _]] => destruct p
+  end.
+
+(** After [intros a b] the goal [arrow_eq f g] (which unfolds to
+    [forall a b, f a b <-> g a b] via [ArrowEq_Pred] / [Pred_eq]) is
+    just [f a b <-> g a b]. *)
+
+#[global]
+Instance ArrowLaws_Pred : ArrowLaws Pred.
+Proof.
+  constructor; intros.
+  1-4: intros a b; unfold_Pred_full;
+       firstorder (subst; eauto; try congruence).
+  - (* first_pure *)
+    intros [? ?] [? ?]; unfold_Pred_full; firstorder congruence.
+  - (* first_comp *)
+    intros [? ?] [? ?]; unfold_Pred_full.
+    split.
+    + intros [[b [Hf Hg]] Heq]. subst.
+      exists (b, d0); simpl; eauto.
+    + intros [[b0 d1] [H1 H2]]; simpl in *.
+      destruct H1, H2; subst; split; [exists b0|]; eauto.
+  - (* first_fst *)
+    intros [? ?] ?; unfold_Pred_full.
+    split.
+    + intros [[b0 c0] [H1 H2]]; simpl in *.
+      destruct H1; subst; exists a; eauto.
+    + intros [a0 [? ?]]; subst. exists (b, c); simpl; eauto.
+  - (* first_assoc *)
+    intros [[? ?] ?] [? [? ?]]; unfold_Pred_full.
+    split.
+    + intros [[[? ?] ?] [H1 H2]]; simpl in *.
+      destruct H1 as [[? ?] ?]; inversion H2; subst.
+      eexists (a, (_, _)); simpl; eauto.
+    + intros [[? [? ?]] [H1 H2]]; simpl in *.
+      inversion H1; subst. destruct H2 as [? H2]; inversion H2; subst.
+      eexists (_, _, _); simpl; eauto.
+  - (* comp_proper *)
+    intros f1 f2 Hf g1 g2 Hg a c.
+    cbv [arrow_eq ArrowEq_Pred Pred_eq] in Hf, Hg.
+    unfold_Pred_full.
+    split; intros [b [H1 H2]]; exists b;
+      split; [apply Hf; exact H1 | apply Hg; exact H2 |
+              apply Hf; exact H1 | apply Hg; exact H2].
+  - (* first_proper *)
+    intros f1 f2 Hf [a c] [b c'].
+    cbv [arrow_eq ArrowEq_Pred Pred_eq] in Hf.
+    unfold_Pred_full.
+    split; intros [H1 H2]; split; try exact H2;
+      [apply Hf; exact H1 | apply Hf; exact H1].
+Qed.
+
+#[global]
+Instance ArrowChoiceLaws_Pred : ArrowChoiceLaws Pred.
+Proof.
+  constructor; intros.
+  - (* left_pure *)
+    intros [a|c] [b|c']; unfold_Pred_full;
+    unfold sum_bimap; firstorder congruence.
+  - (* left_comp *)
+    intros [a|d] [c|d']; unfold_Pred_full.
+    + split.
+      * intros [b [Hf Hg]]. exists (inl b); eauto.
+      * intros [x [H1 H2]]; destruct x as [b|d0];
+        [exists b; eauto | simpl in *; contradiction].
+    + split; [tauto | intros [x Hx]; destruct x; simpl in *; tauto].
+    + split; [tauto | intros [x Hx]; destruct x; simpl in *; tauto].
+    + split.
+      * intros Heq; subst; exists (inr d'); eauto.
+      * intros [[b|d0] [H1 H2]]; simpl in *; [contradiction | congruence].
+  - (* left_inl *)
+    intros a [b|c]; unfold_Pred_full.
+    + split.
+      * intros [b0 [Hf Heq]]; injection Heq as ->;
+        exists (inl a); eauto.
+      * intros [[a0|c0] [Heq Hf]]; [injection Heq as ->; exists b; eauto |
+        simpl in *; destruct Hf].
+    + split.
+      * intros [b0 [Hf Heq]]; discriminate Heq.
+      * intros [[a0|c0] [Heq Hf]]; [injection Heq as ->; simpl in *; destruct Hf |
+        discriminate Heq].
+  - (* left_assoc *)
+    intros [[a|c]|d] [b|[c'|d']]; unfold_Pred_full;
+    unfold assoc_sum; (split; intro H; destruct H as [x [H1 H2]];
+      (destruct x as [[?|?]|?] || destruct x as [?|[?|?]]);
+      simpl in *; try contradiction; try discriminate; subst;
+      repeat match goal with
+      | [H0 : inl _ = inl _ |- _] => injection H0; intros; subst; clear H0
+      | [H0 : inr _ = inr _ |- _] => injection H0; intros; subst; clear H0
+      end).
+    all: first [ exists (inl a) | exists (inl (inl b))
+                | exists (inr (inl c')) | exists (inl (inr c'))
+                | exists (inr (inr d')) | exists (inr d') ]; eauto.
+  - (* left_inr *)
+    intros c y; unfold_Pred_full.
+    split.
+    + intros [x [Hinr Hleft]]. subst x.
+      destruct y as [b|c']; simpl in Hleft; [contradiction | f_equal; exact Hleft].
+    + intros Heq. subst y. exists (inr c). simpl. auto.
+  - (* left_natural *)
+    intros x y.
+    destruct x as [a0|c0]; destruct y as [b0|d0]; unfold_Pred_full;
+    unfold sum_bimap; simpl.
+    all: split; intros [z [H1 H2]]; destruct z; simpl in *;
+         try contradiction; try discriminate.
+    all: repeat match goal with
+         | [H : inl _ = inl _ |- _] => injection H; clear H; intros; subst
+         | [H : inr _ = inr _ |- _] => injection H; clear H; intros; subst
+         end.
+    1-2: eexists (inl _); simpl; eauto.
+    1-2: eexists (inr _); simpl; eauto.
+  - (* first_left_dist *)
+    intros [[a0|c0] d0] [[b0 d1]|[c1 d1]];
+    unfold_Pred_full; unfold sum_prod_dist; simpl.
+    all: split; intro H.
+    all: repeat match goal with
+      | [H : exists _, _ |- _] => destruct H
+      | [H : _ /\ _ |- _] => destruct H
+      | [H : (_ + _)%type |- _] => destruct H
+      | [H : (_ * _)%type |- _] => destruct H
+      | [p : (_ + _)%type |- _] => destruct p
+      end; simpl in *;
+      try contradiction; try discriminate;
+      repeat match goal with
+      | [H : inl _ = inl _ |- _] => injection H; clear H; intros; subst
+      | [H : inr _ = inr _ |- _] => injection H; clear H; intros; subst
+      | [H : (_, _) = (_, _) |- _] => injection H; clear H; intros; subst
+      end.
+    all: try (eexists (inl (_, _)); simpl; split; [reflexivity |]; eexists (_, _); simpl; eauto; fail).
+    all: try (eexists (inr (_, _)); simpl; split; [reflexivity |]; eexists (_, _); simpl; eauto; fail).
+    all: try (eexists (inl _, _); simpl; split; [eexists (inl _); simpl; eauto |]; eauto; fail).
+    all: try (eexists (inr _, _); simpl; split; [eexists (inr _); simpl; eauto |]; eauto; fail).
+    -- exists (inl (a0, d1)). auto.
+    -- exists (inl b0, d1). simpl. auto.
+    -- exists (inr (c1, d1)). auto.
+    -- exists (inr c1, d1). simpl. auto.
+  - (* left_proper *)
+    intros f1 f2 Hf [a|c] [b|c'];
+    cbv [arrow_eq ArrowEq_Pred Pred_eq] in Hf; unfold_Pred_full;
+    try tauto.
+    apply Hf.
+Qed.
+
+#[global]
+Instance ArrowApplyLaws_Pred : ArrowApplyLaws Pred.
+Proof.
+  constructor; intros.
+  intros a b; unfold_Pred_full.
+  split.
+  - intros [[g a'] [Heq Happ]]. inversion Heq; subst. exact Happ.
+  - intros Hf. exists (f, a). exact (conj eq_refl Hf).
+Qed.
+
+#[global]
+Instance ArrowLoopLaws_Pred : ArrowLoopLaws Pred.
+Proof.
+  constructor; intros.
+  - (* loop_left_tightening *)
+    intros a b. unfold_Pred_full. split.
+    + intros [c [[b0 c0] [[Hh Heq] Hf]]]. subst c0.
+      exists b0; split; [exact Hh | exists c; exact Hf].
+    + intros [b0 [Hh [c Hf]]].
+      exists c; exists (b0, c); split; [split; [exact Hh | reflexivity] | exact Hf].
+  - (* loop_right_tightening *)
+    intros a c. unfold_Pred_full. split.
+    + intros [d [[b0 d0] [Hf [Hg Heq]]]]. subst d0.
+      exists b0; split; [exists d; exact Hf | exact Hg].
+    + intros [b0 [[d Hf] Hg]].
+      exists d; exists (b0, d); split; [exact Hf | split; [exact Hg | reflexivity]].
+  - (* loop_sliding *)
+    intros a b.
+    rewrite !arr_second_Pred.
+    unfold arr_loop, arr_comp, arr_pure, Arrow_Pred; simpl. split.
+    + intros [c [[b0 c0] [Hf [Hk Heq]]]]. subst b0. subst c.
+      exists c0. exists (a, k c0). split; [split; reflexivity | exact Hf].
+    + intros [c [[a0 c0] [[Hk Heq] Hf]]]. subst a0.
+      exists c0. exists (b, c). split; [exact Hf | split; [exact Hk | reflexivity]].
+  - (* loop_vanishing *)
+    intros a b.
+    unfold arr_loop, arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_Pred; simpl.
+    split.
+    + intros [c [d Hf]]. exists (c, d); exists ((a, c), d); split; [reflexivity|].
+      exists ((b, c), d); split; [exact Hf | reflexivity].
+    + intros [[c d] [p [Heq1 [q [Hf Heq2]]]]].
+      inversion Heq1; subst.
+      destruct q as [[? ?] ?]; simpl in Heq2; inversion Heq2; subst.
+      exists c; exists d; exact Hf.
+  - (* loop_superposing *)
+    intros [c a0] [c' b0].
+    rewrite arr_second_Pred.
+    unfold arr_loop; cbn.
+    unfold arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_Pred, swap; cbn.
+    split.
+    + intros [[d Hf] Heq]. subst c'.
+      exists d; exists (c, (a0, d)); split; [reflexivity|].
+      exists (c, (b0, d)); split.
+      * exists ((a0, d), c); split; [reflexivity|].
+        exists ((b0, d), c); split; [split; [exact Hf | reflexivity] | reflexivity].
+      * reflexivity.
+    + intros [d [p [Heq1 [q [Hmid Heq2]]]]].
+      inversion Heq1; subst.
+      destruct Hmid as [r [Hr [s [Hfs Hs]]]].
+      destruct r as [[? ?] ?]; simpl in Hr; inversion Hr; subst.
+      destruct s as [[? ?] ?]; simpl in *.
+      destruct Hfs as [Hf Hc]. subst.
+      inversion Heq2; subst.
+      split; [eexists; exact Hf | reflexivity].
+Qed.
 
 (* ================================================================= *)
 (** ** [Pred A] monad laws                                            *)
@@ -65,197 +308,16 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** Direct relational characterizations for [optionPred]           *)
+(** ** [optionPred] law instances via generic [optionArrT] laws       *)
 (* ================================================================= *)
 
-(** Unfold the generic [arr_comp] for [Pred] into a direct relational
-    form. *)
-Lemma optionArrT_comp_Pred {A B C}
-  (f : optionPred A B) (g : optionPred B C) :
-  @arr_comp _ Arrow_optionArrT A B C f g =
-  fun a oc => match oc with
-    | Some c => exists b, f a (Some b) /\ g b (Some c)
-    | None => f a None \/ exists b, f a (Some b) /\ g b None
-  end.
-Proof.
-  apply optionPred_eq; intros a oc.
-  unfold arr_comp at 1, Arrow_optionArrT, Arrow_Pred, ArrowChoice_Pred.
-  cbn. unfold to_sum, collapse.
-  destruct oc as [c|].
-  - (* Some c *)
-    split.
-    + intros [ob [Hf [x [Hts [y [Hleft Hcoll]]]]]].
-      destruct ob as [b|]; simpl in Hts; subst x;
-      destruct y as [[c0|]|[]]; simpl in *;
-      try destruct Hleft; try discriminate.
-      injection Hcoll as ->. exists b. auto.
-    + intros [b [Hf Hg]].
-      exists (Some b). split; [exact Hf|].
-      exists (inl b). split; [reflexivity|].
-      exists (inl (Some c)). split; [exact Hg | reflexivity].
-  - (* None *)
-    split.
-    + intros [ob [Hf [x [Hts [y [Hleft Hcoll]]]]]].
-      destruct ob as [b|]; simpl in Hts; subst x;
-      destruct y as [[c0|]|[]]; simpl in *;
-      try destruct Hleft; try discriminate.
-      * right. exists b. auto.
-      * left. exact Hf.
-    + intros [Hf | [b [Hf Hg]]].
-      * exists None. split; [exact Hf|].
-        exists (inr tt). split; [reflexivity|].
-        exists (inr tt). split; [reflexivity | reflexivity].
-      * exists (Some b). split; [exact Hf|].
-        exists (inl b). split; [reflexivity|].
-        exists (inl None). split; [exact Hg | reflexivity].
-Qed.
+(** Because [Pred] already has [ArrowLaws], [ArrowChoiceLaws], and
+    [ArrowApplyLaws] instances, [optionPred = optionArrT Pred]
+    inherits the transformer laws from [Classes/OptionArrowT] without
+    any custom proof.  These definitions are sanity checks that
+    confirm typeclass resolution succeeds. *)
 
-(** Unfold the generic [arr_first] for [Pred]. *)
-Lemma optionArrT_first_Pred {A B C}
-  (f : optionPred A B) :
-  @arr_first _ Arrow_optionArrT A B C f =
-  fun p oq => let '(a, c) := p in
-    match oq with
-    | Some (b, c') => f a (Some b) /\ c = c'
-    | None => f a None
-    end.
-Proof.
-  apply optionPred_eq; intros [a c] oq.
-  unfold arr_first at 1, Arrow_optionArrT, Arrow_Pred.
-  cbn. unfold sequence_option.
-  destruct oq as [[b c']|].
-  - split.
-    + intros [[ob d] [[Hf Hd] Heq]]. simpl in *.
-      destruct ob; [injection Heq as -> -> | discriminate].
-      exact (conj Hf Hd).
-    + intros [Hf Hc]. subst. exists (Some b, c'). auto.
-  - split.
-    + intros [[ob d] [[Hf Hd] Heq]]. simpl in *.
-      destruct ob; [discriminate | ]. subst. exact Hf.
-    + intros Hf. exists (None, c). simpl. auto.
-Qed.
-
-(* ================================================================= *)
-(** ** [ArrowLaws] for [optionPred]                                   *)
-(* ================================================================= *)
-
-#[global]
-Instance ArrowLaws_optionPred : ArrowLaws optionPred.
-Proof.
-  constructor; intros.
-  - (* comp_id_l *)
-    apply optionPred_eq; intros a [c|]; rewrite optionArrT_comp_Pred;
-    unfold arr_pure, Arrow_optionArrT; cbn.
-    + split; [intros [b [Heq Hf]]; injection Heq as Heq; subst; exact Hf |
-              intros Hf; exists a; eauto].
-    + split; [intros [Habs | [b [Heq Hf]]]; [discriminate Habs | injection Heq as Heq; subst; exact Hf] |
-              intros Hf; right; exists a; eauto].
-  - (* comp_id_r *)
-    apply optionPred_eq; intros a [c|]; rewrite optionArrT_comp_Pred;
-    unfold arr_pure, Arrow_optionArrT; cbn.
-    + split; [intros [b [Hf Heq]]; injection Heq as Heq; subst; exact Hf |
-              intros Hf; exists c; eauto].
-    + split; [intros [H | [b [Hf Habs]]]; [exact H | discriminate Habs] |
-              intros Hf; left; exact Hf].
-  - (* comp_assoc *)
-    apply optionPred_eq; intros a [d|]; rewrite !optionArrT_comp_Pred.
-    + split.
-      * intros [c [[b [Hf Hg]] Hh]]. exists b; split; [exact Hf|]. exists c; eauto.
-      * intros [b [Hf [c [Hg Hh]]]]. exists c; split; [exists b|]; eauto.
-    + split.
-      * intros [[Hf | [b [Hf Hg]]] | [c [[b [Hf Hg]] Hh]]].
-        -- left. exact Hf.
-        -- right. exists b; split; [exact Hf | left; exact Hg].
-        -- right. exists b; split; [exact Hf | right; exists c; eauto].
-      * intros [Hf | [b [Hf [Hg | [c [Hg Hh]]]]]].
-        -- left. left. exact Hf.
-        -- left. right. exists b; eauto.
-        -- right. exists c; split; [exists b; eauto | exact Hh].
-  - (* pure_comp *)
-    apply optionPred_eq; intros a [c|]; rewrite optionArrT_comp_Pred;
-    unfold arr_pure, Arrow_optionArrT; cbn.
-    + split; [intros [b [Heq1 Heq2]]; injection Heq1 as Heq1; injection Heq2 as Heq2; subst; reflexivity |
-              intros Heq; exists (f a); eauto].
-    + split; [intros [H | [? [_ H]]]; discriminate H | intros H; discriminate H].
-  - (* first_pure *)
-    apply optionPred_eq; intros [a c] [[b c']|]; rewrite optionArrT_first_Pred;
-    unfold arr_pure, Arrow_optionArrT; cbn.
-    + split; [intros [Heq Hc]; injection Heq as Heq; subst; reflexivity |
-              intro H; injection H as H1 H2; subst; eauto].
-    + split; [intros H; discriminate H | intros H; discriminate H].
-  - (* first_comp *)
-    apply optionPred_eq; intros [a d] [[c d']|];
-    rewrite optionArrT_first_Pred, !optionArrT_comp_Pred;
-    rewrite !optionArrT_first_Pred.
-    + split.
-      * intros [[b [Hf Hg]] Heq]; subst d'.
-        exists (b, d); simpl; eauto.
-      * intros [[b0 d0] H]; simpl in H.
-        destruct H as [[Hf Heq1] [Hg Heq2]]; subst.
-        split; [exists b0; eauto | reflexivity].
-    + split.
-      * intros [Hf | [b [Hf Hg]]].
-        -- left. exact Hf.
-        -- right. exists (b, d); simpl; eauto.
-      * intros [Hf | [[b d0] H]]; simpl in *.
-        -- left. exact Hf.
-        -- destruct H as [[Hf Heq] Hg]; subst.
-           right. exists b; eauto.
-  - (* first_fst *)
-    apply optionPred_eq; intros [a c] [b|];
-    rewrite !optionArrT_comp_Pred;
-    rewrite !optionArrT_first_Pred;
-    unfold arr_pure, Arrow_optionArrT; cbn.
-    + split.
-      * intros [[b0 c0] H]; simpl in H.
-        destruct H as [[Hf Hc] Heq]; injection Heq as Heq; subst.
-        exists a; eauto.
-      * intros [a0 [Heq Hf]]; injection Heq as Heq; subst.
-        exists (b, c); simpl; eauto.
-    + split.
-      * intros [Hf | [[b0 c0] H]]; simpl in *.
-        -- right. exists a; eauto.
-        -- destruct H as [_ Habs]; discriminate Habs.
-      * intros [Habs | [a0 [Heq Hf]]].
-        -- discriminate Habs.
-        -- injection Heq as Heq; subst. left. exact Hf.
-  - (* first_assoc *)
-    apply optionPred_eq; intros [[a c] d] [ob|];
-    rewrite !optionArrT_comp_Pred, !optionArrT_first_Pred;
-    unfold arr_pure, Arrow_optionArrT, assoc_prod; cbn.
-    + destruct ob as [b [c' d']]. split.
-      * intros [[[b0 c0] d0] H]; simpl in H.
-        destruct H as [[[Hf Hc] Hd] Heq].
-        subst c0 d0. inversion Heq; subst.
-        exists (a, (c', d')); simpl; split; [reflexivity|].
-        split; [exact Hf | reflexivity].
-      * intros [[a0 [c0 d0]] H]; simpl in H.
-        destruct H as [Hassoc Hrest].
-        inversion Hassoc; subst.
-        destruct Hrest as [Hf Heq_cd].
-        inversion Heq_cd; subst.
-        eexists (_, _, _); simpl; eauto.
-    + split.
-      * intros [Hf | [[[b0 c0] d0] [_ Habs]]]; [| discriminate Habs].
-        right. exists (a, (c, d)). split; [reflexivity | exact Hf].
-      * intros [Habs | [[a0 [c0 d0]] [Heq Hf]]]; [discriminate Habs | ].
-        inversion Heq; subst. left. exact Hf.
-  - (* comp_proper *)
-    unfold Proper, respectful; intros;
-    cbv [arrow_eq ArrowEq_optionArrT ArrowEq_Pred] in *;
-    subst; reflexivity.
-  - (* first_proper *)
-    unfold Proper, respectful; intros;
-    cbv [arrow_eq ArrowEq_optionArrT ArrowEq_Pred] in *;
-    subst; reflexivity.
-Qed.
-
-(** [ArrowChoiceLaws_optionPred] and [ArrowApplyLaws_optionPred] are
-    inherited automatically via the generic
-    [ArrowChoiceLaws_optionArrT] / [ArrowApplyLaws_optionArrT]
-    instances in [Classes/OptionArrowT]. *)
-
-(** Sanity check: confirm these laws resolve for [optionPred]. *)
+Definition ArrowLaws_optionPred : ArrowLaws optionPred := _.
 Definition ArrowChoiceLaws_optionPred : ArrowChoiceLaws optionPred := _.
 Definition ArrowApplyLaws_optionPred : ArrowApplyLaws optionPred := _.
 
@@ -272,4 +334,3 @@ Definition MonadLawsE__progPredM (S : Type)
 Definition MonadLawsE__nditPredM (S : Type)
   : @MonadLawsE (nditPredM S) _ _ :=
   MonadLawsE_stateT S (optionT (optionT (Pred unit))).
-

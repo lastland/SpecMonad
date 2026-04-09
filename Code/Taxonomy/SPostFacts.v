@@ -15,7 +15,7 @@ From ExtLib Require Import
   Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy Require Import SPost ProgFacts.
+From Incorrectness.Taxonomy Require Import Pred SPost ProgFacts.
 
 (* ================================================================= *)
 (** ** Utilities                                                       *)

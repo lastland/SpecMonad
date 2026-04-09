@@ -17,7 +17,7 @@ From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
 From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Taxonomy Require Import Prog WP SPost.
+From Incorrectness.Taxonomy Require Import Prog WP Pred SPost.
 From Paco Require Import paco.
 From Hammer Require Import Tactics.
 From ITree Require Import ITree Eq Props.Infinite.

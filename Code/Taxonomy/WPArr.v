@@ -8,22 +8,38 @@
     monad instance to ExtLib's reader machinery and only develop the
     Hughes-style [Arrow] interface here.
 
-    This file defines the type and instances ([ArrowEq], [Arrow],
-    [ArrowChoice], [ArrowApply]).  All their laws are proved in
+    This file defines the type, the Dijkstra refinement order
+    [WPArr_le], and the [ArrowEq], [Arrow], [ArrowChoice],
+    [ArrowApply] instances.  All their laws are proved in
     [Taxonomy/WPArrFacts.v], where they mostly hold definitionally
-    up to Coq's eta conversion. *)
+    up to Coq's eta conversion.
 
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
+    Note: [arrow_eq] on [WPArr] is Leibniz equality.  A
+    pointwise-iff equivalence is not usable here because the
+    [comp_proper] arrow law would require every [WPArr] value to be
+    monotone/Proper in its continuation, which is not enforced by
+    the [WPArr] type. *)
+
+From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness Require Import Taxonomy.WP Taxonomy.WPFacts.
 
 (* ================================================================= *)
-(** ** Type definition and Arrow instances                            *)
+(** ** Type definition and refinement order                           *)
 (* ================================================================= *)
 
 Definition WPArr (A B : Type) : Type := A -> PureWP B.
+
+(** Dijkstra refinement: pointwise implication.  Reads as "the
+    refined [w2] accepts at least as many [(a, Q)] pairs as [w1]". *)
+Definition WPArr_le {A B} (w1 w2 : WPArr A B) : Prop :=
+  forall a Q, w1 a Q -> w2 a Q.
+
+#[global]
+Instance WPArr_le_PreOrder {A B} : PreOrder (@WPArr_le A B).
+Proof. constructor; cbv; auto. Qed.
 
 #[global]
 Instance ArrowEq_WPArr : ArrowEq WPArr := {

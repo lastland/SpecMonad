@@ -16,7 +16,7 @@ From ExtLib Require Import
   StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg WP SPost.
+From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg WP Pred SPost.
 
 Import MonadNotation.
 Open Scope monad_scope.

@@ -1,11 +1,16 @@
-(** * The relational predicate monad [Pred] and composed spec types.
+(** * The relational strongest-postcondition arrow [Pred] and
+      composed spec types.
 
-    [Pred A B := A -> B -> Prop] is defined in [Code/Classes/Arrow.v]
-    where its [Arrow] / [ArrowChoice] / [ArrowApply] / [ArrowLoop]
-    instances and their laws are also proved.  This file adds the
-    complementary monad view: for every fixed [A], the partially
-    applied type [fun B => Pred A B] is a monad in [B] via relational
-    composition.
+    [Pred A B := A -> B -> Prop] is a relation from [A] to [B], the
+    category of relations interpreted as forward predicate
+    transformers (strongest-postcondition arrows).  Using relations as
+    the base ensures all arrow laws are provable without requiring
+    monotonicity or additivity constraints.
+
+    This file provides the arrow-view instances ([Arrow],
+    [ArrowChoice], [ArrowApply], [ArrowLoop]) plus the complementary
+    monad view: for every fixed [A], the partially applied type
+    [fun B => Pred A B] is a monad in [B] via relational composition.
 
     With both views available, we expose composed specification types
     for the three computation monads ([prog], [ndprog], [nditprog]) in
@@ -26,22 +31,88 @@
     [MonadLawsE_optionT] and [MonadLawsE_stateT] instances in
     [Taxonomy/ProgFacts.v].
 
-    This file holds the definitions and [Monad] / [Eq1] /
-    [ArrowChoice] / [ArrowApply] / [ArrowLoop] instances.  Their laws
-    ([Eq1Equivalence], [MonadLawsE], [ArrowLaws]) are proved in
+    This file holds only the definitions and instances.  Their laws
+    ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws], [ArrowLoopLaws],
+    [Eq1Equivalence], [MonadLawsE]) are proved in
     [Taxonomy/PredFacts.v]. *)
 
 From Coq Require Import
-  FunctionalExtensionality PropExtensionality
   Morphisms RelationClasses.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
-From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import
   Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy Require Import ProgFacts.
+
+(* ================================================================= *)
+(** ** [Pred]: definition and arrow instances                         *)
+(* ================================================================= *)
+
+Definition Pred (A B : Type) : Type := A -> B -> Prop.
+
+(** Pointwise iff is the intrinsic equivalence on relations — no
+    extensionality axioms required. *)
+Definition Pred_eq {A B} (f g : Pred A B) : Prop :=
+  forall a b, f a b <-> g a b.
+
+#[global]
+Instance Pred_eq_Equivalence {A B} : Equivalence (@Pred_eq A B).
+Proof.
+  constructor.
+  - intros f a b. reflexivity.
+  - intros f g H a b. symmetry. apply H.
+  - intros f g h H1 H2 a b. etransitivity; [apply H1 | apply H2].
+Qed.
+
+#[global]
+Instance ArrowEq_Pred : ArrowEq Pred := {
+  arrow_eq := @Pred_eq
+}.
+
+(** Dijkstra refinement order (contravariant inclusion):
+    [R1 ≤ R2] iff [R2 ⊆ R1]. The refined side has fewer allowed
+    outcomes. *)
+Definition Pred_le {A B} (R1 R2 : Pred A B) : Prop :=
+  forall a b, R2 a b -> R1 a b.
+
+#[global]
+Instance Pred_le_PreOrder {A B} : PreOrder (@Pred_le A B).
+Proof.
+  constructor.
+  - intros R a b H. exact H.
+  - intros R1 R2 R3 H12 H23 a b H. apply H12, H23, H.
+Qed.
+
+#[global]
+Instance Arrow_Pred : Arrow Pred := {
+  arr_pure := fun A B f a b => f a = b ;
+  arr_comp := fun A B C f g a c => exists b, f a b /\ g b c ;
+  arr_first := fun A B C f p q =>
+    let '(a, c) := p in let '(b, c') := q in f a b /\ c = c'
+}.
+
+#[global]
+Instance ArrowChoice_Pred : ArrowChoice Pred := {
+  arr_left := fun A B C f x y =>
+    match x, y with
+    | inl a, inl b => f a b
+    | inr c, inr c' => c = c'
+    | _, _ => False
+    end
+}.
+
+#[global]
+Instance ArrowApply_Pred : ArrowApply Pred := {
+  arr_app := fun A B p b =>
+    let '(f, a) := p in f a b
+}.
+
+#[global]
+Instance ArrowLoop_Pred : ArrowLoop Pred := {
+  arr_loop := fun A B C f a b => exists c, f (a, c) (b, c)
+}.
 
 (* ================================================================= *)
 (** ** [Pred A] is a monad in its second argument                     *)
@@ -87,18 +158,15 @@ End PredMonad.
     [Pred].  [ArrowChoice], [ArrowApply] and [ArrowLoop] instances are
     inherited from the generic [ArrowChoice_optionArrT] etc. in
     [Classes/OptionArrowT]; their laws likewise come through the
-    generic [ArrowChoiceLaws_optionArrT] etc.  [PredFacts.v] provides
-    direct relational characterizations of [arr_comp] and [arr_first]
-    and reproves [ArrowLaws_optionPred] in that direct form. *)
+    generic [ArrowChoiceLaws_optionArrT] etc. applied to [Pred]'s own
+    arrow laws. *)
 
 Definition optionPred := optionArrT Pred.
 
-Lemma optionPred_eq {A B} (f g : optionPred A B) :
-  (forall a ob, f a ob <-> g a ob) -> f = g.
-Proof.
-  intros H. extensionality a. extensionality ob.
-  apply propositional_extensionality. apply H.
-Qed.
+(** Pointwise iff for [optionPred].  [optionPred A B = Pred A (option B)]
+    so this is just [Pred_eq] at that type. *)
+Definition optionPred_eq {A B} (f g : optionPred A B) : Prop :=
+  forall a ob, f a ob <-> g a ob.
 
 (* ================================================================= *)
 (** ** Arrow-view specification types                                 *)

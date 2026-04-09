@@ -13,7 +13,7 @@ From ExtLib Require Import
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Taxonomy Require Import NonDetProg WP SPost.
+From Incorrectness.Taxonomy Require Import NonDetProg WP Pred SPost.
 
 Import MonadNotation.
 Open Scope monad_scope.

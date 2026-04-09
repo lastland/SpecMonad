@@ -80,6 +80,14 @@ Instance ArrowEq_RelPrePost : ArrowEq RelPrePost := {
   arrow_eq := @RelPrePost_arrow_eq
 }.
 
+(** Pointwise inclusion order on [RelPrePost]. *)
+Definition RelPrePost_le {A B} (r1 r2 : RelPrePost A B) : Prop :=
+  forall P R, r1 P R -> r2 P R.
+
+#[global]
+Instance RelPrePost_le_PreOrder {A B} : PreOrder (@RelPrePost_le A B).
+Proof. constructor; cbv; auto. Qed.
+
 #[global]
 Instance Arrow_RelPrePost : Arrow RelPrePost := {
   arr_pure := fun A B f =>

@@ -25,6 +25,7 @@
 
 From Coq Require Import Program.Tactics Classical_Prop.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Taxonomy Require Import Pred.
 
 (* ================================================================= *)
 (** ** Predicate transformers and shared record                         *)

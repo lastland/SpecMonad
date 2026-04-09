@@ -37,10 +37,10 @@ Classes/StateArrowT/ArrowChoiceLaws.v
 Classes/StateArrowT/ArrowApplyLaws.v
 Classes/StateArrowT.v
 Classes/Galois.v
-Taxonomy/SPost.v
-Taxonomy/SPostFacts.v
 Taxonomy/Pred.v
 Taxonomy/PredFacts.v
+Taxonomy/SPost.v
+Taxonomy/SPostFacts.v
 Taxonomy/PrePost.v
 Taxonomy/PrePostFacts.v
 Taxonomy/WPArr.v
