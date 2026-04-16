@@ -18,6 +18,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - **`arr_pure_ext` inside `comp_proper` blocks**: Creates unresolvable evars. Pre-assert the equality with `assert (H := ...)` outside the block, then use `exact H` inside.
   - `#[export]` is not supported for `Instance` inside `Section` — use `#[global]`.
   - **Ltac hygiene**: Don't define Ltac if unused or used only once (inline instead). For repeated `unfold` lists within a file, use `Create HintDb db` + `#[local] Hint Unfold ... : db` + `autounfold with db`.
+  - **CoqHammer in proof bodies**: Always use `sauto limit: 200` (not bare `sauto`) — bare `sauto` loops on typeclass-heavy goals. Works well for propositional tails after manual preprocessing (`unfold`/`cbn`/`destruct`). Keep manual proofs for witness construction (pair/sum `exists`), `rewrite` with `IsASP_rewrite`/`IsDSLP_rewrite`, `Proper_bind` setoid reasoning, and typeclass-derived `reflexivity`/`transitivity`. No global limit option exists — limits are per-tactic only.
 - **Sort inference in match bodies**: A bare `forall r, ... -> post r` as the body of a `match` against `mkOptionT` / `mkSPRecord` has its sort inferred as `Type`, not `Prop`, breaking `optionT PureWP` / `Pred` unification with a confusing universe error. Wrap in a connective (`/\`, `\/`, `exists`) or add a `(_ : Prop)` cast.
 - **Classical `itree void1` termination**: Reasoning that a deterministic ITree either converges or diverges requires `eutt_reta_or_div`, `ret_not_div`, `any_infinite_proper_eutt` from `ITree.Extra.Dijkstra.PureITreeBasics` — *not* in the default `From ITree Require Import ITree Eq Props.Infinite.`. `ret_not_div` takes `A` and `E` implicit, so call it as `ret_not_div Hinf`, not `ret_not_div _ _ _ Hinf`.
 
@@ -50,6 +51,8 @@ The `Code/Taxonomy/` directory is the core of the project. All monads share the 
 - `NonDetItObservation.v`: maps `nditprog` to `ASPostArr` (SP) and `ProgWP` (4 WP variants)
 
 **Facts files** (`*Facts.v`) prove laws. `ProgFacts.v` provides generic `optionT`/`stateT` monad law instances. `SPostFacts.v` proves `ArrowLaws` for the SP arrows.
+
+`WPArr.v` defines the reader-WP Kleisli arrow `WPArr A B := A -> PureWP B`; laws in `WPArrFacts.v` hold definitionally (all `reflexivity`). `RelPrePost.v` defines `RelPrePost A B := (A -> Prop) -> (A -> B -> Prop) -> Prop` — a "validator" of Hoare specs that embeds `WPArr` injectively. `Galois.v` establishes Galois connections (via Dijkstra refinement order) among `Pred`, `PrePost`, `WPArr`, and `RelPrePost`.
 
 `Taxonomy/deprecated/` holds earlier iterations that are deliberately excluded from `_CoqProject`; ignore them when grepping for symbol references.
 
