@@ -101,6 +101,22 @@ Arguments obsAWLP {_} {_}.
 Arguments obsDWP {_} {_}.
 Arguments obsDWLP {_} {_}.
 
+(*
+monad trans:
+(pre : Prop) -> (A -> Prop / pre)
+
+S -> (pre : Prop) -> (A * S -> Prop / pre)
+
+arrow trans:                  
+(A -> Prop) -> B -> Prop
+
+S -> (A -> Prop) -> S * B -> Prop     <-- monad trans                    
+
+(S * A -> Prop) -> S * B -> Prop      <-- arrow trans
+                
+(S * unit -> Prop) -> (A * S -> Prop) <-- specialize
+*)
+                  
 (* ================================================================= *)
 (** ** SP observations                                                *)
 (* ================================================================= *)
