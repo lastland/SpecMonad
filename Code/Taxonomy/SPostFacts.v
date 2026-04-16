@@ -74,8 +74,7 @@ Instance ArrowEq_PureASPostArr : ArrowEq PureASPostArr := {
 Lemma id_pred {A} (pre : A -> Prop) :
   (fun b => exists a, pre a /\ a = b) = pre.
 Proof.
-  extensionality b. apply propositional_extensionality.
-  split; [intros [? [? ?]]; subst; auto | intro; exists b; auto].
+  extensionality b. apply propositional_extensionality. sauto limit: 200.
 Qed.
 
 #[global]
@@ -88,25 +87,16 @@ Proof.
     rewrite id_pred. reflexivity.
 
   - (* comp_id_r: arr_comp f arr_id = f *)
-    apply PureASPostArr_eq; intros pre b. cbn.
-    split.
-    + intros [a [Hf0 Heq]]; subst; exact Hf0.
-    + intro Hf0; exists b; auto.
+    apply PureASPostArr_eq; intros pre b. cbn. sauto limit: 200.
 
   - (* comp_assoc *)
     apply PureASPostArr_eq; intros pre d0. cbn. reflexivity.
 
-  - (* pure_comp: arr_comp (arr_pure f) (arr_pure g) = arr_pure (g ∘ f) *)
-    apply PureASPostArr_eq; intros pre c. cbn.
-    split.
-    + intros [b [[a [Hp Hf0]] Hg]]; subst; exists a; auto.
-    + intros [a [Hp Hgf]]; subst; exists (f a); split; [exists a |]; auto.
+  - (* pure_comp *)
+    apply PureASPostArr_eq; intros pre c. cbn. sauto limit: 200.
 
   - (* first_pure *)
-    apply PureASPostArr_eq; intros pre [b d]. cbn.
-    split.
-    + intros [a [Hpre Hfa]]; subst; exists (a, d); auto.
-    + intros [[a c] [Hpre Heq]]; inversion Heq; subst; exists a; auto.
+    apply PureASPostArr_eq; intros pre [b d]. cbn. sauto limit: 200.
 
   - (* first_comp *)
     apply PureASPostArr_eq; intros pre [c d]. cbn. reflexivity.
@@ -166,15 +156,7 @@ Instance ArrowChoiceLaws_PureASPostArr : ArrowChoiceLaws PureASPostArr.
 Proof.
   constructor; intros.
   - (* left_pure *)
-    apply PureASPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap.
-    + split.
-      * intros [a [Hp Hf]]. exists (inl a); split; [exact Hp | f_equal; exact Hf].
-      * intros [[a|c'] [Hp Heq]]; [| discriminate].
-        injection Heq as Heq. subst. exists a; auto.
-    + split.
-      * intros Hp. exists (inr c); auto.
-      * intros [[a|c'] [Hp Heq]]; [discriminate |].
-        injection Heq as Heq. subst. exact Hp.
+    apply PureASPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap; sauto limit: 200.
   - (* left_comp *)
     apply PureASPostArr_eq; intros pre [c|d]; cbn; reflexivity.
   - (* left_inl *)
@@ -187,7 +169,7 @@ Proof.
       * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [[a0 [Hp Hinl]] Hra]].
         injection Hinl as Hinl. subst.
         exists b. split; [rewrite Hf; exists a; auto | reflexivity].
-    + split; intros [? [_ H]]; discriminate.
+    + sauto limit: 200.
   - (* left_assoc *)
     apply PureASPostArr_eq; intros pre [b | [c | d]]; cbn.
     + (* inl b *)
@@ -231,7 +213,7 @@ Proof.
         * destruct H as [a [[c0 [_ Habs]] _]]. discriminate.
         * destruct H as [c0 [_ Habs]]. discriminate.
       + (* inr c': both sides give pre c' after simplification *)
-        firstorder congruence.
+        sauto limit: 200.
     - (* left_natural *)
       apply PureASPostArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
       + destruct (IsASP_rewrite f) as [Rf Hf].
@@ -342,8 +324,7 @@ Instance ArrowEq_PureDSLPostArr : ArrowEq PureDSLPostArr := {
 Lemma id_pred_dslp {A} (pre : A -> Prop) :
   (fun b => forall a, a = b -> pre a) = pre.
 Proof.
-  extensionality b. apply propositional_extensionality.
-  split; [intro H; exact (H b eq_refl) | intros Hpre a Heq; subst; exact Hpre].
+  extensionality b. apply propositional_extensionality. sauto limit: 200.
 Qed.
 
 #[global]
@@ -355,26 +336,17 @@ Proof.
     apply PureDSLPostArr_eq; intros pre b. cbn.
     rewrite id_pred_dslp. reflexivity.
 
-  - (* comp_id_r: arr_comp f arr_id = f *)
-    apply PureDSLPostArr_eq; intros pre b. cbn.
-    split.
-    + intros Hf0. exact (Hf0 b eq_refl).
-    + intros Hf0 a Heq. subst. exact Hf0.
+  - (* comp_id_r *)
+    apply PureDSLPostArr_eq; intros pre b. cbn. sauto limit: 200.
 
   - (* comp_assoc *)
     apply PureDSLPostArr_eq; intros pre d0. cbn. reflexivity.
 
-  - (* pure_comp: arr_comp (arr_pure f) (arr_pure g) = arr_pure (g ∘ f) *)
-    apply PureDSLPostArr_eq; intros pre c. cbn.
-    split.
-    + intros H a Hgf. subst. exact (H (f a) eq_refl a eq_refl).
-    + intros H b Hg a Hf. subst. exact (H a eq_refl).
+  - (* pure_comp *)
+    apply PureDSLPostArr_eq; intros pre c. cbn. sauto limit: 200.
 
   - (* first_pure *)
-    apply PureDSLPostArr_eq; intros pre [b d]. cbn.
-    split.
-    + intros H [a c] Hfa. inversion Hfa; subst. exact (H a eq_refl).
-    + intros H a Heq. subst. exact (H (a, d) eq_refl).
+    apply PureDSLPostArr_eq; intros pre [b d]. cbn. sauto limit: 200.
 
   - (* first_comp *)
     apply PureDSLPostArr_eq; intros pre [c d]. cbn. reflexivity.
@@ -435,15 +407,8 @@ Instance ArrowChoiceLaws_PureDSLPostArr : ArrowChoiceLaws PureDSLPostArr.
 Proof.
   constructor; intros.
   - (* left_pure *)
-    apply PureDSLPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap.
-    + split.
-      * intros H [a|c'] Hbm; [| discriminate].
-        injection Hbm as Hbm. subst. exact (H a eq_refl).
-      * intros H a Heq. subst. exact (H (inl a) eq_refl).
-    + split.
-      * intros Hpre [a|c'] Hbm; [discriminate |].
-        injection Hbm as Hbm. subst. exact Hpre.
-      * intros H. exact (H (inr c) eq_refl).
+    apply PureDSLPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap;
+    sauto limit: 200.
   - (* left_comp *)
     apply PureDSLPostArr_eq; intros pre [c|d]; cbn; reflexivity.
   - (* left_inl *)

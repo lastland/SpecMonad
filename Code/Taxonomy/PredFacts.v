@@ -17,6 +17,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import
   Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy Require Import ProgFacts.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import Taxonomy.Pred.
 
 (* ================================================================= *)
@@ -63,26 +64,22 @@ Local Ltac unfold_Pred_full :=
 Instance ArrowLaws_Pred : ArrowLaws Pred.
 Proof.
   constructor; intros.
-  1-4: intros a b; unfold_Pred_full;
-       firstorder (subst; eauto; try congruence).
+  1-4: intros a b; unfold_Pred_full; sauto limit: 200.
   - (* first_pure *)
-    intros [? ?] [? ?]; unfold_Pred_full; firstorder congruence.
+    intros [? ?] [? ?]; unfold_Pred_full; sauto limit: 200.
   - (* first_comp *)
-    intros [? ?] [? ?]; unfold_Pred_full.
-    split.
+    intros [? ?] [? ?]; unfold_Pred_full. split.
     + intros [[b [Hf Hg]] Heq]. subst.
       exists (b, d0); simpl; eauto.
     + intros [[b0 d1] [H1 H2]]; simpl in *.
       destruct H1, H2; subst; split; [exists b0|]; eauto.
   - (* first_fst *)
-    intros [? ?] ?; unfold_Pred_full.
-    split.
+    intros [? ?] ?; unfold_Pred_full. split.
     + intros [[b0 c0] [H1 H2]]; simpl in *.
       destruct H1; subst; exists a; eauto.
     + intros [a0 [? ?]]; subst. exists (b, c); simpl; eauto.
   - (* first_assoc *)
-    intros [[? ?] ?] [? [? ?]]; unfold_Pred_full.
-    split.
+    intros [[? ?] ?] [? [? ?]]; unfold_Pred_full. split.
     + intros [[[? ?] ?] [H1 H2]]; simpl in *.
       destruct H1 as [[? ?] ?]; inversion H2; subst.
       eexists (a, (_, _)); simpl; eauto.
@@ -92,16 +89,11 @@ Proof.
   - (* comp_proper *)
     intros f1 f2 Hf g1 g2 Hg a c.
     cbv [arrow_eq ArrowEq_Pred Pred_eq] in Hf, Hg.
-    unfold_Pred_full.
-    split; intros [b [H1 H2]]; exists b;
-      split; [apply Hf; exact H1 | apply Hg; exact H2 |
-              apply Hf; exact H1 | apply Hg; exact H2].
+    unfold_Pred_full. sauto limit: 200.
   - (* first_proper *)
     intros f1 f2 Hf [a c] [b c'].
     cbv [arrow_eq ArrowEq_Pred Pred_eq] in Hf.
-    unfold_Pred_full.
-    split; intros [H1 H2]; split; try exact H2;
-      [apply Hf; exact H1 | apply Hf; exact H1].
+    unfold_Pred_full. sauto limit: 200.
 Qed.
 
 #[global]
@@ -110,15 +102,15 @@ Proof.
   constructor; intros.
   - (* left_pure *)
     intros [a|c] [b|c']; unfold_Pred_full;
-    unfold sum_bimap; firstorder congruence.
+    unfold sum_bimap; sauto limit: 200.
   - (* left_comp *)
     intros [a|d] [c|d']; unfold_Pred_full.
     + split.
       * intros [b [Hf Hg]]. exists (inl b); eauto.
       * intros [x [H1 H2]]; destruct x as [b|d0];
         [exists b; eauto | simpl in *; contradiction].
-    + split; [tauto | intros [x Hx]; destruct x; simpl in *; tauto].
-    + split; [tauto | intros [x Hx]; destruct x; simpl in *; tauto].
+    + sauto limit: 200.
+    + sauto limit: 200.
     + split.
       * intros Heq; subst; exists (inr d'); eauto.
       * intros [[b|d0] [H1 H2]]; simpl in *; [contradiction | congruence].
@@ -146,8 +138,7 @@ Proof.
                 | exists (inr (inl c')) | exists (inl (inr c'))
                 | exists (inr (inr d')) | exists (inr d') ]; eauto.
   - (* left_inr *)
-    intros c y; unfold_Pred_full.
-    split.
+    intros c y; unfold_Pred_full. split.
     + intros [x [Hinr Hleft]]. subst x.
       destruct y as [b|c']; simpl in Hleft; [contradiction | f_equal; exact Hleft].
     + intros Heq. subst y. exists (inr c). simpl. auto.
@@ -199,10 +190,7 @@ Qed.
 Instance ArrowApplyLaws_Pred : ArrowApplyLaws Pred.
 Proof.
   constructor; intros.
-  intros a b; unfold_Pred_full.
-  split.
-  - intros [[g a'] [Heq Happ]]. inversion Heq; subst. exact Happ.
-  - intros Hf. exists (f, a). exact (conj eq_refl Hf).
+  intros a b; unfold_Pred_full. sauto limit: 200.
 Qed.
 
 #[global]
@@ -214,27 +202,27 @@ Proof.
     + intros [c [[b0 c0] [[Hh Heq] Hf]]]. subst c0.
       exists b0; split; [exact Hh | exists c; exact Hf].
     + intros [b0 [Hh [c Hf]]].
-      exists c; exists (b0, c); split; [split; [exact Hh | reflexivity] | exact Hf].
+      exists c; exists (b0, c); sauto limit: 200.
   - (* loop_right_tightening *)
     intros a c. unfold_Pred_full. split.
     + intros [d [[b0 d0] [Hf [Hg Heq]]]]. subst d0.
       exists b0; split; [exists d; exact Hf | exact Hg].
     + intros [b0 [[d Hf] Hg]].
-      exists d; exists (b0, d); split; [exact Hf | split; [exact Hg | reflexivity]].
+      exists d; exists (b0, d); sauto limit: 200.
   - (* loop_sliding *)
     intros a b.
     rewrite !arr_second_Pred.
     unfold arr_loop, arr_comp, arr_pure, Arrow_Pred; simpl. split.
     + intros [c [[b0 c0] [Hf [Hk Heq]]]]. subst b0. subst c.
-      exists c0. exists (a, k c0). split; [split; reflexivity | exact Hf].
+      exists c0. exists (a, k c0). sauto limit: 200.
     + intros [c [[a0 c0] [[Hk Heq] Hf]]]. subst a0.
-      exists c0. exists (b, c). split; [exact Hf | split; [exact Hk | reflexivity]].
+      exists c0. exists (b, c). sauto limit: 200.
   - (* loop_vanishing *)
     intros a b.
     unfold arr_loop, arr_comp, arr_pure, assoc_prod, unassoc_prod, Arrow_Pred; simpl.
     split.
     + intros [c [d Hf]]. exists (c, d); exists ((a, c), d); split; [reflexivity|].
-      exists ((b, c), d); split; [exact Hf | reflexivity].
+      exists ((b, c), d); sauto limit: 200.
     + intros [[c d] [p [Heq1 [q [Hf Heq2]]]]].
       inversion Heq1; subst.
       destruct q as [[? ?] ?]; simpl in Heq2; inversion Heq2; subst.
@@ -249,7 +237,7 @@ Proof.
       exists d; exists (c, (a0, d)); split; [reflexivity|].
       exists (c, (b0, d)); split.
       * exists ((a0, d), c); split; [reflexivity|].
-        exists ((b0, d), c); split; [split; [exact Hf | reflexivity] | reflexivity].
+        exists ((b0, d), c); sauto limit: 200.
       * reflexivity.
     + intros [d [p [Heq1 [q [Hmid Heq2]]]]].
       inversion Heq1; subst.
@@ -281,30 +269,19 @@ Proof.
   constructor.
   - (* bind_ret_l *)
     intros B C f x a c.
-    cbn. unfold bindPred, retPred. split.
-    + intros [b [Heq Hk]]. subst. exact Hk.
-    + intro Hk. exists x. split; [reflexivity | exact Hk].
+    cbn. unfold bindPred, retPred. sauto limit: 200.
   - (* bind_ret_r *)
     intros B x a b.
-    cbn. unfold bindPred, retPred. split.
-    + intros [b' [Hm Heq]]. subst. exact Hm.
-    + intro Hm. exists b. split; [exact Hm | reflexivity].
+    cbn. unfold bindPred, retPred. sauto limit: 200.
   - (* bind_bind *)
     intros B C D x f g a d.
-    cbn. unfold bindPred. split.
-    + intros [c [[b [Hx Hf]] Hg]].
-      exists b. split; [exact Hx | exists c; exact (conj Hf Hg)].
-    + intros [b [Hx [c [Hf Hg]]]].
-      exists c. split; [exists b; exact (conj Hx Hf) | exact Hg].
+    cbn. unfold bindPred. sauto limit: 200.
   - (* Proper_bind *)
     intros B C m1 m2 Hm k1 k2 Hk a c.
     cbn. unfold bindPred.
     unfold eq1, Eq1_Pred in Hm.
-    split.
-    + intros [b [Hm1 Hk1]].
-      exists b. split; [apply Hm; exact Hm1 | apply (Hk b a c); exact Hk1].
-    + intros [b [Hm2 Hk2]].
-      exists b. split; [apply Hm; exact Hm2 | apply (Hk b a c); exact Hk2].
+    split; intros [b [Hm1 Hk1]]; exists b; split;
+      [apply Hm | apply (Hk b a c) | apply Hm | apply (Hk b a c)]; assumption.
 Qed.
 
 (* ================================================================= *)

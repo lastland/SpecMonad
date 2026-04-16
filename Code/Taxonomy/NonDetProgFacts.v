@@ -16,6 +16,7 @@ From ITree Require Import Basics.Monad.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import
   Taxonomy.NonDetProg
   Taxonomy.ProgFacts.
@@ -43,38 +44,23 @@ Section SetMFacts.
   Proof.
     constructor.
     - (* bind_ret_l *)
-      intros A B f x.
-      unfold eq1, Eq1_SetM. cbn.
+      intros A B f x. unfold eq1, Eq1_SetM. cbn.
       apply functional_extensionality; intro b.
-      apply propositional_extensionality; split.
-      + intros [a [Ha Hk]]. subst. exact Hk.
-      + intro Hk. exists x. split; [reflexivity | exact Hk].
+      apply propositional_extensionality. sauto.
     - (* bind_ret_r *)
-      intros A x.
-      unfold eq1, Eq1_SetM. cbn.
+      intros A x. unfold eq1, Eq1_SetM. cbn.
       apply functional_extensionality; intro b.
-      apply propositional_extensionality; split.
-      + intros [a [Ha Hb]]. subst. exact Ha.
-      + intro Hx. exists b. split; [exact Hx | reflexivity].
+      apply propositional_extensionality. sauto.
     - (* bind_bind *)
-      intros A B C x f g.
-      unfold eq1, Eq1_SetM. cbn.
+      intros A B C x f g. unfold eq1, Eq1_SetM. cbn.
       apply functional_extensionality; intro c.
-      apply propositional_extensionality; split.
-      + intros [b [[a [Ha Hf]] Hg]].
-        exists a. split; [exact Ha |].
-        exists b. split; [exact Hf | exact Hg].
-      + intros [a [Ha [b [Hf Hg]]]].
-        exists b. split; [| exact Hg].
-        exists a. split; [exact Ha | exact Hf].
+      apply propositional_extensionality. sauto.
     - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg.
-      unfold eq1, Eq1_SetM in *. subst.
+      intros A B x y Hxy f g Hfg. unfold eq1, Eq1_SetM in *. subst.
       apply functional_extensionality; intro b.
-      apply propositional_extensionality; split;
-        intros [a [Ha Hk]]; exists a; split;
-          try exact Ha;
-          [rewrite <- (Hfg a) | rewrite (Hfg a)]; exact Hk.
+      apply propositional_extensionality.
+      split; intros [a [Ha Hk]]; exists a; split; try exact Ha;
+        [rewrite <- (Hfg a) | rewrite (Hfg a)]; exact Hk.
   Qed.
 
 End SetMFacts.

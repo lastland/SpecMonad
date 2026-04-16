@@ -12,6 +12,7 @@ From Coq Require Import
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import Taxonomy.PrePost.
 
 (* ================================================================= *)
@@ -22,50 +23,14 @@ From Incorrectness Require Import Taxonomy.PrePost.
 Instance ArrowLaws_PrePost : ArrowLaws PrePost.
 Proof.
   constructor; intros.
-  - (* comp_id_l: arr_pure id ⨟ f = f *)
-    split; cbn.
-    + intros a. split.
-      * intros [_ HP]. exact (HP a eq_refl).
-      * intros HP. split; [exact I |]. intros b ->. exact HP.
-    + intros a c. split.
-      * intros [b [-> HR]]. exact HR.
-      * intros HR. exists a. split; [reflexivity | exact HR].
-  - (* comp_id_r: f ⨟ arr_pure id = f *)
-    split; cbn.
-    + intros a. split.
-      * intros [HP _]. exact HP.
-      * intros HP. split; [exact HP | intros _ _; exact I].
-    + intros a c. split.
-      * intros [b [HR ->]]. exact HR.
-      * intros HR. exists c. split; [exact HR | reflexivity].
-  - (* comp_assoc *)
-    split; cbn.
-    + intros a. split.
-      * intros [[HP HQ] HFh]. split; [exact HP |]. intros b HRf.
-        split; [exact (HQ b HRf) |]. intros c HRg.
-        apply HFh. exists b. split; [exact HRf | exact HRg].
-      * intros [HP HFgh]. split.
-        -- split; [exact HP |]. intros b HRf. exact (proj1 (HFgh b HRf)).
-        -- intros c [b [HRf HRg]]. exact (proj2 (HFgh b HRf) c HRg).
-    + intros a d. split.
-      * intros [c [[b [HRf HRg]] HRh]].
-        exists b. split; [exact HRf |]. exists c. split; [exact HRg | exact HRh].
-      * intros [b [HRf [c [HRg HRh]]]].
-        exists c. split; [exists b; split; [exact HRf | exact HRg] | exact HRh].
-  - (* pure_comp *)
-    split; cbn.
-    + intros a. split.
-      * intros _. exact I.
-      * intros _. split; [exact I | intros _ _; exact I].
-    + intros a c. split.
-      * intros [b [<- ->]]. reflexivity.
-      * intros <-. exists (f a). split; reflexivity.
+  - (* comp_id_l *) split; cbn; sauto limit: 200.
+  - (* comp_id_r *) split; cbn; sauto limit: 200.
+  - (* comp_assoc *) split; cbn; sauto limit: 200.
+  - (* pure_comp *) split; cbn; sauto limit: 200.
   - (* first_pure *)
     split; cbn.
     + intros [a c]. simpl. reflexivity.
-    + intros [a c] [b c']. simpl. split.
-      * intros [-> ->]. reflexivity.
-      * intros Heq. inversion Heq. subst. split; reflexivity.
+    + intros [a c] [b c']. simpl. sauto limit: 200.
   - (* first_comp *)
     split; cbn.
     + intros [a d]. simpl. split.
@@ -76,60 +41,35 @@ Proof.
         split; [exact HRf | reflexivity].
     + intros [a d] [c d']. simpl. split.
       * intros [[b [HRf HRg]] Hdd]. subst d'.
-        exists (b, d). simpl. split.
-        -- split; [exact HRf | reflexivity].
-        -- split; [exact HRg | reflexivity].
+        exists (b, d). simpl. sauto limit: 200.
       * intros [[b d''] [[HRf Hd1] [HRg Hd2]]]. simpl in *.
-        subst d'' d'.
-        split; [| reflexivity]. exists b. split; [exact HRf | exact HRg].
+        subst d'' d'. sauto limit: 200.
   - (* first_fst *)
     split; cbn.
-    + intros [a0 c]. simpl. split.
-      * intros [HP _]. split; [exact I |]. intros a ->. exact HP.
-      * intros [_ HQ]. split.
-        -- exact (HQ a0 eq_refl).
-        -- intros _ _. exact I.
+    + intros [a0 c]. simpl. sauto limit: 200.
     + intros [a0 c] b. simpl. split.
       * intros [[b' c'] [[HRf Hcc] Hbb]]. simpl in *. subst c' b'.
-        exists a0. split; [reflexivity | exact HRf].
+        exists a0. sauto limit: 200.
       * intros [a [Haa HRf]]. subst a. exists (b, c). simpl.
-        split; [split; [exact HRf | reflexivity] | reflexivity].
+        sauto limit: 200.
   - (* first_assoc *)
     split; cbn.
-    + intros [[a c] d]. simpl. split.
-      * intros [HP _]. split; [exact I |].
-        intros q Heq. unfold assoc_prod in Heq. subst q. simpl. exact HP.
-      * intros [_ HQ]. split.
-        -- exact (HQ (a, (c, d)) eq_refl).
-        -- intros _ _. exact I.
-    + intros [[a c] d] [b' [c' d']]. simpl. split.
+    + intros [[a c] d]. simpl. sauto limit: 200 unfold: assoc_prod.
+    + intros [[a c] d] [b' [c' d']]. simpl. unfold assoc_prod. split.
       * intros [[[b c''] d''] [[[HRf Hcc] Hdd] Heq]]. simpl in *.
-        unfold assoc_prod in Heq.
-        exists (a, (c, d)). split.
-        -- unfold assoc_prod. reflexivity.
-        -- simpl. split.
-           ++ replace b' with b by congruence. exact HRf.
-           ++ congruence.
+        exists (a, (c, d)). sauto.
       * intros [[a' [c'' d'']] [Heq [HRf Hcd]]]. simpl in *.
-        unfold assoc_prod in Heq.
-        exists ((b', c), d). simpl. split.
-        -- split; [split; [| reflexivity] | reflexivity].
-           replace a' with a in HRf by congruence. exact HRf.
-        -- unfold assoc_prod. congruence.
+        exists ((b', c), d). simpl. sauto.
   - (* comp_proper *)
     intros f1 f2 [HfP HfR] g1 g2 [HgP HgR].
     cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
-    + intros a. rewrite HfP. split; intros [H1 H2]; split; try assumption.
-      * intros b Hr. apply HgP, H2, HfR, Hr.
-      * intros b Hr. apply HgP, H2, HfR, Hr.
-    + intros a c. split; intros [b [Hr1 Hr2]]; exists b;
-        split; solve [apply HfR; assumption | apply HgR; assumption].
+    + intros a. rewrite HfP. sauto limit: 200.
+    + intros a c. sauto limit: 200.
   - (* first_proper *)
     intros f1 f2 [HfP HfR].
     cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
     + intros [a c]. apply HfP.
-    + intros [a c] [b c']. cbn. split; intros [Hf Hc]; split;
-        solve [apply HfR; assumption | assumption].
+    + intros [a c] [b c']. cbn. sauto limit: 200.
 Qed.
 
 (* ================================================================= *)
@@ -142,12 +82,8 @@ Proof.
   constructor; intros.
   - (* left_pure *)
     split; cbn.
-    + intros a. destruct a as [a|c]; cbn; reflexivity.
-    + intros a b. destruct a as [a|c]; destruct b as [b|c']; cbn;
-      (split; [intros Heq; subst; reflexivity | intros Heq; inversion Heq; reflexivity])
-      || (split; [intros []; reflexivity | intros Heq; inversion Heq])
-      || (split; [intros Heq; inversion Heq; reflexivity | intros Heq; subst; reflexivity])
-      || (split; intros Heq; inversion Heq).
+    + intros [a|c]; cbn; reflexivity.
+    + intros [a|c] [b|c']; cbn; sauto limit: 200.
   - (* left_comp *)
     split.
     + intros [a|d]; cbn.
@@ -168,23 +104,10 @@ Proof.
           [intros ->; exists (inr d'); cbn; exact (conj eq_refl eq_refl)
           | intros [[b|d''] [Hr Hs]]; cbn in *; [contradiction | subst d'' d'; reflexivity]]).
   - (* left_inl *)
-    split.
-    + intros a. cbn. split.
-      * intros [HP _]. split; [exact I|]. intros x Heq. subst x. exact HP.
-      * intros [_ HQ]. split; [exact (HQ (inl a) eq_refl) | intros _ _; exact I].
-    + intros a y. cbn. split.
-      * intros [b [HR Heq]]. subst y. exists (inl a). split; [reflexivity | exact HR].
-      * intros [x [Heq Hr]]. subst x. destruct y as [b|c]; cbn in Hr; [| contradiction].
-        exists b. split; [exact Hr | reflexivity].
+    split; cbn; sauto limit: 200.
   - (* left_assoc *)
     split.
-    + intros x. cbn. split.
-      * intros [HP _]. split; [exact I |].
-        intros y Heq. destruct x as [[a|c]|d]; unfold assoc_sum in Heq; subst y; cbn; try exact I; exact HP.
-      * intros [_ HQ]. split.
-        -- destruct x as [[a|c]|d]; cbn;
-           [exact (HQ (inl a) eq_refl) | exact I | exact I].
-        -- intros _ _. exact I.
+    + intros [[a|c]|d]; cbn; sauto limit: 200 unfold: assoc_sum.
     + intros x y. cbn. split.
       * intros [z [Hr Heq]]. unfold assoc_sum in Heq. subst y.
         destruct x as [[a|c]|d]; destruct z as [[b|c']|d']; cbn in Hr;
@@ -199,26 +122,10 @@ Proof.
         -- inversion Hr. subst. exists (inl (inr c')). cbn. split; reflexivity.
         -- inversion Hr. subst. exists (inr d'). cbn. split; reflexivity.
   - (* left_inr *)
-    split.
-    + intros c. cbn. split.
-      * intros _. exact I.
-      * intros _. split; [exact I|]. intros x Heq. subst x. cbn. exact I.
-    + intros c y. cbn. split.
-      * intros [x [Heq Hr]]. subst x. cbn in Hr.
-        destruct y as [b|c']; [contradiction | subst c'; reflexivity].
-      * intros Heq. subst y. exists (inr c). cbn. split; reflexivity.
+    split; cbn; sauto limit: 200.
   - (* left_natural *)
     split.
-    + intros x. cbn. split.
-      * intros [HP _]. split.
-        -- exact I.
-        -- intros y Heq. subst y. cbn.
-           destruct x as [a|c]; cbn in HP; [exact HP | exact I].
-      * intros [_ HQ]. split.
-        -- destruct x as [a|c]; cbn.
-           ++ exact (HQ (inl a) eq_refl).
-           ++ exact I.
-        -- intros _ _. exact I.
+    + intros [a|c]; cbn; sauto limit: 200.
     + intros x y. cbn. split.
       * intros [z [Hr Heq]]. subst y.
         destruct x as [a|c]; destruct z as [b|c']; cbn in Hr; try contradiction.
@@ -230,15 +137,7 @@ Proof.
         -- subst d'. exists (inr c). cbn. split; [reflexivity | reflexivity].
   - (* first_left_dist *)
     split.
-    + intros [x d]. cbn. split.
-      * intros [HP _]. split.
-        -- exact I.
-        -- intros z Heq. subst z. destruct x as [a|c]; cbn in *; [exact HP | exact I].
-      * intros [_ HQ]. split.
-        -- destruct x as [a|c]; cbn in *.
-           ++ exact (HQ (inl (a, d)) eq_refl).
-           ++ exact I.
-        -- intros _ _. exact I.
+    + intros [[a|c] d]; cbn; sauto limit: 200.
     + intros [x d] y. cbn. split.
       * intros [[y' d''] [[Hr Hd] Heq]]. cbn in *. subst d''.
         destruct x as [a|c]; destruct y' as [b|c']; cbn in Hr; try contradiction.
@@ -266,14 +165,7 @@ Qed.
 #[global]
 Instance ArrowApplyLaws_PrePost : ArrowApplyLaws PrePost.
 Proof.
-  constructor; intros.
-  split.
-  - intros a. cbn. split.
-    + intros [_ HP]. exact (HP (f, a) eq_refl).
-    + intros HP. split; [exact I|]. intros [f' a'] Heq. inversion Heq. subst. exact HP.
-  - intros a b. cbn. split.
-    + intros [[f' a'] [Heq Hr]]. inversion Heq. subst. exact Hr.
-    + intros Hr. exists (f, a). split; [reflexivity | exact Hr].
+  constructor; intros. split; cbn; sauto limit: 200.
 Qed.
 
 (* ================================================================= *)
@@ -289,20 +181,12 @@ Section PrePostMonadFacts.
     : @Eq1Equivalence (PrePost A) _ Eq1_PrePost.
   Proof.
     intros B; constructor.
-    - (* Reflexive *)
-      intros m. unfold eq1, Eq1_PrePost.
-      split; intros; reflexivity.
-    - (* Symmetric *)
-      intros m1 m2 H. unfold eq1, Eq1_PrePost in *.
-      destruct H as [HP HR]. split; intros.
-      + symmetry. apply HP.
-      + symmetry. apply HR.
-    - (* Transitive *)
-      intros m1 m2 m3 H1 H2. unfold eq1, Eq1_PrePost in *.
+    - intros m. unfold eq1, Eq1_PrePost. split; intros; reflexivity.
+    - intros m1 m2 H. unfold eq1, Eq1_PrePost in *.
+      destruct H as [HP HR]. split; intros; symmetry; auto.
+    - intros m1 m2 m3 H1 H2. unfold eq1, Eq1_PrePost in *.
       destruct H1 as [HP1 HR1]. destruct H2 as [HP2 HR2].
-      split; intros.
-      + etransitivity; [apply HP1 | apply HP2].
-      + etransitivity; [apply HR1 | apply HR2].
+      split; intros; etransitivity; eauto.
   Qed.
 
   #[global]
@@ -311,70 +195,31 @@ Section PrePostMonadFacts.
   Proof.
     constructor.
     - (* bind_ret_l *)
-      intros B C f x.
-      unfold eq1, Eq1_PrePost.
+      intros B C f x. unfold eq1, Eq1_PrePost.
       cbn. unfold bindPrePost, retPrePost. cbn.
-      split.
-      + intros a. split.
-        * intros [_ HP]. exact (HP x eq_refl).
-        * intros HP. split; [exact I |]. intros b ->. exact HP.
-      + intros a c. split.
-        * intros [b [-> HR]]. exact HR.
-        * intros HR. exists x. split; [reflexivity | exact HR].
+      split; sauto limit: 200.
     - (* bind_ret_r *)
-      intros B m.
-      unfold eq1, Eq1_PrePost.
+      intros B m. unfold eq1, Eq1_PrePost.
       cbn. unfold bindPrePost, retPrePost. cbn.
-      split.
-      + intros a. split.
-        * intros [HP _]. exact HP.
-        * intros HP. split; [exact HP | intros _ _; exact I].
-      + intros a b. split.
-        * intros [b' [HR ->]]. exact HR.
-        * intros HR. exists b. split; [exact HR | reflexivity].
+      split; sauto limit: 200.
     - (* bind_bind *)
-      intros B C D m f g.
-      unfold eq1, Eq1_PrePost.
+      intros B C D m f g. unfold eq1, Eq1_PrePost.
       cbn. unfold bindPrePost. cbn.
-      split.
-      + intros a. split.
-        * intros [[HP HRf] HFg].
-          split; [exact HP |]. intros b HR.
-          split; [exact (HRf b HR) |]. intros c HRf'.
-          apply HFg. exists b. split; [exact HR | exact HRf'].
-        * intros [HP HFgh]. split.
-          -- split; [exact HP |]. intros b HR.
-             exact (proj1 (HFgh b HR)).
-          -- intros c [b [HR HRf']].
-             exact (proj2 (HFgh b HR) c HRf').
-      + intros a d. split.
-        * intros [c [[b [HR HRf]] HRg]].
-          exists b. split; [exact HR |].
-          exists c. split; [exact HRf | exact HRg].
-        * intros [b [HR [c [HRf HRg]]]].
-          exists c. split; [exists b; split; [exact HR | exact HRf] | exact HRg].
+      split; sauto limit: 200.
     - (* Proper_bind *)
       intros B C m1 m2 Hm k1 k2 Hk.
       unfold eq1, Eq1_PrePost in *.
       destruct Hm as [HmP HmR].
       cbn. unfold bindPrePost. cbn.
       split.
-      + intros a. split.
-        * intros [HP HRf]. split; [apply HmP; exact HP |].
-          intros b HR2. assert (HR1 : snd m1 a b) by (apply HmR; exact HR2).
-          specialize (HRf b HR1).
-          destruct (Hk b) as [HkP _]. apply HkP. exact HRf.
-        * intros [HP HRf]. split; [apply HmP; exact HP |].
-          intros b HR1. assert (HR2 : snd m2 a b) by (apply HmR; exact HR1).
-          specialize (HRf b HR2).
-          destruct (Hk b) as [HkP _]. apply HkP. exact HRf.
-      + intros a c. split.
-        * intros [b [HR1 HRf]].
-          exists b. split; [apply HmR; exact HR1 |].
-          destruct (Hk b) as [_ HkR]. apply HkR. exact HRf.
-        * intros [b [HR2 HRf]].
-          exists b. split; [apply HmR; exact HR2 |].
-          destruct (Hk b) as [_ HkR]. apply HkR. exact HRf.
+      + intros a. split; intros [HP HRf]; split;
+          [apply HmP | | apply HmP |]; try exact HP; intros b HR;
+          [assert (snd m1 a b) by (apply HmR; exact HR) |
+           assert (snd m2 a b) by (apply HmR; exact HR)];
+          destruct (Hk b) as [HkP _]; apply HkP; sauto limit: 200.
+      + intros a c. split; intros [b [HR HRf]]; exists b; split;
+          [apply HmR | destruct (Hk b) as [_ HkR]; apply HkR |
+           apply HmR | destruct (Hk b) as [_ HkR]; apply HkR]; eauto.
   Qed.
 
 End PrePostMonadFacts.
