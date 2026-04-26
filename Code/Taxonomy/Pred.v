@@ -71,18 +71,18 @@ Instance ArrowEq_Pred : ArrowEq Pred := {
   arrow_eq := @Pred_eq
 }.
 
-(** Dijkstra refinement order (contravariant inclusion):
-    [R1 ≤ R2] iff [R2 ⊆ R1]. The refined side has fewer allowed
-    outcomes. *)
+(** Covariant inclusion: [R1 ≤ R2] iff [R1 ⊆ R2]. A larger relation
+    is "above" a smaller one. This pairs with the partial-correctness
+    Hoare order on [PrePost] in [Taxonomy/Galois.v]. *)
 Definition Pred_le {A B} (R1 R2 : Pred A B) : Prop :=
-  forall a b, R2 a b -> R1 a b.
+  forall a b, R1 a b -> R2 a b.
 
 #[global]
 Instance Pred_le_PreOrder {A B} : PreOrder (@Pred_le A B).
 Proof.
   constructor.
   - intros R a b H. exact H.
-  - intros R1 R2 R3 H12 H23 a b H. apply H12, H23, H.
+  - intros R1 R2 R3 H12 H23 a b H. apply H23, H12, H.
 Qed.
 
 #[global]

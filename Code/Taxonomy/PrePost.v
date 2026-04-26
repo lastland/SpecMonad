@@ -8,8 +8,9 @@
     works without coarsening the equivalence.
 
     This file defines the type [PrePost], the pointwise-iff
-    equivalence [PrePost_eq], the Dijkstra refinement order
-    [PrePost_le], and the [ArrowEq] / [Arrow] / [ArrowChoice] /
+    equivalence [PrePost_eq], the partial-correctness Hoare order
+    [PrePost_le] (stronger pre, weaker post), and the [ArrowEq] /
+    [Arrow] / [ArrowChoice] /
     [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding
     laws ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
     [Eq1Equivalence], [MonadLawsE]) are proved in
@@ -48,11 +49,14 @@ Proof.
     + etransitivity; [apply HR12 | apply HR23].
 Qed.
 
-(** Dijkstra refinement order: weaken the precondition, strengthen
-    the post-relation. *)
+(** Partial-correctness Hoare order: strengthen the precondition,
+    weaken the post-relation.  [pq1 ≤ pq2] iff [fst pq2 ⊆ fst pq1]
+    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Pred_le] to make
+    [α R := (True, R)], [γ pq := snd pq] a Galois connection (see
+    [Taxonomy/Galois.v]). *)
 Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=
-  (forall a,   fst pq1 a   -> fst pq2 a) /\
-  (forall a b, snd pq2 a b -> snd pq1 a b).
+  (forall a,   fst pq2 a   -> fst pq1 a) /\
+  (forall a b, snd pq1 a b -> snd pq2 a b).
 
 #[global]
 Instance PrePost_le_PreOrder {A B} : PreOrder (@PrePost_le A B).
@@ -61,8 +65,8 @@ Proof.
   - intros [P R]. split; intros; assumption.
   - intros [P1 R1] [P2 R2] [P3 R3] [HP12 HR12] [HP23 HR23].
     split; intros.
-    + apply HP23, HP12. assumption.
-    + apply HR12, HR23. assumption.
+    + apply HP12, HP23. assumption.
+    + apply HR23, HR12. assumption.
 Qed.
 
 (* ================================================================= *)
