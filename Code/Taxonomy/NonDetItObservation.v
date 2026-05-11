@@ -155,6 +155,50 @@ Arguments obsDSLP {_} {_}.
 Arguments obsDSP {_} {_}.
 Arguments obsASLP {_} {_}.
 
+(* ================================================================= *)
+(** ** SP triples                                                    *)
+(* ================================================================= *)
+
+Inductive approximationKind := | Correct | Incorrect.
+
+(** Typeclass for coercing an SP observation result to a predicate
+    transformer [(unit * S -> Prop) -> option (A * S) -> Prop]:
+    - a plain predicate transformer is the identity;
+    - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
+      [sp_pt] extracted;
+    - a plain relation [Pred (unit * S) (option (A * S))] is lifted
+      angelically via [asp]. *)
+Class AsSPObs {S A : Type} (T : Type) :=
+  as_sp_obs : T -> (unit * S -> Prop) -> option (A * S) -> Prop.
+
+#[global] Instance AsSPObs_fun {S A} :
+  @AsSPObs S A ((unit * S -> Prop) -> option (A * S) -> Prop) :=
+  fun obs => obs.
+
+#[global] Instance AsSPObs_ASP {S A} :
+  @AsSPObs S A (ASPostArr S A) :=
+  fun d => sp_pt (proj1_sig d).
+
+#[global] Instance AsSPObs_DSLP {S A} :
+  @AsSPObs S A (DSLPostArr S A) :=
+  fun d => sp_pt (proj1_sig d).
+
+#[global] Instance AsSPObs_Pred {S A} :
+  @AsSPObs S A (Pred (unit * S) (option (A * S))) :=
+  fun R => asp R.
+
+Definition tripleSP {S A T} `{@AsSPObs S A T}
+  (obs : nditprog S A -> T)
+  (prog : nditprog S A)
+  (is_correct : approximationKind)
+  (pre : S -> Prop)
+  (post : option (A * S) -> Prop)
+  : Prop :=
+    let pre' := fun '(tt, s) => pre s in
+    if is_correct then
+      forall r, as_sp_obs (obs prog) pre' r -> post r
+    else
+      forall r, post r -> as_sp_obs (obs prog) pre' r.
 
 (* ================================================================= *)
 (** ** SP examples: pure nondeterminism (no divergence)               *)
@@ -167,25 +211,38 @@ Example progA : nditprog nat unit :=
 
 (** All reachable converging results have state >= 42. *)
 Theorem progA_all :
-  forall s r,
-    obsRel progA (tt, s) r ->
-    match r with
-    | Some (_, s') => s' >= 42
-    | None => False
-    end.
+  tripleSP obsRel progA Correct
+    (fun _ => True)
+    (fun r =>
+      match r with
+      | Some (_, s') => s' >= 42
+      | None => False
+      end).
 Proof.
-  intros s [[] |] H; cbn in H; sauto.
+  unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+  intros r [sigma [_ Hrel]].
+  destruct r as [[[] s'] |]; cbn in Hrel; sauto.
 Qed.
 
 (** State 42 is reachable. *)
 Theorem progA_42 :
-  forall s, obsRel progA (tt, s) (Some (tt, 42)).
-Proof. intros. cbn. sauto. Qed.
+  tripleSP obsRel progA Incorrect
+    (fun _ => True)
+    (fun r => r = Some (tt, 42)).
+Proof.
+  unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+  intros r ->. exists (tt, 0). split; [exact I | unfold obsRel; cbn; sauto].
+Qed.
 
 (** State 43 is also reachable. *)
 Theorem progA_43 :
-  forall s, obsRel progA (tt, s) (Some (tt, 43)).
-Proof. intros. cbn. sauto. Qed.
+  tripleSP obsRel progA Incorrect
+    (fun _ => True)
+    (fun r => r = Some (tt, 43)).
+Proof.
+  unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+  intros r ->. exists (tt, 0). split; [exact I | unfold obsRel; cbn; sauto].
+Qed.
 
 (* ================================================================= *)
 (** ** Examples: nondeterminism + divergence                          *)
@@ -198,16 +255,24 @@ Example progB : nditprog nat unit :=
 
 (** State 42 is reachable (via the converging branch). *)
 Theorem progB_42 :
-  forall s, obsRel progB (tt, s) (Some (tt, 42)).
-Proof. intros. cbn. sauto. Qed.
+  tripleSP obsRel progB Incorrect
+    (fun _ => True)
+    (fun r => r = Some (tt, 42)).
+Proof.
+  unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+  intros r ->. exists (tt, 0). split; [exact I | unfold obsRel; cbn; sauto].
+Qed.
 
 (** Failure ([None]) is NOT reachable: the divergent branch does not
     contribute an exception, and divergence is the absence of reaching
     any final state. *)
 Theorem progB_not_None :
-  forall s, ~ obsRel progB (tt, s) None.
+  tripleSP obsRel progB Correct
+    (fun _ => True)
+    (fun r => r <> None).
 Proof.
-  intros s H. cbn in H. sauto.
+  unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+  intros r [sigma [_ Hrel]] ->. cbn in Hrel. sauto.
 Qed.
 
 (* ================================================================= *)
@@ -299,8 +364,6 @@ Definition pp2wp {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgW
 
 Definition ordProgWP {S A} (m1 m2 : ProgWP S A) : Prop :=
   forall s post, unOptionT (runStateT m1 s) post -> unOptionT (runStateT m2 s) post.
-
-Inductive approximationKind := | Correct | Incorrect.
 
 Definition tripleWP {S A} 
   (obs : nditprog S A -> ProgWP S A)
