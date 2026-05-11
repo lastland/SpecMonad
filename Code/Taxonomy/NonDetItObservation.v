@@ -461,6 +461,53 @@ Section NDItWPInclusions.
 
 End NDItWPInclusions.
 
+Section NDItWPContrapositives.
+
+  Variable S : Type.
+
+  (* -------------------------------------------------------------- *)
+  (** *** Theorem 3.8: Contrapositive transformers WP               *)
+  (* -------------------------------------------------------------- *)
+
+  Theorem obsAWP_contrapositive_obsDWLP :
+    forall A (m : nditprog S A) s post,
+      unOptionT (runStateT (obsAWP m) s) post <->
+      ~ unOptionT (runStateT (obsDWLP m) s) (fun r => ~ post r).
+  Proof.
+    intros A m s post. cbn.
+    destruct (runStateT m s) as [[outcomes]].
+    split.
+    - intros [r [Hr Hp]] Hdwlp.
+      exact (Hdwlp (Some r) Hr Hp).
+    - intro Hnn.
+      apply NNPP. intro Habs.
+      apply Hnn.
+      intros oa Hoa. destruct oa as [r|].
+      + intro Hp. apply Habs. exists r. exact (conj Hoa Hp).
+      + exact I.
+  Qed.
+
+  Theorem obsDWP_contrapositive_obsAWLP :
+    forall A (m : nditprog S A) s post,
+      unOptionT (runStateT (obsDWP m) s) post <->
+      ~ unOptionT (runStateT (obsAWLP m) s) (fun r => ~ post r).
+  Proof.
+    intros A m s post. cbn.
+    destruct (runStateT m s) as [[outcomes]].
+    split.
+    - intros Hdwp [Hawlp | Hdiv].
+      + destruct Hawlp as [r [Hr Hnp]].
+        exact (Hnp (Hdwp (Some r) Hr)).
+      + exact (Hdwp None Hdiv).
+    - intros Hnawlp oa Hoa.
+      destruct oa as [r|].
+      + apply NNPP. intro Hnp.
+        apply Hnawlp. left. exists r. exact (conj Hoa Hnp).
+      + exfalso. apply Hnawlp. right. exact Hoa.
+  Qed.
+
+End NDItWPContrapositives.
+
 (* ================================================================= *)
 (** ** SP examples: the four reachability classes                    *)
 (* ================================================================= *)
