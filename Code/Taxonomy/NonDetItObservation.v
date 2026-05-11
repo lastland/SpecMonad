@@ -294,55 +294,77 @@ Arguments obsAWLP {_} {_}.
 (** ** WP examples: pure nondeterminism (no divergence)               *)
 (* ================================================================= *)
 
+Inductive approximationKind := | Correct | Incorrect.
+
+(** Definition of triples as in section 4.0. *)
+(* TODO: define it as it is more common for a DM *)
+Definition tripleWP {S A} 
+  (obs : nditprog S A -> ProgWP S A)
+  (prog : nditprog S A)
+  (is_correct:approximationKind)
+  (pre : S -> Prop)
+  (post : option (A * S) -> Prop)
+  : Prop 
+  := forall s0, 
+    if is_correct then
+      pre s0 -> unOptionT (runStateT (obs prog) s0) post
+    else 
+      unOptionT (runStateT (obs prog) s0) post -> pre s0.
+
 Example progA_DWP := obsDWP progA.
 Example progA_AWP := obsAWP progA.
 
 (** DWP can prove a property that holds for ALL outcomes. *)
 Theorem progA_DWP_all :
-  forall s, unOptionT (runStateT progA_DWP s)
-         (fun r : option (unit * nat) =>
-            match r with
-            | Some (_, s) => s >= 42
-            | None => False
-            end).
+  tripleWP obsDWP progA Correct
+    (fun _ => True)
+    (fun r : option (unit * nat) =>
+      match r with
+      | Some (_, s) => s >= 42
+      | None => False
+      end).
 Proof.
-  intros. cbn. intros [[[]|]|] H; sauto.
+  intros s0 _. cbn. intros [[[]|]|] H; sauto.
 Qed.
 
 (** DWP cannot prove a property that holds for only one branch. *)
-Theorem progA_DWP_not42 :
-  not (forall s, unOptionT (runStateT progA_DWP s)
-              (fun r : option (unit * nat) =>
-                 match r with
-                 | Some (_, s) => s = 42
-                 | None => False
-                 end)).
+Theorem progA_DWP_not42 : 
+  not (
+    tripleWP obsDWP progA Correct
+      (fun _ => True)
+      (fun r : option (unit * nat) =>
+        match r with
+        | Some (_, s) => s = 42
+        | None => False
+        end)).
 Proof.
   intro contra. cbn in contra.
-  specialize (contra 0 (Some (Some (tt, 43)))).
+  specialize (contra 0 I (Some (Some (tt, 43)))).
   sauto.
 Qed.
 
 (** AWP can prove a property satisfied by SOME outcome. *)
 Theorem progA_AWP_42 :
-  forall s, unOptionT (runStateT progA_AWP s)
-         (fun r : option (unit * nat) =>
-            match r with
-            | Some (_, s) => s = 42
-            | None => False
-            end).
+  tripleWP obsAWP progA Correct
+    (fun _ => True)
+    (fun r : option (unit * nat) =>
+      match r with
+      | Some (_, s) => s = 42
+      | None => False
+      end).
 Proof.
-  intros. cbn.
+  intros s0 _. cbn.
   exists (Some (tt, 42)). sauto.
 Qed.
 
 Theorem progA_AWP_43 :
-  forall s, unOptionT (runStateT progA_AWP s)
-         (fun r : option (unit * nat) =>
-            match r with
-            | Some (_, s) => s = 43
-            | None => False
-            end).
+  tripleWP obsAWP progA Correct
+    (fun _ => True)
+    (fun r : option (unit * nat) =>
+      match r with
+      | Some (_, s) => s = 43
+      | None => False
+      end).
 Proof.
   intros. cbn.
   exists (Some (tt, 43)). sauto.
@@ -358,37 +380,41 @@ Example progB_AWP := obsAWP progB.
 
 (** DWP is unprovable: the divergent branch forces [False]. *)
 Theorem progB_DWP_unprovable :
-  not (forall s, unOptionT (runStateT progB_DWP s)
-              (fun r : option (unit * nat) =>
-                 match r with
-                 | Some (_, s) => s = 42
-                 | None => False
-                 end)).
+  not (
+    tripleWP obsDWP progB Correct
+      (fun _ => True)
+      (fun r : option (unit * nat) =>
+          match r with
+          | Some (_, s) => s = 42
+          | None => False
+          end)).
 Proof.
   intro contra. cbn in contra.
-  specialize (contra 0 None). sauto.
+  specialize (contra 0 I None). sauto.
 Qed.
 
 (** DWLP succeeds: divergent branches are ignored. *)
 Theorem progB_DWLP_42 :
-  forall s, unOptionT (runStateT progB_DWLP s)
-         (fun r : option (unit * nat) =>
-            match r with
-            | Some (_, s) => s = 42
-            | None => False
-            end).
+  tripleWP obsDWLP progB Correct
+    (fun _ => True)
+    (fun r : option (unit * nat) =>
+      match r with
+      | Some (_, s) => s = 42
+      | None => False
+      end).
 Proof.
-  intros. cbn. intros [[[]|]|] H; try exact I; sauto.
+  intros s0 _. cbn. intros [[[]|]|] H; try exact I; sauto.
 Qed.
 
 (** AWP succeeds: the converging branch witnesses the postcondition. *)
 Theorem progB_AWP_42 :
-  forall s, unOptionT (runStateT progB_AWP s)
-         (fun r : option (unit * nat) =>
-            match r with
-            | Some (_, s) => s = 42
-            | None => False
-            end).
+  tripleWP obsAWP progB Correct
+    (fun _ => True)
+    (fun r : option (unit * nat) =>
+      match r with
+      | Some (_, s) => s = 42
+      | None => False
+      end).
 Proof.
   intros. cbn.
   exists (Some (tt, 42)). sauto.
@@ -508,6 +534,197 @@ Section NDItWPContrapositives.
 
 End NDItWPContrapositives.
 
+(* ================================================================= *)
+(** ** Taxonomy of WP transformers (Upper half of Figure 5)                        *)
+(* ================================================================= *)
+
+Section TaxonomyWPTransformers.
+  Variable S : Type.
+
+
+  Theorem cc_dwp_implies_dwlp :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsDWP m Correct pre post ->
+      tripleWP obsDWLP m Correct pre post.
+  Proof.
+    intros A m pre post H.
+    unfold tripleWP.
+    intros s0 preH.
+    apply obsDWP_incl_obsDWLP.
+    exact (H s0 preH).
+  Qed.
+
+  Theorem cc_dwp_implies_awp :
+    forall A (m: nditprog S A) pre post,
+      (forall s0, pre s0 -> exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
+      tripleWP obsDWP m Correct pre post ->
+      tripleWP obsAWP m Correct pre post.
+  Proof.
+    intros A m pre post Hne H.
+    unfold tripleWP.
+    intros s0 preH.
+    apply obsDWP_incl_obsAWP.
+    - exact (Hne s0 preH).
+    - exact (H s0 preH).
+  Qed.
+
+  Theorem cc_awp_implies_awlp :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsAWP m Correct pre post ->
+      tripleWP obsAWLP m Correct pre post.
+  Proof.
+    intros A m pre post H.
+    unfold tripleWP.
+    intros s0 preH.
+    apply obsAWP_incl_obsAWLP.
+    exact (H s0 preH).
+  Qed.
+
+  Theorem cc_dwlp_implies_awlp :
+    forall A (m: nditprog S A) pre post,
+      (forall s0, pre s0 -> exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
+      tripleWP obsDWLP m Correct pre post ->
+      tripleWP obsAWLP m Correct pre post.
+  Proof.
+    intros A m pre post Hne H.
+    unfold tripleWP.
+    intros s0 preH.
+    apply obsDWLP_incl_obsAWLP.
+    - exact (Hne s0 preH).
+    - exact (H s0 preH).
+  Qed.
+
+  Theorem ii_awlp_implies_dwlp :
+    forall A (m: nditprog S A) pre post,
+      (forall s0, exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
+      tripleWP obsAWLP m Incorrect pre post ->
+      tripleWP obsDWLP m Incorrect pre post.
+  Proof.
+    intros A m pre post Hne H.
+    unfold tripleWP in *.
+    intros s0 Hdwlp.
+    apply H.
+    apply obsDWLP_incl_obsAWLP.
+    - exact (Hne s0).
+    - exact Hdwlp.
+  Qed.
+
+  Theorem ii_dwlp_implies_dwp :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsDWLP m Incorrect pre post ->
+      tripleWP obsDWP m Incorrect pre post.
+  Proof.
+    intros A m pre post H.
+    unfold tripleWP in *.
+    intros s0 Hdwp.
+    apply H.
+    apply obsDWP_incl_obsDWLP.
+    exact Hdwp.
+  Qed.
+
+  Theorem ii_awlp_implies_awp :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsAWLP m Incorrect pre post ->
+      tripleWP obsAWP m Incorrect pre post.
+  Proof.
+    intros A m pre post H.
+    unfold tripleWP in *.
+    intros s0 Hawp.
+    apply H.
+    apply obsAWP_incl_obsAWLP.
+    exact Hawp.
+  Qed.
+
+  Theorem ii_awp_implies_dwp :
+    forall A (m: nditprog S A) pre post,
+      (forall s0, exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
+      tripleWP obsAWP m Incorrect pre post ->
+      tripleWP obsDWP m Incorrect pre post.
+  Proof.
+    intros A m pre post Hne H.
+    unfold tripleWP in *.
+    intros s0 Hdwp.
+    apply H.
+    apply obsDWP_incl_obsAWP.
+    - exact (Hne s0).
+    - exact Hdwp.
+  Qed.
+
+  Theorem ci_awp_dwlp_contrapositive :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsAWP m Correct pre post <->
+      tripleWP obsDWLP m Incorrect (fun s => ~ (pre s)) (fun r => ~ (post r)).
+  Proof.
+    intros A m pre post. unfold tripleWP. cbn.
+    split.
+    - intros Hawp s0 Hdwlp Hpre.
+      exact (proj1 (obsAWP_contrapositive_obsDWLP _ _ m s0 post) (Hawp s0 Hpre) Hdwlp).
+    - intros Hii s0 Hpre.
+      apply (proj2 (obsAWP_contrapositive_obsDWLP _ _ m s0 post)).
+      intro Hdwlp. exact (Hii s0 Hdwlp Hpre).
+  Qed.
+
+  Theorem ci_dwp_awlp_contrapositive :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsDWP m Correct pre post <->
+      tripleWP obsAWLP m Incorrect (fun s => ~ (pre s)) (fun r => ~ (post r)).
+  Proof.
+    intros A m pre post. unfold tripleWP. cbn.
+    split.
+    - intros Hdwp s0 Hawlp Hpre.
+      exact (proj1 (obsDWP_contrapositive_obsAWLP _ _ m s0 post) (Hdwp s0 Hpre) Hawlp).
+    - intros Hii s0 Hpre.
+      apply (proj2 (obsDWP_contrapositive_obsAWLP _ _ m s0 post)).
+      intro Hawlp. exact (Hii s0 Hawlp Hpre).
+  Qed.
+
+  Theorem ci_awlp_dwp_contrapositive :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsAWLP m Correct pre post <->
+      tripleWP obsDWP m Incorrect (fun s => ~ (pre s)) (fun r => ~ (post r)).
+  Proof.
+    intros A m pre post. unfold tripleWP. cbn.
+    split.
+    - intros Hawlp s0 Hdwp Hpre.
+      pose proof (Hawlp s0 Hpre) as H. cbn in H, Hdwp.
+      destruct (runStateT m s0) as [[outcomes]].
+      destruct H as [[r [Hr Hp]] | Hdiv].
+      + exact (Hdwp (Some r) Hr Hp).
+      + exact (Hdwp None Hdiv).
+    - intros Hii s0 Hpre.
+      apply NNPP. intro Hnawlp.
+      apply (Hii s0). 2: exact Hpre.
+      cbn in Hnawlp |- *.
+      destruct (runStateT m s0) as [[outcomes]].
+      intros oa Hoa. destruct oa as [r|].
+      + intro Hp. apply Hnawlp. left. exists r. exact (conj Hoa Hp).
+      + exfalso. apply Hnawlp. right. exact Hoa.
+  Qed.
+
+  Theorem ci_dwlp_awp_contrapositive :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsDWLP m Correct pre post <->
+      tripleWP obsAWP m Incorrect (fun s => ~ (pre s)) (fun r => ~ (post r)).
+  Proof.
+    intros A m pre post. unfold tripleWP. cbn.
+    split.
+    - intros Hdwlp s0 Hawp Hpre.
+      pose proof (Hdwlp s0 Hpre) as H. cbn in H, Hawp.
+      destruct (runStateT m s0) as [[outcomes]].
+      destruct Hawp as [r [Hr Hnp]].
+      exact (Hnp (H (Some r) Hr)).
+    - intros Hii s0 Hpre.
+      apply NNPP. intro Hndwlp.
+      apply (Hii s0). 2: exact Hpre.
+      cbn in Hndwlp |- *.
+      destruct (runStateT m s0) as [[outcomes]].
+      apply NNPP. intro Hnawp.
+      apply Hndwlp.
+      intros oa Hoa. destruct oa as [r|].
+      + apply NNPP. intro Hnp. apply Hnawp. exists r. exact (conj Hoa Hnp).
+      + exact I.
+  Qed.
+End TaxonomyWPTransformers.
 (* ================================================================= *)
 (** ** SP examples: the four reachability classes                    *)
 (* ================================================================= *)
