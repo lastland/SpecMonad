@@ -106,7 +106,7 @@ Section NonDetItObservationSP.
   Qed.
 
   (* -------------------------------------------------------------- *)
-  (** *** Theorem 3.8: Contrapositive transformers                   *)
+  (** *** Theorem 3.8: Contrapositive transformers SP               *)
   (* -------------------------------------------------------------- *)
 
   #[program] Theorem obsASP_contrapositive {A} (m : nditprog S A) pre r :
@@ -154,6 +154,61 @@ Arguments obsASP {_} {_}.
 Arguments obsDSLP {_} {_}.
 Arguments obsDSP {_} {_}.
 Arguments obsASLP {_} {_}.
+
+
+(* ================================================================= *)
+(** ** SP examples: pure nondeterminism (no divergence)               *)
+(* ================================================================= *)
+
+Example progA : nditprog nat unit :=
+  put 42 ;;
+  s <- get ;;
+  orP _ (put s) (put (s + 1)).
+
+(** All reachable converging results have state >= 42. *)
+Theorem progA_all :
+  forall s r,
+    obsRel progA (tt, s) r ->
+    match r with
+    | Some (_, s') => s' >= 42
+    | None => False
+    end.
+Proof.
+  intros s [[] |] H; cbn in H; sauto.
+Qed.
+
+(** State 42 is reachable. *)
+Theorem progA_42 :
+  forall s, obsRel progA (tt, s) (Some (tt, 42)).
+Proof. intros. cbn. sauto. Qed.
+
+(** State 43 is also reachable. *)
+Theorem progA_43 :
+  forall s, obsRel progA (tt, s) (Some (tt, 43)).
+Proof. intros. cbn. sauto. Qed.
+
+(* ================================================================= *)
+(** ** Examples: nondeterminism + divergence                          *)
+(* ================================================================= *)
+
+Example progB : nditprog nat unit :=
+  put 42 ;;
+  s <- get ;;
+  orP _ (put s) (spinP _).
+
+(** State 42 is reachable (via the converging branch). *)
+Theorem progB_42 :
+  forall s, obsRel progB (tt, s) (Some (tt, 42)).
+Proof. intros. cbn. sauto. Qed.
+
+(** Failure ([None]) is NOT reachable: the divergent branch does not
+    contribute an exception, and divergence is the absence of reaching
+    any final state. *)
+Theorem progB_not_None :
+  forall s, ~ obsRel progB (tt, s) None.
+Proof.
+  intros s H. cbn in H. sauto.
+Qed.
 
 (* ================================================================= *)
 (** ** WP observations                                                *)
@@ -234,60 +289,6 @@ Arguments obsDWP {_} {_}.
 Arguments obsDWLP {_} {_}.
 Arguments obsAWP {_} {_}.
 Arguments obsAWLP {_} {_}.
-
-(* ================================================================= *)
-(** ** SP examples: pure nondeterminism (no divergence)               *)
-(* ================================================================= *)
-
-Example progA : nditprog nat unit :=
-  put 42 ;;
-  s <- get ;;
-  orP _ (put s) (put (s + 1)).
-
-(** All reachable converging results have state >= 42. *)
-Theorem progA_all :
-  forall s r,
-    obsRel progA (tt, s) r ->
-    match r with
-    | Some (_, s') => s' >= 42
-    | None => False
-    end.
-Proof.
-  intros s [[] |] H; cbn in H; sauto.
-Qed.
-
-(** State 42 is reachable. *)
-Theorem progA_42 :
-  forall s, obsRel progA (tt, s) (Some (tt, 42)).
-Proof. intros. cbn. sauto. Qed.
-
-(** State 43 is also reachable. *)
-Theorem progA_43 :
-  forall s, obsRel progA (tt, s) (Some (tt, 43)).
-Proof. intros. cbn. sauto. Qed.
-
-(* ================================================================= *)
-(** ** Examples: nondeterminism + divergence                          *)
-(* ================================================================= *)
-
-Example progB : nditprog nat unit :=
-  put 42 ;;
-  s <- get ;;
-  orP _ (put s) (spinP _).
-
-(** State 42 is reachable (via the converging branch). *)
-Theorem progB_42 :
-  forall s, obsRel progB (tt, s) (Some (tt, 42)).
-Proof. intros. cbn. sauto. Qed.
-
-(** Failure ([None]) is NOT reachable: the divergent branch does not
-    contribute an exception, and divergence is the absence of reaching
-    any final state. *)
-Theorem progB_not_None :
-  forall s, ~ obsRel progB (tt, s) None.
-Proof.
-  intros s H. cbn in H. sauto.
-Qed.
 
 (* ================================================================= *)
 (** ** WP examples: pure nondeterminism (no divergence)               *)
