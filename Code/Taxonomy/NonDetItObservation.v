@@ -800,6 +800,77 @@ Section TaxonomyWPTransformers.
     exact (proj1 (Hii s0 _ Hawp) Hpre).
   Qed.
 End TaxonomyWPTransformers.
+
+(* ================================================================= *)
+(** ** Taxonomy of transformers (connecting the halves of Figure 5)                        *)
+(* ================================================================= *)
+Section TaxonomyConnection.
+  Variable S : Type.
+
+  (** The [obsDWP] triple is vacuous on programs that diverge from
+      every state (e.g. [spinP]), so reaching the [obsASP] side requires
+      ruling out divergent outcomes and supplying a witness state. *)
+  Theorem ii_dwp_implies_asp :
+    forall A (m: nditprog S A) (s0 : S) pre post,
+      (forall s oa, unOptionT (unOptionT (runStateT m s)) oa -> oa <> None) ->
+      tripleWP obsDWP m Incorrect pre post ->
+      tripleSP obsASP m Incorrect pre post.
+  Proof.
+    intros A m s0 pre post Hnd Hwp r Hpost.
+    unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
+    simpl proj1_sig. unfold asp, obsRel.
+    exists (tt, s0).
+    unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
+    specialize (Hwp s0). specialize (Hnd s0). cbn in Hnd.
+    destruct (runStateT m s0) as [[outcomes]] eqn:Hm. cbn in Hwp, Hnd.
+    assert (Hreach : outcomes (Some r)).
+    { apply NNPP. intro Hcontra.
+      destruct (Hwp (fun r' => r' <> r)) as [_ Himpl].
+      - intros oa Hoa. destruct oa as [r'|].
+        + intro Heq. subst r'. exact (Hcontra Hoa).
+        + exfalso. exact (Hnd None Hoa eq_refl).
+      - exact (Himpl r Hpost eq_refl). }
+    split.
+    - destruct (Hwp (fun _ => True)) as [Hpre _].
+      + intros oa Hoa.
+        destruct oa as [r'|]; [exact I | exfalso; exact (Hnd None Hoa eq_refl)].
+      + exact Hpre.
+    - destruct r as [[a s']|]; exact Hreach.
+  Qed.
+
+  (** [obsDWLP] tolerates divergent outcomes, so no no-divergence
+      hypothesis is needed; only [S] inhabited. *)
+  Theorem ii_dwlp_implies_asp :
+    forall A (m: nditprog S A) (s0 : S) pre post,
+      tripleWP obsDWLP m Incorrect pre post ->
+      tripleSP obsASP m Incorrect pre post.
+  Proof.
+    intros A m s0 pre post Hwp r Hpost.
+    unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
+    simpl proj1_sig. unfold asp, obsRel.
+    unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
+    assert (Hreach : exists s, unOptionT (unOptionT (runStateT m s)) (Some r)).
+    { apply NNPP. intro Habs.
+      specialize (Hwp s0 (fun r' => r' <> r)).
+      destruct (runStateT m s0) as [[outcomes0]] eqn:Hm0. cbn in Hwp.
+      destruct Hwp as [_ Himpl].
+      - intros oa Hoa. destruct oa as [r'|]; [|exact I].
+        intro Heq. subst r'. apply Habs. exists s0.
+        rewrite Hm0. cbn. exact Hoa.
+      - exact (Himpl r Hpost eq_refl). }
+    destruct Hreach as [s Hreach].
+    exists (tt, s).
+    split.
+    - specialize (Hwp s (fun _ => True)).
+      destruct (runStateT m s) as [[outcomes]] eqn:Hm. cbn in Hwp.
+      destruct Hwp as [Hpre _].
+      + intros oa Hoa. destruct oa as [r'|]; exact I.
+      + exact Hpre.
+    - destruct r as [[a s']|]; exact Hreach.
+  Qed.
+End TaxonomyConnection.
+
+
 (* ================================================================= *)
 (** ** SP examples: the four reachability classes                    *)
 (* ================================================================= *)
