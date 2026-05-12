@@ -195,10 +195,12 @@ Definition tripleSP {S A T} `{@AsSPObs S A T}
   (post : option (A * S) -> Prop)
   : Prop :=
     let pre' := fun '(tt, s) => pre s in
-    if is_correct then
-      forall r, as_sp_obs (obs prog) pre' r -> post r
-    else
-      forall r, post r -> as_sp_obs (obs prog) pre' r.
+    match is_correct with
+    | Correct =>
+        forall r, as_sp_obs (obs prog) pre' r -> post r
+    | Incorrect =>
+        forall r, post r -> as_sp_obs (obs prog) pre' r
+    end.
 
 (* ================================================================= *)
 (** ** SP examples: pure nondeterminism (no divergence)               *)
