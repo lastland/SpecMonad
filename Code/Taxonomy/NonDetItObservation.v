@@ -375,10 +375,12 @@ Definition tripleWP {S A}
   (post : option (A * S) -> Prop)
   : Prop 
   :=
-    if is_correct then
-      ordProgWP (pp2wp pre post) (obs prog)
-    else 
-      ordProgWP (obs prog) (pp2wp pre post).
+    match is_correct with
+    | Correct =>
+        ordProgWP (pp2wp pre post) (obs prog)
+    | Incorrect =>
+        ordProgWP (obs prog) (pp2wp pre post)
+    end.
 
 (* ================================================================= *)
 (** ** WP examples: pure nondeterminism (no divergence)               *)
