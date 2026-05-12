@@ -811,12 +811,13 @@ Section TaxonomyConnection.
       every state (e.g. [spinP]), so reaching the [obsASP] side requires
       ruling out divergent outcomes and supplying a witness state. *)
   Theorem ii_dwp_implies_asp :
-    forall A (m: nditprog S A) (s0 : S) pre post,
+    inhabited S ->
+    forall A (m: nditprog S A) pre post,
       (forall s oa, unOptionT (unOptionT (runStateT m s)) oa -> oa <> None) ->
       tripleWP obsDWP m Incorrect pre post ->
       tripleSP obsASP m Incorrect pre post.
   Proof.
-    intros A m s0 pre post Hnd Hwp r Hpost.
+    intros [s0] A m pre post Hnd Hwp r Hpost.
     unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
     simpl proj1_sig. unfold asp, obsRel.
     exists (tt, s0).
@@ -841,11 +842,12 @@ Section TaxonomyConnection.
   (** [obsDWLP] tolerates divergent outcomes, so no no-divergence
       hypothesis is needed; only [S] inhabited. *)
   Theorem ii_dwlp_implies_asp :
-    forall A (m: nditprog S A) (s0 : S) pre post,
+    inhabited S ->
+    forall A (m: nditprog S A) pre post,
       tripleWP obsDWLP m Incorrect pre post ->
       tripleSP obsASP m Incorrect pre post.
   Proof.
-    intros A m s0 pre post Hwp r Hpost.
+    intros [s0] A m pre post Hwp r Hpost.
     unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
     simpl proj1_sig. unfold asp, obsRel.
     unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
@@ -870,6 +872,78 @@ Section TaxonomyConnection.
   Qed.
 End TaxonomyConnection.
 
+(* ================================================================= *)
+(** ** Counter-example: SP-Inc does NOT imply WP-Inc (DWP or DWLP)    *)
+(* ================================================================= *)
+
+(** The implications [ii_dwp_implies_asp] and [ii_dwlp_implies_asp]
+    are one-directional.  The reverse implications fail because
+    [tripleWP _ Incorrect] universally quantifies over states, while
+    [tripleSP obsASP Incorrect] only requires an existential witness.
+
+    Concretely, [pp2wp pre post (s) (p) = pre s /\ (forall r, post r -> p r)],
+    so for every state [s] at which the program's WP holds for some
+    [p], the precondition [pre s] must hold.  In particular, picking
+    [p := fun _ => True] makes the DWP/DWLP antecedent hold whenever
+    the program has at least one converging outcome from [s] and (for
+    DWP) does not diverge there.  This forces [pre] to be true at
+    *every* such state.  No analogous constraint is present in
+    [tripleSP obsASP Incorrect].
+
+    The example: a pure return in state [nat] with a pre-/post-
+    condition pinning the state to [0].  Reachability from [s = 0]
+    establishes the SP triple, but the WP triples both fail at any
+    other state. *)
+
+Example progRet : nditprog nat unit := ret tt.
+
+Definition preEq0 : nat -> Prop := fun s => s = 0.
+Definition postEq0 : option (unit * nat) -> Prop :=
+  fun r => r = Some (tt, 0).
+
+(** The SP-Inc triple holds: state [0] reaches the only post-result. *)
+Theorem progRet_asp_inc :
+  tripleSP obsASP progRet Incorrect preEq0 postEq0.
+Proof.
+  unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP, preEq0, postEq0.
+  simpl proj1_sig. unfold asp, obsRel.
+  intros r ->. exists (tt, 0). split; [reflexivity | cbn; reflexivity].
+Qed.
+
+(** Yet the DWP-Inc triple fails: instantiating at [s = 1] with
+    [p := fun _ => True] satisfies the antecedent (no divergence,
+    trivial postcondition), but forces [preEq0 1], i.e. [1 = 0]. *)
+Theorem progRet_dwp_inc_fails :
+  ~ tripleWP obsDWP progRet Incorrect preEq0 postEq0.
+Proof.
+  intro H.
+  unfold tripleWP, ordProgWP, pp2wp, obsDWP, preEq0 in H. cbn in H.
+  assert (Hant : forall oa : option (option (unit * nat)),
+            oa = Some (Some (tt, 1)) ->
+            match oa with Some _ => True | None => False end).
+  { intros oa ->. exact I. }
+  destruct (H 1 (fun _ => True) Hant) as [Hcontra _]. discriminate.
+Qed.
+
+(** Same counter-example refutes DWLP-Inc — the divergence-tolerant
+    [True] branch does not help, because [progRet] never diverges. *)
+Theorem progRet_dwlp_inc_fails :
+  ~ tripleWP obsDWLP progRet Incorrect preEq0 postEq0.
+Proof.
+  intro H.
+  unfold tripleWP, ordProgWP, pp2wp, obsDWLP, preEq0 in H. cbn in H.
+  assert (Hant : forall oa : option (option (unit * nat)),
+            oa = Some (Some (tt, 1)) ->
+            match oa with Some _ => True | None => True end).
+  { intros oa ->. exact I. }
+  destruct (H 1 (fun _ => True) Hant) as [Hcontra _]. discriminate.
+Qed.
+
+(** Together these show: the WP-to-SP implications are strict, and
+    no reverse implication (and hence no Galois connection between
+    [tripleWP _ Incorrect] and [tripleSP obsASP Incorrect]) can hold
+    without imposing further structural assumptions on [pre] (e.g.
+    universality) and on the program's reachability. *)
 
 (* ================================================================= *)
 (** ** SP examples: the four reachability classes                    *)
