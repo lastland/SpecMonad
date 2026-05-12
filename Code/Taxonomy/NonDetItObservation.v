@@ -807,68 +807,74 @@ End TaxonomyWPTransformers.
 Section TaxonomyConnection.
   Variable S : Type.
 
-  (** The [obsDWP] triple is vacuous on programs that diverge from
-      every state (e.g. [spinP]), so reaching the [obsASP] side requires
-      ruling out divergent outcomes and supplying a witness state. *)
-  Theorem ii_dwp_implies_asp :
-    inhabited S ->
-    forall A (m: nditprog S A) pre post,
-      (forall s oa, unOptionT (unOptionT (runStateT m s)) oa -> oa <> None) ->
-      tripleWP obsDWP m Incorrect pre post ->
-      tripleSP obsASP m Incorrect pre post.
-  Proof.
-    intros [s0] A m pre post Hnd Hwp r Hpost.
-    unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
-    simpl proj1_sig. unfold asp, obsRel.
-    exists (tt, s0).
-    unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
-    specialize (Hwp s0). specialize (Hnd s0). cbn in Hnd.
-    destruct (runStateT m s0) as [[outcomes]] eqn:Hm. cbn in Hwp, Hnd.
-    assert (Hreach : outcomes (Some r)).
-    { apply NNPP. intro Hcontra.
-      destruct (Hwp (fun r' => r' <> r)) as [_ Himpl].
-      - intros oa Hoa. destruct oa as [r'|].
-        + intro Heq. subst r'. exact (Hcontra Hoa).
-        + exfalso. exact (Hnd None Hoa eq_refl).
-      - exact (Himpl r Hpost eq_refl). }
-    split.
-    - destruct (Hwp (fun _ => True)) as [Hpre _].
-      + intros oa Hoa.
-        destruct oa as [r'|]; [exact I | exfalso; exact (Hnd None Hoa eq_refl)].
-      + exact Hpre.
-    - destruct r as [[a s']|]; exact Hreach.
-  Qed.
-
-  (** [obsDWLP] tolerates divergent outcomes, so no no-divergence
-      hypothesis is needed; only [S] inhabited. *)
-  Theorem ii_dwlp_implies_asp :
+  (** DWLP-Inc forces [pre] to be
+      universally true (instantiate at [p := fun _ => True], whose
+      DWLP antecedent is identically [True]), so the demonic side
+      condition [forall sigma, obsRel sigma r -> pre sigma] is trivial. *)
+  Theorem ii_dwlp_implies_dsp :
     inhabited S ->
     forall A (m: nditprog S A) pre post,
       tripleWP obsDWLP m Incorrect pre post ->
-      tripleSP obsASP m Incorrect pre post.
+      tripleSP obsDSP m Incorrect pre post.
   Proof.
     intros [s0] A m pre post Hwp r Hpost.
-    unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
-    simpl proj1_sig. unfold asp, obsRel.
-    unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
-    assert (Hreach : exists s, unOptionT (unOptionT (runStateT m s)) (Some r)).
-    { apply NNPP. intro Habs.
+    unfold tripleSP, as_sp_obs, AsSPObs_fun.
+    apply obsDSP_char. split.
+    - (* Reachability: same NNPP argument as in [ii_dwlp_implies_asp]. *)
+      apply NNPP. intro Habs.
+      unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
       specialize (Hwp s0 (fun r' => r' <> r)).
       destruct (runStateT m s0) as [[outcomes0]] eqn:Hm0. cbn in Hwp.
       destruct Hwp as [_ Himpl].
-      - intros oa Hoa. destruct oa as [r'|]; [|exact I].
-        intro Heq. subst r'. apply Habs. exists s0.
-        rewrite Hm0. cbn. exact Hoa.
-      - exact (Himpl r Hpost eq_refl). }
-    destruct Hreach as [s Hreach].
-    exists (tt, s).
-    split.
-    - specialize (Hwp s (fun _ => True)).
+      + intros oa Hoa. destruct oa as [r'|]; [|exact I].
+        intro Heq. subst r'. apply Habs. exists (tt, s0).
+        unfold obsRel. destruct r as [[a s']|]; rewrite Hm0; cbn; exact Hoa.
+      + exact (Himpl r Hpost eq_refl).
+    - (* Universal [pre] on reachers: DWLP-Inc at [p := True] gives [pre]
+         at every state. *)
+      intros [[] s] _.
+      unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
+      specialize (Hwp s (fun _ => True)).
       destruct (runStateT m s) as [[outcomes]] eqn:Hm. cbn in Hwp.
       destruct Hwp as [Hpre _].
       + intros oa Hoa. destruct oa as [r'|]; exact I.
       + exact Hpre.
-    - destruct r as [[a s']|]; exact Hreach.
+  Qed.
+
+  (** The [obsDWP] triple is vacuous on programs that diverge from
+      every state (e.g. [spinP]), so reaching the [obsDSP] side requires
+      ruling out divergent outcomes and supplying a witness state. *)
+  Theorem ii_dwp_implies_dsp :
+    inhabited S ->
+    forall A (m: nditprog S A) pre post,
+      (forall s oa, unOptionT (unOptionT (runStateT m s)) oa -> oa <> None) ->
+      tripleWP obsDWP m Incorrect pre post ->
+      tripleSP obsDSP m Incorrect pre post.
+  Proof.
+    intros [s0] A m pre post Hnd Hwp r Hpost.
+    unfold tripleSP, as_sp_obs, AsSPObs_fun.
+    apply obsDSP_char. split.
+    - apply NNPP. intro Habs.
+      unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
+      specialize (Hwp s0 (fun r' => r' <> r)).
+      specialize (Hnd s0). cbn in Hnd.
+      destruct (runStateT m s0) as [[outcomes0]] eqn:Hm0. cbn in Hwp, Hnd.
+      destruct Hwp as [_ Himpl].
+      + intros oa Hoa. destruct oa as [r'|].
+        * intro Heq. subst r'. apply Habs. exists (tt, s0).
+          unfold obsRel. destruct r as [[a s']|]; rewrite Hm0; cbn; exact Hoa.
+        * exfalso. exact (Hnd None Hoa eq_refl).
+      + exact (Himpl r Hpost eq_refl).
+    - intros [[] s] _.
+      unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
+      specialize (Hwp s (fun _ => True)).
+      specialize (Hnd s). cbn in Hnd.
+      destruct (runStateT m s) as [[outcomes]] eqn:Hm. cbn in Hwp, Hnd.
+      destruct Hwp as [Hpre _].
+      + intros oa Hoa. destruct oa as [r'|].
+        * exact I.
+        * exfalso. exact (Hnd None Hoa eq_refl).
+      + exact Hpre.
   Qed.
 End TaxonomyConnection.
 
@@ -908,6 +914,17 @@ Proof.
   unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP, preEq0, postEq0.
   simpl proj1_sig. unfold asp, obsRel.
   intros r ->. exists (tt, 0). split; [reflexivity | cbn; reflexivity].
+Qed.
+
+(** The stronger DSP-Inc triple also holds: the unique reacher of
+    [Some (tt, 0)] is the state [0] itself, which satisfies [preEq0]. *)
+Theorem progRet_dsp_inc :
+  tripleSP obsDSP progRet Incorrect preEq0 postEq0.
+Proof.
+  unfold tripleSP, as_sp_obs, AsSPObs_fun, preEq0, postEq0.
+  intros r ->. apply obsDSP_char. split.
+  - exists (tt, 0). cbn. reflexivity.
+  - intros [[] s] Hrel. cbn in Hrel. inversion Hrel. reflexivity.
 Qed.
 
 (** Yet the DWP-Inc triple fails: instantiating at [s = 1] with
