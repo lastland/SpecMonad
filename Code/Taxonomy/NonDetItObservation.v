@@ -1228,4 +1228,79 @@ Module OHearnExample.
       cbn in Hrel; inversion Hrel; subst; try discriminate Hx.
   Qed.
 
+
+  (* ----------------------------------------------------------------- *)
+  (** ** The same properties viewed through [obsDWP] (Incorrect)       *)
+  (* ----------------------------------------------------------------- *)
+
+  (** DWP-Incorrect is strictly stronger than ASP-Incorrect (see
+      [dwp_inc_pre_universal] and [ii_dwlp_implies_asp]): it demands
+      that [pre] hold at *every* initial state, and that every
+      post-satisfying result be a terminating outcome from *every*
+      initial state.  For the deterministic program [example_state],
+      whose final state preserves [x] and [y], none of the three
+      SP-style triples lift to DWP-Inc.  We prove this by direct
+      refutation. *)
+
+  Theorem example_incorrect_1_dwp_unprovable :
+    ~ tripleWP obsDWP example_state Incorrect
+        (fun '(_, _, z) => z = 11)
+        (fun r =>
+           match r with
+           | Some (tt, (x, y, z)) =>
+               z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true
+           | _ => False
+           end).
+  Proof.
+    intro Hwp.
+    unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
+    specialize (Hwp (0, 0, 0) (fun _ => True)).
+    destruct Hwp as [Hpre _].
+    - intros oa Hoa.
+      destruct Hoa as [a [Ha Hrest]]. subst a. cbn in Hrest. subst oa.
+      exact I.
+    - discriminate Hpre.
+  Qed.
+
+  Theorem example_incorrect_2_dwp_unprovable :
+    ~ tripleWP obsDWP example_state Incorrect
+        (fun _ => True)
+        (fun r =>
+           match r with
+           | Some (tt, (_, _, z)) => z = 42
+           | _ => False
+           end).
+  Proof.
+    intro Hwp.
+    unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
+    specialize
+      (Hwp (0, 0, 0)
+           (fun r : option (unit * (nat * nat * nat)) =>
+              r = Some (tt, (0, 0, 0)))).
+    destruct Hwp as [_ Himpl].
+    - intros oa Hoa.
+      destruct Hoa as [a [Ha Hrest]]. subst a. cbn in Hrest. subst oa.
+      reflexivity.
+    - specialize (Himpl (Some (tt, (0, 0, 42))) eq_refl). discriminate.
+  Qed.
+
+  Theorem example_incorrect_unprovable_dwp :
+    ~ tripleWP obsDWP example_state Incorrect
+        (fun '(_, _, z) => z = 11)
+        (fun r =>
+           match r with
+           | Some (tt, (_, _, z)) => z = 42
+           | _ => False
+           end).
+  Proof.
+    intro Hwp.
+    unfold tripleWP, ordProgWP, pp2wp, obsDWP in Hwp. cbn in Hwp.
+    specialize (Hwp (0, 0, 0) (fun _ => True)).
+    destruct Hwp as [Hpre _].
+    - intros oa Hoa.
+      destruct Hoa as [a [Ha Hrest]]. subst a. cbn in Hrest. subst oa.
+      exact I.
+    - discriminate Hpre.
+  Qed.
+
 End OHearnExample.
