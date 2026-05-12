@@ -880,6 +880,25 @@ Section TaxonomyConnection.
         * exfalso. exact (Hnd None Hoa eq_refl).
       + exact Hpre.
   Qed.
+
+  (** [tripleWP obsDWLP _ Incorrect] forces [pre] to be universally
+      true.  Reason: instantiate at [p := fun _ => True] — the DWLP
+      antecedent [forall oa, ... -> match oa with Some _ => True
+      | None => True end] is identically [True], so the consequent
+      [pre s /\ ...] yields [pre s] for every [s]. *)
+  Theorem dwlp_inc_pre_universal :
+    forall A (m: nditprog S A) pre post,
+      tripleWP obsDWLP m Incorrect pre post ->
+      forall s, pre s.
+  Proof.
+    intros A m pre post Hwp s.
+    unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
+    specialize (Hwp s (fun _ => True)).
+    destruct (runStateT m s) as [[outcomes]] eqn:Hm. cbn in Hwp.
+    destruct Hwp as [Hpre _].
+    - intros oa _. destruct oa as [r'|]; exact I.
+    - exact Hpre.
+  Qed.
 End TaxonomyConnection.
 
 (* ================================================================= *)
