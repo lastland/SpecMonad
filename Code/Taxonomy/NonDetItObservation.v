@@ -1122,3 +1122,110 @@ Proof.
   intros [H | H]; [exact (progEx_asp_not_99 H) |
                     exact (progEx_dslp_not_99 H)].
 Qed.
+
+(* ================================================================= *)
+(** ** O'Hearn's Example 3.1, ported to [nditprog] / [tripleSP obsASP] *)
+(* ================================================================= *)
+
+(** A port of [ST/Pred.v]'s [OHearnExample] module.  The original
+    operates on the pure state monad [state S A := S -> A * S] with a
+    bespoke [Incorrect] predicate (reachability of a final state from
+    some initial state).  Here we use [nditprog S A] (deterministic in
+    this example) and [tripleSP obsASP _ Incorrect].
+
+    Program (O'Hearn, "Incorrectness Logic", Example 3.1): swap [z]
+    with [42] when [x] is even and [y] is odd; otherwise leave the
+    state alone. *)
+
+Module OHearnExample.
+
+  Definition example_state : nditprog (nat * nat * nat) unit :=
+    s <- get ;;
+    let '(x, y, _) := s in
+    if Nat.even x then
+      if negb (Nat.even y) then put (x, y, 42) else ret tt
+    else ret tt.
+
+  (** First incorrectness triple (paper-style): from any state whose
+      [z] component is [11], there is a final state in which [z = 42],
+      [x] is even, and [y] is odd.  Note the SP-Incorrect reading: the
+      triple asserts only that *some* such reachable result exists,
+      not that every initial state reaches one. *)
+  Theorem example_incorrect_1 :
+    tripleSP obsASP example_state Incorrect
+      (fun '(x, _, z) => z = 11)
+      (fun r =>
+         match r with
+         | Some (tt, (x, y, z)) =>
+             z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true
+         | _ => False
+         end).
+  Proof.
+    unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
+    simpl proj1_sig. unfold asp, obsRel.
+    intros [[[] [[x y] z]]|] H; [|contradiction].
+    destruct H as [-> [Hx Hy]].
+    exists (tt, (x, y, 11)). split; [reflexivity|].
+    cbn. eexists. split; [reflexivity|].
+    cbn. rewrite Hx, Hy. reflexivity.
+  Qed.
+
+  (** Weaker incorrectness triple (vacuous precondition): from *some*
+      initial state, the program reaches a final state with [z = 42].
+      The original proof in [ST/Pred.v] also leaves [x], [y], [z]
+      unconstrained and exhibits any state with [x] even and [y]
+      odd as the witness. *)
+  Theorem example_incorrect_2 :
+    tripleSP obsASP example_state Incorrect
+      (fun _ => True)
+      (fun r =>
+         match r with
+         | Some (tt, (_, _, z)) => z = 42
+         | _ => False
+         end).
+  Proof.
+    unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
+    simpl proj1_sig. unfold asp, obsRel.
+    intros [[[] [[x y] z]]|] H; [|contradiction].
+    cbn in H. subst z.
+    (* Use the final state itself, [(x, y, 42)], as the initial witness:
+       both branches preserve [x, y] and either keep [z = 42] (identity)
+       or set it to [42] (put). *)
+    exists (tt, (x, y, 42)). split; [exact I|].
+    cbn. eexists. split; [reflexivity|].
+    cbn. destruct (Nat.even x); destruct (negb (Nat.even y)); reflexivity.
+  Qed.
+
+  (** Unprovable triple (paper-noted): from any state with [z = 11],
+      the program reaches a final state with [z = 42].  This is
+      [example_3_1_incorrect_unprovable] in [ST/Pred.v]; we mirror
+      its failure here.
+
+      Refutation: pick [r = Some (tt, (1, 0, 42))] — it satisfies the
+      postcondition (because the post only mentions [z = 42]), but no
+      initial state with [z = 11] reaches it.  Indeed the program only
+      modifies the state when [x] is even and [y] is odd, and even
+      then it preserves the first two components; so reaching
+      [(1, 0, 42)] would require starting from [(1, 0, 42)], whose
+      [z]-component is [42], not [11]. *)
+  Theorem example_incorrect_unprovable :
+    ~ tripleSP obsASP example_state Incorrect
+        (fun '(_, _, z) => z = 11)
+        (fun r =>
+           match r with
+           | Some (tt, (_, _, z)) => z = 42
+           | _ => False
+           end).
+  Proof.
+    intro H.
+    specialize (H (Some (tt, (1, 0, 42))) eq_refl).
+    destruct H as [[[] [[x y] z]] [Hpre Hrel]].
+    cbn in Hpre. subst z.
+    cbn in Hrel.
+    destruct Hrel as [a [Ha Hrel]].
+    subst a. cbn in Hrel.
+    destruct (Nat.even x) eqn:Hx; destruct (negb (Nat.even y)) eqn:Hy;
+      cbn in Hrel; inversion Hrel; subst; try discriminate Hx.
+  Qed.
+
+End OHearnExample.
