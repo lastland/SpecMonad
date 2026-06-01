@@ -791,3 +791,539 @@ Section ComposedArrowLaws.
     ArrowApplyLaws (stateArrT S optionDSLPArr) := _.
 
 End ComposedArrowLaws.
+
+(* ================================================================= *)
+(** ** Concrete monad on [ASPostArr] and comparison with [PredSt]    *)
+(* ================================================================= *)
+
+Section ASPostArrMonadMorphism.
+
+  Variable S : Type.
+
+  Definition arr_ASPostArr {A B} (f : A -> B)
+    : stateArrT S optionAPred A B :=
+    @arr_pure (stateArrT S optionAPred) _ A B f.
+
+  Definition comp_ASPostArr {A B C}
+    (f : stateArrT S optionAPred A B)
+    (g : stateArrT S optionAPred B C)
+    : stateArrT S optionAPred A C :=
+    @arr_comp (stateArrT S optionAPred) _ A B C f g.
+
+  Definition apply_ASPostArr {A B}
+    : stateArrT S optionAPred (stateArrT S optionAPred A B * A)%type B :=
+    @arr_app (stateArrT S optionAPred) _ _ A B.
+
+  Definition ret_ASPostArr {A} (a : A) : ASPostArr S A :=
+    arr_ASPostArr (fun _ : unit => a).
+
+  Definition bind_ASPostArr {A B}
+    (m : ASPostArr S A) (k : A -> ASPostArr S B)
+    : ASPostArr S B :=
+    comp_ASPostArr m
+      (comp_ASPostArr
+         (arr_ASPostArr (fun a => (k a, tt)))
+         (apply_ASPostArr)).
+
+  Lemma comp_ASPostArr_rel {A B C}
+    (f : stateArrT S optionAPred A B)
+    (g : stateArrT S optionAPred B C)
+    (sigma : A * S) (r : option (C * S)) :
+    sp_rel (proj1_sig (comp_ASPostArr f g)) sigma r <->
+    (sp_rel (proj1_sig f) sigma None /\ r = None) \/
+    exists b s',
+      sp_rel (proj1_sig f) sigma (Some (b, s')) /\
+      sp_rel (proj1_sig g) (b, s') r.
+  Proof.
+    destruct r as [[c s'']|]; cbn.
+    - split.
+      + intros [ob [Hf [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        destruct ob as [[b s']|].
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in Hcollapse.
+          -- inversion Hcollapse; subst r'. right.
+             exists b, s'. split; assumption.
+          -- discriminate Hcollapse.
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in *.
+          -- contradiction.
+          -- discriminate Hcollapse.
+      + intros [[Hf Heq] | [b [s' [Hf Hg]]]].
+        * discriminate Heq.
+        * exists (Some (b, s')). split; [exact Hf|].
+          exists (inl (b, s')). split; [reflexivity|].
+          exists (inl (Some (c, s''))). split; [exact Hg|reflexivity].
+    - split.
+      + intros [ob [Hf [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        destruct ob as [[b s']|].
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in Hcollapse.
+          -- inversion Hcollapse; subst r'. right.
+             exists b, s'. split; assumption.
+          -- contradiction.
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in Hcollapse.
+          -- contradiction.
+          -- left. split; [exact Hf|reflexivity].
+      + intros [[Hf Heq] | [b [s' [Hf Hg]]]].
+        * subst. exists None. split; [exact Hf|].
+          exists (inr tt). split; [reflexivity|].
+          exists (inr tt). split; [reflexivity|reflexivity].
+        * exists (Some (b, s')). split; [exact Hf|].
+          exists (inl (b, s')). split; [reflexivity|].
+          exists (inl None). split; [exact Hg|reflexivity].
+  Qed.
+
+  Lemma apply_ASPostArr_rel {A B}
+    (f : stateArrT S optionAPred A B) (a : A) (s : S) (r : option (B * S)) :
+    sp_rel (proj1_sig (apply_ASPostArr (A := A) (B := B))) ((f, a), s) r <->
+    sp_rel (proj1_sig f) (a, s) r.
+  Proof.
+    destruct r as [[b s']|]; cbn.
+    - split.
+      + intros [ob [Heq [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        inversion Heq; subst.
+        simpl in *.
+        destruct sb' as [r'|]; simpl in Hcollapse.
+        * inversion Hcollapse; subst r'. exact Hleft.
+        * discriminate Hcollapse.
+      + intro Hf.
+        exists (Some (f, (a, s))). split; [reflexivity|].
+        exists (inl (f, (a, s))). split; [reflexivity|].
+        exists (inl (Some (b, s'))). split; [exact Hf|reflexivity].
+    - split.
+      + intros [ob [Heq [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        inversion Heq; subst.
+        simpl in *.
+        destruct sb' as [r'|]; simpl in Hcollapse.
+        * inversion Hcollapse; subst r'. exact Hleft.
+        * contradiction.
+      + intro Hf.
+        exists (Some (f, (a, s))). split; [reflexivity|].
+        exists (inl (f, (a, s))). split; [reflexivity|].
+        exists (inl None). split; [exact Hf|reflexivity].
+  Qed.
+
+  Lemma bind_step_ASPostArr_rel {A B}
+    (k : A -> ASPostArr S B) (a : A) (s : S) (r : option (B * S)) :
+    sp_rel
+      (proj1_sig
+         (comp_ASPostArr
+            (arr_ASPostArr (fun a0 => (k a0, tt)))
+            (apply_ASPostArr)))
+      (a, s) r <->
+    sp_rel (proj1_sig (k a)) (tt, s) r.
+  Proof.
+    rewrite comp_ASPostArr_rel.
+    split.
+    - intros [[Hnone _] | [a' [s' [Harr Happ]]]].
+      + cbn in Hnone. discriminate Hnone.
+      + cbn in Harr. inversion Harr; subst a' s'.
+        apply (proj1 (apply_ASPostArr_rel (A := unit) (B := B)
+                 (k a) tt s r)).
+        exact Happ.
+    - intro Hk.
+      right. exists (k a, tt), s. split.
+      + cbn. reflexivity.
+      + apply (proj2 (apply_ASPostArr_rel (A := unit) (B := B)
+               (k a) tt s r)).
+        exact Hk.
+  Qed.
+
+  #[global]
+  Instance Monad_ASPostArr : Monad (ASPostArr S) :=
+    {| ret := @ret_ASPostArr ;
+       bind := @bind_ASPostArr |}.
+
+End ASPostArrMonadMorphism.
+
+Section PredStMonad.
+
+  Variable S : Type.
+
+  Definition PredSt (A : Type) : Type :=
+    S -> option (A * S) -> Prop.
+
+  Definition ret_PredSt {A} (a : A) : PredSt A :=
+    fun s r => r = Some (a, s).
+
+  Definition bind_PredSt {A B}
+    (m : PredSt A) (k : A -> PredSt B) : PredSt B :=
+    fun s r =>
+      (m s None /\ r = None) \/
+      exists a s',
+        m s (Some (a, s')) /\
+        k a s' r.
+
+  #[global]
+  Instance Monad_PredSt : Monad PredSt :=
+    {| ret := @ret_PredSt ;
+       bind := @bind_PredSt |}.
+
+  Definition ASPostArr_to_PredSt {A} (m : ASPostArr S A) : PredSt A :=
+    fun s r => sp_rel (proj1_sig m) (tt, s) r.
+
+  Definition PredSt_to_ASPostArr {A} (m : PredSt A) : ASPostArr S A :=
+    mkASP (fun '(tt, s) r => m s r).
+
+  Lemma ASPostArr_to_PredSt_ret {A} (a : A) :
+    ASPostArr_to_PredSt (ret_ASPostArr S a) = ret_PredSt a.
+  Proof.
+    extensionality s. extensionality r.
+    apply propositional_extensionality.
+    destruct r as [[a' s']|]; cbn; sauto limit: 200.
+  Qed.
+
+  Lemma ASPostArr_to_PredSt_bind {A B}
+    (m : ASPostArr S A) (k : A -> ASPostArr S B) :
+    ASPostArr_to_PredSt (bind_ASPostArr S m k) =
+    bind_PredSt (ASPostArr_to_PredSt m) (fun a => ASPostArr_to_PredSt (k a)).
+  Proof.
+    extensionality s. extensionality r.
+    apply propositional_extensionality.
+    destruct r as [[b s'']|]; unfold ASPostArr_to_PredSt, bind_ASPostArr, bind_PredSt; cbn.
+    - rewrite (comp_ASPostArr_rel S m
+                 (comp_ASPostArr S
+                    (arr_ASPostArr S (fun a => (k a, tt)))
+                    (apply_ASPostArr S))
+                 (tt, s) (Some (b, s''))). split.
+      + intros [[Hnone Habs] | [a [s' [Hm Hstep]]]].
+        * discriminate Habs.
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj1 (bind_step_ASPostArr_rel S k a s' (Some (b, s'')))).
+          exact Hstep.
+      + intros [[Hnone Habs] | [a [s' [Hm Hk]]]].
+        * discriminate Habs.
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj2 (bind_step_ASPostArr_rel S k a s' (Some (b, s'')))).
+          exact Hk.
+    - rewrite (comp_ASPostArr_rel S m
+                 (comp_ASPostArr S
+                    (arr_ASPostArr S (fun a => (k a, tt)))
+                    (apply_ASPostArr S))
+                 (tt, s) None). split.
+      + intros [[Hm _] | [a [s' [Hm Hstep]]]].
+        * left. split; [exact Hm|reflexivity].
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj1 (bind_step_ASPostArr_rel S k a s' None)).
+          exact Hstep.
+      + intros [[Hm _] | [a [s' [Hm Hk]]]].
+        * left. split; [exact Hm|reflexivity].
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj2 (bind_step_ASPostArr_rel S k a s' None)).
+          exact Hk.
+  Qed.
+
+  Lemma PredSt_to_ASPostArr_ret {A} (a : A) :
+    PredSt_to_ASPostArr (ret_PredSt a) = ret_ASPostArr S a.
+  Proof.
+    apply PureASPostArr_eq. intros pre r.
+    destruct r as [[a' s']|]; cbn.
+    - split.
+      + intros [[[] s] [Hpre Heq]]. inversion Heq; subst.
+        exists (tt, s). split; [exact Hpre|reflexivity].
+      + intros [[[] s] [Hpre Heq]]. inversion Heq; subst.
+        exists (tt, s'). split; [exact Hpre|reflexivity].
+    - split.
+      + intros [[[] s] [_ Heq]]. discriminate Heq.
+      + intros [[[] s] [_ Heq]]. discriminate Heq.
+  Qed.
+
+  Lemma PredSt_to_ASPostArr_ASPostArr_to_PredSt {A}
+    (m : ASPostArr S A) :
+    PredSt_to_ASPostArr (ASPostArr_to_PredSt m) = m.
+  Proof.
+    apply PureASPostArr_eq. intros pre r. cbn.
+    split.
+    - intros [[[] s] [Hpre Hrel]].
+      apply (proj2 (proj2_sig m pre r)).
+      exists (tt, s). split; assumption.
+    - intro Hm.
+      apply (proj1 (proj2_sig m pre r)) in Hm.
+      destruct Hm as [[[] s] [Hpre Hrel]].
+      exists (tt, s). split; assumption.
+  Qed.
+
+  Lemma ASPostArr_to_PredSt_PredSt_to_ASPostArr {A}
+    (m : PredSt A) :
+    ASPostArr_to_PredSt (PredSt_to_ASPostArr m) = m.
+  Proof.
+    extensionality s. extensionality r. reflexivity.
+  Qed.
+
+  Lemma PredSt_to_ASPostArr_bind {A B}
+    (m : PredSt A) (k : A -> PredSt B) :
+    PredSt_to_ASPostArr (bind_PredSt m k) =
+    bind_ASPostArr S (PredSt_to_ASPostArr m)
+      (fun a => PredSt_to_ASPostArr (k a)).
+  Proof.
+    transitivity
+      (PredSt_to_ASPostArr
+         (ASPostArr_to_PredSt
+            (bind_ASPostArr S (PredSt_to_ASPostArr m)
+               (fun a => PredSt_to_ASPostArr (k a))))).
+    - f_equal.
+      rewrite ASPostArr_to_PredSt_bind.
+      rewrite !ASPostArr_to_PredSt_PredSt_to_ASPostArr.
+      reflexivity.
+    - apply PredSt_to_ASPostArr_ASPostArr_to_PredSt.
+  Qed.
+
+End PredStMonad.
+
+Section DSLPostArrMonadMorphism.
+
+  Variable S : Type.
+
+  Definition arr_DSLPostArr {A B} (f : A -> B)
+    : stateArrT S optionDSLPArr A B :=
+    @arr_pure (stateArrT S optionDSLPArr) _ A B f.
+
+  Definition comp_DSLPostArr {A B C}
+    (f : stateArrT S optionDSLPArr A B)
+    (g : stateArrT S optionDSLPArr B C)
+    : stateArrT S optionDSLPArr A C :=
+    @arr_comp (stateArrT S optionDSLPArr) _ A B C f g.
+
+  Definition apply_DSLPostArr {A B}
+    : stateArrT S optionDSLPArr (stateArrT S optionDSLPArr A B * A)%type B :=
+    @arr_app (stateArrT S optionDSLPArr) _ _ A B.
+
+  Definition ret_DSLPostArr {A} (a : A) : DSLPostArr S A :=
+    arr_DSLPostArr (fun _ : unit => a).
+
+  Definition bind_DSLPostArr {A B}
+    (m : DSLPostArr S A) (k : A -> DSLPostArr S B)
+    : DSLPostArr S B :=
+    comp_DSLPostArr m
+      (comp_DSLPostArr
+         (arr_DSLPostArr (fun a => (k a, tt)))
+         (apply_DSLPostArr)).
+
+  Lemma comp_DSLPostArr_rel {A B C}
+    (f : stateArrT S optionDSLPArr A B)
+    (g : stateArrT S optionDSLPArr B C)
+    (sigma : A * S) (r : option (C * S)) :
+    sp_rel (proj1_sig (comp_DSLPostArr f g)) sigma r <->
+    (sp_rel (proj1_sig f) sigma None /\ r = None) \/
+    exists b s',
+      sp_rel (proj1_sig f) sigma (Some (b, s')) /\
+      sp_rel (proj1_sig g) (b, s') r.
+  Proof.
+    destruct r as [[c s'']|]; cbn.
+    - split.
+      + intros [ob [Hf [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        destruct ob as [[b s']|].
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in Hcollapse.
+          -- inversion Hcollapse; subst r'. right.
+             exists b, s'. split; assumption.
+          -- discriminate Hcollapse.
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in *.
+          -- contradiction.
+          -- discriminate Hcollapse.
+      + intros [[Hf Heq] | [b [s' [Hf Hg]]]].
+        * discriminate Heq.
+        * exists (Some (b, s')). split; [exact Hf|].
+          exists (inl (b, s')). split; [reflexivity|].
+          exists (inl (Some (c, s''))). split; [exact Hg|reflexivity].
+    - split.
+      + intros [ob [Hf [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        destruct ob as [[b s']|].
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in Hcollapse.
+          -- inversion Hcollapse; subst r'. right.
+             exists b, s'. split; assumption.
+          -- contradiction.
+        * simpl in Hsum. subst sb. simpl in Hleft.
+          destruct sb' as [r'|]; simpl in Hcollapse.
+          -- contradiction.
+          -- left. split; [exact Hf|reflexivity].
+      + intros [[Hf Heq] | [b [s' [Hf Hg]]]].
+        * subst. exists None. split; [exact Hf|].
+          exists (inr tt). split; [reflexivity|].
+          exists (inr tt). split; [reflexivity|reflexivity].
+        * exists (Some (b, s')). split; [exact Hf|].
+          exists (inl (b, s')). split; [reflexivity|].
+          exists (inl None). split; [exact Hg|reflexivity].
+  Qed.
+
+  Lemma apply_DSLPostArr_rel {A B}
+    (f : stateArrT S optionDSLPArr A B) (a : A) (s : S) (r : option (B * S)) :
+    sp_rel (proj1_sig (apply_DSLPostArr (A := A) (B := B))) ((f, a), s) r <->
+    sp_rel (proj1_sig f) (a, s) r.
+  Proof.
+    destruct r as [[b s']|]; cbn.
+    - split.
+      + intros [ob [Heq [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        inversion Heq; subst.
+        simpl in *.
+        destruct sb' as [r'|]; simpl in Hcollapse.
+        * inversion Hcollapse; subst r'. exact Hleft.
+        * discriminate Hcollapse.
+      + intro Hf.
+        exists (Some (f, (a, s))). split; [reflexivity|].
+        exists (inl (f, (a, s))). split; [reflexivity|].
+        exists (inl (Some (b, s'))). split; [exact Hf|reflexivity].
+    - split.
+      + intros [ob [Heq [sb [Hsum [sb' [Hleft Hcollapse]]]]]].
+        inversion Heq; subst.
+        simpl in *.
+        destruct sb' as [r'|]; simpl in Hcollapse.
+        * inversion Hcollapse; subst r'. exact Hleft.
+        * contradiction.
+      + intro Hf.
+        exists (Some (f, (a, s))). split; [reflexivity|].
+        exists (inl (f, (a, s))). split; [reflexivity|].
+        exists (inl None). split; [exact Hf|reflexivity].
+  Qed.
+
+  Lemma bind_step_DSLPostArr_rel {A B}
+    (k : A -> DSLPostArr S B) (a : A) (s : S) (r : option (B * S)) :
+    sp_rel
+      (proj1_sig
+         (comp_DSLPostArr
+            (arr_DSLPostArr (fun a0 => (k a0, tt)))
+            (apply_DSLPostArr)))
+      (a, s) r <->
+    sp_rel (proj1_sig (k a)) (tt, s) r.
+  Proof.
+    rewrite comp_DSLPostArr_rel.
+    split.
+    - intros [[Hnone _] | [a' [s' [Harr Happ]]]].
+      + cbn in Hnone. discriminate Hnone.
+      + cbn in Harr. inversion Harr; subst a' s'.
+        apply (proj1 (apply_DSLPostArr_rel (A := unit) (B := B)
+                 (k a) tt s r)).
+        exact Happ.
+    - intro Hk.
+      right. exists (k a, tt), s. split.
+      + cbn. reflexivity.
+      + apply (proj2 (apply_DSLPostArr_rel (A := unit) (B := B)
+               (k a) tt s r)).
+        exact Hk.
+  Qed.
+
+  #[global]
+  Instance Monad_DSLPostArr : Monad (DSLPostArr S) :=
+    {| ret := @ret_DSLPostArr ;
+       bind := @bind_DSLPostArr |}.
+
+End DSLPostArrMonadMorphism.
+
+Section PredStDSLPMonad.
+
+  Variable S : Type.
+
+  Definition DSLPostArr_to_PredSt {A} (m : DSLPostArr S A) : PredSt S A :=
+    fun s r => sp_rel (proj1_sig m) (tt, s) r.
+
+  Definition PredSt_to_DSLPostArr {A} (m : PredSt S A) : DSLPostArr S A :=
+    mkDSLP (fun '(tt, s) r => m s r).
+
+  Lemma DSLPostArr_to_PredSt_ret {A} (a : A) :
+    DSLPostArr_to_PredSt (ret_DSLPostArr S a) = ret_PredSt S a.
+  Proof.
+    extensionality s. extensionality r.
+    apply propositional_extensionality.
+    destruct r as [[a' s']|]; cbn; sauto limit: 200.
+  Qed.
+
+  Lemma DSLPostArr_to_PredSt_bind {A B}
+    (m : DSLPostArr S A) (k : A -> DSLPostArr S B) :
+    DSLPostArr_to_PredSt (bind_DSLPostArr S m k) =
+    bind_PredSt S (DSLPostArr_to_PredSt m)
+      (fun a => DSLPostArr_to_PredSt (k a)).
+  Proof.
+    extensionality s. extensionality r.
+    apply propositional_extensionality.
+    destruct r as [[b s'']|]; unfold DSLPostArr_to_PredSt, bind_DSLPostArr, bind_PredSt; cbn.
+    - rewrite (comp_DSLPostArr_rel S m
+                 (comp_DSLPostArr S
+                    (arr_DSLPostArr S (fun a => (k a, tt)))
+                    (apply_DSLPostArr S))
+                 (tt, s) (Some (b, s''))). split.
+      + intros [[Hnone Habs] | [a [s' [Hm Hstep]]]].
+        * discriminate Habs.
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj1 (bind_step_DSLPostArr_rel S k a s' (Some (b, s'')))).
+          exact Hstep.
+      + intros [[Hnone Habs] | [a [s' [Hm Hk]]]].
+        * discriminate Habs.
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj2 (bind_step_DSLPostArr_rel S k a s' (Some (b, s'')))).
+          exact Hk.
+    - rewrite (comp_DSLPostArr_rel S m
+                 (comp_DSLPostArr S
+                    (arr_DSLPostArr S (fun a => (k a, tt)))
+                    (apply_DSLPostArr S))
+                 (tt, s) None). split.
+      + intros [[Hm _] | [a [s' [Hm Hstep]]]].
+        * left. split; [exact Hm|reflexivity].
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj1 (bind_step_DSLPostArr_rel S k a s' None)).
+          exact Hstep.
+      + intros [[Hm _] | [a [s' [Hm Hk]]]].
+        * left. split; [exact Hm|reflexivity].
+        * right. exists a, s'. split; [exact Hm|].
+          apply (proj2 (bind_step_DSLPostArr_rel S k a s' None)).
+          exact Hk.
+  Qed.
+
+  Lemma PredSt_to_DSLPostArr_ret {A} (a : A) :
+    PredSt_to_DSLPostArr (ret_PredSt S a) = ret_DSLPostArr S a.
+  Proof.
+    apply PureDSLPostArr_eq. intros pre r.
+    destruct r as [[a' s']|]; cbn.
+    - split.
+      + intros H [[] s] Hrel.
+        inversion Hrel; subst. apply H. reflexivity.
+      + intros H [[] s] Hrel.
+        inversion Hrel; subst. apply H. reflexivity.
+    - split.
+      + intros _ [[] s] Hrel. discriminate Hrel.
+      + intros H [[] s] Hrel. discriminate Hrel.
+  Qed.
+
+  Lemma PredSt_to_DSLPostArr_DSLPostArr_to_PredSt {A}
+    (m : DSLPostArr S A) :
+    PredSt_to_DSLPostArr (DSLPostArr_to_PredSt m) = m.
+  Proof.
+    apply PureDSLPostArr_eq. intros pre r. cbn.
+    split.
+    - intros H.
+      apply (proj2 (proj2_sig m pre r)).
+      intros [[] s] Hrel.
+      exact (H (tt, s) Hrel).
+    - intros H [[] s] Hrel.
+      apply (proj1 (proj2_sig m pre r)) in H.
+      exact (H (tt, s) Hrel).
+  Qed.
+
+  Lemma DSLPostArr_to_PredSt_PredSt_to_DSLPostArr {A}
+    (m : PredSt S A) :
+    DSLPostArr_to_PredSt (PredSt_to_DSLPostArr m) = m.
+  Proof.
+    extensionality s. extensionality r. reflexivity.
+  Qed.
+
+  Lemma PredSt_to_DSLPostArr_bind {A B}
+    (m : PredSt S A) (k : A -> PredSt S B) :
+    PredSt_to_DSLPostArr (bind_PredSt S m k) =
+    bind_DSLPostArr S (PredSt_to_DSLPostArr m)
+      (fun a => PredSt_to_DSLPostArr (k a)).
+  Proof.
+    transitivity
+      (PredSt_to_DSLPostArr
+         (DSLPostArr_to_PredSt
+            (bind_DSLPostArr S (PredSt_to_DSLPostArr m)
+               (fun a => PredSt_to_DSLPostArr (k a))))).
+    - f_equal.
+      rewrite DSLPostArr_to_PredSt_bind.
+      rewrite !DSLPostArr_to_PredSt_PredSt_to_DSLPostArr.
+      reflexivity.
+    - apply PredSt_to_DSLPostArr_DSLPostArr_to_PredSt.
+  Qed.
+
+End PredStDSLPMonad.
