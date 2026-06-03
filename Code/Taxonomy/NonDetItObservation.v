@@ -1304,3 +1304,242 @@ Module OHearnExample.
   Qed.
 
 End OHearnExample.
+
+Section OHearnRewritingRules.
+
+  Variable S : Type.
+
+  Theorem first_symmetry_rule_1_asp :
+    forall A (m : nditprog S A) pre post1 post2,
+      (tripleSP obsASP m Incorrect pre post1 /\
+       tripleSP obsASP m Incorrect pre post2) ->
+        tripleSP obsASP m Incorrect pre (fun r => post1 r \/ post2 r).
+  Proof.
+    intros A m pre post1 post2.
+    unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+    intro H. inversion H as [H1 H2].
+    intros r Hr. inversion Hr as [Hr1 | Hr2].
+    - apply H1. exact Hr1.
+    - apply H2. exact Hr2.
+  Qed.
+
+  Theorem first_symmetry_rule_2_asp :
+    forall A (m : nditprog S A) pre post1 post2,
+      tripleSP obsASP m Incorrect pre (fun r => post1 r \/ post2 r) ->
+      (tripleSP obsASP m Incorrect pre post1 /\
+       tripleSP obsASP m Incorrect pre post2).
+  Proof.
+    intros A m pre post1 post2.
+    unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+    intro H. split.
+    - intros r Hr. apply H. left. exact Hr.
+    - intros r Hr. apply H. right. exact Hr.
+  Qed.
+
+  Theorem first_symmetry_rule_asp :
+    forall A (m : nditprog S A) pre post1 post2,
+      (tripleSP obsASP m Incorrect pre post1 /\
+       tripleSP obsASP m Incorrect pre post2) <->
+        tripleSP obsASP m Incorrect pre (fun r => post1 r \/ post2 r).
+  Proof.
+    intros. split.
+    - apply first_symmetry_rule_1_asp.
+    - apply first_symmetry_rule_2_asp.
+  Qed.
+
+  Theorem second_symmetry_rule_asp_1 :
+    forall A (m : nditprog S A) pre post1 post2,
+      (tripleSP obsASP m Correct pre post1 /\
+         tripleSP obsASP m Correct pre post2) ->
+      tripleSP obsASP m Correct pre (fun r => post1 r /\ post2 r).
+  Proof.
+    intros A m pre post1 post2.
+    intro H. inversion H as [H1 H2].
+    intros r Hr. split.
+    - apply H1. exact Hr.
+    - apply H2. exact Hr.
+  Qed.
+
+  Theorem second_symmetry_rule_asp_2 :
+    forall A (m : nditprog S A) pre post1 post2,
+      tripleSP obsASP m Correct pre (fun r => post1 r /\ post2 r) ->
+      (tripleSP obsASP m Correct pre post1 /\
+         tripleSP obsASP m Correct pre post2).
+  Proof.
+    intros A m pre post1 post2.
+    unfold tripleSP, as_sp_obs, AsSPObs_Pred, asp.
+    intro H. split.
+    - intros r Hr. apply H. exact Hr.
+    - intros r Hr. apply H. exact Hr.
+  Qed.
+
+  Theorem second_symmetry_rule_asp :
+    forall A (m : nditprog S A) pre post1 post2,
+      (tripleSP obsASP m Correct pre post1 /\
+         tripleSP obsASP m Correct pre post2) <->
+        tripleSP obsASP m Correct pre (fun r => post1 r /\ post2 r).
+  Proof.
+    intros. split.
+    - apply second_symmetry_rule_asp_1.
+    - apply second_symmetry_rule_asp_2.
+  Qed.
+
+  Theorem second_symmetry_rule_dwp_1 :
+    forall A (m : nditprog S A) pre post1 post2,
+      (tripleWP obsDWLP m Correct pre post1 /\
+         tripleWP obsDWLP m Correct pre post2) ->
+      tripleWP obsDWLP m Correct pre (fun r => post1 r /\ post2 r).
+  Proof.
+    intros A m pre post1 post2 [H1 H2].
+    unfold tripleWP, ordProgWP in *.
+    intros s p [Hpre Himp].
+    specialize (H1 s post1 (conj Hpre (fun _ Hr => Hr))).
+    specialize (H2 s post2 (conj Hpre (fun _ Hr => Hr))).
+    cbn in H1, H2 |- *.
+    destruct (runStateT m s) as [[outcomes]].
+    intros oa Hoa.
+    specialize (H1 oa Hoa). specialize (H2 oa Hoa).
+    destruct oa as [r|]; [|exact I].
+    apply Himp. split; assumption.
+  Qed.
+
+  Theorem second_symmetry_rule_dwp_2 :
+    forall A (m : nditprog S A) pre post1 post2,
+      tripleWP obsDWLP m Correct pre (fun r => post1 r /\ post2 r) ->
+       (tripleWP obsDWLP m Correct pre post1 /\
+         tripleWP obsDWLP m Correct pre post2).
+  Proof.
+    intros A m pre post1 post2 H.
+    split.
+    - unfold tripleWP, ordProgWP in *.
+      intros s p Hpp.
+      specialize (H s (fun r => p r)).
+      unfold obsDWLP in H. cbn in H.
+      destruct Hpp as [Hpre Himp].
+      apply H. split; [exact Hpre | intros r [H1 H2]; apply Himp; assumption].
+    - unfold tripleWP, ordProgWP in *.
+      intros s p Hpp.
+      specialize (H s (fun r => p r)).
+      destruct Hpp as [Hpre Himp].
+      apply H. split; [exact Hpre | intros r [H1 H2]; apply Himp; assumption].
+  Qed.
+
+  Theorem second_symmetry_rule_dwp :
+    forall A (m : nditprog S A) pre post1 post2,
+      (tripleWP obsDWLP m Correct pre post1 /\
+         tripleWP obsDWLP m Correct pre post2) <->
+        tripleWP obsDWLP m Correct pre (fun r => post1 r /\ post2 r).
+    Proof.
+      intros. split.
+      - apply second_symmetry_rule_dwp_1.
+      - apply second_symmetry_rule_dwp_2.
+    Qed.
+
+    (** Rule of consequence for SP-Incorrect: weaken the precondition
+        and shrink the postcondition. *)
+    Theorem first_imp_symmetry_rule_asp :
+      forall A (m : nditprog S A) pre pre' post post',
+        (tripleSP obsASP m Incorrect pre post /\
+           (forall r, pre r -> pre' r) /\ (forall r, post' r -> post r)) -> tripleSP obsASP m Incorrect pre' post'.
+    Proof.
+      intros A m pre pre' post post' [Htriple [Hpre Hpost]].
+      unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP in *.
+      simpl proj1_sig in *. unfold asp in *.
+      intros r Hpost'.
+      destruct (Htriple r (Hpost r Hpost')) as [[[] s] [Hp Hrel]].
+      exists (tt, s). split; [apply Hpre; exact Hp | exact Hrel].
+    Qed.
+
+    (** Rule of consequence for SP-Correct: strengthen the precondition
+        and weaken the postcondition. *)
+    Theorem second_imp_symmetry_rule_asp :
+      forall A (m : nditprog S A) pre pre' post post',
+        (tripleSP obsASP m Correct pre post /\
+           (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) -> tripleSP obsASP m Correct pre' post'.
+    Proof.
+      intros A m pre pre' post post' [Htriple [Hpre Hpost]].
+      unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP in *.
+      simpl proj1_sig in *. unfold asp in *.
+      intros r [[[] s] [Hpre' Hrel]].
+      apply Hpost. apply Htriple.
+      exists (tt, s). split; [apply Hpre; exact Hpre' | exact Hrel].
+    Qed.
+
+    (** DWLP-Correct implies ASP-Correct (with consequence): a result
+        reachable from a [pre']-state is a terminating outcome there, so
+        the demonic partial transformer forces the postcondition. *)
+    Theorem second_imp_symmetry_rule_dwp :
+      forall A (m : nditprog S A) pre pre' post post',
+        (tripleWP obsDWLP m Correct pre post /\
+           (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) -> tripleSP obsASP m Correct pre' post'.
+    Proof.
+      intros A m pre pre' post post' [Hwp [Hpre Hpost]].
+      unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
+      unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP.
+      simpl proj1_sig. unfold asp, obsRel.
+      intros r [[[] s0] [Hpre' Hrel]].
+      apply Hpost.
+      specialize (Hwp s0 post).
+      destruct (runStateT m s0) as [[outcomes]] eqn:Hm. cbn in Hwp, Hrel.
+      refine (Hwp (conj (Hpre s0 Hpre') (fun _ H => H)) (Some r) _).
+      destruct r as [[a s']|]; exact Hrel.
+    Qed.
+
+    (** Principle of agreement (SP): if [u]-reachability witnesses the
+        under-approximation [u'] and [u] entails the over-approximation
+        precondition [o], then the over-approximation postcondition [o']
+        holds of every [u']-result. *)
+    Theorem principle_of_agreement_asp :
+      forall A (m : nditprog S A) u u' o o',
+        (tripleSP obsASP m Incorrect u u' /\ tripleSP obsASP m Correct o o' /\
+           (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
+    Proof.
+      intros A m u u' o o' [Hinc [Hcor Himp]].
+      unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP in *.
+      simpl proj1_sig in *. unfold asp in *.
+      intros r Hu'.
+      destruct (Hinc r Hu') as [[[] s] [Hu Hrel]].
+      apply Hcor. exists (tt, s). split; [apply Himp; exact Hu | exact Hrel].
+    Qed.
+
+    (** Principle of agreement, demonic-partial-WP variant. *)
+    Theorem principle_of_agreement_dwp :
+      forall A (m : nditprog S A) u u' o o',
+        (tripleSP obsASP m Incorrect u u' /\ tripleWP obsDWLP m Correct o o' /\
+           (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
+    Proof.
+      intros A m u u' o o' [Hinc [Hwp Himp]].
+      unfold tripleSP, as_sp_obs, AsSPObs_ASP, obsASP in Hinc.
+      simpl proj1_sig in Hinc. unfold asp, obsRel in Hinc.
+      unfold tripleWP, ordProgWP, pp2wp, obsDWLP in Hwp. cbn in Hwp.
+      intros r Hu'.
+      destruct (Hinc r Hu') as [[[] s] [Hu Hrel]].
+      specialize (Hwp s o').
+      destruct (runStateT m s) as [[outcomes]] eqn:Hm. cbn in Hwp, Hrel.
+      refine (Hwp (conj (Himp s Hu) (fun _ H => H)) (Some r) _).
+      destruct r as [[a s']|]; exact Hrel.
+    Qed.
+
+    (** Principle of denial (SP): contrapositive of agreement. *)
+    Theorem principle_of_denial_asp :
+      forall A (m : nditprog S A) u u' o o',
+        (tripleSP obsASP m Incorrect u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleSP obsASP m Correct o o').
+    Proof.
+      intros A m u u' o o' [Hinc [Himp Hnot]] Hcor.
+      apply Hnot.
+      apply (principle_of_agreement_asp A m u u' o o').
+      exact (conj Hinc (conj Hcor Himp)).
+    Qed.
+
+    (** Principle of denial, demonic-partial-WP variant. *)
+    Theorem principle_of_denial_dwp :
+      forall A (m : nditprog S A) u u' o o',
+        (tripleSP obsASP m Incorrect u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleWP obsDWLP m Correct o o').
+    Proof.
+      intros A m u u' o o' [Hinc [Himp Hnot]] Hwp.
+      apply Hnot.
+      apply (principle_of_agreement_dwp A m u u' o o').
+      exact (conj Hinc (conj Hwp Himp)).
+    Qed.
+
+End OHearnRewritingRules.
