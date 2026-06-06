@@ -350,6 +350,36 @@ Section NDItObservationWP.
                         end
                     end)).
 
+  Theorem obsDPCollapse :
+    forall {A} (m : nditprog S A) post s0,
+      (~ unOptionT (unOptionT (runStateT m s0)) None) ->
+      (unOptionT (runStateT (obsDWP m) s0) post <-> unOptionT (runStateT (obsDWLP m) s0) post).
+  Proof.
+    intros A m post s0 Hnd. cbn.
+    destruct (runStateT m s0) as [[outcomes]]. cbn in Hnd.
+    split.
+    - (* DWP -> DWLP: weaken [False] to [True] in the divergence branch. *)
+      intros H oa Hoa. specialize (H oa Hoa).
+      destruct oa as [r|]; [exact H | exact I].
+    - (* DWLP -> DWP: divergence is unreachable, so its branch is vacuous. *)
+      intros H oa Hoa. specialize (H oa Hoa).
+      destruct oa as [r|]; [exact H | exfalso; exact (Hnd Hoa)].
+  Qed.
+
+  Theorem obsAPCollapse :
+    forall {A} (m : nditprog S A) post s0,
+      (~ unOptionT (unOptionT (runStateT m s0)) None) ->
+      (unOptionT (runStateT (obsAWP m) s0) post <-> unOptionT (runStateT (obsAWLP m) s0) post).
+  Proof.
+    intros A m post s0 Hnd. cbn.
+    destruct (runStateT m s0) as [[outcomes]]. cbn in Hnd.
+    split.
+    - (* AWP -> AWLP: left-inject the terminating witness. *)
+      intro H. left. exact H.
+    - (* AWLP -> AWP: the divergence disjunct is ruled out. *)
+      intros [H | Hdiv]; [exact H | exfalso; exact (Hnd Hdiv)].
+  Qed.
+
 End NDItObservationWP.
 
 Arguments obsDWP {_} {_}.
