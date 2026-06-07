@@ -156,6 +156,14 @@ Arguments mkSPRecord {A B}.
 Arguments sp_pt {A B}.
 Arguments sp_rel {A B}.
 
+(** Reduced angelic record: for angelic strongest postconditions, the
+    predicate transformer is determined by the relation. *)
+Record SPRecord' (A B : Type) := mkSPRecord' {
+  sp_rel' : Pred A B
+}.
+Arguments mkSPRecord' {A B}.
+Arguments sp_rel' {A B}.
+
 (* ================================================================= *)
 (** ** Angelic: [PureASPostArr]                                       *)
 (* ================================================================= *)
@@ -169,10 +177,17 @@ Definition PureASPostArr (A B : Type) : Type :=
   { d : SPRecord A B |
     forall pre b, sp_pt d pre b <-> asp (sp_rel d) pre b }.
 
+(** Reduced angelic representation storing only the relation. *)
+Definition PureASPostArr' (A B : Type) : Type := SPRecord' A B.
+
 (** Smart constructor: wrap a relation with [asp]. *)
 #[program] Definition mkASP {A B} (R : Pred A B) : PureASPostArr A B :=
   mkSPRecord (asp R) R.
 Next Obligation. reflexivity. Qed.
+
+(** Smart constructor for the reduced representation. *)
+Definition mkASP' {A B} (R : Pred A B) : PureASPostArr' A B :=
+  mkSPRecord' R.
 
 Section PureASPostArr.
 

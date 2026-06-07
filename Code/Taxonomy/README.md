@@ -33,6 +33,10 @@ its underlying relation) and differ only in the correctness condition:
 | `PureASPostArr A B` | `sp_pt d pre b <-> asp (sp_rel d) pre b` | `asp R pre b = exists a, pre a /\ R a b` (angelic) |
 | `PureDSLPostArr A B` | `sp_pt d pre b <-> dslp (sp_rel d) pre b` | `dslp R pre b = forall a, R a b -> pre a` (demonic) |
 
+For the angelic case, `SPost.v` also defines a reduced representation
+`PureASPostArr' A B = SPRecord' A B` that stores only the relation; its
+equivalence with `PureASPostArr` is proved in `SPostFacts.v`.
+
 Composed types for stateful specifications with exceptions:
 
     ASPostArr S A = stateArrT S (optionArrT PureASPostArr) unit A

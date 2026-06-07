@@ -62,6 +62,36 @@ Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : Pred A B)
   forall P b, sp_pt (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
 
+Definition PureASPostArr_to_reduced {A B}
+  (f : PureASPostArr A B) : PureASPostArr' A B :=
+  mkASP' (sp_rel (proj1_sig f)).
+
+Definition PureASPostArr_from_reduced {A B}
+  (f : PureASPostArr' A B) : PureASPostArr A B :=
+  mkASP (sp_rel' f).
+
+Lemma PureASPostArr_to_from_reduced {A B} (f : PureASPostArr' A B) :
+  PureASPostArr_to_reduced (PureASPostArr_from_reduced f) = f.
+Proof.
+  destruct f as [R]. reflexivity.
+Qed.
+
+Lemma PureASPostArr_from_to_reduced {A B} (f : PureASPostArr A B) :
+  PureASPostArr_from_reduced (PureASPostArr_to_reduced f) = f.
+Proof.
+  apply PureASPostArr_eq. intros pre b. cbn.
+  symmetry. apply (proj2_sig f).
+Qed.
+
+Lemma PureASPostArr_equiv_reduced {A B : Type} :
+      (forall f, @PureASPostArr_to_reduced A B (PureASPostArr_from_reduced f) = f) /\
+      (forall f, @PureASPostArr_from_reduced A B (PureASPostArr_to_reduced f) = f).
+Proof.
+  split.
+  - exact PureASPostArr_to_from_reduced.
+  - exact PureASPostArr_from_to_reduced.
+Qed.
+
 (* ================================================================= *)
 (** ** [ArrowLaws] for [PureASPostArr]                                 *)
 (* ================================================================= *)
