@@ -22,6 +22,8 @@ Taxonomy/Prog.v
 Taxonomy/ProgFacts.v
 Taxonomy/WP.v
 Taxonomy/WPFacts.v
+Taxonomy/WPred.v
+Taxonomy/WPredFacts.v
 Taxonomy/NonDetProg.v
 Taxonomy/NonDetProgFacts.v
 Taxonomy/NonDetItProg.v
