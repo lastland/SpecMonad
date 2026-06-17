@@ -61,44 +61,42 @@ Section NDObservationSP.
 
   Variable S : Type.
 
-  (** Reachability relation for [ndprog]: initial state [(tt, s0)] reaches
+  (** Reachability relation for [ndprog]: initial state [s0] reaches
       outcome [r] iff [r] is in the outcome set. *)
   Definition obsRel {A} (m : ndprog S A)
-    : Pred (unit * S) (option (A * S)) :=
-    fun '(_, s0) r => unOptionT (runStateT m s0) r.
+    : Pred S (option (A * S)) :=
+    fun s0 r => unOptionT (runStateT m s0) r.
 
-  Definition obsASP {A} (m : ndprog S A) : ASPostArr S A :=
-    mkASP (obsRel m).
-
-  Definition obsDSLP {A} (m : ndprog S A) : DSLPostArr S A :=
-    mkDSLP (obsRel m).
-
-  #[program] Definition obsASLP {A} (m : ndprog S A) :
-    (unit * S -> Prop) -> (option (A * S) -> Prop) :=
-    fun pre r => sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
-
-  #[program] Definition obsDSP {A} (m : ndprog S A) :
-    (unit * S -> Prop) -> (option (A * S) -> Prop) :=
-    fun pre r => sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
+  (** The four SP transformers are readings of the reachability relation
+      [obsRel] (no [ASPostArr]/[SPRecord]): [asp]/[dslp]/[spDSP]/[spASLP]
+      from [SPost.v]. *)
+  Definition obsASP {A} (m : ndprog S A)
+    : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
+  Definition obsDSLP {A} (m : ndprog S A)
+    : (S -> Prop) -> option (A * S) -> Prop := dslp (obsRel m).
+  Definition obsDSP {A} (m : ndprog S A)
+    : (S -> Prop) -> option (A * S) -> Prop := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
+  Definition obsASLP {A} (m : ndprog S A)
+    : (S -> Prop) -> option (A * S) -> Prop := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
 
   (* -------------------------------------------------------------- *)
   (** *** Theorem 3.7: Square inclusions                             *)
   (* -------------------------------------------------------------- *)
 
-  #[program] Theorem obsDSP_sub_obsASP {A} (m : ndprog S A) pre r :
-    obsDSP m pre r -> sp_pt (obsASP m) pre r.
+  Theorem obsDSP_sub_obsASP {A} (m : ndprog S A) pre r :
+    obsDSP m pre r -> obsASP m pre r.
   Proof. intros [H _]. exact H. Qed.
 
-  #[program] Theorem obsDSP_sub_obsDSLP {A} (m : ndprog S A) pre r :
-    obsDSP m pre r -> sp_pt (obsDSLP m) pre r.
+  Theorem obsDSP_sub_obsDSLP {A} (m : ndprog S A) pre r :
+    obsDSP m pre r -> obsDSLP m pre r.
   Proof. intros [_ H]. exact H. Qed.
 
-  #[program] Theorem obsASP_sub_obsASLP {A} (m : ndprog S A) pre r :
-    sp_pt (obsASP m) pre r -> obsASLP m pre r.
+  Theorem obsASP_sub_obsASLP {A} (m : ndprog S A) pre r :
+    obsASP m pre r -> obsASLP m pre r.
   Proof. intro H. left. exact H. Qed.
 
-  #[program] Theorem obsDSLP_sub_obsASLP {A} (m : ndprog S A) pre r :
-    sp_pt (obsDSLP m) pre r -> obsASLP m pre r.
+  Theorem obsDSLP_sub_obsASLP {A} (m : ndprog S A) pre r :
+    obsDSLP m pre r -> obsASLP m pre r.
   Proof. intro H. right. exact H. Qed.
 
   (* -------------------------------------------------------------- *)
@@ -110,8 +108,7 @@ Section NDObservationSP.
     (exists sigma, obsRel m sigma r) /\
     (forall sigma, obsRel m sigma r -> pre sigma).
   Proof.
-    unfold obsDSP, obsASP, obsDSLP; simpl.
-    symmetry. apply dsp_asp_dslp.
+    unfold obsDSP. symmetry. apply dsp_asp_dslp.
   Qed.
 
   Corollary obsASLP_char {A} (m : ndprog S A) pre r :
@@ -119,8 +116,7 @@ Section NDObservationSP.
     (exists sigma, pre sigma /\ obsRel m sigma r) \/
     ~ (exists sigma, obsRel m sigma r).
   Proof.
-    unfold obsASLP, obsASP, obsDSLP; simpl.
-    symmetry. apply aslp_asp_dslp.
+    unfold obsASLP. symmetry. apply aslp_asp_dslp.
   Qed.
 
 End NDObservationSP.
@@ -238,7 +234,7 @@ Qed.
 (** All reachable results from precondition [True] have state >= 42. *)
 #[program] Theorem progA_all :
   forall (s : nat) r,
-    sp_pt (obsASP progA) (fun _ => True) r ->
+    (obsASP progA) (fun _ => True) r ->
     match r with
     | Some (_, s') => s' >= 42
     | None => False
@@ -249,10 +245,10 @@ Qed.
 
 (** State 42 is reachable. *)
 #[program] Theorem progA_42 :
-  sp_pt (obsASP progA) (fun _ => True) (Some (tt, 42)).
+  (obsASP progA) (fun _ => True) (Some (tt, 42)).
 Proof.
   intros. cbn. unfold asp.
-  exists (tt, 42). split; [reflexivity|].
+  exists 42. split; [reflexivity|].
   eapply ex_intro. split; [reflexivity|]. cbn.
   eapply ex_intro. split; [reflexivity|]. cbn.
   left. reflexivity.
@@ -260,10 +256,10 @@ Qed.
 
 (** State 43 is also reachable. *)
 #[program] Theorem progA_43 :
-  sp_pt (obsASP progA) (fun _ => True) (Some (tt, 43)).
+  (obsASP progA) (fun _ => True) (Some (tt, 43)).
 Proof.
   intros. cbn. unfold asp.
-  exists (tt, 42). split; [reflexivity|].
+  exists 42. split; [reflexivity|].
   eapply ex_intro. split; [reflexivity|]. cbn.
   eapply ex_intro. split; [reflexivity|]. cbn.
   right. reflexivity.
