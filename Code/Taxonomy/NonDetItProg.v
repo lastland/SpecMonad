@@ -89,9 +89,16 @@ Section NonDetItProg.
   Definition spinP {A} : nditprog A :=
     mkStateT (fun _ =>
       @mkOptionT (optionT SetM) _ (
-        @mkOptionT SetM _ (fun oa => oa = None))).
+          @mkOptionT SetM _ (fun oa => oa = None))).
+
+  Definition pickP {A} : nditprog A :=
+    mkStateT (fun s =>
+                @mkOptionT (optionT SetM) _ (
+                    @mkOptionT SetM _ (fun oa => exists a : A, oa = Some (Some (a, s))))).
 
 End NonDetItProg.
+
+Arguments pickP {S A}.
 
 (* ================================================================= *)
 (** ** Interpretation from fully uninterpreted itree                  *)
