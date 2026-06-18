@@ -57,6 +57,17 @@ Proof.
   - intros. exists a. tauto.
 Qed.
 
+(** [asp] at a singleton precondition [eq a] recovers the relation at [a].
+    This is [asp_asp_inv] with [asp_inv] unfolded ([asp_inv pt a := pt (eq a)]),
+    packaged for rewriting in strongest-postcondition sequencing laws. *)
+Corollary asp_singleton : forall {A B} (R : Pred A B) (a : A) (b : B),
+    asp R (eq a) b <-> R a b.
+Proof.
+  intros. unfold asp. split.
+  - intros [a' [<- H]]. exact H.
+  - intro H. exists a. auto.
+Qed.
+
 (* Cannot prove this for arbitrary [(A -> Prop) -> B -> Prop]. *)
 Theorem asp_inv_asp : forall {A B} (R : Pred A B) pre b,
     asp (asp_inv (asp R)) pre b <-> asp R pre b.
