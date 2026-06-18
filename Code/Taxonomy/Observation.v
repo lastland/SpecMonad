@@ -13,6 +13,7 @@
     defined based on the former two. Even though [prog S A] is deterministic, it
     is not necessarily reversible, so we cannot collapse any of the [sp]s. *)
 
+From Coq Require Import Classical_Prop.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
@@ -306,6 +307,43 @@ Section ObservationSP.
     unfold obsASLP. symmetry. apply aslp_asp_dslp.
   Qed.
 
+  (* -------------------------------------------------------------- *)
+  (** *** [ret] as the pure [Pred]-arrow                             *)
+  (* -------------------------------------------------------------- *)
+
+  (** [Pred] is an [Arrow] ([Arrow_Pred] in [Pred.v]) with
+      [arr_pure f a b := f a = b] (the graph of [f]).  The *reachability*
+      observation of [ret a] is exactly the pure arrow of [s |-> Some
+      (a, s)] (return value [a], state unchanged): *)
+  Lemma ret_run {A} (a : A) (sigma : S) :
+    eutt eq (unOptionT (runStateT (ret a : prog S A) sigma)) (Ret (Some (a, sigma))).
+  Proof. cbn. reflexivity. Qed.
+
+  Lemma obsRel_ret_arr_pure {A} (a : A) :
+    arrow_eq (obsRel (ret a)) (arr_pure (fun s : S => Some (a, s))).
+  Proof.
+    unfold arrow_eq, ArrowEq_Pred, Pred_eq. intros sigma r.
+    unfold obsRel. rewrite ret_run. unfold arr_pure, Arrow_Pred; cbn.
+    split.
+    - intro H. apply eutt_inv_Ret in H. exact H.
+    - intro H. subst r. reflexivity.
+  Qed.
+
+  (** [obsASP = asp (obsRel _)] is the *angelic reading*, of type
+      [Pred (S -> Prop) (option (A * S))].  [obsASP (ret a)] is therefore
+      [asp] applied to the pure arrow above — the direct image of [pre]
+      under [s |-> Some (a, s)].  It is NOT itself an [arr_pure]: [asp]
+      turns the function graph into an existential relation
+      ([exists s, pre s /\ r = Some (a, s)]), which is not a function graph. *)
+  Lemma obsASP_ret_asp_arr_pure {A} (a : A) (pre : S -> Prop) (r : option (A * S)) :
+    obsASP (ret a) pre r <-> asp (arr_pure (fun s : S => Some (a, s))) pre r.
+  Proof.
+    unfold obsASP, asp.
+    split; intros [sigma [Hpre Hrel]]; exists sigma; (split; [exact Hpre |]).
+    - apply obsRel_ret_arr_pure. exact Hrel.
+    - apply obsRel_ret_arr_pure. exact Hrel.
+  Qed.
+
 End ObservationSP.
 
 Arguments obsRel {_} {_}.
@@ -315,211 +353,184 @@ Arguments obsDSP {_} {_}.
 Arguments obsDSLP {_} {_}.
 
 (* ================================================================= *)
-(** ** SP observation into [ProgWPred]                                *)
+(** ** SP triples over the precondition-taking (arrow) observations    *)
 (* ================================================================= *)
 
-(** Alternative strongest-postcondition observations that land directly in
-    the set-monad spec type [ProgWPred S A = S -> option (A * S) -> Prop],
-    rather than the [SPRecord]/[ASPostArr] arrow encoding above.
+(** The SP observations [obsASP]/[obsDSLP]/[obsDSP]/[obsASLP] above are
+    *arrows* — [Pred (S -> Prop) (option (A * S))]: they take a
+    precondition [pre : S -> Prop] and return a postcondition predicate
+    ([asp]/[dslp]/[spDSP]/[spASLP] of the reachability relation [obsRel]).
+    A triple compares [obs m pre] with [post] by inclusion.  Carrying the
+    precondition as a genuine argument (rather than the point-based
+    [eq (tt,s)] encoding) is what makes the contrapositive transformers
+    and the [awp -| dslp] Galois connection hold. *)
 
-    Unlike [ProgWP] (a [PureWP]-based predicate transformer), [ProgWPred]
-    has no precondition slot: it maps a state directly to a postcondition
-    predicate over outcomes.  We therefore bake in the point precondition
-    [pre := eq (tt, s)] determined by the initial state [s].  Specializing
-    the four predicate transformers of [SPost.v] to this singleton [pre]
-    gives:
+Definition tripleSP {S A}
+  (obs : prog S A -> (S -> Prop) -> option (A * S) -> Prop)
+  (m : prog S A) (kind : approximationKind)
+  (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+  match kind with
+  | Over  => forall r, obs m pre r -> post r          (* sp(pre) ⊆ post *)
+  | Under => forall r, post r -> obs m pre r          (* post ⊆ sp(pre) *)
+  end.
 
-    - [asp]  R (eq (tt,s)) o  =  R (tt,s) o
-    - [dslp] R (eq (tt,s)) o  =  forall sigma, R sigma o -> sigma = (tt,s)
-    - [dsp]  R (eq (tt,s)) o  =  (exists sigma, R sigma o)
-                                 /\ (forall sigma, R sigma o -> sigma = (tt,s))
-    - [aslp] R (eq (tt,s)) o  =  R (tt,s) o \/ ~ (exists sigma, R sigma o)
+(* -------------------------------------------------------------- *)
+(** *** Examples                                                   *)
+(* -------------------------------------------------------------- *)
 
-    where [R = obsRel m] is the deterministic reachability relation.
+Theorem progA_all_triple :
+  tripleSP obsASP progA Over (fun _ => True)
+    (fun r : option (unit * nat) =>
+       match r with Some (_, s) => s >= 42 | None => False end).
+Proof.
+  unfold tripleSP, obsASP, asp. intros r [sigma [_ Hrel]].
+  unfold obsRel in Hrel. rewrite (progA_run sigma) in Hrel.
+  apply eutt_inv_Ret in Hrel. subst r. cbn. auto with arith.
+Qed.
 
-    Placed in a module to avoid a name clash with the [ASPostArr]-valued
-    observations; to use one at top level, refer to it as e.g.
-    [WPredObs.obsASP]. *)
+Theorem progA_42 :
+  tripleSP obsASP progA Under (fun _ => True) (fun r => r = Some (tt, 42)).
+Proof.
+  unfold tripleSP. intros r Hr. subst r.
+  unfold obsASP, asp. exists 0. split; [exact I |].
+  unfold obsRel. apply progA_run.
+Qed.
 
-Module WPredObs.
+Definition example_state : prog (nat * nat * nat) unit :=
+  s <- get ;;
+  let '(x, y, _) := s in
+  if Nat.even x then
+    if negb (Nat.even y) then put (x, y, 42) else ret tt
+  else ret tt.
 
-  Section ObservationWPred.
+Lemma example_run : forall x y z0,
+  Nat.even x = true -> negb (Nat.even y) = true ->
+  eutt eq (unOptionT (runStateT example_state (x, y, z0)))
+          (Ret (Some (tt, (x, y, 42)))).
+Proof.
+  intros x y z0 Hx Hy. unfold example_state. cbn.
+  setoid_rewrite bind_ret_l. cbn. rewrite Hx, Hy. cbn.
+  repeat (setoid_rewrite bind_ret_l; cbn). reflexivity.
+Qed.
 
-    Variable S : Type.
+Theorem example_incorrect_1 :
+  tripleSP obsASP example_state Under
+    (fun '(x, _, z) => z = 11)
+    (fun r =>
+       match r with
+       | Some (tt, (x, y, z)) =>
+           z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true
+       | _ => False
+       end).
+Proof.
+  unfold tripleSP. intros r Hpost.
+  destruct r as [[u [[x y] z]] |]; [| contradiction]. destruct u.
+  cbn in Hpost. destruct Hpost as [Hz [Hx Hy]]. subst z.
+  unfold obsASP, asp. exists (x, y, 11). split; [reflexivity |].
+  unfold obsRel. apply example_run; assumption.
+Qed.
 
-    (** [(tt, s)] reaches outcome [o] iff the deterministic computation
-        converges to [ret o] — the same reachability relation as [obsRel],
-        but packaged as a [ProgWPred] value.  This is [asp] specialized to
-        the point precondition [eq (tt, s)]. *)
-    Definition obsASP {A} (m : prog S A) : ProgWPred S A :=
-      mkStateT
-        (fun s => mkOptionT
-                 (fun o => eutt eq (unOptionT (runStateT m s)) (ret o))).
-
-    (** [dslp] specialized to [eq (tt, s)]: [o] is observed only if every
-        initial state reaching [o] is exactly [(tt, s)]. *)
-    Definition obsDSLP {A} (m : prog S A) : ProgWPred S A :=
-      mkStateT
-        (fun s => @mkOptionT WPred (A * S)
-                 (fun o => forall sigma, obsRel m sigma o -> sigma = s)).
-
-    (** [dsp] specialized to [eq (tt, s)]: [o] is reachable, and only from
-        [(tt, s)].  Equivalently [obsASP m] conjoined with [obsDSLP m]. *)
-    Definition obsDSP {A} (m : prog S A) : ProgWPred S A :=
-      mkStateT
-        (fun s => @mkOptionT WPred (A * S)
-                 (fun o => (exists sigma, obsRel m sigma o) /\
-                           (forall sigma, obsRel m sigma o -> sigma = s))).
-
-    (** [aslp] specialized to [eq (tt, s)]: [o] is reached from [(tt, s)], or
-        else [o] is unreachable from any state.  Equivalently [obsASP m]
-        disjoined with [obsDSLP m]. *)
-    Definition obsASLP {A} (m : prog S A) : ProgWPred S A :=
-      mkStateT
-        (fun s => @mkOptionT WPred (A * S)
-                 (fun o => obsRel m s o \/
-                           ~ (exists sigma, obsRel m sigma o))).
-  End ObservationWPred.
-
-  Arguments obsASP {_} {_}.
-  Arguments obsDSLP {_} {_}.
-  Arguments obsDSP {_} {_}.
-  Arguments obsASLP {_} {_}.
-
-  Section SPTriple.
-  
-  (** The precondition gates the *initial state*: [ordProgSP pre m1 m2]
-      only compares the observations at states satisfying [pre].  This
-      matches the way [pp2wp] uses [pre] as a vacuity guard on the small
-      element (see [gc_asp_dwlp]), unlike a [pre s0 /\ post r] conjunct on
-      the output, which would force every reachable state to satisfy [pre]. *)
-  Definition pp2sp {S A} (post : option (A * S) -> Prop) : ProgWPred S A :=
-    mkStateT (fun _ => @mkOptionT WPred _ (fun r => post r)).
-
-  Definition ordProgSP {S A} (pre : S -> Prop) (m1 m2 : ProgWPred S A) : Prop :=
-    forall s r, pre s -> unOptionT (runStateT m1 s) r -> unOptionT (runStateT m2 s) r.
-
-  Definition tripleSP {S A}
-    (obs : prog S A -> ProgWPred S A)
-    (prog : prog S A)
-    (is_correct:approximationKind)
-    (pre : S -> Prop)
-    (post : option (A * S) -> Prop)
-    : Prop
-    :=
-    match is_correct with
-    | Under =>
-        (** Incorrectness / under-approximation: every [post] outcome is
-            reachable from *some* [pre] state.  Existential over initial
-            states — the dual of the universal [Over] case.  (A universal
-            [ordProgSP pre (pp2sp post) (obs prog)] would wrongly demand
-            every [pre] state reach every [post] outcome.) *)
-        forall r, post r ->
-          exists s, pre s /\ unOptionT (runStateT (obs prog) s) r
-    | Over =>
-        ordProgSP pre (obs prog) (pp2sp post)
-    end.
-
-  Example progA_ASP := obsASP progA.
-  
-  Theorem progA_all :
-    forall s (r : option (unit * nat)),
-      unOptionT (runStateT progA_ASP s) r ->
-      match r with
-      | Some (_, s') => s' = 42
-      | None => False
-      end.
-  Proof.
-    intros s r H.
-    unfold progA_ASP, obsASP in H. cbn [runStateT unOptionT] in H.
-    rewrite (progA_run s) in H.
-    apply eutt_inv_Ret in H. subst r. reflexivity.
-  Qed.
-
-  Theorem progA_all_triple :
-    tripleSP obsASP progA Over
-      (fun _ => True)
-      (fun r : option (unit * nat) =>
-      match r with
-      | Some (_, s) => s >= 42
-      | None => False
-      end).
-  Proof.
-    unfold tripleSP, ordProgSP. intros s r _ H.
-    unfold obsASP in H. cbn [runStateT unOptionT] in H.
-    rewrite (progA_run s) in H. apply eutt_inv_Ret in H. subst r.
-    unfold pp2sp. cbn [runStateT unOptionT]. cbn. auto with arith.
-  Qed.
-
-  Definition example_state : prog (nat * nat * nat) unit :=
-    s <- get ;;
-    let '(x, y, _) := s in
-    if Nat.even x then
-      if negb (Nat.even y) then put (x, y, 42) else ret tt
-    else ret tt.
-
-  (** From a state with [x] even and [y] odd, [example_state] sets the
-      third component to [42] and leaves [x], [y] unchanged. *)
-  Lemma example_run : forall x y z0,
-    Nat.even x = true -> negb (Nat.even y) = true ->
-    eutt eq (unOptionT (runStateT example_state (x, y, z0)))
-            (Ret (Some (tt, (x, y, 42)))).
-  Proof.
-    intros x y z0 Hx Hy. unfold example_state. cbn.
-    setoid_rewrite bind_ret_l. cbn. rewrite Hx, Hy. cbn.
-    repeat (setoid_rewrite bind_ret_l; cbn). reflexivity.
-  Qed.
-
-  Theorem example_incorrect_1 :
-    tripleSP obsASP example_state Under
-      (fun '(x, _, z) => z = 11)
-      (fun r =>
-         match r with
-         | Some (tt, (x, y, z)) =>
-             z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true
-         | _ => False
-         end).
-  Proof.
-    unfold tripleSP. intros r Hpost.
-    destruct r as [[u [[x y] z]] |]; [| contradiction]. destruct u.
-    cbn in Hpost. destruct Hpost as [Hz [Hx Hy]]. subst z.
-    exists (x, y, 11). split.
-    - reflexivity.
-    - unfold obsASP. cbn [runStateT unOptionT].
-      apply example_run; assumption.
-  Qed.
+Section SPTaxonomy.
 
   Variable S : Type.
-  
-  (** Galois connection (sp ⊣ wlp): with the precondition gating the
-      initial state, the demonic-WLP under-approximation and the
-      angelic-SP over-approximation coincide.  Both unfold to
-      [forall s r, pre s -> R s r -> post r], where
-      [R s r := unOptionT (runStateT m s) ≈ ret r]. *)
+
+  (* ------------------------------------------------------------ *)
+  (** *** Theorem 3.8: square implications (correctness side)      *)
+  (* ------------------------------------------------------------ *)
+
+  Theorem cc_aslp_implies_asp :
+    forall A (m : prog S A) pre post,
+      tripleSP obsASLP m Over pre post -> tripleSP obsASP m Over pre post.
+  Proof.
+    unfold tripleSP in *. intros A m pre post H r Hr.
+    apply H. apply obsASP_sub_obsASLP. exact Hr.
+  Qed.
+
+  Theorem cc_aslp_implies_dslp :
+    forall A (m : prog S A) pre post,
+      tripleSP obsASLP m Over pre post -> tripleSP obsDSLP m Over pre post.
+  Proof.
+    unfold tripleSP in *. intros A m pre post H r Hr.
+    apply H. apply obsDSLP_sub_obsASLP. exact Hr.
+  Qed.
+
+  Theorem cc_dslp_implies_dsp :
+    forall A (m : prog S A) pre post,
+      tripleSP obsDSLP m Over pre post -> tripleSP obsDSP m Over pre post.
+  Proof.
+    unfold tripleSP in *. intros A m pre post H r Hr.
+    apply H. apply obsDSP_sub_obsDSLP. exact Hr.
+  Qed.
+
+  Theorem cc_asp_implies_dsp :
+    forall A (m : prog S A) pre post,
+      tripleSP obsASP m Over pre post -> tripleSP obsDSP m Over pre post.
+  Proof.
+    unfold tripleSP in *. intros A m pre post H r Hr.
+    apply H. apply obsDSP_sub_obsASP. exact Hr.
+  Qed.
+
+  Theorem ii_dsp_implies_dslp :
+    forall A (m : prog S A) pre post,
+      tripleSP obsDSP m Under pre post -> tripleSP obsDSLP m Under pre post.
+  Proof.
+    unfold tripleSP in *. intros A m pre post H r Hpost.
+    apply obsDSP_sub_obsDSLP. apply H. exact Hpost.
+  Qed.
+
+  (* ------------------------------------------------------------ *)
+  (** *** Theorem 3.8: contrapositive transformers                 *)
+  (*      (now provable — the precondition is a real argument)      *)
+  (* ------------------------------------------------------------ *)
+
+  Theorem ci_aslp_dsp_contrapositive :
+    forall A (m : prog S A) pre post,
+      tripleSP obsASLP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
+      tripleSP obsDSP m Under pre post.
+  Proof.
+    intros A m pre post H. unfold tripleSP, obsASLP, obsDSP, asp, dslp in *.
+    intros r Hpost. split.
+    - apply NNPP. intro Hnasp. apply (H r); [| exact Hpost].
+      right. intros sigma Hrel Hpre. apply Hnasp. exists sigma. split; [exact Hpre | exact Hrel].
+    - intros sigma Hrel. apply NNPP. intro Hnpre. apply (H r); [| exact Hpost].
+      left. exists sigma. split; [exact Hnpre | exact Hrel].
+  Qed.
+
+  Theorem ci_aslp_dsp_contrapositive' :
+    forall A (m : prog S A) pre post,
+      tripleSP obsDSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
+      tripleSP obsASLP m Over pre post.
+  Proof.
+    intros A m pre post H. unfold tripleSP, obsDSP, obsASLP, asp, dslp in *.
+    intros r Hobsaslp. apply NNPP. intro Hnpost.
+    destruct (H r Hnpost) as [[sigma [Hnpre Hrel]] Hall].
+    destruct Hobsaslp as [[s' [Hpre' Hrel']] | Hdslp].
+    - exact (Hall s' Hrel' Hpre').
+    - exact (Hnpre (Hdslp sigma Hrel)).
+  Qed.
+
+  (* ------------------------------------------------------------ *)
+  (** *** Galois connections                                       *)
+  (* ------------------------------------------------------------ *)
+
+  (** [asp -| dwlp]: [tripleWP obsDWLP _ Under] coincides with
+      [tripleSP obsASP _ Over].  Both unfold to
+      [forall s r, pre s -> obsRel m s r -> post r]. *)
   Theorem gc_asp_dwlp :
     forall A (m : prog S A) pre post,
       tripleWP obsDWLP m Under pre post <-> tripleSP obsASP m Over pre post.
   Proof.
-    intros A m pre post.
-    unfold tripleWP, tripleSP, ordProgSP. split.
-    - (* WP-Under -> SP-Over *)
-      intros HWP s r Hpre Hobs.
-      unfold obsASP in Hobs. cbn [runStateT unOptionT] in Hobs.
-      unfold pp2sp. cbn [runStateT unOptionT].
-      specialize (HWP s Hpre). unfold obsDWLP in HWP.
-      cbn [runStateT unOptionT] in HWP.
-      destruct (runStateT m s) as [o] eqn:E. cbn in Hobs, HWP.
-      apply (HWP r Hobs).
-    - (* SP-Over -> WP-Under *)
-      intros HSP s Hpre. unfold obsDWLP. cbn [runStateT unOptionT].
-      destruct (runStateT m s) as [o] eqn:E.
-      intros r Hr. apply (HSP s r Hpre).
-      unfold obsASP. cbn [runStateT unOptionT]. rewrite E. cbn. exact Hr.
+    intros A m pre post. unfold tripleWP, tripleSP, obsASP, asp. split.
+    - intros H r [sigma [Hpre Hrel]].
+      specialize (H sigma Hpre). unfold obsDWLP in H. cbn [runStateT unOptionT] in H.
+      unfold obsRel in Hrel. destruct (runStateT m sigma) as [o] eqn:E. cbn in H, Hrel.
+      exact (H r Hrel).
+    - intros H s Hpre. unfold obsDWLP. cbn [runStateT unOptionT].
+      destruct (runStateT m s) as [o] eqn:E. intros r Hr.
+      apply (H r). exists s. split; [exact Hpre |].
+      unfold obsRel. rewrite E. cbn. exact Hr.
   Qed.
 
-  (** Unfolding lemma for the angelic-WP observation: [obsAWP m] applied
-      to [post] at [s] says some reachable outcome of [m] from [s] satisfies
-      [post]. *)
   Lemma obsAWP_unfold : forall A (m : prog S A) s post,
     unOptionT (runStateT (obsAWP m) s) post <->
     exists r, eutt eq (unOptionT (runStateT m s)) (ret r) /\ post r.
@@ -528,21 +539,7 @@ Module WPredObs.
     destruct (runStateT m s) as [o]. cbn. reflexivity.
   Qed.
 
-  (** Galois connection (awp ⊣ dslp), the Zhang–Kaminski connection
-      [awp⟦m⟧(c) ⊆ b  iff  c ⊆ dslp⟦m⟧(b)] (Verscht & Kaminski, Fig. 5).
-
-      With the now-direct [tripleWP], the left-hand side is exactly
-      [tripleWP obsAWP m Over pre post] (i.e. [awp(post) ⊆ pre]); the
-      right-hand side is [post ⊆ dslp(pre)], with [dslp pre r := forall s,
-      R s r -> pre s] and [R s r := runStateT m s ≈ ret r].  Both unfold
-      to [forall s r, R s r -> post r -> pre s].
-
-      (The point-based [WPredObs.obsDSLP] bakes in [eq (tt,s)] and cannot
-      represent [dslp(pre)] for a general [pre], so the RHS is stated
-      relationally rather than as a [tripleSP].  The fully triple-based
-      form [tripleWP obsAWP Incorrect <-> tripleSP obsDSLP Incorrect] lives
-      in [NonDetItObservation.awp_dslp], whose SP observation is the
-      precondition-taking [DSLPostArr].) *)
+  (** [awp -| dslp] (Zhang–Kaminski), relational form. *)
   Theorem gc_awp_dslp :
     forall A (m : prog S A) (pre : S -> Prop) (post : option (A * S) -> Prop),
       tripleWP obsAWP m Over pre post
@@ -555,7 +552,26 @@ Module WPredObs.
     - intros HR s Hawp. apply obsAWP_unfold in Hawp.
       destruct Hawp as [r [Hreach Hpost]]. exact (HR r s Hreach Hpost).
   Qed.
-    
-  End SPTriple.
-    
-End WPredObs.
+
+  (** [awp -| dslp], fully triple-based: now provable since [obsDSLP] is
+      the precondition-taking arrow. *)
+  Theorem gc_awp_dslp_triple :
+    forall A (m : prog S A) pre post,
+      tripleWP obsAWP m Over pre post <-> tripleSP obsDSLP m Under pre post.
+  Proof.
+    intros A m pre post. unfold tripleSP, obsDSLP, dslp. rewrite gc_awp_dslp. split.
+    - intros H r Hpost sigma Hrel. apply (H r sigma Hrel Hpost).
+    - intros H r s Hrel Hpost. apply (H r Hpost s Hrel).
+  Qed.
+
+End SPTaxonomy.
+
+Section MonadMorphismLaws.
+  Variable S : Type.
+
+  Lemma obsDWP_ret {A} (a : A) post s0 :
+    unOptionT (runStateT (obsDWP (ret a)) s0) post <->
+      unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP A a) s0) post.
+  Admitted.
+
+End MonadMorphismLaws.
