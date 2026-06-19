@@ -26,6 +26,125 @@ Open Scope monad_scope.
 (** ** SP observations                                                *)
 (* ================================================================= *)
 
+Module OriginalTripleSP.
+
+  Section NonDetItObservationSP.
+
+    Variable S : Type.
+
+    Definition obsRel {A} (m : nditprog S A)
+    : Pred (unit * S) (option (A * S)) :=
+    fun '(tt, s) r =>
+      match r with
+      | Some (a, s') =>
+          unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
+      | None =>
+          unOptionT (unOptionT (runStateT m s)) (Some None)
+      end.
+
+    (** Angelic strongest postcondition (total). *)
+    Definition obsASP {A} (m : nditprog S A) : ASPostArr S A :=
+      mkASP (obsRel m).
+
+    (** Demonic strongest liberal postcondition. *)
+    Definition obsDSLP {A} (m : nditprog S A) : DSLPostArr S A :=
+      mkDSLP (obsRel m).
+
+    #[program] Definition obsDSP {A} (m : nditprog S A)
+    (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
+    sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
+
+    #[program] Definition obsASLP {A} (m : nditprog S A)
+    (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
+    sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
+
+    Inductive approximationKind := | Correct | Incorrect.
+
+    (** Typeclass for coercing an SP observation result to a predicate
+    transformer [(unit * S -> Prop) -> option (A * S) -> Prop]:
+    - a plain predicate transformer is the identity;
+    - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
+      [sp_pt] extracted;
+    - a plain relation [Pred (unit * S) (option (A * S))] is lifted
+      angelically via [asp]. *)
+    Class AsSPObs {S A : Type} (T : Type) :=
+      as_sp_obs : T -> (unit * S -> Prop) -> option (A * S) -> Prop.
+
+    #[global] Instance AsSPObs_fun {S A} :
+      @AsSPObs S A ((unit * S -> Prop) -> option (A * S) -> Prop) :=
+      fun obs => obs.
+
+    #[global] Instance AsSPObs_ASP {S A} :
+      @AsSPObs S A (ASPostArr S A) :=
+      fun d => sp_pt (proj1_sig d).
+    
+    #[global] Instance AsSPObs_DSLP {S A} :
+      @AsSPObs S A (DSLPostArr S A) :=
+      fun d => sp_pt (proj1_sig d).
+    
+    #[global] Instance AsSPObs_Pred {S A} :
+      @AsSPObs S A (Pred (unit * S) (option (A * S))) :=
+      fun R => asp R.
+
+    Definition tripleSP {S A T} `{@AsSPObs S A T}
+      (obs : nditprog S A -> T)
+      (prog : nditprog S A)
+      (is_correct : approximationKind)
+      (pre : S -> Prop)
+      (post : option (A * S) -> Prop)
+      : Prop :=
+      let pre' := fun '(tt, s) => pre s in
+      match is_correct with
+      | Correct =>
+          forall r, as_sp_obs (obs prog) pre' r -> post r
+      | Incorrect =>
+          forall r, post r -> as_sp_obs (obs prog) pre' r
+      end.
+
+  End NonDetItObservationSP.
+
+End OriginalTripleSP.
+
+Module WPredTripleSP.
+
+  Section NonDetItObservationSP.
+
+    Definition obsRel {S A} (m : nditprog S A)
+    : Pred S (option (A * S)) :=
+    fun s r =>
+      match r with
+      | Some (a, s') => unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
+      | None => unOptionT (unOptionT (runStateT m s)) (Some None)
+      end.
+
+    Definition obsSP {S A} (m : nditprog S A) : ProgWPred S A :=
+    mkStateT
+      (fun s => @mkOptionT WPred _ (fun r => (obsRel m) s r)).
+
+    Definition asp' {S A} (sp : ProgWPred S A) (pre : S -> Prop) : (option (A * S)) -> Prop :=
+      fun b => exists a, pre a /\ (unOptionT (runStateT sp a) b).
+
+    Definition dslp' {S A} (sp : ProgWPred S A) (pre : S -> Prop) : (option (A * S)) -> Prop :=
+      fun b => forall a, (unOptionT (runStateT sp a) b) -> pre a.
+
+    Inductive approximationKind := | Correct | Incorrect.
+    
+    Definition tripleASP {S A}
+      (obs : nditprog S A -> ProgWPred S A) 
+      (prog : nditprog S A)
+      (is_correct : approximationKind)
+      (pre : S -> Prop)
+      (post : option (A * S) -> Prop)
+      : Prop :=
+      match is_correct with
+      | Correct => forall r, asp' (obs prog) pre r -> post r
+      | Incorrect => forall r, post r -> asp' (obs prog) pre r
+      end.
+    
+  End NonDetItObservationSP.
+  
+End WPredTripleSP.
+
 Section NonDetItObservationSP.
 
   Variable S : Type.
