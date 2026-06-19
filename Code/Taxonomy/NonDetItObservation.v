@@ -416,39 +416,29 @@ Arguments obsAWLP {_} {_}.
 (** ** WP triples                                                    *)
 (* ================================================================= *)
 
-(** Backward (WP) triple, defined as an *exegesis* in the sense of
-    Verscht & Kaminski: apply the WP observation to the postcondition
-    [post] and compare it (by inclusion) with the precondition [pre].
+Section WPTriples.
 
-    - [Under] reads  [pre ⊆ wp⟦m⟧(post)]  (e.g. [b ⊆ dwlp(c)]), partial
-      correctness (the precondition under-approximates [wp(post)]).
-    - [Over]  reads  [wp⟦m⟧(post) ⊆ pre]  (e.g. [awp(c) ⊆ b], the
-      "necessary precondition" reading of partial incorrectness).
+Inductive approxKindWP := | SubsetOf | SupersetOf.
 
-    This replaces the earlier [pp2wp]/[ordProgWP] encoding (spec-as-WP-
-    element + refinement over *all* predicates).  That encoding agrees
-    with this one on [Under] but degenerates on [Over]; the direct
-    form is what makes the Galois connections of Fig. 5 provable (see
-    [dwlp_asp] and [awp_dslp]). *)
 Definition tripleWP {S A}
   (obs : nditprog S A -> ProgWP S A)
   (prog : nditprog S A)
-  (kind:approximationKind)
   (pre : S -> Prop)
+  (kind:approxKindWP)
   (post : option (A * S) -> Prop)
   : Prop
   :=
     match kind with
-    | Under =>
+    | SubsetOf =>
         forall s, pre s -> unOptionT (runStateT (obs prog) s) post
-    | Over =>
+    | SupersetOf =>
         forall s, unOptionT (runStateT (obs prog) s) post -> pre s
     end.
 
-Definition pp2wp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
+Definition pp2wp_subset {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
   mkStateT (fun s0 => @mkOptionT PureWP _ (fun p => pre s0 /\ (forall r, post r -> p r))).
 
-Definition pp2wp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
+Definition pp2wp_superset {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
   mkStateT (fun s0 => @mkOptionT PureWP _ (fun p => (forall r, p r -> post r) -> pre s0)). 
 
 Definition ordProgWP {S A} (m1 m2 : ProgWP S A) : Prop :=
@@ -457,34 +447,80 @@ Definition ordProgWP {S A} (m1 m2 : ProgWP S A) : Prop :=
 Definition tripleWPspec {S A}
   (obs : nditprog S A -> ProgWP S A)
   (prog : nditprog S A)
-  (kind:approximationKind)
   (pre : S -> Prop)
+  (kind:approxKindWP)
   (post : option (A * S) -> Prop)
   : Prop
   :=
     match kind with
-    | Under =>
-        ordProgWP (pp2wp_under pre post) (obs prog)
-    | Over =>
-        ordProgWP (obs prog) (pp2wp_over pre post)
+    | SubsetOf =>
+        ordProgWP (pp2wp_subset pre post) (obs prog)
+    | SupersetOf =>
+        ordProgWP (obs prog) (pp2wp_superset pre post)
     end.
 
 Section tripleWPDefEq.
   Variable S : Type.
-  
+
+  Theorem obsDWLP_monotonic {A} prog :
+    forall s (p q : option (A * S) -> Prop),
+      (forall r, p r -> q r) ->
+      unOptionT (runStateT (obsDWLP prog) s) p ->
+      unOptionT (runStateT (obsDWLP prog) s) q.
+  Proof.
+    intros s p q H Hp. unfold obsDWLP in *. cbn [runStateT unOptionT] in *.
+    destruct (runStateT prog s) as [[outcomes]]. intros oa Hoa.
+    specialize (Hp oa Hoa). destruct oa as [r|]; [|exact I].
+    exact (H r Hp).
+  Qed.
+
+  Theorem obsDWP_monotonic {A} prog :
+    forall s (p q : option (A * S) -> Prop),
+      (forall r, p r -> q r) ->
+      unOptionT (runStateT (obsDWP prog) s) p ->
+      unOptionT (runStateT (obsDWP prog) s) q.
+  Proof.
+    intros s p q H Hp. unfold obsDWP in *. cbn [runStateT unOptionT] in *.
+    destruct (runStateT prog s) as [[outcomes]]. intros oa Hoa.
+    specialize (Hp oa Hoa). destruct oa as [r|]; [exact (H r Hp) | exact Hp].
+  Qed.
+
+  Theorem obsAWLP_monotonic {A} prog :
+    forall s (p q : option (A * S) -> Prop),
+      (forall r, p r -> q r) ->
+      unOptionT (runStateT (obsAWLP prog) s) p ->
+      unOptionT (runStateT (obsAWLP prog) s) q.
+  Proof.
+    intros s p q H Hp. unfold obsAWLP in *. cbn [runStateT unOptionT] in *.
+    destruct (runStateT prog s) as [[outcomes]]. destruct Hp as [[r [Hr Hpost]] | Hdiv].
+    + left. exists r. split; [exact Hr | exact (H r Hpost)].
+    + right. exact Hdiv.
+  Qed.
+
+  Theorem obsAWP_monotonic {A} prog :
+    forall s (p q : option (A * S) -> Prop),
+      (forall r, p r -> q r) ->
+      unOptionT (runStateT (obsAWP prog) s) p ->
+      unOptionT (runStateT (obsAWP prog) s) q.
+  Proof.
+    intros s p q H Hp. unfold obsAWP in *. cbn [runStateT unOptionT] in *.
+    destruct (runStateT prog s) as [[outcomes]]. destruct Hp as [r [Hr Hpost]].
+    exists r. split; [exact Hr | exact (H r Hpost)].
+  Qed.
+   
   Theorem tripleWPDefEq {A}
   (obs : nditprog S A -> ProgWP S A)
   (prog : nditprog S A)
-  (kind:approximationKind)
+  (kind:approxKindWP)
   (pre : S -> Prop)
   (post : option (A * S) -> Prop)
   (Hmono : forall s (p q : option (A * S) -> Prop),
      (forall r, p r -> q r) ->
      unOptionT (runStateT (obs prog) s) p ->
      unOptionT (runStateT (obs prog) s) q) :
-    tripleWP obs prog kind pre post <-> tripleWPspec obs prog kind pre post.
+    tripleWP obs prog pre kind post <-> tripleWPspec obs prog pre kind post.
   Proof.
-    unfold tripleWP, tripleWPspec, ordProgWP, pp2wp_under, pp2wp_over.
+    unfold tripleWP, tripleWPspec, ordProgWP, pp2wp_subset, pp2wp_superset.
     destruct kind; cbn [runStateT unOptionT]; split.
     - intros H s p [Hpre Hsub]. apply (Hmono s post p Hsub). exact (H s Hpre).
     - intros H s Hpre. apply (H s post). split; [exact Hpre | intros r hr; exact hr].
@@ -493,6 +529,8 @@ Section tripleWPDefEq.
   Qed.
 
 End tripleWPDefEq.
+
+End WPTriples.
 
 (* ================================================================= *)
 (** ** WP examples: pure nondeterminism (no divergence)               *)
@@ -503,8 +541,9 @@ Example progA_AWP := obsAWP progA.
 
 (** DWP can prove a property that holds for ALL outcomes. *)
 Theorem progA_DWP_all :
-  tripleWP obsDWP progA Under
+  tripleWP obsDWP progA
     (fun _ => True)
+    SubsetOf
     (fun r : option (unit * nat) =>
       match r with
       | Some (_, s) => s >= 42
@@ -515,8 +554,9 @@ Proof.
 Qed.
 
 Theorem progA_DWP_all_spec :
-  tripleWPspec obsDWP progA Under
+  tripleWPspec obsDWP progA
     (fun _ => True)
+    SubsetOf
     (fun r : option (unit * nat) =>
       match r with
       | Some (_, s) => s >= 42
@@ -526,7 +566,7 @@ Proof.
   (* [tripleWPspec _ Under] is the spec-as-WP-element form
      [(pre s /\ post <= p) -> wp p s]; derive it from the direct form
      [progA_DWP_all] by monotonicity of [obsDWP] in its postcondition. *)
-  unfold tripleWPspec, ordProgWP, pp2wp_under.
+  unfold tripleWPspec, ordProgWP, pp2wp_subset.
   intros s p Hp. cbn [runStateT unOptionT] in Hp. destruct Hp as [_ Hsub].
   pose proof progA_DWP_all as Hall. unfold tripleWP in Hall. specialize (Hall s I).
   unfold obsDWP in Hall |- *. cbn [runStateT unOptionT] in Hall |- *.
@@ -538,8 +578,9 @@ Qed.
 (** DWP cannot prove a property that holds for only one branch. *)
 Theorem progA_DWP_not42 : 
   not (
-    tripleWP obsDWP progA Under
+    tripleWP obsDWP progA
       (fun _ => True)
+      SubsetOf
       (fun r : option (unit * nat) =>
         match r with
         | Some (_, s) => s = 42
@@ -553,8 +594,9 @@ Qed.
 
 (** AWP can prove a property satisfied by SOME outcome. *)
 Theorem progA_AWP_42 :
-  tripleWP obsAWP progA Under
+  tripleWP obsAWP progA
     (fun _ => True)
+    SubsetOf
     (fun r : option (unit * nat) =>
       match r with
       | Some (_, s) => s = 42
@@ -565,8 +607,9 @@ Proof.
 Qed.
 
 Theorem progA_AWP_43 :
-  tripleWP obsAWP progA Under
+  tripleWP obsAWP progA
     (fun _ => True)
+    SubsetOf
     (fun r : option (unit * nat) =>
       match r with
       | Some (_, s) => s = 43
@@ -585,8 +628,9 @@ Qed.
     precondition.  (Contrast: for a *reachable* post like [reach 43],
     [awp] would be all of [nat], forcing [pre] to be [True].) *)
 Theorem progA_AWP_100_over :
-  tripleWP obsAWP progA Over
+  tripleWP obsAWP progA
     (fun _ => False)
+    SupersetOf
     (fun r : option (unit * nat) => r = Some (tt, 100)).
 Proof.
   unfold tripleWP. intros s H. cbn in H.
@@ -594,14 +638,15 @@ Proof.
 Qed.
 
 Theorem progA_AWP_100_over_spec :
-  tripleWPspec obsAWP progA Over
+  tripleWPspec obsAWP progA
     (fun _ => False)
+    SupersetOf
     (fun r : option (unit * nat) => r = Some (tt, 100)).
 Proof.
   (* [tripleWPspec _ Over] is [forall s p, awp p s -> ((p <= post) -> pre s)].
      An angelic witness [r] of [awp p s] satisfies [p], hence [p <= post]
      forces [r = Some (tt, 100)] — unreachable for [progA]. *)
-  unfold tripleWPspec, ordProgWP, pp2wp_over.
+  unfold tripleWPspec, ordProgWP, pp2wp_superset.
   intros s p Hp Hsub. cbn in Hp.
   destruct Hp as [r [Hr Hpr]]. specialize (Hsub r Hpr).
   subst r. cbn in Hr. sauto.
@@ -618,8 +663,9 @@ Example progB_AWP := obsAWP progB.
 (** DWP is unprovable: the divergent branch forces [False]. *)
 Theorem progB_DWP_unprovable :
   not (
-    tripleWP obsDWP progB Under
+    tripleWP obsDWP progB
       (fun _ => True)
+      SubsetOf
       (fun r : option (unit * nat) =>
           match r with
           | Some (_, s) => s = 42
@@ -633,8 +679,9 @@ Qed.
 
 (** DWLP succeeds: divergent branches are ignored. *)
 Theorem progB_DWLP_42 :
-  tripleWP obsDWLP progB Under
+  tripleWP obsDWLP progB
     (fun _ => True)
+    SubsetOf
     (fun r : option (unit * nat) =>
       match r with
       | Some (_, s) => s = 42
@@ -661,8 +708,9 @@ Qed.
 
 (** AWP succeeds: the converging branch witnesses the postcondition. *)
 Theorem progB_AWP_42 :
-  tripleWP obsAWP progB Under
+  tripleWP obsAWP progB
     (fun _ => True)
+    SubsetOf
     (fun r : option (unit * nat) =>
       match r with
       | Some (_, s) => s = 42
@@ -686,7 +734,7 @@ Qed.
     would read "ALL branches diverge", which is false for [progB] (the
     [put s] branch converges). *)
 Theorem progB_has_divergent_branch :
-  tripleWP obsAWLP progB Under (fun _ => True) (fun _ => False).
+  tripleWP obsAWLP progB (fun _ => True) SubsetOf (fun _ => False).
 Proof.
   intros s _. cbn.
   right.
@@ -818,8 +866,8 @@ Section TaxonomyWPTransformers.
 
   Theorem cc_dwp_implies_dwlp :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsDWP m Under pre post ->
-      tripleWP obsDWLP m Under pre post.
+      tripleWP obsDWP m pre SubsetOf post ->
+      tripleWP obsDWLP m pre SubsetOf post.
   Proof.
     intros A m pre post H s Hpre.
     apply obsDWP_incl_obsDWLP. exact (H s Hpre).
@@ -827,8 +875,8 @@ Section TaxonomyWPTransformers.
 
   Theorem cc_dwp_implies_dwlp_spec :
     forall A (m: nditprog S A) pre post,
-      tripleWPspec obsDWP m Under pre post ->
-      tripleWPspec obsDWLP m Under pre post.
+      tripleWPspec obsDWP m pre SubsetOf post ->
+      tripleWPspec obsDWLP m pre SubsetOf post.
   Proof.
     (* Both [Under] specs share the same source [pp2wp_under pre post];
        the implication is the [obsDWP <= obsDWLP] inclusion, pointwise. *)
@@ -839,8 +887,8 @@ Section TaxonomyWPTransformers.
   Theorem cc_dwp_implies_awp :
     forall A (m: nditprog S A) pre post,
       (forall s0, pre s0 -> exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
-      tripleWP obsDWP m Under pre post ->
-      tripleWP obsAWP m Under pre post.
+      tripleWP obsDWP m pre SubsetOf post ->
+      tripleWP obsAWP m pre SubsetOf post.
   Proof.
     intros A m pre post Hne H s Hpre.
     apply obsDWP_incl_obsAWP.
@@ -850,8 +898,8 @@ Section TaxonomyWPTransformers.
 
   Theorem cc_awp_implies_awlp :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsAWP m Under pre post ->
-      tripleWP obsAWLP m Under pre post.
+      tripleWP obsAWP m pre SubsetOf post ->
+      tripleWP obsAWLP m pre SubsetOf post.
   Proof.
     intros A m pre post H s Hpre.
     apply obsAWP_incl_obsAWLP. exact (H s Hpre).
@@ -860,8 +908,8 @@ Section TaxonomyWPTransformers.
   Theorem cc_dwlp_implies_awlp :
     forall A (m: nditprog S A) pre post,
       (forall s0, pre s0 -> exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
-      tripleWP obsDWLP m Under pre post ->
-      tripleWP obsAWLP m Under pre post.
+      tripleWP obsDWLP m pre SubsetOf post ->
+      tripleWP obsAWLP m pre SubsetOf post.
   Proof.
     intros A m pre post Hne H s Hpre.
     apply obsDWLP_incl_obsAWLP.
@@ -872,8 +920,8 @@ Section TaxonomyWPTransformers.
   Theorem ii_awlp_implies_dwlp :
     forall A (m: nditprog S A) pre post,
       (forall s0, exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
-      tripleWP obsAWLP m Over pre post ->
-      tripleWP obsDWLP m Over pre post.
+      tripleWP obsAWLP m pre SupersetOf post ->
+      tripleWP obsDWLP m pre SupersetOf post.
   Proof.
     intros A m pre post Hne H s Hdwlp.
     apply H. apply obsDWLP_incl_obsAWLP.
@@ -884,8 +932,8 @@ Section TaxonomyWPTransformers.
   Theorem ii_awlp_implies_dwlp_spec :
     forall A (m: nditprog S A) pre post,
       (forall s0, exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
-      tripleWPspec obsAWLP m Over pre post ->
-      tripleWPspec obsDWLP m Over pre post.
+      tripleWPspec obsAWLP m pre SupersetOf post ->
+      tripleWPspec obsDWLP m pre SupersetOf post.
   Proof.
     (* Both [Over] specs share the same target [pp2wp_over pre post];
        the implication is the [obsDWLP <= obsAWLP] inclusion (needs a
@@ -898,8 +946,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ii_dwlp_implies_dwp :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsDWLP m Over pre post ->
-      tripleWP obsDWP m Over pre post.
+      tripleWP obsDWLP m pre SupersetOf post ->
+      tripleWP obsDWP m pre SupersetOf post.
   Proof.
     intros A m pre post H s Hdwp.
     apply H. apply obsDWP_incl_obsDWLP. exact Hdwp.
@@ -907,8 +955,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ii_awlp_implies_awp :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsAWLP m Over pre post ->
-      tripleWP obsAWP m Over pre post.
+      tripleWP obsAWLP m pre SupersetOf post ->
+      tripleWP obsAWP m pre SupersetOf post.
   Proof.
     intros A m pre post H s Hawp.
     apply H. apply obsAWP_incl_obsAWLP. exact Hawp.
@@ -917,8 +965,8 @@ Section TaxonomyWPTransformers.
   Theorem ii_awp_implies_dwp :
     forall A (m: nditprog S A) pre post,
       (forall s0, exists oa, unOptionT (unOptionT (runStateT m s0)) oa) ->
-      tripleWP obsAWP m Over pre post ->
-      tripleWP obsDWP m Over pre post.
+      tripleWP obsAWP m pre SupersetOf post ->
+      tripleWP obsDWP m pre SupersetOf post.
   Proof.
     intros A m pre post Hne H s Hdwp.
     apply H. apply obsDWP_incl_obsAWP.
@@ -928,8 +976,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_awp_dwlp_contrapositive :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsDWLP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsAWP m Under pre post.
+      tripleWP obsDWLP m (fun s => ~ (pre s)) SupersetOf (fun r => ~ (post r)) ->
+      tripleWP obsAWP m pre SubsetOf post.
   Proof.
     intros A m pre post Hii s Hpre.
     apply (proj2 (obsAWP_contrapositive_obsDWLP _ _ m s post)).
@@ -938,8 +986,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_awp_dwlp_contrapositive_spec :
     forall A (m: nditprog S A) pre post,
-      tripleWPspec obsDWLP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWPspec obsAWP m Under pre post.
+      tripleWPspec obsDWLP m (fun s => ~ (pre s)) SupersetOf (fun r => ~ (post r)) ->
+      tripleWPspec obsAWP m pre SubsetOf post.
   Proof.
     (* Spec-level mirror of [ci_awp_dwlp_contrapositive]: the [obsAWP]/[obsDWLP]
        contrapositive at predicate [p], with [post <= p] supplying the needed
@@ -955,8 +1003,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_awp_dwlp_contrapositive' :
     forall A (m : nditprog S A) pre post,
-      tripleWP obsAWP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsDWLP m Over pre post.
+      tripleWP obsAWP m (fun s => ~ (pre s)) SubsetOf (fun r => ~ (post r)) ->
+      tripleWP obsDWLP m pre SupersetOf post.
   Proof.
     intros A m pre post Hii s Hdwlp.
     apply NNPP. intro Hnpre.
@@ -969,8 +1017,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_dwp_awlp_contrapositive :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsAWLP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsDWP m Under pre post.
+      tripleWP obsAWLP m (fun s => ~ (pre s)) SupersetOf (fun r => ~ (post r)) ->
+      tripleWP obsDWP m pre SubsetOf post.
   Proof.
     intros A m pre post Hii s Hpre.
     apply (proj2 (obsDWP_contrapositive_obsAWLP _ _ m s post)).
@@ -979,8 +1027,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_dwp_awlp_contrapositive' :
     forall A (m : nditprog S A) pre post,
-      tripleWP obsDWP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsAWLP m Over pre post.
+      tripleWP obsDWP m (fun s => ~ (pre s)) SubsetOf (fun r => ~ (post r)) ->
+      tripleWP obsAWLP m pre SupersetOf post.
   Proof.
     intros A m pre post Hii s Hawlp. apply NNPP. intro Hnpre.
     specialize (Hii s Hnpre).
@@ -993,8 +1041,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_awlp_dwp_contrapositive :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsDWP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsAWLP m Under pre post.
+      tripleWP obsDWP m (fun s => ~ (pre s)) SupersetOf (fun r => ~ (post r)) ->
+      tripleWP obsAWLP m pre SubsetOf post.
   Proof.
     intros A m pre post Hii s Hpre.
     apply NNPP. intro Hnawlp.
@@ -1010,8 +1058,8 @@ Section TaxonomyWPTransformers.
 
   Theorem ci_awlp_dwp_contrapositive' :
     forall A (m : nditprog S A) pre post,
-      tripleWP obsAWLP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsDWP m Over pre post.
+      tripleWP obsAWLP m (fun s => ~ (pre s)) SubsetOf (fun r => ~ (post r)) ->
+      tripleWP obsDWP m pre SupersetOf post.
   Proof.
     intros A m pre post Hii s Hdwp. apply NNPP. intro Hnpre.
     specialize (Hii s Hnpre).
@@ -1024,8 +1072,8 @@ Section TaxonomyWPTransformers.
   
   Theorem ci_dwlp_awp_contrapositive :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsAWP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsDWLP m Under pre post.
+      tripleWP obsAWP m (fun s => ~ (pre s)) SupersetOf (fun r => ~ (post r)) ->
+      tripleWP obsDWLP m pre SubsetOf post.
   Proof.
     intros A m pre post Hii s Hpre.
     apply NNPP. intro Hndwlp.
@@ -1043,8 +1091,8 @@ Section TaxonomyWPTransformers.
 
    Theorem ci_dwlp_awp_contrapositive' :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsDWLP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
-      tripleWP obsAWP m Over pre post.
+      tripleWP obsDWLP m (fun s => ~ (pre s)) SubsetOf (fun r => ~ (post r)) ->
+      tripleWP obsAWP m pre SupersetOf post.
   Proof.
     intros A m pre post Hii s Hawp. apply NNPP. intro Hnpre.
     specialize (Hii s Hnpre).
@@ -1274,7 +1322,7 @@ Section TaxonomyGaloisConnections.
       antecedent becomes reflexivity. *)
   Theorem dwlp_asp :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsDWLP m Under pre post <->
+      tripleWP obsDWLP m pre SubsetOf post <->
         tripleSP obsASP m Over pre post.
   Proof.
     intros A m pre post.
@@ -1313,7 +1361,7 @@ Section TaxonomyGaloisConnections.
       [tripleWP obsAWP _ Over] degenerated). *)
   Theorem awp_dslp :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsAWP m Over pre post <->
+      tripleWP obsAWP m pre SupersetOf post <->
         tripleSP obsDSLP m Under pre post.
   Proof.
     intros A m pre post.
@@ -1338,7 +1386,7 @@ Section TaxonomyGaloisConnections.
       implications below). *)
   Theorem awp_implies_dslp_inc :
     forall A (m: nditprog S A) pre post,
-      tripleWP obsAWP m Over pre post ->
+      tripleWP obsAWP m pre SupersetOf post ->
         tripleSP obsDSLP m Under pre post.
   Proof. intros A m pre post; apply awp_dslp. Qed.
 
@@ -1401,7 +1449,7 @@ Qed.
 
 (** The DWP-Inc triple now holds: [dwp(postEq0)(s)] forces [s = 0]. *)
 Theorem progRet_dwp_inc :
-  tripleWP obsDWP progRet Over preEq0 postEq0.
+  tripleWP obsDWP progRet preEq0 SupersetOf postEq0.
 Proof.
   intros s Hwp. cbn in Hwp.
   specialize (Hwp (Some (Some (tt, s))) eq_refl).
@@ -1411,7 +1459,7 @@ Qed.
 (** Likewise DWLP-Inc holds (the divergence branch is vacuous, since
     [progRet] never diverges). *)
 Theorem progRet_dwlp_inc :
-  tripleWP obsDWLP progRet Over preEq0 postEq0.
+  tripleWP obsDWLP progRet preEq0 SupersetOf postEq0.
 Proof.
   intros s Hwp. cbn in Hwp.
   specialize (Hwp (Some (Some (tt, s))) eq_refl).
@@ -1716,8 +1764,9 @@ Module WithdrawExample.
   (** Angelic spec: pick [amount = S balance > balance] to force the
       [raise], so the exceptional outcome [Some None] is reachable. *)
   Theorem progloom_triple :
-    tripleWP obsAWP progloom Under
+    tripleWP obsAWP progloom
       (fun balance => balance > 0)
+      SubsetOf
       (fun r => match r with Some (tt, _) => False | None => True end).
     Proof.
       intros s Hpos. cbn.
@@ -1769,8 +1818,9 @@ Module WithdrawExample.
       every branch returns normally and the exception is unreachable —
       [awp(post)] is empty there, breaking [pre ⊆ awp(post)]. *)
   Theorem progloom_triple_harder :
-    ~ (tripleWP obsAWP progloom_harder Under
+    ~ (tripleWP obsAWP progloom_harder
       (fun balance => balance > 0)
+      SubsetOf
       (fun r => match r with Some (tt, _) => False | None => True end)).
   Proof.
     intro H. specialize (H 1 (ltac:(lia) : 1 > 0)). cbn in H.
@@ -1884,9 +1934,9 @@ Section OHearnRewritingRules.
 
   Theorem second_symmetry_rule_dwp_1 :
     forall A (m : nditprog S A) pre post1 post2,
-      (tripleWP obsDWLP m Under pre post1 /\
-         tripleWP obsDWLP m Under pre post2) ->
-      tripleWP obsDWLP m Under pre (fun r => post1 r /\ post2 r).
+      (tripleWP obsDWLP m pre SubsetOf post1 /\
+         tripleWP obsDWLP m pre SubsetOf post2) ->
+      tripleWP obsDWLP m pre SubsetOf (fun r => post1 r /\ post2 r).
   Proof.
     intros A m pre post1 post2 [H1 H2] s Hpre.
     specialize (H1 s Hpre). specialize (H2 s Hpre).
@@ -1900,9 +1950,9 @@ Section OHearnRewritingRules.
 
   Theorem second_symmetry_rule_dwp_2 :
     forall A (m : nditprog S A) pre post1 post2,
-      tripleWP obsDWLP m Under pre (fun r => post1 r /\ post2 r) ->
-       (tripleWP obsDWLP m Under pre post1 /\
-         tripleWP obsDWLP m Under pre post2).
+      tripleWP obsDWLP m pre SubsetOf (fun r => post1 r /\ post2 r) ->
+       (tripleWP obsDWLP m pre SubsetOf post1 /\
+         tripleWP obsDWLP m pre SubsetOf post2).
   Proof.
     intros A m pre post1 post2 H.
     split.
@@ -1918,9 +1968,9 @@ Section OHearnRewritingRules.
 
   Theorem second_symmetry_rule_dwp :
     forall A (m : nditprog S A) pre post1 post2,
-      (tripleWP obsDWLP m Under pre post1 /\
-         tripleWP obsDWLP m Under pre post2) <->
-        tripleWP obsDWLP m Under pre (fun r => post1 r /\ post2 r).
+      (tripleWP obsDWLP m pre SubsetOf post1 /\
+         tripleWP obsDWLP m pre SubsetOf post2) <->
+        tripleWP obsDWLP m pre SubsetOf (fun r => post1 r /\ post2 r).
     Proof.
       intros. split.
       - apply second_symmetry_rule_dwp_1.
@@ -1962,7 +2012,7 @@ Section OHearnRewritingRules.
         the demonic partial transformer forces the postcondition. *)
     Theorem second_imp_symmetry_rule_dwp :
       forall A (m : nditprog S A) pre pre' post post',
-        (tripleWP obsDWLP m Under pre post /\
+        (tripleWP obsDWLP m pre SubsetOf post /\
            (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) -> tripleSP obsASP m Over pre' post'.
     Proof.
       intros A m pre pre' post post' [Hwp [Hpre Hpost]].
@@ -1997,7 +2047,7 @@ Section OHearnRewritingRules.
     (** Principle of agreement, demonic-partial-WP variant. *)
     Theorem principle_of_agreement_dwp :
       forall A (m : nditprog S A) u u' o o',
-        (tripleSP obsASP m Under u u' /\ tripleWP obsDWLP m Under o o' /\
+        (tripleSP obsASP m Under u u' /\ tripleWP obsDWLP m o SubsetOf o' /\
            (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
     Proof.
       intros A m u u' o o' [Hinc [Hwp Himp]].
@@ -2026,7 +2076,7 @@ Section OHearnRewritingRules.
     (** Principle of denial, demonic-partial-WP variant. *)
     Theorem principle_of_denial_dwp :
       forall A (m : nditprog S A) u u' o o',
-        (tripleSP obsASP m Under u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleWP obsDWLP m Under o o').
+        (tripleSP obsASP m Under u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleWP obsDWLP m o SubsetOf o').
     Proof.
       intros A m u u' o o' [Hinc [Himp Hnot]] Hwp.
       apply Hnot.
@@ -2999,41 +3049,6 @@ Proof.
   rewrite SPred_tripleSP_under_agrees.
   unfold tripleSP, obsASP, asp. intro H.
   destruct (H (Some (tt, 42)) I) as [s [[] _]].
-Qed.
-
-Lemma tripleWP_ret_Under {S A} (a : A) (pre : S -> Prop) post :
-  tripleWP obsDWP (ret a) Under pre post <-> (forall s, pre s -> post (Some (a, s))).
-Proof.
-  unfold tripleWP, obsDWP. cbn. split.
-  - intros H s Hpre. exact (H s Hpre (Some (Some (a, s))) eq_refl).
-  - intros H s Hpre oa Hoa. cbn in Hoa. subst oa. exact (H s Hpre).
-Qed.
-
-Lemma tripleWP_ret_Over {S A} (a : A) (pre : S -> Prop) post :
-  tripleWP obsDWP (ret a) Over pre post <-> (forall s, post (Some (a, s)) -> pre s).
-Proof.
-  unfold tripleWP, obsDWP. cbn. split.
-  - intros H s Hp. apply H. intros oa Hoa. cbn in Hoa. subst oa. exact Hp.
-  - intros H s Hwp. apply H. exact (Hwp (Some (Some (a, s))) eq_refl).
-Qed.
-
-Lemma tripleSP_ret_Over {S A} (a : A) (pre : S -> Prop) post :
-  tripleSP obsASP (ret a) Over pre post <-> (forall s, pre s -> post (Some (a, s))).
-Proof.
-  unfold tripleSP, obsASP, asp, obsRel. cbn. split.
-  - intros H s Hpre. apply H. exists s. split; [exact Hpre | sauto].
-  - intros H r [s [Hpre Hrel]]. cbn in Hrel. sauto.
-Qed.
-
-Lemma tripleSP_ret_Under {S A} (a : A) (pre : S -> Prop) post :
-  tripleSP obsASP (ret a) Under pre post <->
-  (forall r, post r -> exists s, pre s /\ r = Some (a, s)).
-Proof.
-  unfold tripleSP, obsASP, asp, obsRel. cbn. split.
-  - intros H r Hpost. destruct (H r Hpost) as [s [Hpre Hrel]]. cbn in Hrel.
-    exists s. split; [exact Hpre | sauto].
-  - intros H r Hpost. destruct (H r Hpost) as [s [Hpre Heq]]. subst r.
-    exists s. split; [exact Hpre | sauto].
 Qed.
 
 (* ================================================================= *)
