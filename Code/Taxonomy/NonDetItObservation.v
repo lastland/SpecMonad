@@ -418,16 +418,16 @@ Arguments obsAWLP {_} {_}.
 
 Section WPTriples.
 
-Inductive approxKindWP := | SubsetOf | SupersetOf.
+  Inductive approxKindWP := | SubsetOf | SupersetOf.
 
-Definition tripleWP {S A}
-  (obs : nditprog S A -> ProgWP S A)
-  (prog : nditprog S A)
-  (pre : S -> Prop)
-  (kind:approxKindWP)
-  (post : option (A * S) -> Prop)
-  : Prop
-  :=
+  Definition tripleWP {S A}
+    (obs : nditprog S A -> ProgWP S A)
+    (prog : nditprog S A)
+    (pre : S -> Prop)
+    (kind:approxKindWP)
+    (post : option (A * S) -> Prop)
+    : Prop
+    :=
     match kind with
     | SubsetOf =>
         forall s, pre s -> unOptionT (runStateT (obs prog) s) post
@@ -435,23 +435,23 @@ Definition tripleWP {S A}
         forall s, unOptionT (runStateT (obs prog) s) post -> pre s
     end.
 
-Definition pp2wp_subset {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
-  mkStateT (fun s0 => @mkOptionT PureWP _ (fun p => pre s0 /\ (forall r, post r -> p r))).
+  Definition pp2wp_subset {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
+    mkStateT (fun s0 => @mkOptionT PureWP _ (fun p => pre s0 /\ (forall r, post r -> p r))).
 
-Definition pp2wp_superset {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
-  mkStateT (fun s0 => @mkOptionT PureWP _ (fun p => (forall r, p r -> post r) -> pre s0)). 
+  Definition pp2wp_superset {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : ProgWP S A :=
+    mkStateT (fun s0 => @mkOptionT PureWP _ (fun p => (forall r, p r -> post r) -> pre s0)). 
 
-Definition ordProgWP {S A} (m1 m2 : ProgWP S A) : Prop :=
-  forall s p, unOptionT (runStateT m1 s) p -> unOptionT (runStateT m2 s) p.
+  Definition ordProgWP {S A} (m1 m2 : ProgWP S A) : Prop :=
+    forall s p, unOptionT (runStateT m1 s) p -> unOptionT (runStateT m2 s) p.
 
-Definition tripleWPspec {S A}
-  (obs : nditprog S A -> ProgWP S A)
-  (prog : nditprog S A)
-  (pre : S -> Prop)
-  (kind:approxKindWP)
-  (post : option (A * S) -> Prop)
-  : Prop
-  :=
+  Definition tripleWPspec {S A}
+    (obs : nditprog S A -> ProgWP S A)
+    (prog : nditprog S A)
+    (pre : S -> Prop)
+    (kind:approxKindWP)
+    (post : option (A * S) -> Prop)
+    : Prop
+    :=
     match kind with
     | SubsetOf =>
         ordProgWP (pp2wp_subset pre post) (obs prog)
@@ -459,76 +459,76 @@ Definition tripleWPspec {S A}
         ordProgWP (obs prog) (pp2wp_superset pre post)
     end.
 
-Section tripleWPDefEq.
-  Variable S : Type.
-
-  Theorem obsDWLP_monotonic {A} prog :
-    forall s (p q : option (A * S) -> Prop),
-      (forall r, p r -> q r) ->
-      unOptionT (runStateT (obsDWLP prog) s) p ->
-      unOptionT (runStateT (obsDWLP prog) s) q.
-  Proof.
-    intros s p q H Hp. unfold obsDWLP in *. cbn [runStateT unOptionT] in *.
-    destruct (runStateT prog s) as [[outcomes]]. intros oa Hoa.
-    specialize (Hp oa Hoa). destruct oa as [r|]; [|exact I].
-    exact (H r Hp).
-  Qed.
-
-  Theorem obsDWP_monotonic {A} prog :
-    forall s (p q : option (A * S) -> Prop),
-      (forall r, p r -> q r) ->
-      unOptionT (runStateT (obsDWP prog) s) p ->
-      unOptionT (runStateT (obsDWP prog) s) q.
-  Proof.
-    intros s p q H Hp. unfold obsDWP in *. cbn [runStateT unOptionT] in *.
-    destruct (runStateT prog s) as [[outcomes]]. intros oa Hoa.
-    specialize (Hp oa Hoa). destruct oa as [r|]; [exact (H r Hp) | exact Hp].
-  Qed.
-
-  Theorem obsAWLP_monotonic {A} prog :
-    forall s (p q : option (A * S) -> Prop),
-      (forall r, p r -> q r) ->
-      unOptionT (runStateT (obsAWLP prog) s) p ->
-      unOptionT (runStateT (obsAWLP prog) s) q.
-  Proof.
-    intros s p q H Hp. unfold obsAWLP in *. cbn [runStateT unOptionT] in *.
-    destruct (runStateT prog s) as [[outcomes]]. destruct Hp as [[r [Hr Hpost]] | Hdiv].
-    + left. exists r. split; [exact Hr | exact (H r Hpost)].
-    + right. exact Hdiv.
-  Qed.
-
-  Theorem obsAWP_monotonic {A} prog :
-    forall s (p q : option (A * S) -> Prop),
-      (forall r, p r -> q r) ->
-      unOptionT (runStateT (obsAWP prog) s) p ->
-      unOptionT (runStateT (obsAWP prog) s) q.
-  Proof.
-    intros s p q H Hp. unfold obsAWP in *. cbn [runStateT unOptionT] in *.
-    destruct (runStateT prog s) as [[outcomes]]. destruct Hp as [r [Hr Hpost]].
-    exists r. split; [exact Hr | exact (H r Hpost)].
-  Qed.
-   
-  Theorem tripleWPDefEq {A}
-  (obs : nditprog S A -> ProgWP S A)
-  (prog : nditprog S A)
-  (kind:approxKindWP)
-  (pre : S -> Prop)
-  (post : option (A * S) -> Prop)
-  (Hmono : forall s (p q : option (A * S) -> Prop),
-     (forall r, p r -> q r) ->
-     unOptionT (runStateT (obs prog) s) p ->
-     unOptionT (runStateT (obs prog) s) q) :
-    tripleWP obs prog pre kind post <-> tripleWPspec obs prog pre kind post.
-  Proof.
-    unfold tripleWP, tripleWPspec, ordProgWP, pp2wp_subset, pp2wp_superset.
-    destruct kind; cbn [runStateT unOptionT]; split.
-    - intros H s p [Hpre Hsub]. apply (Hmono s post p Hsub). exact (H s Hpre).
-    - intros H s Hpre. apply (H s post). split; [exact Hpre | intros r hr; exact hr].
-    - intros H s p Hwp Hsub. apply H. apply (Hmono s p post Hsub). exact Hwp.
-    - intros H s Hwp. apply (H s post Hwp). intros r hr; exact hr.
-  Qed.
-
-End tripleWPDefEq.
+  Section tripleWPDefEq.
+    Variable S : Type.
+    
+    Theorem obsDWLP_monotonic {A} prog :
+      forall s (p q : option (A * S) -> Prop),
+        (forall r, p r -> q r) ->
+        unOptionT (runStateT (obsDWLP prog) s) p ->
+        unOptionT (runStateT (obsDWLP prog) s) q.
+    Proof.
+      intros s p q H Hp. unfold obsDWLP in *. cbn [runStateT unOptionT] in *.
+      destruct (runStateT prog s) as [[outcomes]]. intros oa Hoa.
+      specialize (Hp oa Hoa). destruct oa as [r|]; [|exact I].
+      exact (H r Hp).
+    Qed.
+    
+    Theorem obsDWP_monotonic {A} prog :
+      forall s (p q : option (A * S) -> Prop),
+        (forall r, p r -> q r) ->
+        unOptionT (runStateT (obsDWP prog) s) p ->
+        unOptionT (runStateT (obsDWP prog) s) q.
+    Proof.
+      intros s p q H Hp. unfold obsDWP in *. cbn [runStateT unOptionT] in *.
+      destruct (runStateT prog s) as [[outcomes]]. intros oa Hoa.
+      specialize (Hp oa Hoa). destruct oa as [r|]; [exact (H r Hp) | exact Hp].
+    Qed.
+    
+    Theorem obsAWLP_monotonic {A} prog :
+      forall s (p q : option (A * S) -> Prop),
+        (forall r, p r -> q r) ->
+        unOptionT (runStateT (obsAWLP prog) s) p ->
+        unOptionT (runStateT (obsAWLP prog) s) q.
+    Proof.
+      intros s p q H Hp. unfold obsAWLP in *. cbn [runStateT unOptionT] in *.
+      destruct (runStateT prog s) as [[outcomes]]. destruct Hp as [[r [Hr Hpost]] | Hdiv].
+      + left. exists r. split; [exact Hr | exact (H r Hpost)].
+      + right. exact Hdiv.
+    Qed.
+    
+    Theorem obsAWP_monotonic {A} prog :
+      forall s (p q : option (A * S) -> Prop),
+        (forall r, p r -> q r) ->
+        unOptionT (runStateT (obsAWP prog) s) p ->
+        unOptionT (runStateT (obsAWP prog) s) q.
+    Proof.
+      intros s p q H Hp. unfold obsAWP in *. cbn [runStateT unOptionT] in *.
+      destruct (runStateT prog s) as [[outcomes]]. destruct Hp as [r [Hr Hpost]].
+      exists r. split; [exact Hr | exact (H r Hpost)].
+    Qed.
+    
+    Theorem tripleWPDefEq {A}
+      (obs : nditprog S A -> ProgWP S A)
+      (prog : nditprog S A)
+      (kind:approxKindWP)
+      (pre : S -> Prop)
+      (post : option (A * S) -> Prop)
+      (Hmono : forall s (p q : option (A * S) -> Prop),
+          (forall r, p r -> q r) ->
+          unOptionT (runStateT (obs prog) s) p ->
+          unOptionT (runStateT (obs prog) s) q) :
+      tripleWP obs prog pre kind post <-> tripleWPspec obs prog pre kind post.
+    Proof.
+      unfold tripleWP, tripleWPspec, ordProgWP, pp2wp_subset, pp2wp_superset.
+      destruct kind; cbn [runStateT unOptionT]; split.
+      - intros H s p [Hpre Hsub]. apply (Hmono s post p Hsub). exact (H s Hpre).
+      - intros H s Hpre. apply (H s post). split; [exact Hpre | intros r hr; exact hr].
+      - intros H s p Hwp Hsub. apply H. apply (Hmono s p post Hsub). exact Hwp.
+      - intros H s Hwp. apply (H s post Hwp). intros r hr; exact hr.
+    Qed.
+    
+  End tripleWPDefEq.
 
 End WPTriples.
 
@@ -1393,22 +1393,6 @@ Section TaxonomyGaloisConnections.
 End TaxonomyGaloisConnections.
 
 (* ================================================================= *)
-(** ** Taxonomy of transformers (connecting the halves of Figure 5)                        *)
-(* ================================================================= *)
-(** REMOVED: [ii_dwlp_implies_dsp], [ii_dwp_implies_dsp] and
-    [dwlp_inc_pre_universal].
-
-    These were artefacts of the previous [pp2wp]/[ordProgWP] encoding.
-    Under that encoding [tripleWP obsDWLP _ Over] forced [pre] to be
-    *universally true* (instantiating the quantified-over predicate at
-    [fun _ => True]), which is what made "DWLP/DWP-Incorrect implies
-    DSP-Incorrect" go through.  With the corrected exegesis-style triple
-    [tripleWP obsDWLP _ Over] reads [dwlp(post) ⊆ pre] and imposes
-    no such universality, so these implications no longer hold (and the
-    [pre]-universality lemma is simply false).  The genuine WP/SP
-    incorrectness connection is [awp_dslp] above (Fig. 5's [awp ⊣ dslp]). *)
-
-(* ================================================================= *)
 (** ** Example: WP-Inc and SP-Inc agree under the corrected triple     *)
 (* ================================================================= *)
 
@@ -1708,21 +1692,6 @@ Module OHearnExample.
     destruct (Nat.even x) eqn:Hx; destruct (negb (Nat.even y)) eqn:Hy;
       cbn in Hrel; inversion Hrel; subst; try discriminate Hx.
   Qed.
-
-
-  (* ----------------------------------------------------------------- *)
-  (** ** Note on the [obsDWP] (Incorrect) view                          *)
-  (* ----------------------------------------------------------------- *)
-
-  (** The previous version refuted three [tripleWP obsDWP _ Over]
-      triples for [example_state].  Those refutations relied on the old
-      [pp2wp] encoding, under which DWP-Incorrect degenerated into
-      "[pre] holds at every (terminating) initial state".  With the
-      corrected exegesis-style triple [tripleWP obsDWP _ Over] reads
-      [dwp(post) ⊆ pre], a genuine (demonic-total) necessary-precondition
-      statement; the earlier counterexamples no longer apply (e.g. the
-      [pre := fun _ => True] one becomes trivially valid).  The clean
-      WP/SP incorrectness correspondence is [awp_dslp] ([awp ⊣ dslp]). *)
 
 End OHearnExample.
 
@@ -2525,7 +2494,7 @@ End MonadMorphismLawsSP.
     injectivity, [asp_asp_inv : asp_inv (asp R) = R].  (For a non-injective
     reading — e.g. [obsDSP = asp /\ dslp] — [asp_inv] has no analogue and this
     transport fails.) *)
-Section AspConjugation.
+(*Section AspConjugation.
   Variable S : Type.
 
   (** Reachability-level (relation) [ret]/[bind] — the bind is exactly the RHS
@@ -3049,83 +3018,4 @@ Proof.
   rewrite SPred_tripleSP_under_agrees.
   unfold tripleSP, obsASP, asp. intro H.
   destruct (H (Some (tt, 42)) I) as [s [[] _]].
-Qed.
-
-(* ================================================================= *)
-(** ** Spec-as-element encodings: correctness vs incorrectness        *)
-(* ================================================================= *)
-
-(** Partial correctness (via a demonic-liberal [wp] such as [obsDWLP]) and
-    partial incorrectness (via an angelic [wp] such as [obsAWP]) each admit a
-    "spec-as-element" encoding that quantifies over an auxiliary
-    postcondition [p] instead of naming [post] in a [wp]-position.  The two
-    encodings are order-theoretic duals; both need only MONOTONICITY of [wp]
-    in its postcondition (no sup/inf preservation).
-
-    - Correctness   [pre <= wp post]:  quantify [p] over the UP-set of [post]
-      ([forall o, post o -> p o]), with [wp p] in the CONCLUSION.
-    - Incorrectness [wp post <= pre]:  quantify [p] over the DOWN-set of [post]
-      ([forall o, p o -> post o]), with [wp p] in the HYPOTHESIS.
-
-    The naive incorrectness dual that mirrors the correctness shape — keeping
-    [post <= p] in the conclusion — is FALSE ([naive_incorrectness_fails]):
-    an arbitrary [p] with [wp p s] need not lie above [post].  The asymmetry
-    is that [wp post] is the SUP of its down-set image [{wp p | p <= post}]
-    (by monotonicity), so a down-set universal dissolves [wp post <= pre]; the
-    up-set would give [wp post] as an INF, which does not so decompose. *)
-
-Section WPEncodingDuality.
-  Context {St Outcome : Type}.
-  Variable wp : (Outcome -> Prop) -> (St -> Prop).
-  Hypothesis wp_mono : forall (p q : Outcome -> Prop),
-    (forall o, p o -> q o) -> forall s, wp p s -> wp q s.
-
-  (** Correctness (cf. [obsDWLP]): [p] ranges over the up-set [post <= p],
-      with [wp p] in the conclusion. *)
-  Theorem correctness_spec_as_element (pre : St -> Prop) (post : Outcome -> Prop) :
-    (forall s, pre s -> wp post s)
-    <-> (forall s p, pre s /\ (forall o, post o -> p o) -> wp p s).
-  Proof.
-    split.
-    - intros H s p [Hpre Hle]. apply (wp_mono post p Hle s), H, Hpre.
-    - intros H s Hpre. apply (H s post). split; [exact Hpre | intro o; auto].
-  Qed.
-
-  (** Incorrectness (cf. [obsAWP]): [p] ranges over the down-set [p <= post],
-      moved into the hypothesis; the conclusion is just [pre s]. *)
-  Theorem incorrectness_spec_as_element (pre : St -> Prop) (post : Outcome -> Prop) :
-    (forall s, wp post s -> pre s)
-    <-> (forall s p, (forall o, p o -> post o) /\ wp p s -> pre s).
-  Proof.
-    split.
-    - intros H s p [Hle Hwp]. apply H, (wp_mono p post Hle s Hwp).
-    - intros H s Hwp. apply (H s post). split; [intro o; auto | exact Hwp].
-  Qed.
-
-End WPEncodingDuality.
-
-(** The naive incorrectness dual (mirroring the correctness shape) fails:    take [Outcome := bool], [post := top], [pre := top], and
-    [wp p _ := p true] (angelic "reaches [true]"). *)
-Section NaiveIncorrectnessFails.
-  Definition wp_naive (p : bool -> Prop) (_ : unit) : Prop := p true.
-   Definition post_naive : bool -> Prop := fun _ => True.
-  Definition pre_naive : unit -> Prop := fun _ => True.
-
-  (** [wp_naive] is monotone, so the FIXED encoding [incorrectness_spec_as_element]
-      does apply to it. *)
-  Lemma wp_naive_mono (p q : bool -> Prop) :
-    (forall o, p o -> q o) -> forall s, wp_naive p s -> wp_naive q s.
-  Proof. intros Hpq s Hp. apply Hpq, Hp. Qed.
-
-  (** The genuine incorrectness statement holds (trivially, [pre] is [top]). *)
-  Lemma naive_lhs_holds : forall s, wp_naive post_naive s -> pre_naive s.
-  Proof. intros s _. exact I. Qed.
-
-  (** But the naive RHS, with [post <= p] in the conclusion, does not. *)
-  Lemma naive_incorrectness_fails :
-    ~ (forall s p, wp_naive p s -> pre_naive s /\ (forall o, post_naive o -> p o)).
-  Proof.
-    intro H. destruct (H tt (fun o => o = true) eq_refl) as [_ Hpost].
-    specialize (Hpost false I). discriminate Hpost.
-  Qed.
-End NaiveIncorrectnessFails.
+Qed.*)
