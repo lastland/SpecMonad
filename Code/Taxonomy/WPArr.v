@@ -32,10 +32,11 @@ From Incorrectness Require Import Taxonomy.WP Taxonomy.WPFacts.
 
 Definition WPArr (A B : Type) : Type := A -> PureWP B.
 
-(** Dijkstra refinement: pointwise implication.  Reads as "the
-    refined [w2] accepts at least as many [(a, Q)] pairs as [w1]". *)
+(** DM4all refinement order (§3.1): reverse pointwise implication.
+    [w1 ≤ w2] iff [w2 a Q → w1 a Q] for all [a], [Q].  A more specific
+    (stronger) transformer is lower in this order. *)
 Definition WPArr_le {A B} (w1 w2 : WPArr A B) : Prop :=
-  forall a Q, w1 a Q -> w2 a Q.
+  forall a Q, w2 a Q -> w1 a Q.
 
 #[global]
 Instance WPArr_le_PreOrder {A B} : PreOrder (@WPArr_le A B).
