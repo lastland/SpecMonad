@@ -35,7 +35,7 @@
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality
-  RelationClasses.
+  RelationClasses Program.Tactics.
 From Incorrectness.Classes Require Import Galois.
 From Incorrectness.Taxonomy Require Import
   SPost Pred PrePost WPArr RelPrePost.
@@ -173,11 +173,12 @@ Proof.
   exists a. split; [apply Hsub; exact Hpre | exact HR].
 Qed.
 
-Definition alpha_asp {A B} (R : Pred A B) : MonotoneSPost A B :=
-  exist _ (asp R) (asp_sp_monotone R).
+#[program] Definition alpha_asp {A B} (R : Pred A B) : MonotoneSPost A B :=
+  asp R.
+Next Obligation. exact (asp_sp_monotone R). Qed.
 
-Definition gamma_asp_inv {A B} (sp : MonotoneSPost A B) : Pred A B :=
-  asp_inv (proj1_sig sp).
+#[program] Definition gamma_asp_inv {A B} (sp : MonotoneSPost A B) : Pred A B :=
+  asp_inv sp.
 
 Lemma adjunction_Pred_SPost {A B}
   (R : Pred A B) (sp : MonotoneSPost A B) :
@@ -225,13 +226,13 @@ Proof.
   split. exact HP. intros b HRb. apply HQ. apply HR. exact HRb.
 Qed.
 
-Definition alpha_demonic {A B} (pq : PrePost A B) : MonotoneWP A B :=
-  exist _ (fun a Q => fst pq a /\ forall b, snd pq a b -> Q b)
-          (demonic_monotone pq).
+#[program] Definition alpha_demonic {A B} (pq : PrePost A B) : MonotoneWP A B :=
+  fun a Q => fst pq a /\ forall b, snd pq a b -> Q b.
+Next Obligation. exact (demonic_monotone pq). Qed.
 
-Definition gamma_abstraction {A B} (w : MonotoneWP A B) : PrePost A B :=
-  ( fun a => proj1_sig w a (fun _ => True)
-  , fun a b => forall Q, proj1_sig w a Q -> Q b ).
+#[program] Definition gamma_abstraction {A B} (w : MonotoneWP A B) : PrePost A B :=
+  ( fun a => w a (fun _ => True)
+  , fun a b => forall Q, w a Q -> Q b ).
 
 Lemma adjunction_WP_PrePost {A B}
   (pq : PrePost A B) (w : MonotoneWP A B) :
@@ -304,13 +305,13 @@ Proof.
     + intros HQ2b. right. split; [reflexivity | exact HQ2b].
 Qed.
 
-Definition alpha_E {A B} (w : MonotoneWP A B) : WFRelPrePost A B :=
-  exist _ (fun P R => forall a, P a -> proj1_sig w a (R a))
-          (E_wf (proj1_sig w) (proj2_sig w)).
+#[program] Definition alpha_E {A B} (w : MonotoneWP A B) : WFRelPrePost A B :=
+  fun P R => forall a, P a -> w a (R a).
+Next Obligation. exact (E_wf (proj1_sig w) (proj2_sig w)). Qed.
 
-Definition gamma_Y {A B} (r : WFRelPrePost A B) : MonotoneWP A B :=
-  exist _ (fun a Q => project_wp (proj1_sig r) a Q)
-          (Y_monotone (proj1_sig r) (proj2_sig r)).
+#[program] Definition gamma_Y {A B} (r : WFRelPrePost A B) : MonotoneWP A B :=
+  fun a Q => project_wp r a Q.
+Next Obligation. exact (Y_monotone (proj1_sig r) (proj2_sig r)). Qed.
 
 Lemma adjunction_RPP_WP {A B}
   (w : MonotoneWP A B) (r : WFRelPrePost A B) :
