@@ -4,9 +4,10 @@
     parameterised over their (preorder) inclusion relations.  Both
     relations are bundled as class indices so that two different Galois
     connections can co-exist for the same pair of types under different
-    orderings — as is needed in this project for [Pred ↔ PrePost] (with
-    [PrePost] covariant in both components) versus [PrePost ↔ WPArr]
-    (with [PrePost] covariant in pre, contravariant in post). *)
+    orderings.  In [Taxonomy/Galois.v] this flexibility is used to state
+    connections involving local subtypes ([MonotoneWP],
+    [HealthyRelPrePost], [MonotoneSPost]) whose orders are lifted from
+    the global refinement orders on the raw types. *)
 
 From Coq Require Import Relation_Definitions RelationClasses Morphisms.
 

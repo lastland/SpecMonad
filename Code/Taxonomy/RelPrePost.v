@@ -11,11 +11,11 @@
 
     To get lawful [Arrow] and [Monad] instances on the *whole*
     [RelPrePost] type (not just the γ-image), we use:
-    - **Yoneda-probe operations**: monad/arrow operations are defined
-      via the helper [yoneda_at] (which equals [α]), so they only
+    - **Projection operations**: monad/arrow operations are defined
+      via the helper [project_wp] (which equals [α]), so they only
       "see" the γ-image of their inputs.
     - **α-induced equivalence**: [Eq1] / [arrow_eq] identify two
-      [RelPrePost] values when they have the same Yoneda-probe
+      [RelPrePost] values when they have the same projection
       behavior — equivalently, when their [α] images coincide.
 
     Under this equivalence, every [RelPrePost] value is identified
@@ -34,25 +34,25 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow.
 
 (* ================================================================= *)
-(** ** Type definition and Yoneda probe                               *)
+(** ** Type definition and projection                                 *)
 (* ================================================================= *)
 
 Definition RelPrePost (A B : Type) : Type :=
   (A -> Prop) -> (A -> B -> Prop) -> Prop.
 
-(** [yoneda_at r a Q] is the [α]-image of [r] at point [(a, Q)]: it
+(** [project_wp r a Q] is the [α]-image of [r] at point [(a, Q)]: it
     holds iff [r] validates some pre/post pair whose pre contains [a]
     and whose post-row at [a] is pointwise iff [Q]. *)
-Definition yoneda_at {A B}
+Definition project_wp {A B}
   (r : RelPrePost A B) (a : A) (Q : B -> Prop) : Prop :=
   exists P R, r P R /\ P a /\ (forall b, R a b <-> Q b).
 
-(** [yoneda_at] respects pointwise iff in its post argument. *)
+(** [project_wp] respects pointwise iff in its post argument. *)
 #[global]
-Instance yoneda_at_Proper {A B} (r : RelPrePost A B) (a : A) :
-  Proper (pointwise_relation B iff ==> iff) (yoneda_at r a).
+Instance project_wp_Proper {A B} (r : RelPrePost A B) (a : A) :
+  Proper (pointwise_relation B iff ==> iff) (project_wp r a).
 Proof.
-  intros Q1 Q2 HQ. unfold yoneda_at.
+  intros Q1 Q2 HQ. unfold project_wp.
   split; intros [P [R [HPR [HPa Hiff]]]];
     exists P, R; (split; [exact HPR | split; [exact HPa|]]);
     intros b; specialize (HQ b); specialize (Hiff b); tauto.
@@ -63,7 +63,7 @@ Qed.
 (* ================================================================= *)
 
 Definition RelPrePost_arrow_eq {A B} : RelPrePost A B -> RelPrePost A B -> Prop :=
-  fun r1 r2 => forall a Q, yoneda_at r1 a Q <-> yoneda_at r2 a Q.
+  fun r1 r2 => forall a Q, project_wp r1 a Q <-> project_wp r2 a Q.
 
 #[global]
 Instance RelPrePost_arrow_eq_Equivalence {A B}
@@ -80,9 +80,10 @@ Instance ArrowEq_RelPrePost : ArrowEq RelPrePost := {
   arrow_eq := @RelPrePost_arrow_eq
 }.
 
-(** Pointwise inclusion order on [RelPrePost]. *)
+(** DM4all refinement order: reverse pointwise implication on
+    validators.  [r1 ≤ r2] iff [r2 P R → r1 P R] for all [P], [R]. *)
 Definition RelPrePost_le {A B} (r1 r2 : RelPrePost A B) : Prop :=
-  forall P R, r1 P R -> r2 P R.
+  forall P R, r2 P R -> r1 P R.
 
 #[global]
 Instance RelPrePost_le_PreOrder {A B} : PreOrder (@RelPrePost_le A B).
@@ -95,11 +96,11 @@ Instance Arrow_RelPrePost : Arrow RelPrePost := {
   arr_comp := fun A B C r s =>
     fun P R_AC =>
       forall a, P a ->
-        yoneda_at r a (fun b => yoneda_at s b (R_AC a)) ;
+        project_wp r a (fun b => project_wp s b (R_AC a)) ;
   arr_first := fun A B C r =>
     fun P R =>
       forall p, P p ->
-        yoneda_at r (fst p) (fun b => R p (b, snd p))
+        project_wp r (fst p) (fun b => R p (b, snd p))
 }.
 
 #[global]
@@ -108,7 +109,7 @@ Instance ArrowChoice_RelPrePost : ArrowChoice RelPrePost := {
     fun P R =>
       forall x, P x ->
         match x with
-        | inl a => yoneda_at r a (fun b => R x (inl b))
+        | inl a => project_wp r a (fun b => R x (inl b))
         | inr c => R x (inr c)
         end
 }.
@@ -118,7 +119,7 @@ Instance ArrowApply_RelPrePost : ArrowApply RelPrePost := {
   arr_app := fun A B =>
     fun P R =>
       forall x : (RelPrePost A B * A)%type, P x ->
-        let '(r, a) := x in yoneda_at r a (fun b => R x b)
+        let '(r, a) := x in project_wp r a (fun b => R x b)
 }.
 
 (* ================================================================= *)
@@ -136,7 +137,7 @@ Section RelPrePostMonad.
     (r : RelPrePost A B) (k : B -> RelPrePost A C) : RelPrePost A C :=
     fun P R_AC =>
       forall a, P a ->
-        yoneda_at r a (fun b => yoneda_at (k b) a (R_AC a)).
+        project_wp r a (fun b => project_wp (k b) a (R_AC a)).
 
   #[global]
   Instance Monad_RelPrePost : Monad (RelPrePost A) := {
@@ -147,6 +148,6 @@ Section RelPrePostMonad.
   #[global]
   Instance Eq1_RelPrePost : Eq1 (RelPrePost A) :=
     fun B r1 r2 =>
-      forall a Q, yoneda_at r1 a Q <-> yoneda_at r2 a Q.
+      forall a Q, project_wp r1 a Q <-> project_wp r2 a Q.
 
 End RelPrePostMonad.
