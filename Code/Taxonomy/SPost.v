@@ -44,6 +44,14 @@ Definition sp_monotone {A B} (sp : SPost_pt A B) : Prop :=
     (forall a, pre1 a -> pre2 a) ->
     forall b, sp pre1 b -> sp pre2 b.
 
+(** Covariant pointwise implication on raw forward transformers. *)
+Definition SPost_le {A B} (sp1 sp2 : SPost_pt A B) : Prop :=
+  forall pre b, sp1 pre b -> sp2 pre b.
+
+#[global]
+Instance SPost_le_PreOrder {A B} : PreOrder (@SPost_le A B).
+Proof. constructor; unfold SPost_le; intros; auto. Qed.
+
 (* ================================================================= *)
 (** ** Predicate transformers and shared record                         *)
 (* ================================================================= *)
