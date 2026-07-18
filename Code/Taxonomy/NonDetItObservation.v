@@ -2327,9 +2327,9 @@ Section MonadMorphismLawsWP.
   
   Lemma obsDWP_ret {A} (a : A) post s0 :
     unOptionT (runStateT (obsDWP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP A a) s0) post.
+    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP S a) s0) post.
   Proof.
-    split; sauto.
+    split; sauto limit: 200.
   Qed.
 
   Lemma obsDWP_unfold {A} (m : nditprog S A) s post :
@@ -2364,9 +2364,9 @@ Section MonadMorphismLawsWP.
 
   Lemma obsDWLP_ret {A} (a : A) post s0 :
     unOptionT (runStateT (obsDWLP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP A a) s0) post.
+    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP S a) s0) post.
   Proof.
-    split; sauto.
+    split; sauto limit: 200.
   Qed.
 
   Lemma obsDWLP_unfold {A} (m : nditprog S A) s post :
@@ -2398,9 +2398,9 @@ Section MonadMorphismLawsWP.
 
   Lemma obsAWP_ret {A} (a : A) post s0 :
     unOptionT (runStateT (obsAWP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP A a) s0) post.
+    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP S a) s0) post.
   Proof.
-    split; sauto.
+    split; sauto limit: 200.
   Qed.
 
   Lemma obsAWP_unfold {A} (m : nditprog S A) s post :
@@ -2433,9 +2433,9 @@ Section MonadMorphismLawsWP.
 
   Lemma obsAWLP_ret {A} (a : A) post s0 :
     unOptionT (runStateT (obsAWLP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP A a) s0) post.
+    unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP S a) s0) post.
   Proof.
-    split; sauto.
+    split; sauto limit: 200.
   Qed.
 
   Lemma obsAWLP_unfold {A} (m : nditprog S A) s post :

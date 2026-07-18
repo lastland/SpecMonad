@@ -571,7 +571,13 @@ Section MonadMorphismLaws.
 
   Lemma obsDWP_ret {A} (a : A) post s0 :
     unOptionT (runStateT (obsDWP (ret a)) s0) post <->
-      unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP A a) s0) post.
-  Admitted.
+      unOptionT (runStateT (Incorrectness.Taxonomy.WP.retP S a) s0) post.
+  Proof.
+    unfold obsDWP. cbn [runStateT unOptionT]. split.
+    - intros [Hall _]. apply Hall. reflexivity.
+    - intro Hpost. split.
+      + intros r Hr. apply eutt_inv_Ret in Hr. subst r. exact Hpost.
+      + intro Hinf. exact (ret_not_div Hinf).
+  Qed.
 
 End MonadMorphismLaws.
