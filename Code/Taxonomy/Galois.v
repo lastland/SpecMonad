@@ -129,17 +129,18 @@ Qed.
     [fst pq ⊆ True] holds for every [pq], so the pre check dissolves
     and the adjunction reduces to [R ⊆ snd pq], which is exactly
     [Pred_le R (snd pq)]. *)
-Definition full_pre {A B} (R : Pred A B) : PrePost A B :=
+Definition pred_to_pp {A B} (R : Pred A B) : PrePost A B :=
   (fun _ => True, R).
 
-Definition forget_pre {A B} (pq : PrePost A B) : Pred A B := snd pq.
+(* Preconditions are discarded. *)
+Definition pp_to_pre {A B} (pq : PrePost A B) : Pred A B := snd pq.
 
 Lemma adjunction_Pred_PrePost {A B}
   (R : Pred A B) (pq : PrePost A B) :
-  PrePost_le (full_pre R) pq <-> Pred_le R (forget_pre pq).
+  PrePost_le (pred_to_pp R) pq <-> Pred_le R (pp_to_pre pq).
 Proof.
   destruct pq as [P R'].
-  unfold PrePost_le, Pred_le, full_pre, forget_pre; cbn.
+  unfold PrePost_le, Pred_le, pred_to_pp, pp_to_pre; cbn.
   split.
   - intros [_ HR]. exact HR.
   - intros HR. split; [intros _ _; exact I | exact HR].
@@ -149,8 +150,8 @@ Qed.
 Instance Galois_Pred_PrePost
   : Galois PrePost Pred (@PrePost_le) (@Pred_le) :=
 {
-  galois_alpha := @full_pre ;
-  galois_gamma := @forget_pre ;
+  galois_alpha := @pred_to_pp ;
+  galois_gamma := @pp_to_pre ;
   galois_adjunction := @adjunction_Pred_PrePost
 }.
 
