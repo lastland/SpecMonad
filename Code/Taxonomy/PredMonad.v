@@ -25,12 +25,10 @@
 From Coq Require Import
   Morphisms RelationClasses.
 From ExtLib Require Import
-  Monad MonadState MonadExc
+  Monad
   StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import
-  Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy Require Import Rel ProgFacts.
+From Incorrectness.Taxonomy Require Import Rel.
 
 (* ================================================================= *)
 (** ** [Rel A] is a monad in its second argument                     *)

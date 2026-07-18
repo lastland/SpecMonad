@@ -6,14 +6,11 @@
     [progPredM] and [nditPredM]. *)
 
 From Coq Require Import
-  FunctionalExtensionality PropExtensionality
-  Morphisms RelationClasses.
+  RelationClasses.
 From ExtLib Require Import
-  Monad MonadState MonadExc
+  Monad
   StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import
-  Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy Require Import Rel ProgFacts PredMonad.
 From Hammer Require Import Tactics.
 

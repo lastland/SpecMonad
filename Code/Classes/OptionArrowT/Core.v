@@ -4,9 +4,7 @@
     option-aware composition (failure propagation).
 
     A generic [Arrow] instance is provided for any base arrow with
-    [ArrowChoice], using the encoding [option B ≅ B + unit].
-
-    Concrete instances for [optionArrT Pred] are also given. *)
+    [ArrowChoice], using the encoding [option B ≅ B + unit]. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality

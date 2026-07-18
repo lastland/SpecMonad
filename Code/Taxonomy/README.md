@@ -22,8 +22,12 @@ exceptions.
 
 ## Strongest postcondition arrows (`SPost.v`)
 
-`SPost.v` defines predicate transformer *arrows* using binary relations
-`A -> B -> Prop` (`Pred`).
+`Rel.v` defines the heterogeneous relation arrow `Rel A B := A -> B -> Prop`;
+`RelFacts.v` proves its arrow laws. `PredMonad.v` supplies the complementary
+fixed-input predicate-monad structure on `Rel A`, with laws in
+`PredMonadFacts.v`.
+
+`SPost.v` defines predicate transformer *arrows* using `Rel` relations.
 
 Two variants share a common `SPRecord` (bundles a predicate transformer with
 its underlying relation) and differ only in the correctness condition:
@@ -52,6 +56,8 @@ just instance chaining.
 |---|---|
 | `ProgFacts.v` | `optionT M` (generic), `stateT S M` (generic), `prog` |
 | `WPFacts.v` | `PureWP`, `ProgWP` |
+| `RelFacts.v` | Arrow laws for `Rel`, `optionRelArr` |
+| `PredMonadFacts.v` | Monad laws for fixed-input `Rel A`, `progPredM`, `nditPredM` |
 | `SPostFacts.v` | `ArrowLaws` for `PureASPostArr`, `PureDSLPostArr` |
 | `NonDetProgFacts.v` | `SetM`, `ndprog` |
 | `NonDetItProgFacts.v` | `nditprog` |
@@ -108,12 +114,15 @@ and characterizations (paper Definitions 3.5 and 3.6).
 
 ```
 Prog ──► ProgFacts
-                   ╲
-WP ──► WPFacts      ► SPost ──► SPostFacts
-                   ╱        │
+WP ──► WPFacts
 NonDetProg ──► NonDetProgFacts
-                             ├──► Observation (uses Prog, WP, SPost)
 NonDetItProg ──► NonDetItProgFacts
-                             ├──► NonDetObservation (uses NonDetProg, WP, SPost)
-                             └──► NonDetItObservation (uses NonDetItProg, WP, SPost)
+
+Rel ──► RelFacts
+  ├──► PredMonad ──► PredMonadFacts
+  └──► SPost ──► SPostFacts
+
+Prog + WP + SPost ───────────────► Observation
+NonDetProg + WP + SPost ─────────► NonDetObservation
+NonDetItProg + WP + SPost ───────► NonDetItObservation
 ```

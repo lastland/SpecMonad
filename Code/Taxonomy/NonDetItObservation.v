@@ -1,10 +1,8 @@
 (** * Observation functions for [nditprog].
 
-    SP observation: maps [nditprog S A] to [ASPostArr S A].
-    The three-valued outcome space ([Some (Some _)], [Some None],
-    [None]) is collapsed into [option (A * S)]:
-    - [Some (a, s')] from converging outcomes
-    - [None] from exceptions OR divergence
+    SP observations read the terminating/exception reachability
+    relation extracted from [nditprog S A] using ASP, DSLP, DSP, and
+    ASLP.  Divergence is not represented as a reachable final state.
 
     WP observations: [obsDWP] / [obsDWLP] (demonic total / partial)
     and [obsAWP] / [obsAWLP] (angelic total / partial) map into
@@ -17,7 +15,7 @@ From ExtLib Require Import
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Rel RelFacts PredMonad SPost WPred.
+From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Rel PredMonad SPost WPred.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -82,7 +80,7 @@ Module OriginalTripleSP.
       @AsSPObs S A (DSLPostArr S A) :=
       fun d => sp_pt (proj1_sig d).
     
-    #[global] Instance AsSPObs_Pred {S A} :
+    #[global] Instance AsSPObs_Rel {S A} :
       @AsSPObs S A (Rel (unit * S) (option (A * S))) :=
       fun R => asp R.
 
@@ -170,7 +168,7 @@ Section NonDetItObservationSP.
   (** The four strongest-postcondition transformers are *readings* of the
       single reachability relation [obsRel] — no [ASPostArr]/[SPRecord]
       wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
-      [SPost.v], as are [spDSP]/[spASLP] (their meet/join). *)
+      [SPost.v]; DSP and ASLP are their conjunction/disjunction. *)
   Definition obsASP {A} (m : nditprog S A)
     : Rel (S -> Prop) (option (A * S)) := asp (obsRel m). 
   Definition obsDSLP {A} (m : nditprog S A)

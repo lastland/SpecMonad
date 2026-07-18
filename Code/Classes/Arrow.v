@@ -2,8 +2,8 @@
 
     We define Hughes-style [Arrow], [ArrowChoice], [ArrowApply], and
     [ArrowLoop] typeclasses with their laws.  The canonical relational
-    instance [Pred A B := A -> B -> Prop] lives in [Taxonomy/Pred.v];
-    its law instances live in [Taxonomy/PredFacts.v]. *)
+    instance [Rel A B := A -> B -> Prop] lives in [Taxonomy/Rel.v];
+    its law instances live in [Taxonomy/RelFacts.v]. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality

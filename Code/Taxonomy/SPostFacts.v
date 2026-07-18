@@ -1,11 +1,13 @@
 (** * Arrow law proofs for angelic and demonic predicate transformer arrows.
 
-    Angelic laws ([PureASPostArr], [optionASPostArr]) are proved by
-    [PureASPostArr_eq] and then transferring through [IsASP] to work
-    with raw existentials.
+    Angelic laws for [PureASPostArr] are proved by
+    [PureASPostArr_eq] and [IsASP_rewrite], reducing bundled
+    transformers to raw existential relations.
 
-    Demonic laws ([PureDSLPostArr], [optionDSLPArr]) follow the same
-    structure, using [IsDSLP] and raw universals. *)
+    Demonic laws for [PureDSLPostArr] follow the same structure using
+    [IsDSLP_rewrite] and raw universals.  Laws for [optionASPostArr],
+    [optionDSLPArr], and the state stacks are inherited from the
+    generic arrow transformers. *)
 
 From Coq Require Import
   FunctionalExtensionality PropExtensionality ProofIrrelevance
@@ -101,7 +103,7 @@ Proof.
   - (* first_comp *)
     apply PureASPostArr_eq; intros pre [c d]. cbn. reflexivity.
 
-  - (* first_fst — requires IsASP for additivity *)
+  - (* first_fst - requires the ASP relation form for additivity *)
     apply PureASPostArr_eq; intros pre b. cbn.
     destruct (IsASP_rewrite f) as [R_f H_f].
     split.
@@ -351,8 +353,8 @@ Proof.
   - (* first_comp *)
     apply PureDSLPostArr_eq; intros pre [c d]. cbn. reflexivity.
 
-  - (* first_fst — requires IsDSLP for multiplicativity.
-       Both sides reduce (via IsDSLP) to quantifier reordering:
+  - (* first_fst - requires the DSLP relation form for multiplicativity.
+       Both sides reduce via [IsDSLP_rewrite] to quantifier reordering:
        ∀c ∀a, R a b → pre(a,c) ↔ ∀a, R a b → ∀c, pre(a,c). *)
     apply PureDSLPostArr_eq; intros pre b.
     destruct (IsDSLP_rewrite f) as [R_f H_f].

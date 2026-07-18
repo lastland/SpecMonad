@@ -5,9 +5,8 @@
     relations are bundled as class indices so that two different Galois
     connections can co-exist for the same pair of types under different
     orderings.  In [Taxonomy/Galois.v] this flexibility is used to state
-    connections involving local subtypes ([MonotoneWP],
-    [HealthyRelPrePost], [MonotoneSPost]) whose orders are lifted from
-    the global refinement orders on the raw types. *)
+    connections involving the well-formed subtypes [MonotoneWP] and
+    [WFRelPrePost], as well as the exact ASP and DSLP arrow types. *)
 
 From Coq Require Import Relation_Definitions RelationClasses Morphisms.
 

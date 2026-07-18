@@ -20,10 +20,6 @@
 
 From Coq Require Import
   Morphisms RelationClasses.
-From ExtLib Require Import
-  Monad MonadState MonadExc
-  StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import
   Arrow OptionArrowT StateArrowT.
 
@@ -100,7 +96,7 @@ Instance ArrowLoop_Rel : ArrowLoop Rel := {
 (* ================================================================= *)
 
 (** The generic [optionArrT] transformer specializes cleanly to
-    [Rel].  [ArrowChoice], [ArrowApply] and [ArrowLoop] instances are
+    [Rel].  [ArrowChoice] and [ArrowApply] instances are
     inherited from the generic [ArrowChoice_optionArrT] etc. in
     [Classes/OptionArrowT]; their laws likewise come through the
     generic [ArrowChoiceLaws_optionArrT] etc. applied to [Rel]'s own

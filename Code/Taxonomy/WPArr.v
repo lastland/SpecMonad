@@ -33,8 +33,7 @@ From Incorrectness Require Import Taxonomy.WP Taxonomy.WPFacts.
 Definition WPArr (A B : Type) : Type := A -> PureWP B.
 
 (** DM4all refinement order (§3.1): reverse pointwise implication.
-    [w1 ≤ w2] iff [w2 a Q → w1 a Q] for all [a], [Q].  A more specific
-    (stronger) transformer is lower in this order. *)
+    [w1 ≤ w2] iff [w2 a Q → w1 a Q] for all [a], [Q]. *)
 Definition WPArr_le {A B} (w1 w2 : WPArr A B) : Prop :=
   forall a Q, w2 a Q -> w1 a Q.
 
@@ -90,8 +89,7 @@ Definition MonotoneWP (A B : Type) : Type :=
   { w : WPArr A B | wp_monotone w }.
 
 (** DM4All refinement order (reverse pointwise implication):
-    [w1 <= w2] iff [w2 a Q -> w1 a Q] for all [a], [Q].  A more
-    specific (stronger) transformer is lower in this order. *)
+    [w1 <= w2] iff [w2 a Q -> w1 a Q] for all [a], [Q]. *)
 Definition MonotoneWP_le {A B} (w1 w2 : MonotoneWP A B) : Prop :=
   WPArr_le (proj1_sig w1) (proj1_sig w2).
 

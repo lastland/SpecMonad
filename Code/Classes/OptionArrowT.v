@@ -5,7 +5,7 @@
     [OptionArrowT/ArrowChoiceLaws.v] for generic ArrowChoiceLaws proof,
     [OptionArrowT/ArrowApplyLaws.v] for generic ArrowApplyLaws proof.
 
-    Concrete instances for [optionArrT Pred] now live in
-    [Taxonomy/Pred.v] alongside the [Pred] monad definitions. *)
+    The [optionArrT Rel] specialization and its law witnesses live in
+    [Taxonomy/Rel.v] and [Taxonomy/RelFacts.v]. *)
 
 From Incorrectness.Classes.OptionArrowT Require Export Core ArrowLaws ArrowChoiceLaws ArrowApplyLaws.

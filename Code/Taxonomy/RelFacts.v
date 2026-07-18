@@ -1,9 +1,7 @@
 (** * Arrow laws for [Rel] and [optionRelArr].
 
     This file proves [ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
-    and [ArrowLoopLaws] for the relational arrow [Rel], plus
-    [Eq1Equivalence] and [MonadLawsE] for the second-argument monad
-    instance on [Rel A] (in [Taxonomy/PredMonadFacts.v]).  The
+    and [ArrowLoopLaws] for the relational arrow [Rel].  The
     [ArrowLaws] / [ArrowChoiceLaws] / [ArrowApplyLaws] for
     [optionRelArr] are inherited from the generic transformer laws in
     [Classes/OptionArrowT] applied to these. *)
@@ -11,12 +9,8 @@
 From Coq Require Import
   FunctionalExtensionality PropExtensionality
   Morphisms RelationClasses.
-From ExtLib Require Import
-  Monad MonadState MonadExc
-  StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import
-  Arrow OptionArrowT StateArrowT.
+  Arrow OptionArrowT.
 From Hammer Require Import Tactics.
 From Incorrectness Require Import Taxonomy.Rel.
 

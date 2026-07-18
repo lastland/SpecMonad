@@ -442,7 +442,9 @@ Proof.
     + intros HR. exists b. split; [exact HR | reflexivity].
 Qed.
 
-(** AWLP normalization uses classical double-negation elimination. *)
+(** AWLP normalization constructively retains the double negation on
+    the no-divergence component.  Classical logic simplifies it to
+    the same normalized shape as DWP. *)
 Lemma gamma_alpha_AWLP {A B} (pq : PrePost A B) :
   PrePost_eq (gamma_AWLP (alpha_AWLP pq))
              ( fun a => ~~ fst pq a
@@ -729,10 +731,9 @@ Definition Galois_WP_RelPrePost :=
      galois_adjunction := @adjunction_WP_RPP |}
   : Galois WFRelPrePost MonotoneWP (@WFRelPrePost_le) (@MonotoneWP_le).
 
-(** Round trips.  WP-side: [gamma (alpha w)] agrees pointwise with [w]
-    (extensionality promotes this to raw equality).  RPP-side: the
-    closure [alpha (gamma r)] is [RelPrePost_arrow_eq]-equivalent to
-    [r] and below it in the order. *)
+(** Round trips.  WP-side: [gamma (alpha w)] agrees pointwise with [w].
+    RPP-side: the closure [alpha (gamma r)] is
+    [RelPrePost_arrow_eq]-equivalent to [r] and below it in the order. *)
 Lemma gamma_alpha_wp_rpp_iff {A B} (w : MonotoneWP A B) :
   forall a Q,
     project_wp (proj1_sig (alpha_wp_rpp w)) a Q <->
@@ -777,9 +778,9 @@ Qed.
 
 (** In DM4All (unary types), [SPost] embeds into [RelPrePost] via a
     Galois connection.  The two direct binary generalizations below
-    fail because the joint relation [A -> B -> Prop] carries input
-    information that the marginal [B -> Prop] parametrised by
-    [A -> Prop] loses.
+    fail for distinct reasons: the universal gamma violates SP
+    monotonicity, while the existential maps require an invalid
+    exchange of validator and witness quantifiers.
 
     Two natural binary lifts are proven to fail by counterexample
     below. *)
@@ -802,6 +803,17 @@ Definition gamma_uni {A B} (r : RelPrePost A B)
   (P : A -> Prop) (b : B) : Prop :=
   forall R0, r P R0 -> forall a, P a -> R0 a b.
 
+Definition r_all (A B : Type) : RelPrePost A B :=
+  fun _ _ => True.
+
+Lemma r_all_wf {A B} : RelPrePost_wf (r_all A B).
+Proof.
+  unfold RelPrePost_wf, project_wp, r_all.
+  intros a Q1 Q2 HQ Hproject.
+  exists (fun _ => True), (fun _ b => Q2 b).
+  split; [exact I |]. split; [exact I | intros b; reflexivity].
+Qed.
+
 Lemma adjunction_uni {A B} (sp : SPost_pt A B) (r : RelPrePost A B) :
   RelPrePost_le (alpha_uni sp) r <-> SPost_le sp (gamma_uni r).
 Proof.
@@ -813,9 +825,9 @@ Proof.
 Qed.
 
 Lemma gamma_uni_not_monotone :
-  ~ sp_monotone (gamma_uni (A:=unit) (B:=bool) (fun _ _ => True)).
+  ~ sp_monotone (gamma_uni (r_all unit bool)).
 Proof.
-  unfold sp_monotone, gamma_uni. intros Hmon.
+  unfold sp_monotone, gamma_uni, r_all. intros Hmon.
   assert (Hincl : forall a : unit, (fun _ => False) a -> (fun _ => True) a).
   { intros a _. exact I. }
   assert (Hbot : forall (R0 : Rel unit bool) (_ : True) (a : unit),
@@ -863,6 +875,23 @@ Definition alpha_ex {A B} (sp : SPost_pt A B) : RelPrePost A B :=
 Definition gamma_ex {A B} (r : RelPrePost A B) : SPost_pt A B :=
   fun P b => exists a, P a /\ forall R0, r P R0 -> R0 a b.
 
+Lemma alpha_ex_wf {A B} (sp : SPost_pt A B) :
+  RelPrePost_wf (alpha_ex sp).
+Proof.
+  unfold RelPrePost_wf, project_wp, alpha_ex.
+  intros a Q1 Q2 HQ [P [R [Halpha [HPa Hiff]]]].
+  exists P, (fun a' b => R a' b \/ (a' = a /\ Q2 b)).
+  split; [|split].
+  - intros b Hsp. destruct (Halpha b Hsp) as [a' [HP HR]].
+    exists a'. split; [exact HP | left; exact HR].
+  - exact HPa.
+  - intros b. split.
+    + intros [HR | [_ HQ2]].
+      * apply HQ. apply Hiff. exact HR.
+      * exact HQ2.
+    + intros HQ2. right. split; [reflexivity | exact HQ2].
+Qed.
+
 Definition sp_both : SPost_pt bool unit :=
   fun P _ => P false /\ P true.
 
@@ -880,6 +909,24 @@ Proof. intros P. left. exact I. Qed.
 
 Lemma r_two_R_true : forall P, r_two P R_true.
 Proof. intros P. right. exact I. Qed.
+
+Lemma sp_both_monotone : sp_monotone sp_both.
+Proof.
+  unfold sp_monotone, sp_both. intros P1 P2 Hsub b [HPfalse HPtrue].
+  split; apply Hsub; assumption.
+Qed.
+
+Lemma r_two_wf : RelPrePost_wf r_two.
+Proof.
+  unfold RelPrePost_wf, project_wp, r_two.
+  intros a Q1 Q2 HQ [P [R [Hr [HPa Hiff]]]]. destruct a.
+  - exists P, (fun (a' : bool) (_ : unit) => if a' then Q2 tt else True).
+    split; [left; exact I |].
+    split; [exact HPa | intros []; reflexivity].
+  - exists P, (fun (a' : bool) (_ : unit) => if a' then True else Q2 tt).
+    split; [right; exact I |].
+    split; [exact HPa | intros []; reflexivity].
+Qed.
 
 Lemma alpha_ex_sp_both_le_r_two :
   RelPrePost_le (alpha_ex sp_both) r_two.
@@ -927,8 +974,16 @@ Proof.
   - apply not_sp_both_le_gamma_ex_r_two.
 Qed.
 
-(** The fundamental obstruction is that binary [R : A -> B -> Prop] is
-    a *joint* distribution over inputs and outputs, while [SPost]
-    operates on *marginals* [B -> Prop] parametrised by [A -> Prop].
-    Recovering the joint from marginals is ill-posed without extra
-    structure (e.g. independence, which is not available here). *)
+Lemma existential_counterexample_well_formed :
+  sp_monotone sp_both /\
+  RelPrePost_wf r_two /\
+  RelPrePost_wf (alpha_ex sp_both).
+Proof.
+  split; [apply sp_both_monotone |].
+  split; [apply r_two_wf | apply alpha_ex_wf].
+Qed.
+
+(** These results reject only the two candidate lifts above, not every
+    possible connection between the binary carriers.  The existential
+    failure is exactly the invalid exchange
+    [forall R0, exists a] to [exists a, forall R0]. *)

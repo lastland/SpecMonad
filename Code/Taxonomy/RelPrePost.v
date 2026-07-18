@@ -3,24 +3,22 @@
     [RelPrePost A B := (A -> Prop) -> (A -> B -> Prop) -> Prop] is a
     "validator" of Hoare-style pre/post specs.
 
-    The natural [γ : WPArr → RelPrePost] is an injective embedding
-    (with [α : RelPrePost → WPArr] as its left inverse, [α ∘ γ = id]),
-    so [RelPrePost] is strictly larger than [WPArr]: it includes "wild"
-    predicates over [PrePost] that don't correspond to any
-    weakest-precondition transformer.
+    [project_wp] extracts weakest-precondition behavior from a
+    validator.  [Taxonomy/Galois.v] restricts the endpoints to
+    [MonotoneWP] and [WFRelPrePost], defines the reverse embedding, and
+    proves the projection-after-embedding round trip pointwise.
 
-    To get lawful [Arrow] and [Monad] instances on the *whole*
-    [RelPrePost] type (not just the γ-image), we use:
+    To get lawful [Arrow] and [Monad] instances on the whole raw
+    [RelPrePost] type, we use:
     - **Projection operations**: monad/arrow operations are defined
-      via the helper [project_wp] (which equals [α]), so they only
-      "see" the γ-image of their inputs.
-    - **α-induced equivalence**: [Eq1] / [arrow_eq] identify two
+      via the helper [project_wp], so they only see projected behavior.
+    - **Projection-induced equivalence**: [Eq1] / [arrow_eq] identify two
       [RelPrePost] values when they have the same projection
-      behavior — equivalently, when their [α] images coincide.
+      behavior, equivalently when their projections coincide.
 
-    Under this equivalence, every [RelPrePost] value is identified
-    with its [γ ∘ α] closure (a γ-image), and the operations cleanly
-    inherit all laws from [WPArr]'s [Arrow] / [Monad].
+    Information outside the projection is deliberately ignored by
+    this equivalence, letting the operations inherit their laws from
+    [WPArr]'s [Arrow] / [Monad].
 
     This file holds the type definition and all [Arrow] / [ArrowChoice]
     / [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding

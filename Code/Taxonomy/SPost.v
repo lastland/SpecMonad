@@ -61,10 +61,10 @@ Proof. constructor; unfold SPost_le; intros; auto. Qed.
 Definition asp {A B} (R : Rel A B) (pre : A -> Prop) : B -> Prop :=
   fun b => exists a, pre a /\ R a b.
 
-(* [asp] goes from predicate arrow to strongest postcondition arrow; [asp_inv] is
-   the inverse. Similar to the relation described in Kenji's Ph.D. thesis, we
-   can show that predicate monads and strongest postcondition monads are
-   equivalent, by showing [asp_asp_inv] and [asp_inv_asp] below.
+(* [asp] goes from the relation arrow to an angelic forward predicate
+   transformer; [asp_inv] recovers the relation on the image of [asp].
+   Similar to the relation described in Kenji's Ph.D. thesis, the
+   round-trip laws are [asp_asp_inv] and [asp_inv_asp] below.
 
    TODO: Is the definition [asp_inv] the most general form? [dslp_inv] seems to be
    more flexible with a [forall] on [pre].
@@ -109,9 +109,7 @@ Qed.
 Definition dslp {A B} (R : Rel A B) (pre : A -> Prop) : B -> Prop :=
   fun b => forall a, R a b -> pre a.
 
-(* This shows a different equivalence between predicate arrows and strongest
-   postcondition arrows. We can figure this out by "reverse engineering"
-   [dslp_dslp_inv], but why does this one make sense? *)
+(** [dslp_inv] recovers the relation on the image of [dslp]. *)
 Definition dslp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : Rel A B :=
   fun a b => forall pre, pt pre b -> pre a.
 

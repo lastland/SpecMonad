@@ -1,7 +1,7 @@
 (** * Observation functions for [ndprog].
 
-    SP observation: maps [ndprog S A] to [ASPostArr S A] via
-    set membership in the outcome set.
+    SP observations read the reachability relation extracted from
+    [ndprog S A] using ASP, DSLP, DSP, and ASLP.
 
     WP observations: [obsDWP] (demonic, all outcomes) and
     [obsAWP] (angelic, some outcome) map into [ProgWP S A]. *)
@@ -12,7 +12,6 @@ From ExtLib Require Import
   StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy Require Import NonDetProg WP Rel SPost.
 
 Import MonadNotation.
@@ -68,8 +67,8 @@ Section NDObservationSP.
     fun s0 r => unOptionT (runStateT m s0) r.
 
   (** The four SP transformers are readings of the reachability relation
-      [obsRel] (no [ASPostArr]/[SPRecord]): [asp]/[dslp]/[spDSP]/[spASLP]
-      from [SPost.v]. *)
+      [obsRel] (no [ASPostArr]/[SPRecord]): ASP and DSLP come from
+      [SPost.v], while DSP and ASLP are their conjunction/disjunction. *)
   Definition obsASP {A} (m : ndprog S A)
     : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
   Definition obsDSLP {A} (m : ndprog S A)
@@ -264,4 +263,3 @@ Proof.
   eapply ex_intro. split; [reflexivity|]. cbn.
   right. reflexivity.
 Qed.
-

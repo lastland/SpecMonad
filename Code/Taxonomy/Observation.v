@@ -256,8 +256,8 @@ Section ObservationSP.
     fun s r => eutt eq (unOptionT (runStateT m s)) (ret r).
 
   (** The four SP transformers are readings of the reachability relation
-      [obsRel] (no [ASPostArr]/[SPRecord]): [asp]/[dslp]/[spDSP]/[spASLP]
-      from [SPost.v]. *)
+      [obsRel] (no [ASPostArr]/[SPRecord]): ASP and DSLP come from
+      [SPost.v], while DSP and ASLP are their conjunction/disjunction. *)
   Definition obsASP {A} (m : prog S A)
     : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
   Definition obsDSLP {A} (m : prog S A)
@@ -359,7 +359,7 @@ Arguments obsDSLP {_} {_}.
 (** The SP observations [obsASP]/[obsDSLP]/[obsDSP]/[obsASLP] above are
     *arrows* — [Rel (S -> Prop) (option (A * S))]: they take a
     precondition [pre : S -> Prop] and return a postcondition predicate
-    ([asp]/[dslp]/[spDSP]/[spASLP] of the reachability relation [obsRel]).
+    (ASP/DSLP and their conjunction/disjunction over [obsRel]).
     A triple compares [obs m pre] with [post] by inclusion.  Carrying the
     precondition as a genuine argument (rather than the point-based
     [eq (tt,s)] encoding) is what makes the contrapositive transformers
