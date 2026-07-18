@@ -16,7 +16,7 @@
     [Eq1Equivalence], [MonadLawsE]) are proved in
     [Taxonomy/PrePostFacts.v].
 
-    Galois connections relating [PrePost] to [Pred] and [WPArr] are
+    Galois connections relating [PrePost] to [Rel] and [WPArr] are
     collected in [Taxonomy/Galois.v]. *)
 
 From Coq Require Import
@@ -51,7 +51,7 @@ Qed.
 
 (** Partial-correctness Hoare order: strengthen the precondition,
     weaken the post-relation.  [pq1 ≤ pq2] iff [fst pq2 ⊆ fst pq1]
-    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Pred_le] to make
+    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Rel_le] to make
     [α R := (True, R)], [γ pq := snd pq] a Galois connection (see
     [Taxonomy/Galois.v]). *)
 Definition PrePost_le {A B} (pq1 pq2 : PrePost A B) : Prop :=

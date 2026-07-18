@@ -15,7 +15,7 @@ From ExtLib Require Import
   Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy Require Import Pred SPost ProgFacts.
+From Incorrectness.Taxonomy Require Import Rel SPost ProgFacts.
 
 (* ================================================================= *)
 (** ** Utilities                                                       *)
@@ -49,7 +49,7 @@ Proof.
 Qed.
 
 Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
-  exists R : Pred A B,
+  exists R : Rel A B,
     forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b.
 Proof.
   exists (sp_rel (proj1_sig f)). intros pre b.
@@ -57,7 +57,7 @@ Proof.
 Qed.
 
 (** [sp_pt] of any PureASPostArr rewrites to existential form. *)
-Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : Pred A B)
+Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : Rel A B)
   (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> exists a, pre a /\ R a b) :
   forall P b, sp_pt (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
@@ -300,14 +300,14 @@ Proof.
 Qed.
 
 Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
-  exists R : Pred A B,
+  exists R : Rel A B,
     forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
   exists (sp_rel (proj1_sig f)). intros pre b.
   apply (proj2_sig f).
 Qed.
 
-Lemma DSLP_dslp {A B} (f : PureDSLPostArr A B) (R : Pred A B)
+Lemma DSLP_dslp {A B} (f : PureDSLPostArr A B) (R : Rel A B)
   (HR : forall pre b, sp_pt (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
   forall P b, sp_pt (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.
@@ -675,7 +675,7 @@ Section PureDSLPostArrMonad.
     bind := @bind_DSLP
   }.
 
-  Lemma proj_mkDSLP {J B} (R : Pred J B) pre b :
+  Lemma proj_mkDSLP {J B} (R : Rel J B) pre b :
     sp_pt (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
   Proof. reflexivity. Qed.
 

@@ -17,7 +17,7 @@ From ExtLib Require Import
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Pred PredFacts SPost WPred.
+From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Rel RelFacts PredMonad SPost WPred.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -33,7 +33,7 @@ Module OriginalTripleSP.
     Variable S : Type.
 
     Definition obsRel {A} (m : nditprog S A)
-    : Pred (unit * S) (option (A * S)) :=
+    : Rel (unit * S) (option (A * S)) :=
     fun '(tt, s) r =>
       match r with
       | Some (a, s') =>
@@ -65,7 +65,7 @@ Module OriginalTripleSP.
     - a plain predicate transformer is the identity;
     - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
       [sp_pt] extracted;
-    - a plain relation [Pred (unit * S) (option (A * S))] is lifted
+    - a plain relation [Rel (unit * S) (option (A * S))] is lifted
       angelically via [asp]. *)
     Class AsSPObs {S A : Type} (T : Type) :=
       as_sp_obs : T -> (unit * S -> Prop) -> option (A * S) -> Prop.
@@ -83,7 +83,7 @@ Module OriginalTripleSP.
       fun d => sp_pt (proj1_sig d).
     
     #[global] Instance AsSPObs_Pred {S A} :
-      @AsSPObs S A (Pred (unit * S) (option (A * S))) :=
+      @AsSPObs S A (Rel (unit * S) (option (A * S))) :=
       fun R => asp R.
 
     Definition tripleSP {S A T} `{@AsSPObs S A T}
@@ -110,7 +110,7 @@ Module WPredTripleSP.
   Section NonDetItObservationSP.
 
     Definition obsRel {S A} (m : nditprog S A)
-    : Pred S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s r =>
       match r with
       | Some (a, s') => unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
@@ -158,7 +158,7 @@ Section NonDetItObservationSP.
       reaching any final state (dual to how divergence in WP is the
       absence of termination). *)
   Definition obsRel {A} (m : nditprog S A)
-    : Pred S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s r =>
       match r with
       | Some (a, s') =>
@@ -172,13 +172,13 @@ Section NonDetItObservationSP.
       wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
       [SPost.v], as are [spDSP]/[spASLP] (their meet/join). *)
   Definition obsASP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := asp (obsRel m). 
+    : Rel (S -> Prop) (option (A * S)) := asp (obsRel m). 
   Definition obsDSLP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := dslp (obsRel m).
+    : Rel (S -> Prop) (option (A * S)) := dslp (obsRel m).
   Definition obsDSP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
+    : Rel (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
   Definition obsASLP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
+    : Rel (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
 
   (* -------------------------------------------------------------- *)
   (** *** Theorem 3.7: Square inclusions                             *)
@@ -2546,11 +2546,11 @@ Section MonadMorphismLawsSP.
 
       The two preceding laws are [obsASP]'s [bind]-preservation; together
       with [obsASP_retG] below they are the monad-morphism *equations* for
-      [obsASP : nditprog S A -> Pred (S -> Prop) (option (A * S))], against
+      [obsASP : nditprog S A -> Rel (S -> Prop) (option (A * S))], against
       the unit [retG] and bind [bindG] forced by [obsASP_bind].
 
       They do NOT promote [obsASP] to a genuine monad morphism, because
-      [(Pred (S -> Prop) (option (_ * S)), retG, bindG)] is not a lawful
+      [(Rel (S -> Prop) (option (_ * S)), retG, bindG)] is not a lawful
       monad: [bindG] feeds the continuation the *singleton* precondition
       [eq s'], so it only sees a continuation through its values on
       singletons, and the left-unit law [bindG (retG a) k ≈ k a] fails
@@ -2561,13 +2561,13 @@ Section MonadMorphismLawsSP.
       (below) up to the iso [asp]/[asp_inv].  Hence the genuine monad
       morphism is [obsRelM], and [obsASP = asp ∘ obsRel] inherits only the
       equations. *)
-  Definition retG {A} (a : A) : Pred (S -> Prop) (option (A * S)) :=
+  Definition retG {A} (a : A) : Rel (S -> Prop) (option (A * S)) :=
     fun pre r => exists s, pre s /\ r = Some (a, s).
 
   Definition bindG {A B}
-    (m : Pred (S -> Prop) (option (A * S)))
-    (k : A -> Pred (S -> Prop) (option (B * S)))
-    : Pred (S -> Prop) (option (B * S)) :=
+    (m : Rel (S -> Prop) (option (A * S)))
+    (k : A -> Rel (S -> Prop) (option (B * S)))
+    : Rel (S -> Prop) (option (B * S)) :=
     fun pre r =>
       (exists a s', m pre (Some (a, s')) /\ k a (eq s') r)
       \/ (m pre None /\ r = None).
@@ -2619,26 +2619,26 @@ End MonadMorphismLawsSP.
 
   (** Reachability-level (relation) [ret]/[bind] — the bind is exactly the RHS
       of [obsRel_bind] (state-threaded, exception-propagating). *)
-  Definition retRel {A} (a : A) : Pred S (option (A * S)) :=
+  Definition retRel {A} (a : A) : Rel S (option (A * S)) :=
     fun s r => r = Some (a, s).
   Definition bindRel {A B}
-    (m : Pred S (option (A * S))) (k : A -> Pred S (option (B * S)))
-    : Pred S (option (B * S)) :=
+    (m : Rel S (option (A * S))) (k : A -> Rel S (option (B * S)))
+    : Rel S (option (B * S)) :=
     fun s r =>
       (exists a s', m s (Some (a, s')) /\ k a s' r) \/ (m s None /\ r = None).
 
   (** SP-level [ret]/[bind], DEFINED by conjugation:
       [bindSP = asp ∘ bindRel ∘ asp_inv]. *)
-  Definition retSP {A} (a : A) : Pred (S -> Prop) (option (A * S)) :=
+  Definition retSP {A} (a : A) : Rel (S -> Prop) (option (A * S)) :=
     asp (retRel a).
   Definition bindSP {A B}
-    (m : Pred (S -> Prop) (option (A * S)))
-    (k : A -> Pred (S -> Prop) (option (B * S)))
-    : Pred (S -> Prop) (option (B * S)) :=
+    (m : Rel (S -> Prop) (option (A * S)))
+    (k : A -> Rel (S -> Prop) (option (B * S)))
+    : Rel (S -> Prop) (option (B * S)) :=
     asp (bindRel (asp_inv m) (fun a => asp_inv (k a))).
 
   (** [asp] and [bindRel] are congruences for pointwise equivalence. *)
-  Lemma asp_Proper {A} (R1 R2 : Pred S (option (A * S))) :
+  Lemma asp_Proper {A} (R1 R2 : Rel S (option (A * S))) :
     (forall s r, R1 s r <-> R2 s r) ->
     forall pre r, asp R1 pre r <-> asp R2 pre r.
   Proof.
@@ -2647,8 +2647,8 @@ End MonadMorphismLawsSP.
     - intros [s [Hp Hr]]. exists s. split; [exact Hp | exact (proj2 (H s r) Hr)].
   Qed.
 
-  Lemma bindRel_Proper {A B} (m1 m2 : Pred S (option (A * S)))
-    (k1 k2 : A -> Pred S (option (B * S))) :
+  Lemma bindRel_Proper {A B} (m1 m2 : Rel S (option (A * S)))
+    (k1 k2 : A -> Rel S (option (B * S))) :
     (forall s r, m1 s r <-> m2 s r) ->
     (forall a s r, k1 a s r <-> k2 a s r) ->
     forall s r, bindRel m1 k1 s r <-> bindRel m2 k2 s r.
@@ -2669,9 +2669,9 @@ End MonadMorphismLawsSP.
       [asp rxf ≈ bindSP (asp rx) (asp ∘ kf)].  The proof is pure conjugation:
       unfold [bindSP], cancel [asp_inv ∘ asp] via [asp_asp_inv]. *)
   Lemma asp_conj_bind {A B}
-    (rxf : Pred S (option (B * S)))
-    (rx : Pred S (option (A * S)))
-    (kf : A -> Pred S (option (B * S))) :
+    (rxf : Rel S (option (B * S)))
+    (rx : Rel S (option (A * S)))
+    (kf : A -> Rel S (option (B * S))) :
     (forall s r, rxf s r <-> bindRel rx kf s r) ->
     forall pre r,
       asp rxf pre r <-> bindSP (asp rx) (fun a => asp (kf a)) pre r.
@@ -2720,11 +2720,11 @@ End AspConjugation.
     state triples; they are not inhabitants of a [Monad] (and the [asp]
     reading would target the flagged-incorrect [ProgSP]).  Here is the
     *monad-view* observation [obsRelM : nditprog S A -> nditPredM S A]
-    into the spec monad [nditPredM = stateT S (optionT (optionT (Pred
-    unit)))] (the SP mirror of [ProgWP], with base [Pred unit] instead of
-    [SetM]; lawful [Monad] + [MonadLawsE] via [PredFacts.v]).  It is the
-    lifting along the base iso [SetM ~ Pred unit] — it copies [nditprog]'s
-    full outcome predicate (divergence included) into [Pred unit].
+    into the spec monad [nditPredM = stateT S (optionT (optionT (Rel
+    unit)))] (the SP mirror of [ProgWP], with base [Rel unit] instead of
+    [SetM]; lawful [Monad] + [MonadLawsE] via [PredMonadFacts.v]).  It is the
+    lifting along the base iso [SetM ~ Rel unit] — it copies [nditprog]'s
+    full outcome predicate (divergence included) into [Rel unit].
 
     [obsRelM] is a genuine monad morphism: [obsRelM_ret] and [obsRelM_bind]
     are its unit/bind laws, stated as [eq1] ([≈]) in [nditPredM] — purely
@@ -2740,10 +2740,10 @@ Section ObsRelM.
 
   (** Codomain is definitionally [nditPredM S A]. *)
   Definition obsRelM {A} (m : nditprog S A)
-    : stateT S (optionT (optionT (Pred unit))) A :=
+    : stateT S (optionT (optionT (Rel unit))) A :=
     mkStateT (fun s =>
-      @mkOptionT (optionT (Pred unit)) (A * S) (
-        @mkOptionT (Pred unit) (option (A * S)) (
+      @mkOptionT (optionT (Rel unit)) (A * S) (
+        @mkOptionT (Rel unit) (option (A * S)) (
           fun (_ : unit) (oa : option (option (A * S))) =>
             unOptionT (unOptionT (runStateT m s)) oa))).
 
@@ -2770,25 +2770,25 @@ Section ObsRelM.
   (* -------------------------------------------------------------- *)
 
   (** [reach] extracts the reachability *relation* from an element of the
-      reachability monad [nditPredM S A = stateT S (optionT (optionT (Pred
+      reachability monad [nditPredM S A = stateT S (optionT (optionT (Rel
       unit)))]: the terminating ([Some r]) outcomes read off at the trivial
       [tt] precondition slot. *)
-  Definition reach {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred S (option (A * S)) :=
+  Definition reach {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel S (option (A * S)) :=
     fun s r => unOptionT (unOptionT (runStateT M s)) tt (Some r).
 
   (** The four strongest-postcondition readings, as functions of a
       reachability-monad element: [asp] (angelic), [dslp] (demonic-liberal),
       and their meet ([DSP]) and join ([ASLP]). *)
-  Definition readASP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) := asp (reach M).
-  Definition readDSLP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) := dslp (reach M).
-  Definition readDSP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) :=
+  Definition readASP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) := asp (reach M).
+  Definition readDSLP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) := dslp (reach M).
+  Definition readDSP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) :=
     fun pre r => asp (reach M) pre r /\ dslp (reach M) pre r.
-  Definition readASLP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) :=
+  Definition readASLP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) :=
     fun pre r => asp (reach M) pre r \/ dslp (reach M) pre r.
 
   (** [obsRel] and all four SP observations factor through the monad morphism
@@ -2848,19 +2848,19 @@ Section ObsRelM.
   (** Return law of the monad morphism: [obsRelM (ret a) ≈ ret a]. *)
   Lemma obsRelM_ret {A} (a : A) : eq1 (obsRelM (ret a)) (ret a).
   Proof.
-    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Pred. intros s u oa. cbn.
+    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Rel. intros s u oa. cbn.
     split; intro H; congruence.
   Qed.
 
   (** Bind law of the monad morphism: [obsRelM (x >>= f) ≈ obsRelM x >>=
       (obsRelM ∘ f)].  The two sides are [exists b, (x at b) /\ (cont at
-      oa)] decompositions ([SetM]-bind vs [Pred unit]-bind); they differ
+      oa)] decompositions ([SetM]-bind vs [Rel unit]-bind); they differ
       only by equation orientation in the exception/divergence branches
       ([retPred]), discharged by [congruence]. *)
   Lemma obsRelM_bind {A B} (x : nditprog S A) (f : A -> nditprog S B) :
     eq1 (obsRelM (x >>= f)) (obsRelM x >>= (fun a => obsRelM (f a))).
   Proof.
-    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Pred. intros s u oa.
+    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Rel. intros s u oa.
     cbn. unfold bindPred. cbn.
     split; intros [b [Hb Hk]]; exists b; (split; [exact Hb|]);
       destruct b as [[[v s0]|]|]; cbn in *; (exact Hk || congruence).

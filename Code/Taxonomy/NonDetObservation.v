@@ -13,7 +13,7 @@ From ExtLib Require Import
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Taxonomy Require Import NonDetProg WP Pred SPost.
+From Incorrectness.Taxonomy Require Import NonDetProg WP Rel SPost.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -64,7 +64,7 @@ Section NDObservationSP.
   (** Reachability relation for [ndprog]: initial state [s0] reaches
       outcome [r] iff [r] is in the outcome set. *)
   Definition obsRel {A} (m : ndprog S A)
-    : Pred S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s0 r => unOptionT (runStateT m s0) r.
 
   (** The four SP transformers are readings of the reachability relation
