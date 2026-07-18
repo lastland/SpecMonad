@@ -1463,9 +1463,10 @@ Section TaxonomyGaloisConnections.
       rewrite obsRel_outcomes, Hm. cbn. exact Hoa.
   Qed.
 
-  (** Galois connection (incorrectness side) — the Zhang–Kaminski
-      connection [awp⟦m⟧(c) ⊆ b  iff  c ⊆ dslp⟦m⟧(b)] of Verscht &
-      Kaminski's Fig. 5.
+  (** Galois connection (incorrectness side) — the connection
+      [awp⟦m⟧(c) ⊆ b  iff  c ⊆ dslp⟦m⟧(b)] introduced by Zhang &
+      Kaminski (OOPSLA 2022) and depicted in Verscht & Kaminski's
+      Fig. 5.
 
       With the *exegesis-style* triple ([tripleWP ... Incorrect] reads
       [awp(post) ⊆ pre], [tripleSP obsDSLP ... Incorrect] reads

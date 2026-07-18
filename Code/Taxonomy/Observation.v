@@ -539,7 +539,7 @@ Section SPTaxonomy.
     destruct (runStateT m s) as [o]. cbn. reflexivity.
   Qed.
 
-  (** [awp -| dslp] (Zhang–Kaminski), relational form. *)
+  (** [awp -| dslp] (Zhang & Kaminski, OOPSLA 2022), relational form. *)
   Theorem gc_awp_dslp :
     forall A (m : prog S A) (pre : S -> Prop) (post : option (A * S) -> Prop),
       tripleWP obsAWP m Over pre post
