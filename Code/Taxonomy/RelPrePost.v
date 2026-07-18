@@ -151,3 +151,35 @@ Section RelPrePostMonad.
       forall a Q, project_wp r1 a Q <-> project_wp r2 a Q.
 
 End RelPrePostMonad.
+
+(* ================================================================= *)
+(** ** Well-formedness subtype                                        *)
+(* ================================================================= *)
+
+(** [WFRelPrePost] is the well-formedness subtype of [RelPrePost] used
+    as a Galois connection endpoint.  The well-formedness condition
+    ensures the [project_wp] projection is monotone in the
+    postcondition, so it lands in [MonotoneWP].
+
+    These definitions are co-located with [RelPrePost] so the raw type
+    and its well-formedness boundary live together; they were
+    previously local to [Taxonomy/Galois.v]. *)
+Definition RelPrePost_wf {A B} (r : RelPrePost A B) : Prop :=
+  forall a Q1 Q2, (forall b, Q1 b -> Q2 b) ->
+    project_wp r a Q1 -> project_wp r a Q2.
+
+Definition WFRelPrePost (A B : Type) : Type :=
+  { r : RelPrePost A B | RelPrePost_wf r }.
+
+(** Reverse pointwise implication on validators, lifted to the
+    subtype.  Mirrors [MonotoneWP_le]. *)
+Definition WFRelPrePost_le {A B}
+  (r1 r2 : WFRelPrePost A B) : Prop :=
+  RelPrePost_le (proj1_sig r1) (proj1_sig r2).
+
+#[global]
+Instance WFRelPrePost_le_PreOrder {A B}
+  : PreOrder (@WFRelPrePost_le A B).
+Proof.
+  constructor; unfold WFRelPrePost_le, RelPrePost_le; intros; auto.
+Qed.
