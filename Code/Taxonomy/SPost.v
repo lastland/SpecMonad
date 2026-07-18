@@ -23,9 +23,26 @@
 
     Both unfold to [Pure(A/DSL)PostArr (unit * S) (option (A * S))]. *)
 
-From Coq Require Import Program.Tactics Classical_Prop.
+From Coq Require Import Program.Tactics Classical_Prop RelationClasses.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy Require Import Rel.
+
+(* ================================================================= *)
+(** ** Raw predicate transformer carrier and monotonicity             *)
+(* ================================================================= *)
+
+(** [SPost_pt] is the raw forward predicate transformer type used by
+    the obstruction counterexamples in [Taxonomy/Galois.v].  The
+    successful [Rel]/SP Galois connections use the exact bundled
+    arrows [PureASPostArr] and [PureDSLPostArr] instead. *)
+Definition SPost_pt (A B : Type) : Type := (A -> Prop) -> B -> Prop.
+
+(** Monotonicity in the precondition is the well-formedness condition
+    for raw SP transformers. *)
+Definition sp_monotone {A B} (sp : SPost_pt A B) : Prop :=
+  forall (pre1 pre2 : A -> Prop),
+    (forall a, pre1 a -> pre2 a) ->
+    forall b, sp pre1 b -> sp pre2 b.
 
 (* ================================================================= *)
 (** ** Predicate transformers and shared record                         *)
@@ -409,15 +426,55 @@ Section PureDSLPostArr.
 End PureDSLPostArr.
 
 (* ================================================================= *)
+(** ** Behavior-first refinement orders on bundled SP arrows          *)
+(* ================================================================= *)
+
+(** The primary refinement orders are defined by transformer behavior,
+    not by stored-relation inclusion.  For [PureASPostArr] the order
+    is forward pointwise implication: enlarging the stored relation
+    enlarges the existential direct image.  For [PureDSLPostArr] the
+    order is reverse pointwise implication: enlarging the stored
+    relation strengthens the universal obligation.
+
+    Both orders are equivalent to [Rel_le] on [sp_rel] (proved in
+    [SPostFacts.v]). *)
+
+Definition PureASPostArr_le {A B}
+  (f g : PureASPostArr A B) : Prop :=
+  forall pre b,
+    sp_pt (proj1_sig f) pre b ->
+    sp_pt (proj1_sig g) pre b.
+
+#[global]
+Instance PureASPostArr_le_PreOrder {A B}
+  : PreOrder (@PureASPostArr_le A B).
+Proof.
+  constructor; unfold PureASPostArr_le; intros; auto.
+Qed.
+
+Definition PureDSLPostArr_le {A B}
+  (f g : PureDSLPostArr A B) : Prop :=
+  forall pre b,
+    sp_pt (proj1_sig g) pre b ->
+    sp_pt (proj1_sig f) pre b.
+
+#[global]
+Instance PureDSLPostArr_le_PreOrder {A B}
+  : PreOrder (@PureDSLPostArr_le A B).
+Proof.
+  constructor; unfold PureDSLPostArr_le; intros; auto.
+Qed.
+
+(* ================================================================= *)
 (** ** Angelic and demonic option transformers                        *)
 (* ================================================================= *)
 
-(** [optionAPred] and [optionDSLPArr] get their [Arrow], [ArrowChoice],
+(** [optionASPostArr] and [optionDSLPArr] get their [Arrow], [ArrowChoice],
     and [ArrowApply] instances from the generic transformers in
     [OptionArrowT.v], via [ArrowChoice_PureASPostArr] and
     [ArrowChoice_PureDSLPostArr]. *)
 
-Definition optionAPred := optionArrT PureASPostArr.
+Definition optionASPostArr := optionArrT PureASPostArr.
 Definition optionDSLPArr := optionArrT PureDSLPostArr.
 
 (* ================================================================= *)
@@ -431,7 +488,7 @@ Section ComposedTypes.
   (** [ASPostArr S A] is the angelic strongest postcondition arrow.
       [ASPostArr S A = PureASPostArr (unit * S) (option (A * S))] *)
   Definition ASPostArr (A : Type) : Type :=
-    stateArrT S optionAPred unit A.
+    stateArrT S optionASPostArr unit A.
 
   (** [DSLPostArr S A] is the demonic strongest liberal postcondition arrow.
       [DSLPostArr S A = PureDSLPostArr (unit * S) (option (A * S))] *)

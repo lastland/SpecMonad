@@ -1,6 +1,6 @@
 (** * Arrow law proofs for angelic and demonic predicate transformer arrows.
 
-    Angelic laws ([PureASPostArr], [optionAPred]) are proved by
+    Angelic laws ([PureASPostArr], [optionASPostArr]) are proved by
     [PureASPostArr_eq] and then transferring through [IsASP] to work
     with raw existentials.
 
@@ -746,10 +746,10 @@ Section OptionArrowLaws.
       [ArrowChoiceLaws_optionArrT], and [ArrowApplyLaws_optionArrT]
       applied to [PureASPostArr] / [PureDSLPostArr]. *)
 
-  Local Instance ArrowEq_optionAPred : ArrowEq optionAPred := _.
-  Local Instance ArrowLaws_optionAPred : ArrowLaws optionAPred := _.
-  Local Instance ArrowChoiceLaws_optionAPred : ArrowChoiceLaws optionAPred := _.
-  Local Instance ArrowApplyLaws_optionAPred : ArrowApplyLaws optionAPred := _.
+  Local Instance ArrowEq_optionASPostArr : ArrowEq optionASPostArr := _.
+  Local Instance ArrowLaws_optionASPostArr : ArrowLaws optionASPostArr := _.
+  Local Instance ArrowChoiceLaws_optionASPostArr : ArrowChoiceLaws optionASPostArr := _.
+  Local Instance ArrowApplyLaws_optionASPostArr : ArrowApplyLaws optionASPostArr := _.
 
   Local Instance ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr := _.
   Local Instance ArrowLaws_optionDSLPArr : ArrowLaws optionDSLPArr := _.
@@ -765,17 +765,17 @@ Section ComposedArrowLaws.
   (** Composed-type laws: [stateArrT] applied to the option types above. *)
 
   #[global] Instance ArrowEq_stateOptASP :
-    ArrowEq (stateArrT S optionAPred) := _.
+    ArrowEq (stateArrT S optionASPostArr) := _.
   #[global] Instance ArrowLaws_stateOptASP :
-    ArrowLaws (stateArrT S optionAPred) := _.
+    ArrowLaws (stateArrT S optionASPostArr) := _.
   #[global] Instance ArrowChoice_stateOptASP :
-    ArrowChoice (stateArrT S optionAPred) := _.
+    ArrowChoice (stateArrT S optionASPostArr) := _.
   #[global] Instance ArrowApply_stateOptASP :
-    ArrowApply (stateArrT S optionAPred) := _.
+    ArrowApply (stateArrT S optionASPostArr) := _.
   #[global] Instance ArrowChoiceLaws_stateOptASP :
-    ArrowChoiceLaws (stateArrT S optionAPred) := _.
+    ArrowChoiceLaws (stateArrT S optionASPostArr) := _.
   #[global] Instance ArrowApplyLaws_stateOptASP :
-    ArrowApplyLaws (stateArrT S optionAPred) := _.
+    ArrowApplyLaws (stateArrT S optionASPostArr) := _.
 
   #[global] Instance ArrowEq_stateOptDSLP :
     ArrowEq (stateArrT S optionDSLPArr) := _.
@@ -791,3 +791,48 @@ Section ComposedArrowLaws.
     ArrowApplyLaws (stateArrT S optionDSLPArr) := _.
 
 End ComposedArrowLaws.
+
+(* ================================================================= *)
+(** ** SP arrow orders coincide with [Rel_le] on the stored relation  *)
+(* ================================================================= *)
+
+(** The behavior-first order on [PureASPostArr] is equivalent to
+    [Rel_le] on [sp_rel]. *)
+Lemma PureASPostArr_le_iff {A B} (f g : PureASPostArr A B) :
+  PureASPostArr_le f g <->
+  Rel_le (sp_rel (proj1_sig f)) (sp_rel (proj1_sig g)).
+Proof.
+  unfold PureASPostArr_le, Rel_le. split.
+  - intros Hord a b HR.
+    assert (Haspf : asp (sp_rel (proj1_sig f)) (eq a) b).
+    { unfold asp. exists a. split; [reflexivity | exact HR]. }
+    rewrite <- (asp_singleton (sp_rel (proj1_sig g)) a b).
+    apply (proj1 (proj2_sig g (eq a) b)).
+    apply Hord. apply (proj2 (proj2_sig f (eq a) b)). exact Haspf.
+  - intros Hle pre b Hpt.
+    apply (proj2 (proj2_sig g pre b)).
+    unfold asp. destruct (proj1 (proj2_sig f pre b) Hpt) as [a [Hpre HR]].
+    exists a. split; [exact Hpre | apply Hle; exact HR].
+Qed.
+
+(** The reverse behavior-first order on [PureDSLPostArr] is also
+    equivalent to [Rel_le] on [sp_rel]. *)
+Lemma PureDSLPostArr_le_iff {A B} (f g : PureDSLPostArr A B) :
+  PureDSLPostArr_le f g <->
+  Rel_le (sp_rel (proj1_sig f)) (sp_rel (proj1_sig g)).
+Proof.
+  unfold PureDSLPostArr_le, Rel_le. split.
+  - intros Hord a b HRf.
+    rewrite <- (dslp_dslp_inv (sp_rel (proj1_sig g)) a b).
+    unfold dslp_inv. intros pre Hdslp_g.
+    apply (proj2 (proj2_sig g pre b)) in Hdslp_g.
+    apply Hord in Hdslp_g.
+    apply (proj1 (proj2_sig f pre b)) in Hdslp_g.
+    unfold dslp in Hdslp_g. apply Hdslp_g. exact HRf.
+  - intros Hle pre b Hpt.
+    apply (proj2 (proj2_sig f pre b)).
+    unfold dslp. intros a' HRf.
+    apply (proj1 (proj2_sig g pre b)) in Hpt.
+    unfold dslp in Hpt.
+    apply Hpt. apply Hle. exact HRf.
+Qed.
