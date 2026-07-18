@@ -1,7 +1,7 @@
 (** * Galois connections among the Taxonomy spec types.
 
-    Following Figure 1 of "Dijkstra Monads for All" (Agda, Maillard,
-    Mendes, Pottier, Spies, Vindrum, ICFP 2025), adapted from unary
+    Following Figure 1 of "Dijkstra Monads for All"
+    (Maillard et al., ICFP 2019), adapted from unary
     specification monads to binary arrows.  Each Galois connection is
     stated with the DM4all refinement orders:
 
