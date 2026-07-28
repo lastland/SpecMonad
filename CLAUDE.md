@@ -66,3 +66,17 @@ See `.github/workflows/SpecMonad.yml` (Coq 8.20, docker-coq-action via opam).
 
 `Makefile` is gitignored; regenerate with `coq_makefile -f _CoqProject -o Makefile` in `Code/`.
 Single file: `make Classes/StateArrowT/Core.vo`. Use `timeout 30 make ...` to catch typeclass loops.
+
+## Agent skills
+
+### Issue tracker
+
+Issues live as markdown files under `.scratch/<feature>/` in this repo (local-markdown tracker; no GitHub Issues). External PRs are not a triage surface. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical roles written as `Status:` lines in local issue files: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Multi-context layout (`CONTEXT-MAP.md` at root; current live context is `Code/Taxonomy/`). See `docs/agents/domain.md`.
