@@ -365,7 +365,7 @@ Theorem progA_all :
 Proof.
   unfold tripleSP, obsASP, asp.
   intros r [sigma [_ Hrel]].
-  destruct r as [[[] s'] |]; cbn in Hrel; sauto.
+  destruct r as [[[] s'] |]; cbn in Hrel; sauto limit: 200.
 Qed.
 
 (** State 42 is reachable. *)
@@ -375,7 +375,7 @@ Theorem progA_42 :
     (fun r => r = Some (tt, 42)).
 Proof.
   unfold tripleSP, obsASP, asp.
-  intros r ->. exists 0. split; [exact I | unfold obsRel; cbn; sauto].
+  intros r ->. exists 0. split; [exact I | unfold obsRel; cbn; sauto limit: 200].
 Qed.
 
 (** State 43 is also reachable. *)
@@ -385,7 +385,7 @@ Theorem progA_43 :
     (fun r => r = Some (tt, 43)).
 Proof.
   unfold tripleSP, obsASP, asp.
-  intros r ->. exists 0. split; [exact I | unfold obsRel; cbn; sauto].
+  intros r ->. exists 0. split; [exact I | unfold obsRel; cbn; sauto limit: 200].
 Qed.
 
 (* ================================================================= *)
@@ -404,7 +404,7 @@ Theorem progB_42 :
     (fun r => r = Some (tt, 42)).
 Proof.
   unfold tripleSP, obsASP, asp.
-  intros r ->. exists 0. split; [exact I | unfold obsRel; cbn; sauto].
+  intros r ->. exists 0. split; [exact I | unfold obsRel; cbn; sauto limit: 200].
 Qed.
 
 (** Failure ([None]) is NOT reachable: the divergent branch does not
@@ -416,7 +416,7 @@ Theorem progB_not_None :
     (fun r => r <> None).
 Proof.
   unfold tripleSP, obsASP, asp.
-  intros r [sigma [_ Hrel]] ->. cbn in Hrel. sauto.
+  intros r [sigma [_ Hrel]] ->. cbn in Hrel. sauto limit: 200.
 Qed.
 
 (* ================================================================= *)
@@ -667,7 +667,7 @@ Theorem progA_DWP_all :
       | None => False
       end).
 Proof.
-  unfold tripleWP. intros s0 _. cbn. intros [[[]|]|] H; sauto.
+  unfold tripleWP. intros s0 _. cbn. intros [[[]|]|] H; sauto limit: 200.
 Qed.
 
 Theorem progA_DWP_all_spec :
@@ -706,7 +706,7 @@ Theorem progA_DWP_not42 :
 Proof.
   intro contra.
   unfold tripleWP in contra. specialize (contra 0 I). cbn in contra.
-  specialize (contra (Some (Some (tt, 43)))). sauto.
+  specialize (contra (Some (Some (tt, 43)))). sauto limit: 200.
 Qed.
 
 (** AWP can prove a property satisfied by SOME outcome. *)
@@ -720,7 +720,7 @@ Theorem progA_AWP_42 :
       | None => False
       end).
 Proof.
-  intros s0 _. cbn. exists (Some (tt, 42)). split; sauto.
+  intros s0 _. cbn. exists (Some (tt, 42)). split; sauto limit: 200.
 Qed.
 
 Theorem progA_AWP_43 :
@@ -733,7 +733,7 @@ Theorem progA_AWP_43 :
       | None => False
       end).
 Proof.
-  intros s0 _. cbn. exists (Some (tt, 43)). split; sauto.
+  intros s0 _. cbn. exists (Some (tt, 43)). split; sauto limit: 200.
 Qed.
 
 (** AWP, over-approximate ([Over]) reading: [awp(post) ⊆ pre], the
@@ -751,7 +751,7 @@ Theorem progA_AWP_100_over :
     (fun r : option (unit * nat) => r = Some (tt, 100)).
 Proof.
   unfold tripleWP. intros s H. cbn in H.
-  destruct H as [r [Hr Heq]]. subst r. cbn in Hr. sauto.
+  destruct H as [r [Hr Heq]]. subst r. cbn in Hr. sauto limit: 200.
 Qed.
 
 Theorem progA_AWP_100_over_spec :
@@ -766,7 +766,7 @@ Proof.
   unfold tripleWPspec, ordProgWP, pp2wp_superset.
   intros s p Hp Hsub. cbn in Hp.
   destruct Hp as [r [Hr Hpr]]. specialize (Hsub r Hpr).
-  subst r. cbn in Hr. sauto.
+  subst r. cbn in Hr. sauto limit: 200.
 Qed.
   
 (* ================================================================= *)
@@ -791,7 +791,7 @@ Theorem progB_DWP_unprovable :
 Proof.
   intro contra.
   unfold tripleWP in contra. specialize (contra 0 I). cbn in contra.
-  specialize (contra None). sauto.
+  specialize (contra None). sauto limit: 200.
 Qed.
 
 (** DWLP succeeds: divergent branches are ignored. *)
@@ -805,7 +805,7 @@ Theorem progB_DWLP_42 :
       | None => False
       end).
 Proof.
-  intros s0 _. cbn. intros [[[]|]|] H; sauto.
+  intros s0 _. cbn. intros [[[]|]|] H; sauto limit: 200.
 Qed.
 
 Theorem progB_ASP_42 :
@@ -820,7 +820,7 @@ Proof.
   unfold tripleSP, obsASP.
   unfold asp, obsRel.
   intros r [sigma [_ Hrel]].
-  destruct r as [[[] s']|]; cbn in Hrel; sauto.
+  destruct r as [[[] s']|]; cbn in Hrel; sauto limit: 200.
 Qed.
 
 (** AWP succeeds: the converging branch witnesses the postcondition. *)
@@ -834,7 +834,7 @@ Theorem progB_AWP_42 :
       | None => False
       end).
 Proof.
-  intros s0 _. cbn. exists (Some (tt, 42)). split; sauto.
+  intros s0 _. cbn. exists (Some (tt, 42)). split; sauto limit: 200.
 Qed.
 
 (** "There are divergent branches": divergence (the outermost [None]
@@ -1593,7 +1593,7 @@ Proof.
   unfold obsASP, P0. unfold asp.
   exists 0. split; [reflexivity|].
   unfold obsRel. cbn.
-  sauto.
+  sauto limit: 200.
 Qed.
 
 #[program] Theorem progEx_dslp_1 :
@@ -1601,7 +1601,7 @@ Qed.
 Proof.
   unfold obsDSLP, P0. unfold dslp.
   intros s Hrel. unfold obsRel in Hrel. cbn in Hrel.
-  f_equal. f_equal. sauto lq: on.
+  f_equal. f_equal. sauto limit: 200.
 Qed.
 
 Theorem progEx_dsp_1 :
@@ -1622,7 +1622,7 @@ Proof. left. exact progEx_asp_1. Qed.
 Proof.
   unfold obsASP, P0. unfold asp.
   exists 0. split; [reflexivity|].
-  unfold obsRel. cbn. sauto.
+  unfold obsRel. cbn. sauto limit: 200.
 Qed.
 
 #[program] Theorem progEx_dslp_not_42 :
@@ -1631,7 +1631,7 @@ Proof.
   unfold obsDSLP, P0. unfold dslp.
   intro H. specialize (H 1).
   assert (Hreach : obsRel progEx 1 (Some (tt, 42))).
-  { unfold obsRel. cbn. sauto. }
+  { unfold obsRel. cbn. sauto limit: 200. }
   specialize (H Hreach). simpl in H. discriminate.
 Qed.
 
@@ -1653,7 +1653,7 @@ Proof. left. exact progEx_asp_42. Qed.
 Proof.
   unfold obsASP, P0. unfold asp.
   intros [s [HP Hrel]].
-  unfold obsRel in Hrel. cbn in Hrel. sauto.
+  unfold obsRel in Hrel. cbn in Hrel. sauto limit: 200.
 Qed.
 
 #[program] Theorem progEx_dslp_None :
@@ -1662,7 +1662,7 @@ Proof.
   unfold obsDSLP, P0. unfold dslp.
   intros s Hrel.
   (** None (exception) is unreachable — the ∀ is vacuously true. *)
-  unfold obsRel in Hrel. cbn in Hrel. sauto.
+  unfold obsRel in Hrel. cbn in Hrel. sauto limit: 200.
 Qed.
 
 Theorem progEx_dsp_not_None :
@@ -1682,7 +1682,7 @@ Proof. right. exact progEx_dslp_None. Qed.
 Proof.
   unfold obsASP, P0. unfold asp.
   intros [s [HP Hrel]]. subst.
-  unfold obsRel in Hrel. cbn in Hrel. sauto lq: on.
+  unfold obsRel in Hrel. cbn in Hrel. sauto limit: 200.
 Qed.
 
 #[program] Theorem progEx_dslp_not_99 :
@@ -1691,7 +1691,7 @@ Proof.
   unfold obsDSLP, P0. unfold dslp.
   intro H. specialize (H 98).
   assert (Hreach : obsRel progEx 98 (Some (tt, 99))).
-  { unfold obsRel. cbn. sauto. }
+  { unfold obsRel. cbn. sauto limit: 200. }
   specialize (H Hreach). simpl in H. discriminate.
 Qed.
 
@@ -2482,7 +2482,7 @@ Section MonadMorphismLawsSP.
 
   Lemma obsRel_ret {A} (a : A) (s : S) :
     obsRel (ret a) s (Some (a, s)).
-  Proof. sauto. Qed.
+  Proof. sauto limit: 200. Qed.
   
 (** SP bind adequacy: [obsRel] composes as a Kleisli arrow (state +
     exception). *)
@@ -2510,7 +2510,7 @@ Section MonadMorphismLawsSP.
 
   Theorem obsASP_ret {A} (a : A) (pre : S -> Prop) :
     forall s, pre s -> obsASP (ret a) pre (Some (a, s)).
-  Proof. sauto. Qed.
+  Proof. sauto limit: 200. Qed.
   
   (** The derived sequencing rule for the angelic strongest postcondition:
       the [asp] reading of [obsRel_bind].  Existential over the initial
@@ -3016,7 +3016,7 @@ Example progSP_progA_under_42 :
     (fun _ => True) (fun r => r = Some (tt, 42)).
 Proof.
   apply progSP_tripleSP_under_char. intros s r _ ->.
-  unfold obsRel; cbn; sauto.
+  unfold obsRel; cbn; sauto limit: 200.
 Qed.
 
 (** But the refinement [Under] is NOT the point under-approximation: with an
@@ -3124,7 +3124,7 @@ Example SPred_progA_under_42 :
 Proof.
   rewrite SPred_tripleSP_under_agrees.
   unfold tripleSP, obsASP, asp. intros r ->.
-  exists 0. split; [exact I | unfold obsRel; cbn; sauto].
+  exists 0. split; [exact I | unfold obsRel; cbn; sauto limit: 200].
 Qed.
 
 (** Faithfulness contrast: with an empty [pre] the faithful [Under] correctly

@@ -1,26 +1,16 @@
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
+From Incorrectness Require Import Taxonomy.NonDetProg.
 
-Section WPred.
+(** [WPred] is a transparent alias for the powerset/nondeterminism
+    monad [SetM := A -> Prop] defined in [NonDetProg].  Its monad,
+    [Eq1], and [MonadLawsE] laws are bridged to [SetM]'s (proved in
+    [NonDetProgFacts]); none are reproved here. *)
 
-  Definition WPred A := A -> Prop.
+Definition WPred : Type -> Type := SetM.
 
-  #[local]
-    Definition retS {A} (a : A) : WPred A :=
-    fun a' => a = a'.
-
-  #[local]
-    Definition bindS {A B}
-    (m : WPred A) (k : A -> WPred B) : WPred B :=
-    fun b' => exists a', m a' /\ k a' b'.
-
-  #[global]
-    Instance Monad_WPred : Monad WPred :=
-    {| ret := fun _ => retS ;
-       bind := fun _ _ => bindS |}.
-
-End WPred.
+#[global] Instance Monad_WPred : Monad WPred := Monad_SetM.
 
 Section ProgWPred.
 

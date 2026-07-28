@@ -1,69 +1,41 @@
-(** * Monad law proofs for [WPred] and [ProgWPred].
+(** * [WPred]/[ProgWPred] laws, bridged to [SetM]/[ndprog].
 
-    [WPred A = A -> Prop] is the powerset/nondeterminism monad (identical
-    in structure to [SetM]).  Monad laws hold up to Leibniz equality via
-    propositional and functional extensionality.
+    [WPred] is a transparent alias for [SetM := A -> Prop] (see
+    [WPred.v]).  Its [Eq1] and [MonadLawsE] instances are bridged to
+    [SetM]'s (proved in [NonDetProgFacts]); no law is reproved here.
 
     [ProgWPred S = stateT S (optionT WPred)] then inherits [MonadLawsE]
     via the generic [optionT] and [stateT] instances from [ProgFacts].
     Unfolded, [ProgWPred S A = S -> option (A * S) -> Prop]. *)
 
 From Coq Require Import
-  FunctionalExtensionality
-  PropExtensionality
   Morphisms RelationClasses.
 From ITree Require Import Basics.Monad.
 From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
-From Hammer Require Import Tactics.
 From Incorrectness Require Import
   Taxonomy.WPred
+  Taxonomy.NonDetProg
+  Taxonomy.NonDetProgFacts
   Taxonomy.ProgFacts.
 
 (* ================================================================= *)
-(** ** [Eq1] and [MonadLawsE] for [WPred]                            *)
+(** ** [Eq1] and [MonadLawsE] for [WPred], bridged to [SetM]          *)
 (* ================================================================= *)
 
-Section WPredFacts.
+#[global]
+Instance Eq1_WPred : Eq1 WPred := Eq1_SetM.
 
-  #[global]
-  Instance Eq1_WPred : Eq1 WPred :=
-    fun A => eq.
+#[global]
+Instance Eq1Equivalence_WPred
+  : @Eq1Equivalence WPred Monad_WPred Eq1_WPred :=
+  @Eq1Equivalence_SetM.
 
-  #[global]
-  Instance Eq1Equivalence_WPred
-    : @Eq1Equivalence WPred _ Eq1_WPred.
-  Proof.
-    constructor; typeclasses eauto.
-  Qed.
-
-  #[global]
-  Instance MonadLawsE_WPred
-    : @MonadLawsE WPred Eq1_WPred _.
-  Proof.
-    constructor.
-    - (* bind_ret_l *)
-      intros A B f x. unfold eq1, Eq1_WPred. cbn.
-      apply functional_extensionality; intro b.
-      apply propositional_extensionality. sauto.
-    - (* bind_ret_r *)
-      intros A x. unfold eq1, Eq1_WPred. cbn.
-      apply functional_extensionality; intro b.
-      apply propositional_extensionality. sauto.
-    - (* bind_bind *)
-      intros A B C x f g. unfold eq1, Eq1_WPred. cbn.
-      apply functional_extensionality; intro c.
-      apply propositional_extensionality. sauto.
-    - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg. unfold eq1, Eq1_WPred in *. subst.
-      apply functional_extensionality; intro b.
-      apply propositional_extensionality.
-      split; intros [a [Ha Hk]]; exists a; split; try exact Ha;
-        [rewrite <- (Hfg a) | rewrite (Hfg a)]; exact Hk.
-  Qed.
-
-End WPredFacts.
+#[global]
+Instance MonadLawsE_WPred
+  : @MonadLawsE WPred Eq1_WPred Monad_WPred :=
+  @MonadLawsE_SetM.
 
 (* ================================================================= *)
 (** ** [MonadLawsE] for [ProgWPred S]                                *)

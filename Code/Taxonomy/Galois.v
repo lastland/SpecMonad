@@ -682,9 +682,9 @@ Qed.
     identifies a validator with its projection closure under
     [RelPrePost_arrow_eq]. *)
 
-Lemma wp_to_rpp_wf {A B} (w : MonotoneWP A B) :
-  RelPrePost_wf (fun P R => forall a, P a -> proj1_sig w a (R a)).
-Proof.
+#[program] Definition alpha_wp_rpp {A B} (w : MonotoneWP A B) : WFRelPrePost A B :=
+  fun P R => forall a, P a -> proj1_sig w a (R a).
+Next Obligation.
   unfold RelPrePost_wf, project_wp.
   intros a Q1 Q2 HQ [P [R [HE [HPa HRiff]]]].
   exists P, (fun a' b => R a' b \/ (a' = a /\ Q2 b)).
@@ -703,11 +703,11 @@ Proof.
     + intros HQ2b. right. split; [reflexivity | exact HQ2b].
 Qed.
 
-Definition alpha_wp_rpp {A B} (w : MonotoneWP A B) : WFRelPrePost A B :=
-  exist _ (fun P R => forall a, P a -> proj1_sig w a (R a)) (wp_to_rpp_wf w).
-
-Definition gamma_rpp_wp {A B} (r : WFRelPrePost A B) : MonotoneWP A B :=
-  exist _ (fun a Q => project_wp (proj1_sig r) a Q) (proj2_sig r).
+#[program] Definition gamma_rpp_wp {A B} (r : WFRelPrePost A B) : MonotoneWP A B :=
+  fun a Q => project_wp (proj1_sig r) a Q.
+Next Obligation.
+  exact (proj2_sig r).
+Qed.
 
 Lemma adjunction_WP_RPP {A B}
   (w : MonotoneWP A B) (r : WFRelPrePost A B) :
