@@ -15,7 +15,7 @@ From ExtLib Require Import
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Rel PredMonad SPost WPred.
+From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Rel PredMonad SPost WPred Triple.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -269,8 +269,6 @@ Arguments obsASLP {_} {_}.
 (* ================================================================= *)
 (** ** SP triples                                                    *)
 (* ================================================================= *)
-
-Inductive approximationKind := | Under | Over.
 
 (** [tripleSP obs prog kind pre post]: apply the SP observation [obs prog]
     (a forward predicate transformer) to the precondition [pre] and compare

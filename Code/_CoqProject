@@ -52,6 +52,7 @@ Taxonomy/WPArrFacts.v
 Taxonomy/RelPrePost.v
 Taxonomy/RelPrePostFacts.v
 Taxonomy/Galois.v
+Taxonomy/Triple.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
 Taxonomy/NonDetItObservation.v

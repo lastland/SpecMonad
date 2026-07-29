@@ -18,7 +18,7 @@ From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
 From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Taxonomy Require Import Prog WP Rel SPost WPred.
+From Incorrectness.Taxonomy Require Import Prog WP Rel SPost WPred Triple.
 From Paco Require Import paco.
 From Hammer Require Import Tactics.
 From ITree Require Import ITree Eq Props.Infinite.
@@ -105,8 +105,6 @@ Arguments obsAWLP {_} {_}.
 Arguments obsDWP {_} {_}.
 Arguments obsDWLP {_} {_}.
 
-Inductive approximationKind := | Under | Over.
-
 (** Backward (WP) triple, defined as an *exegesis* (apply the WP
     observation to [post], compare by inclusion with [pre]), matching
     [NonDetItObservation.tripleWP].
@@ -121,12 +119,12 @@ Inductive approximationKind := | Under | Over.
 Definition tripleWP {S A}
   (obs : prog S A -> ProgWP S A)
   (prog : prog S A)
-  (is_correct:approximationKind)
+  (kind:approximationKind)
   (pre : S -> Prop)
   (post : option (A * S) -> Prop)
   : Prop
   :=
-    match is_correct with
+    match kind with
     | Under =>
         forall s, pre s -> unOptionT (runStateT (obs prog) s) post
     | Over =>
