@@ -53,3 +53,4 @@ Taxonomy/Galois.v
 Taxonomy/Observation.v
 Taxonomy/NonDetObservation.v
 Taxonomy/NonDetItObservation.v
+Taxonomy/DijkstraCategory.v
