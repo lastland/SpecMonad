@@ -22,31 +22,31 @@ Section KenjiPureSP.
   Definition Codomain {A} (w : PureSP A) : Prop :=
     forall (p : Prop) (a : A), w p a -> p.
 
-  Definition KenjiPureSP {A} (w : PureSP A) : Prop := Monotone w /\ Codomain w.
+  Definition KenjiPureSP (A : Type) : Type := { w : PureSP A | Monotone w /\ Codomain w }.
 
-  Definition PureSP_ret {A} (v : A) : PureSP A :=
+  Definition getKenjiPureSP {A} (w : KenjiPureSP A) : PureSP A := proj1_sig w.
+
+  #[program] Definition retKenjiPureSP {A} (v : A) : KenjiPureSP A :=
     fun pre a => pre /\ a = v.
-
-  Definition PureSP_bind {A B} (m : PureSP A) (f : A -> PureSP B) : PureSP B :=
-    fun pre b => exists a, f a (m pre a) b.
-
-  Lemma PureSP_ret_kenji {A} (v : A) : KenjiPureSP (PureSP_ret v).
+  Next Obligation.
   Proof.
     split.
     - intros p q a Hpq [Hp Heq]. split; [exact (Hpq Hp) | exact Heq].
     - intros p a [Hp _]. exact Hp.
   Qed.
-
-  Lemma PureSP_bind_kenji {A B} (m : PureSP A) (f : A -> PureSP B) :
-    KenjiPureSP m -> (forall a, KenjiPureSP (f a)) -> KenjiPureSP (PureSP_bind m f).
+  
+  #[program] Definition bindKenjiPureSP {A B} (m : KenjiPureSP A) (k : A -> KenjiPureSP B) : KenjiPureSP B :=
+    fun pre b => exists a, k a (m pre a) b.
+  Next Obligation.
   Proof.
-    intros [Mm Cm] Hf. split.
-    - (* [f a] is monotone in its precondition, and [m] is monotone in [p] *)
+    split.
+    - (* monotone: weaken [pre] inside [m], then inside [k a] *)
       intros p q b Hpq [a Ha]. exists a.
-      exact (proj1 (Hf a) (m p a) (m q a) b (Mm p q a Hpq) Ha).
-    - (* peel [Codomain] twice: through [f a], then through [m] *)
+      apply (proj1 (proj2_sig (k a)) (proj1_sig m p a) (proj1_sig m q a) b);
+        [ intro Hm; exact (proj1 (proj2_sig m) p q a Hpq Hm) | exact Ha ].
+    - (* codomain: [k a] returns its argument, which [m] returns [p] from *)
       intros p b [a Ha].
-      exact (Cm p a (proj2 (Hf a) (m p a) b Ha)).
+      exact (proj2 (proj2_sig m) p a (proj2 (proj2_sig (k a)) (proj1_sig m p a) b Ha)).
   Qed.
   
 End KenjiPureSP.
@@ -64,79 +64,44 @@ Section KenjiProgSP.
   Definition CodomainS {A} (w : ProgSP A) : Prop :=
     forall (p : S -> Prop) (r : option (A * S)), w p r -> (exists s, p s).
 
-  Definition KenjiProgSP {A} (w : ProgSP A) : Prop := MonotoneS w /\ CodomainS w.
+  Definition KenjiProgSP (A : Type) : Type := { w : ProgSP A | MonotoneS w /\ CodomainS w }.
 
-  Definition ProgSP_ret {A} (v : A) : ProgSP A :=
+  Definition getKenjiProgSP {A} (w : KenjiProgSP A) : ProgSP A := proj1_sig w.
+
+  #[program] Definition retKenjiProgSP {A} (v : A) : KenjiProgSP A :=
     fun pre r => exists s0, pre s0 /\ r = Some (v, s0).
-
-  Definition ProgSP_bind {A B} (m : ProgSP A) (k : A -> ProgSP B) : ProgSP B :=
-    fun pre r => (exists a, k a (fun s0 => m pre (Some (a, s0))) r) \/ (r = None /\ m pre None).
-
-  Lemma ProgSP_ret_kenji {A} (v : A) : KenjiProgSP (ProgSP_ret v).
+  Next Obligation.
   Proof.
     split.
     - intros p q r Hpq [s0 [Hp Heq]]. exists s0. split; [exact (Hpq s0 Hp) | exact Heq].
     - intros p r [s0 [Hp _]]. exists s0. exact Hp.
   Qed.
 
-  Lemma ProgSP_bind_kenji {A B} (m : ProgSP A) (k : A -> ProgSP B) :
-    KenjiProgSP m -> (forall a, KenjiProgSP (k a)) -> KenjiProgSP (ProgSP_bind m k).
-  Proof.
-    intros [Mm Cm] Hk. split.
-    - intros p q r Hpq [[a Ha] | [Hr Hn]].
-      + left. exists a. refine (proj1 (Hk a) _ _ r _ Ha).
-        intros s0 Hs0. exact (Mm p q (Some (a, s0)) Hpq Hs0).
-      + right. split; [exact Hr | exact (Mm p q None Hpq Hn)].
-    - intros p r [[a Ha] | [_ Hn]].
-      + destruct (proj2 (Hk a) _ r Ha) as [s0 Hs0].
-        exact (Cm p (Some (a, s0)) Hs0).
-      + exact (Cm p None Hn).
-  Qed.
-
-  (** [ProgSP_ret_kenji] / [ProgSP_bind_kenji] say only that [KenjiProgSP] is
-      CLOSED under the monad operations — that [ProgSP_bind] is well defined on
-      Kenji transformers.  They say nothing about the monad LAWS, and the laws
-      do NOT all hold:
-
-        - [bind_ret_r] holds outright ([ProgSP_bind_ret_r], no hypotheses);
-        - [bind_ret_l] holds for Kenji continuations ([ProgSP_bind_ret_l_kenji]):
-          [CodomainS] rules out the [a <> v] disjuncts, [MonotoneS] gives
-          congruence in the precondition;
-        - [bind_bind] FAILS ([ProgSP_bind_bind_fails]) — join preservation is
-          what that one needs.
-
-      Why the two side conditions differ.  At the [PureSP] level the
-      precondition is a bare [Prop], and monotone + strict already forces
-      determination by the value at [True]: [kenji_iff_singleton] and
-      [join_iff_singleton] make [KenjiPureSP], [Singleton] and [JoinPreserving]
-      literally the SAME class.  At the [ProgSP] level the precondition is a
-      predicate over STATES, and monotone + non-empty does not force
-      determination by singletons — [KenjiProgSP] is strictly weaker than
-      [SingletonProg] ([gTwo_kenji] vs. [gTwo_not_singleton]).
-
-      Associativity is exactly where the gap bites: in [bind (bind m f) g] the
-      precondition handed to [g] is a JOIN over the intermediate value [a], and
-      only join preservation lets that join commute out through [g]. *)
-
-  (** [gTwo] fires exactly when its precondition holds of
-      two distinct states.  That is monotone and non-empty, but it is invisible
-      to every singleton, so it is not determined by them. *)
-  Definition gTwo : ProgSP unit :=
-    fun pre _ => exists x y, pre x /\ pre y /\ x <> y.
-
-  Lemma gTwo_kenji : KenjiProgSP gTwo.
+  #[program] Definition bindKenjiProgSP {A B} (m : KenjiProgSP A) (k : A -> KenjiProgSP B) : KenjiProgSP B :=
+    fun pre r => (exists a, k a (fun s0 => m pre (Some (a, s0))) r) \/ (r = None /\ m pre None).
+  Next Obligation.
   Proof.
     split.
-    - intros p q r Hpq [x [y [Hx [Hy Hne]]]].
-      exists x, y. split; [exact (Hpq x Hx) | split; [exact (Hpq y Hy) | exact Hne]].
-    - intros p r [x [_ [Hx _]]]. exists x. exact Hx.
+    - intros p q r Hpq [[a Ha] | [Hr Hn]].
+      + left. exists a.
+        apply (proj1 (proj2_sig (k a))
+                 (fun s0 => proj1_sig m p (Some (a, s0)))
+                 (fun s0 => proj1_sig m q (Some (a, s0))) r);
+          [ intros s0 Hm; exact (proj1 (proj2_sig m) p q (Some (a, s0)) Hpq Hm)
+          | exact Ha ].
+      + right. split; [ exact Hr | exact (proj1 (proj2_sig m) p q None Hpq Hn) ].
+    - intros p r [[a Ha] | [_ Hn]].
+      + destruct (proj2 (proj2_sig (k a))
+                    (fun s0 => proj1_sig m p (Some (a, s0))) r Ha) as [s0 Hm].
+        exact (proj2 (proj2_sig m) p (Some (a, s0)) Hm).
+      + exact (proj2 (proj2_sig m) p None Hn).
   Qed.
 
   (* ---- the two laws that do hold ---- *)
 
-  Theorem ProgSP_bind_ret_r {A} (m : ProgSP A)
+  Theorem KenjiProgSP_bind_ret_r {A} (m : KenjiProgSP A)
     (pre : S -> Prop) (r : option (A * S)) :
-    ProgSP_bind m ProgSP_ret pre r <-> m pre r.
+    getKenjiProgSP (bindKenjiProgSP m retKenjiProgSP) pre r <-> getKenjiProgSP m pre r.
   Proof.
     split.
     - intros [[a [s0 [Hm Heq]]] | [Hr Hn]]; subst r; assumption.
@@ -145,78 +110,141 @@ Section KenjiProgSP.
       + right. split; [reflexivity | exact H].
   Qed.
 
-  Theorem ProgSP_bind_ret_l_kenji {A B} (v : A) (k : A -> ProgSP B)
-    (Hk : forall a, KenjiProgSP (k a)) (pre : S -> Prop) (r : option (B * S)) :
-    ProgSP_bind (ProgSP_ret v) k pre r <-> k v pre r.
+  Theorem KenjiProgSP_bind_ret_l_kenji {A B} (v : A) (k : A -> KenjiProgSP B)
+    (pre : S -> Prop) (r : option (B * S)) :
+    getKenjiProgSP (bindKenjiProgSP (retKenjiProgSP v) k) pre r <-> getKenjiProgSP (k v) pre r.
   Proof.
     split.
     - intros [[a Ha] | [_ [s1 [_ Heq]]]]; [| discriminate Heq].
-      destruct (proj2 (Hk a) _ r Ha) as [s0 [s1 [Hpre Heq]]].
+      (* [CodomainS] of [k a] produces a witness, which forces [a = v] *)
+      destruct (proj2 (proj2_sig (k a))
+                  (fun s0 => proj1_sig (retKenjiProgSP v) pre (Some (a, s0))) r Ha)
+        as [s0 [s1 [Hp Heq]]].
       assert (Hav : a = v) by congruence. subst a.
-      refine (proj1 (Hk v) _ pre r _ Ha).
-      intros s [s2 [Hp Heq2]]. assert (Hs : s = s2) by congruence. subst s. exact Hp.
+      (* [MonotoneS] of [k v] then rewrites the precondition back to [pre] *)
+      apply (proj1 (proj2_sig (k v))
+               (fun s0 => proj1_sig (retKenjiProgSP v) pre (Some (v, s0))) pre r);
+        [| exact Ha ].
+      intros s [s' [Hp' Heq']]. assert (Hss : s = s') by congruence.
+      subst s. exact Hp'.
     - intro H. left. exists v.
-      refine (proj1 (Hk v) pre _ r _ H).
-      intros s Hs. exists s. split; [exact Hs | reflexivity].
+      apply (proj1 (proj2_sig (k v)) pre
+               (fun s0 => proj1_sig (retKenjiProgSP v) pre (Some (v, s0))) r);
+        [| exact H ].
+      intros s Hs. exists s. split; [ exact Hs | reflexivity ].
   Qed.
-
-  (* ---- the law that does not: associativity ---- *)
-
-  (** [mAny] ignores its result and just asserts the precondition is non-empty;
-      [fPin sA sB a] pins the final state to [sA] or [sB] according to [a].  So
-      in [bind (bind mAny (fPin sA sB)) g] the precondition reaching [g] is the
-      JOIN over [a], namely [{sA, sB}] — on which [gTwo] fires.  Re-associated,
-      [g] instead sees one [a] at a time, each giving a SINGLETON, on which
-      [gTwo] never fires.  Every transformer involved is [KenjiProgSP]. *)
-
-  Definition mAny : ProgSP bool := fun pre _ => exists s, pre s.
-
-  Definition fPin (sA sB : S) : bool -> ProgSP unit :=
-    fun a pre r => (exists s, pre s) /\ r = Some (tt, if a then sA else sB).
-
-  Lemma mAny_kenji : KenjiProgSP mAny.
-  Proof.
-    split.
-    - intros p q r Hpq [s Hs]. exists s. exact (Hpq s Hs).
-    - intros p r H. exact H.
-  Qed.
-
-  Lemma fPin_kenji (sA sB : S) (a : bool) : KenjiProgSP (fPin sA sB a).
-  Proof.
-    split.
-    - intros p q r Hpq [[s Hs] Heq]. split; [exists s; exact (Hpq s Hs) | exact Heq].
-    - intros p r [H _]. exact H.
-  Qed.
-
-  Theorem ProgSP_bind_bind_fails (sA sB : S) (Hne : sA <> sB) :
-    ~ (forall (A B C : Type) (m : ProgSP A) (f : A -> ProgSP B)
-              (g : B -> ProgSP C) (pre : S -> Prop) (r : option (C * S)),
-         ProgSP_bind (ProgSP_bind m f) g pre r <->
-         ProgSP_bind m (fun a => ProgSP_bind (f a) g) pre r).
-  Proof.
-    intro Hlaw.
-    (* left-associated: [gTwo] sees the join [{sA, sB}] *)
-    assert (HL : ProgSP_bind (ProgSP_bind mAny (fPin sA sB))
-                   (fun _ : unit => gTwo) (fun _ => True) (Some (tt, sA))).
-    { left. exists tt. exists sA, sB.
-      split; [| split; [| exact Hne]].
-      - left. exists true. split; [exists sA; exists sA; exact I | reflexivity].
-      - left. exists false. split; [exists sB; exists sB; exact I | reflexivity]. }
-    (* right-associated: [gTwo] sees a singleton for each [a] *)
-    assert (HR : ~ ProgSP_bind mAny
-                    (fun a => ProgSP_bind (fPin sA sB a) (fun _ : unit => gTwo))
-                    (fun _ => True) (Some (tt, sA))).
-    { intros [[a Ha] | [Hc _]]; [| discriminate Hc].
-      destruct Ha as [[b Hb] | [Hc _]]; [| discriminate Hc].
-      destruct Hb as [x [y [[_ Hx] [[_ Hy] Hxy]]]].
-      apply Hxy. congruence. }
-    exact (HR (proj1 (Hlaw bool unit unit mAny (fPin sA sB) (fun _ => gTwo)
-                        (fun _ => True) (Some (tt, sA))) HL)).
-  Qed.
-
 End KenjiProgSP.
 
 Arguments ProgSP {_}.
+
+Module KenjiFailingBind.
+  #[program] Definition m : KenjiProgSP bool bool :=
+    fun pre r => exists s, pre s.
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq [s Hs]. exists s. exact (Hpq s Hs).
+    - intros p r [s Hs]. exists s. exact Hs.
+  Qed.
+
+  #[program] Definition k : bool -> KenjiProgSP bool unit :=
+    fun a => fun pre r => (exists s, pre s) /\ r = Some (tt, a).
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq [[s Hs] Heq]. split; [ exists s; exact (Hpq s Hs) | exact Heq ].
+    - intros p r [[s Hs] _]. exists s. exact Hs.
+  Qed.
+
+  #[program] Definition g : KenjiProgSP bool unit :=
+    fun pre r => pre true /\ pre false.
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq [Ht Hf]. split; [ exact (Hpq true Ht) | exact (Hpq false Hf) ].
+    - intros p r [Ht _]. exists true. exact Ht.
+  Qed.
+
+  Definition pre : bool -> Prop := fun _ => True.
+  Definition r : option (unit * bool) := Some (tt, true).
+
+  (* S := bool, A := bool, B := C := unit *)
+  
+  (** LHS **)
+  
+  (* bind (bind m k) (fun _ : unit => g) pre r <->
+     (exists b : unit, g (fun s1 => (bind m k) pre (Some (b, s1))) r) \/ (r = None /\ (bind m k) pre None) <->
+     (exists b : unit, g (fun s1 => (bind m k) pre (Some (b, s1))) r) <->
+     g (fun s1 => (bind m k) pre (Some (tt, s1))) r <-> (see below)
+     g (fun s1 => True) r <-> (unfold g)
+     True /\ True <-> True
+   *)
+  
+  (* (bind m k) pre (Some (tt, s1)) <-> (unfold bind)
+     exists a, k a (fun s0 => m pre (Some (a, s0))) (Some (tt, s1)) <-> (unfold k)
+     exists a, (exists s, m pre (Some (a, s))) /\ a = s1 <-> (unfold m)
+     exists a, (exists s, pre s) /\ a = s1 <-> (a := true)
+     exists s, pre s <-> (s := s1)
+     True *)
+
+  (** RHS **)
+  
+  (* bind m (fun a => bind (k a) (fun _ : unit => g)) pre r <->
+     (exists a : bool, (bind (k a) g) (fun s0 => m pre (Some (a, s0))) r) \/ (r = None /\ m pre None) <->
+     (exists a : bool, (bind (k a) g) (fun s0 => m pre (Some (a, s0))) r) <->
+     (exists a : bool, (bind (k a) g) (fun _ => exists s, pre s) r) <->
+     (exists a : bool, (bind (k a) g) (fun _ => True) r) <->
+     (exists a : bool, False) <-> False
+   *)
+
+  (* (bind (k a) g) (fun _ => True) r <->
+     (exists b : unit, g (fun s1 => k a (fun _ => True) (Some (b, s1))) r) \/ (r = None /\ k a (fun _ => True) None) <->
+     (exists b : unit, g (fun s1 => k a (fun _ => True) (Some (b, s1))) r) <->
+     g (fun s1 => k a (fun _ => True) (Some (tt, s1))) r <-> (see below)
+     g (fun s1 => s1 = a) r <->
+     (fun s1 => s1 = a) true /\ (fun s1 => s1 = a) false <->
+     (true = a) /\ (false a) <-> False *)
+
+  (* k a (fun _ => True) (Some (tt, s1)) <->
+     (exists s, True) /\ Some (tt, s1) = Some (tt, a) <->
+     s1 = a *)
+  
+  Theorem ProgSP_bind_bind_fails :
+    ~ (forall (A B C S : Type) (m : KenjiProgSP S A) (f : A -> KenjiProgSP S B)
+              (g : B -> KenjiProgSP S C) (pre : S -> Prop) (r : option (C * S)),
+         getKenjiProgSP S (bindKenjiProgSP S (bindKenjiProgSP S m f) g) pre r <->
+           getKenjiProgSP S (bindKenjiProgSP S m (fun a => bindKenjiProgSP S (f a) g)) pre r).
+  Proof.
+    intro H.
+    (* LHS holds: the precondition handed to [g] is constantly [True] *)
+    assert (HL : getKenjiProgSP bool
+                   (bindKenjiProgSP bool (bindKenjiProgSP bool m k) (fun _ : unit => g))
+                   pre r).
+    { left. exists tt. split.
+      - left. exists true. split; [ exists true; exists true; exact I | reflexivity ].
+      - left. exists false. split; [ exists true; exists true; exact I | reflexivity ]. }
+    (* RHS does not: [g] is now handed the singleton [fun s1 => s1 = a] *)
+    destruct (proj1 (H bool unit unit bool m k (fun _ : unit => g) pre r) HL)
+      as [[a Ha] | [Hr _]]; [| discriminate Hr].
+    destruct Ha as [[b Hb] | [Hr _]]; [| discriminate Hr].
+    destruct Hb as [[_ Het] [_ Hef]].
+    assert (Ha1 : a = true) by congruence.
+    assert (Ha2 : a = false) by congruence.
+    congruence.
+  Qed.
+
+(* INTUITION: The problematic predicate transformer here is
+   g := fun pre r => pre true /\ pre false. It requires that
+   two distinct initial states satisfy the precondition. The
+   LHS of the bind simplifies as follows:
+   bind (bind m k) (fun _ : unit => g) pre r <-> g (fun s1 => True) r.
+   The precondition passed to g is not problematic, since it always returns
+   True. However the RHS of the bind simplies as follows:
+   bind m (fun a => (bind k a) (fun _ : unit => g)) pre r <->
+   (exists a : bool, g (fun s1 => s1 = a) r) <->
+   (exists a : bool, (a = true) /\ (a = false). *)
+
+End KenjiFailingBind.
 
 Section PurePredicateTransformers.
   Definition Strict {A} (w : PureSP A) : Prop :=
@@ -299,7 +327,7 @@ Section PureASPMonad.
   (* Equivalent to Kenji's formalization *)
   
   Theorem kenji_iff_singleton {A} (w : PureSP A) :
-    KenjiPureSP w <-> Singleton w.
+    (Monotone w /\ Codomain w) <-> Singleton w.
   Proof.
     split.
     - intros [Mon Cod] p a. split.
@@ -343,17 +371,16 @@ Section PureASPMonad.
     intros p b. split.
     - (* pull [p] out through [k a], then through [m], and rebuild at [True] *)
       intros [a H].
-      destruct (getASP_split (k a) _ b H) as [Hm Hk].
-      destruct (getASP_split m p a Hm) as [Hp Hm'].
-      split; [exact Hp |]. exists a.
-      apply getASP_merge. split; [| exact Hk].
-      apply getASP_merge. split; [exact I | exact Hm'].
+      destruct (proj1 (proj2_sig (k a) (proj1_sig m p a) b) H) as [Hmp Hk].
+      destruct (proj1 (proj2_sig m p a) Hmp) as [Hp HmT].
+      split; [ exact Hp |]. exists a.
+      exact (proj2 (proj2_sig (k a) (proj1_sig m True a) b) (conj HmT Hk)).
     - intros [Hp [a H]].
-      destruct (getASP_split (k a) _ b H) as [Hm Hk].
-      destruct (getASP_split m True a Hm) as [_ Hm'].
-      exists a. apply getASP_merge. split; [| exact Hk].
-      apply getASP_merge. split; [exact Hp | exact Hm'].
-      Qed.
+      destruct (proj1 (proj2_sig (k a) (proj1_sig m True a) b) H) as [HmT Hk].
+      exists a.
+      exact (proj2 (proj2_sig (k a) (proj1_sig m p a) b)
+               (conj (proj2 (proj2_sig m p a) (conj Hp HmT)) Hk)).
+  Qed.
         
   #[global] Instance Monad_ASPSP : Monad ASPSP :=
     {| ret := fun _ => retASP ;
@@ -517,19 +544,18 @@ Section ProgASPMonad.
     pose proof (fun a => proj2_sig (k a)) as Hk. unfold SingletonProg in Hk.
     split.
     - intros [[a Ha] | [Hr Hn]].
-      + destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hkr]].
-        destruct (proj1 (Hm pre (Some (a, s1))) Hms) as [s0 [Hpre Hms0]].
-        exists s0. split; [exact Hpre |]. left. exists a.
-        apply (proj2 (Hk a _ r)). exists s1. split; [exact Hms0 | exact Hkr].
-      + destruct (proj1 (Hm pre None) Hn) as [s0 [Hpre Hn0]].
-        exists s0. split; [exact Hpre |]. right. split; [exact Hr | exact Hn0].
-    - intros [s0 [Hpre [[a Ha] | [Hr Hn]]]].
-      + destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms0 Hkr]].
-        left. exists a. apply (proj2 (Hk a _ r)). exists s1. split; [| exact Hkr].
-        apply (proj2 (Hm pre (Some (a, s1)))). exists s0.
-        split; [exact Hpre | exact Hms0].
-      + right. split; [exact Hr |].
-        apply (proj2 (Hm pre None)). exists s0. split; [exact Hpre | exact Hn].
+      + destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hka]].
+        destruct (proj1 (Hm pre (Some (a, s1))) Hms) as [s0 [Hp Hm0]].
+        exists s0. split; [ exact Hp |]. left. exists a.
+        apply (Hk a). exists s1. split; [ exact Hm0 | exact Hka ].
+      + destruct (proj1 (Hm pre None) Hn) as [s0 [Hp Hm0]].
+        exists s0. split; [ exact Hp |]. right. split; [ exact Hr | exact Hm0 ].
+    - intros [s0 [Hp [[a Ha] | [Hr Hn]]]].
+      + destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hka]].
+        left. exists a. apply (Hk a). exists s1. split; [| exact Hka ].
+        apply (Hm pre (Some (a, s1))). exists s0. split; [ exact Hp | exact Hms ].
+      + right. split; [ exact Hr |].
+        apply (Hm pre None). exists s0. split; [ exact Hp | exact Hn ].
   Qed.
                                           
   #[global]
@@ -712,8 +738,52 @@ Section ASPTriple.
       | Under => forall r, post r -> getProgASP (obsASP prog) pre r
       end.
 
+  (** Neither of these is [SingletonProg], so they are plain [ProgSP]: at the
+      empty precondition [pp2asp_over] still yields [post r], and at the full
+      one [pp2asp_under] holds even when no single state carries [pre]. *)
+  Definition pp2asp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, p s -> pre s) -> post r.
+
+  Definition pp2asp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, pre s -> p s) /\ post r.
+
   Definition ordProgASP {S A} (m1 m2 : ASPProgSP S A) : Prop :=
     forall pre r, getProgASP m1 pre r -> getProgASP m2 pre r.
+
+  Definition ordProgSP {S A} (m1 m2 : @ProgSP S A) : Prop :=
+    forall pre r, m1 pre r -> m2 pre r.
+
+  Definition tripleASPspec {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop)
+    : Prop
+    :=
+    match kind with
+    | Over => ordProgSP (getProgASP (obsASP prog)) (pp2asp_over pre post)
+    | Under => ordProgSP (pp2asp_under pre post) (getProgASP (obsASP prog))
+    end.
+
+  Theorem tripleASPDefEq {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop) :
+    tripleASP prog kind pre post <-> tripleASPspec prog kind pre post.
+  Proof.
+    unfold tripleASP, tripleASPspec, ordProgSP, pp2asp_over, pp2asp_under.
+    destruct kind; split.
+    - (* Under: instantiate the quantified precondition at [pre] itself *)
+      intros H p r [Hsub Hpost]. destruct (H r Hpost) as [s [Hpre Hreach]].
+      exists s. split; [ exact (Hsub s Hpre) | exact Hreach ].
+    - intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
+    - intros H p r [s [Hp Hreach]] Hsub.
+      exact (H r (ex_intro _ s (conj (Hsub s Hp) Hreach))).
+    - intros H r Hobs. exact (H pre r Hobs (fun s Hs => Hs)).
+  Qed.
 
 End ASPTriple.
 
@@ -908,16 +978,19 @@ Section PureDSLPMonad.
     - (* [p] fails ==> nothing in the co-set of [m] can meet the co-set of [k] *)
       intro H. destruct (classic p) as [Hp | Hnp]; [left; exact Hp |].
       right. intro a. specialize (H a).
-      destruct (getMSP_split (k a) _ b H) as [Hm | Hkf].
-      + destruct (getMSP_split m p a Hm) as [Hp' | Hmf].
-        * destruct (Hnp Hp').
-        * apply getMSP_merge. left. apply getMSP_merge. right. exact Hmf.
-      + apply getMSP_merge. right. exact Hkf.
-    - intros [Hp | H2] a.
-      + apply getMSP_merge. left. apply getMSP_merge. left. exact Hp.
-      + apply (getMSP_mono (k a) (getDSLP m False a) (getDSLP m p a) b).
-        * intro Hf. apply getMSP_merge. right. exact Hf.
-        * exact (H2 a).
+      apply (proj2_sig (k a) (proj1_sig m False a) b).
+      destruct (proj1 (proj2_sig (k a) (proj1_sig m p a) b) H) as [Hmp | Hkf];
+        [| right; exact Hkf ].
+      left. destruct (proj1 (proj2_sig m p a) Hmp) as [Hp | Hmf];
+        [ destruct (Hnp Hp) | exact Hmf ].
+    - intros [Hp | H] a.
+      + apply (proj2_sig (k a) (proj1_sig m p a) b). left.
+        apply (proj2_sig m p a). left. exact Hp.
+      + specialize (H a).
+        apply (proj2_sig (k a) (proj1_sig m p a) b).
+        destruct (proj1 (proj2_sig (k a) (proj1_sig m False a) b) H) as [Hmf | Hkf];
+          [| right; exact Hkf ].
+        left. apply (proj2_sig m p a). right. exact Hmf.
   Qed.
 
   #[global] Instance Monad_DSLPSP : Monad DSLPSP :=
@@ -1135,10 +1208,9 @@ Section ProgDSLPMonad.
     apply (msingletonProg_ext
              (fun pre r =>
                 forall s,
-                  ((exists a s', ~ getProgDSLP (k a) (fun s'' => s'' <> s') r
-                                 /\ ~ getProgDSLP m (fun s'' => s'' <> s) (Some (a, s')))
-                   \/ (r = None /\ ~ getProgDSLP m (fun s'' => s'' <> s) None))
-                  -> pre s)).
+                  ((exists a s', ~ proj1_sig (k a) (fun t => t <> s') r
+                                 /\ ~ proj1_sig m (fun t => t <> s) (Some (a, s')))
+                   \/ (r = None /\ ~ proj1_sig m (fun t => t <> s) None)) -> pre s)).
     - intros pre r. split.
       + intro H. split.
         * intro a. apply (msingletonProg_repr _ (Hk a)). intros s' Hck.
@@ -1357,6 +1429,47 @@ Section DSLPTriple.
   Definition ordProgDSLP {S A} (m1 m2 : DSLPProgSP S A) : Prop :=
     forall pre r, getProgDSLP m1 pre r -> getProgDSLP m2 pre r.
 
+
+  (** As on the ASP side, neither of these is [MSingletonProg], so both are
+      plain [ProgSP].  They are in fact the same two transformers used for
+      ASP: the [Over] / [Under] readings turn only on the observation being
+      monotone in its precondition, which all four observations are. *)
+  Definition pp2dslp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, p s -> pre s) -> post r.
+
+  Definition pp2dslp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, pre s -> p s) /\ post r.
+
+  Definition tripleDSLPspec {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop)
+    : Prop :=
+    match kind with
+    | Over => ordProgSP (getProgDSLP (obsDSLP prog)) (pp2dslp_over pre post)
+    | Under => ordProgSP (pp2dslp_under pre post) (getProgDSLP (obsDSLP prog))
+    end.
+
+  Theorem tripleDSLPDefEq {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop) :
+    tripleDSLP prog kind pre post <-> tripleDSLPspec prog kind pre post.
+  Proof.
+    unfold tripleDSLP, tripleDSLPspec, ordProgSP, pp2dslp_over, pp2dslp_under.
+    destruct kind; split.
+    - (* Under: push the quantified precondition through [pre <= p] *)
+      intros H p r [Hsub Hpost] s Hout. exact (Hsub s (H r Hpost s Hout)).
+    - intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
+    - (* Over: pull it back through [p <= pre] *)
+      intros H p r Hdslp Hsub. apply (H r).
+      intros s Hout. exact (Hsub s (Hdslp s Hout)).
+    - intros H r Hdslp. exact (H pre r Hdslp (fun s Hs => Hs)).
+  Qed.
 End DSLPTriple.
 
 Arguments tripleDSLP {_} {_}.
@@ -1831,32 +1944,199 @@ Section ProgDSPMonad.
     fun pre r => (retASPProg a pre r) /\ (retDSLPProg a pre r).
   Next Obligation. exact (dsp_shape_wf (fun s r => r = Some (a, s))). Qed.
 
-  (* [Program] would otherwise rewrite the [match] below into an
-     equality-carrying dependent match, which no longer matches [dsp_wf]. *)
-  #[local] Unset Program Cases.
+  (* We would like bindDSPProg to match retDSPProg, but this requires
+     converting DSPProgSP to both ASPProgSP and DSLPProgSP. *)
+
+  (** The two probe forms are the ASP and the DSLP of the recovered relation. *)
+  Lemma aspPartdsp_closed {A} (w : DSPProgSP A) pre r :
+    (getProgDSP w (fun _ => True) r /\ ~ getProgDSP w (fun s => ~ pre s) r)
+    <-> (exists s, pre s /\ (getProgDSP w (fun _ => True) r
+                             /\ ~ getProgDSP w (fun t => t <> s) r)).
+  Proof.
+    split.
+    - intros [Htop Hn]. apply NNPP. intro Hno. apply Hn.
+      apply getProgDSP_carrier.
+      destruct (proj1 (getProgDSP_carrier w (fun _ => True) r) Htop) as [[s0 [_ Hr0]] _].
+      split.
+      + exists s0. split; [| exact Hr0 ].
+        intro Hp. exact (Hno (ex_intro _ s0 (conj Hp Hr0))).
+      + intros s Hs Hp. exact (Hno (ex_intro _ s (conj Hp Hs))).
+    - intros [s [Hp Hs]]. split.
+      + apply getProgDSP_carrier. split;
+          [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
+      + intro Hc.
+        exact (proj2 (proj1 (getProgDSP_carrier w (fun t => ~ pre t) r) Hc) s Hs Hp).
+  Qed.
+
+  Lemma dslpPartdsp_closed {A} (w : DSPProgSP A) pre r :
+    (getProgDSP w (fun _ => True) r -> getProgDSP w pre r)
+    <-> (forall s, (getProgDSP w (fun _ => True) r
+                    /\ ~ getProgDSP w (fun t => t <> s) r) -> pre s).
+  Proof.
+    split.
+    - intros H s Hs. refine (proj2 (proj1 (getProgDSP_carrier w pre r) (H _)) s Hs).
+      apply getProgDSP_carrier. split;
+        [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
+    - intros Hall Htop. apply getProgDSP_carrier.
+      destruct (proj1 (getProgDSP_carrier w (fun _ => True) r) Htop) as [[s0 [_ Hr0]] _].
+      split; [ exists s0; split; [ exact (Hall s0 Hr0) | exact Hr0 ] | exact Hall ].
+  Qed.
+
+  (** Both healthiness classes transport along pointwise equivalence. *)
+  Lemma singletonProg_ext {A} (w1 w2 : @ProgSP S A) :
+    (forall pre r, w1 pre r <-> w2 pre r) -> SingletonProg S w1 -> SingletonProg S w2.
+  Proof.
+    intros Hext H pre r. split.
+    - intro Hw. destruct (proj1 (H pre r) (proj2 (Hext pre r) Hw)) as [s0 [Hp Hs]].
+      exists s0. split; [ exact Hp | exact (proj1 (Hext _ r) Hs) ].
+    - intros [s0 [Hp Hs]]. apply Hext. apply (H pre r).
+      exists s0. split; [ exact Hp | exact (proj2 (Hext _ r) Hs) ].
+  Qed.
+
+  Lemma dsp_healthy_ext {A} (w1 w2 : @ProgSP S A) :
+    (forall pre r, w1 pre r <-> w2 pre r) ->
+    StrictPositivelyMeetPreservingProg w1 -> StrictPositivelyMeetPreservingProg w2.
+  Proof.
+    intros Hext [HS HC]. split.
+    - intros r Hc. exact (HS r (proj2 (Hext _ r) Hc)).
+    - intros I i0 p r. split.
+      + intros Hw i. apply Hext.
+        exact (proj1 (HC I i0 p r) (proj2 (Hext _ r) Hw) i).
+      + intro Hall. apply Hext. apply (HC I i0 p r).
+        intro i. exact (proj2 (Hext _ r) (Hall i)).
+  Qed.
+
+  #[program] Definition aspPartdsp {A} (w : DSPProgSP A) : ASPProgSP S A :=
+    fun pre r => getProgDSP w (fun _ => True) r /\ ~ getProgDSP w (fun s => ~ pre s) r.
+  Next Obligation.
+    apply (singletonProg_ext
+             (fun pre r => exists s, pre s /\ (getProgDSP w (fun _ => True) r
+                                               /\ ~ getProgDSP w (fun t => t <> s) r))).
+    - intros pre r. exact (iff_sym (aspPartdsp_closed w pre r)).
+    - intros pre r. split.
+      + intros [s [Hp Hs]]. exists s. split; [ exact Hp |].
+        exists s. split; [ reflexivity | exact Hs ].
+      + intros [s0 [Hp [s [Heq Hs]]]]. subst s.
+        exists s0. split; [ exact Hp | exact Hs ].
+  Qed.
+
+  #[program] Definition dslpPartdsp {A} (w : DSPProgSP A) : DSLPProgSP S A :=
+    fun pre r => getProgDSP w (fun _ => True) r -> getProgDSP w pre r.
+  Next Obligation.
+    apply (msingletonProg_ext S
+             (fun pre r => forall s, (getProgDSP w (fun _ => True) r
+                                      /\ ~ getProgDSP w (fun t => t <> s) r) -> pre s)).
+    - intros pre r. exact (iff_sym (dslpPartdsp_closed w pre r)).
+    - apply dslp_msingleton.
+  Qed.
+
+  Theorem dsp_split {A} (w : DSPProgSP A) pre r :
+    getProgDSP w pre r <-> (getProgASP (aspPartdsp w) pre r /\ getProgDSLP (dslpPartdsp w) pre r).
+  Proof.
+    refine (iff_trans (getProgDSP_carrier w pre r) _). split.
+    - intros [He Hall]. split.
+      + exact (proj2 (aspPartdsp_closed w pre r) He).
+      + exact (proj2 (dslpPartdsp_closed w pre r) Hall).
+    - intros [Ha Hd]. split.
+      + exact (proj1 (aspPartdsp_closed w pre r) Ha).
+      + exact (proj1 (dslpPartdsp_closed w pre r) Hd).
+  Qed.
+
+  (** Both binds compute the SAME composite relation, one existentially and
+      one universally — which is why the conjunction below is the DSP of it. *)
+  Lemma bind_asp_parts {A B} (m : DSPProgSP A) (k : A -> DSPProgSP B) pre r :
+    getProgASP (bindASPProg (aspPartdsp m) (fun a => aspPartdsp (k a))) pre r
+    <-> (exists s, pre s /\
+           (exists o, (getProgDSP m (fun _ => True) o
+                       /\ ~ getProgDSP m (fun t => t <> s) o)
+                      /\ match o with
+                         | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
+                                             /\ ~ getProgDSP (k a) (fun t => t <> smid) r
+                         | None => r = None
+                         end)).
+  Proof.
+    split.
+    - intros [[a Hk] | [Hr Hm]].
+      + destruct (proj1 (aspPartdsp_closed (k a)
+                           (fun s0 => getProgASP (aspPartdsp m) pre (Some (a, s0))) r) Hk)
+          as [smid [Hp Hrk]].
+        destruct (proj1 (aspPartdsp_closed m pre (Some (a, smid))) Hp) as [s [Hps Hrm]].
+        exists s. split; [ exact Hps |].
+        exists (Some (a, smid)). split; [ exact Hrm | exact Hrk ].
+      + destruct (proj1 (aspPartdsp_closed m pre None) Hm) as [s [Hps Hrm]].
+        exists s. split; [ exact Hps |].
+        exists None. split; [ exact Hrm | exact Hr ].
+    - intros [s [Hps [[[a smid]|] [Hrm Hrk]]]].
+      + left. exists a.
+        exact (proj2 (aspPartdsp_closed (k a)
+                        (fun s0 => getProgASP (aspPartdsp m) pre (Some (a, s0))) r)
+                 (ex_intro _ smid
+                    (conj (proj2 (aspPartdsp_closed m pre (Some (a, smid)))
+                             (ex_intro _ s (conj Hps Hrm))) Hrk))).
+      + right. split; [ exact Hrk |].
+        exact (proj2 (aspPartdsp_closed m pre None) (ex_intro _ s (conj Hps Hrm))).
+  Qed.
+
+  Lemma bind_dslp_parts {A B} (m : DSPProgSP A) (k : A -> DSPProgSP B) pre r :
+    getProgDSLP (bindDSLPProg (dslpPartdsp m) (fun a => dslpPartdsp (k a))) pre r
+    <-> (forall s,
+           (exists o, (getProgDSP m (fun _ => True) o
+                       /\ ~ getProgDSP m (fun t => t <> s) o)
+                      /\ match o with
+                         | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
+                                             /\ ~ getProgDSP (k a) (fun t => t <> smid) r
+                         | None => r = None
+                         end) -> pre s).
+  Proof.
+    split.
+    - intros [H1 H2] s [[[a smid]|] [Hrm Hrk]].
+      + exact (proj1 (dslpPartdsp_closed m pre (Some (a, smid)))
+                 (proj1 (dslpPartdsp_closed (k a)
+                           (fun s0 => getProgDSLP (dslpPartdsp m) pre (Some (a, s0))) r)
+                    (H1 a) smid Hrk) s Hrm).
+      + exact (proj1 (dslpPartdsp_closed m pre None) (H2 Hrk) s Hrm).
+    - intro H. split.
+      + intro a.
+        exact (proj2 (dslpPartdsp_closed (k a)
+                        (fun s0 => getProgDSLP (dslpPartdsp m) pre (Some (a, s0))) r)
+                 (fun smid Hrk =>
+                    proj2 (dslpPartdsp_closed m pre (Some (a, smid)))
+                      (fun s Hrm => H s (ex_intro _ (Some (a, smid)) (conj Hrm Hrk))))).
+      + intro Hr.
+        exact (proj2 (dslpPartdsp_closed m pre None)
+                 (fun s Hrm => H s (ex_intro _ None (conj Hrm Hr)))).
+  Qed.
 
   #[program] Definition bindDSPProg {A B} (m : DSPProgSP A) (k : A -> DSPProgSP B) : DSPProgSP B :=
-    let C : S -> option (B * S) -> Prop :=
-      fun s r =>
-        exists o, (getProgDSP m (fun _ => True) o
-                   /\ ~ getProgDSP m (fun t => t <> s) o)
-                  /\ match o with
-                     | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
-                                         /\ ~ getProgDSP (k a) (fun t => t <> smid) r
-                     | None => r = None
-                     end in
-    fun pre r => (exists s, pre s /\ C s r) /\ (forall s, C s r -> pre s).
+    fun pre r => bindASPProg (aspPartdsp m) (fun a => aspPartdsp (k a)) pre r /\
+                   bindDSLPProg (dslpPartdsp m) (fun a => dslpPartdsp (k a)) pre r.
   Next Obligation.
-    exact (dsp_shape_wf
-             (fun s r =>
-                exists o, (getProgDSP m (fun _ => True) o
-                           /\ ~ getProgDSP m (fun t => t <> s) o)
-                          /\ match o with
-                             | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
-                                                 /\ ~ getProgDSP (k a) (fun t => t <> smid) r
-                             | None => r = None
-                             end)
-             ).
+    apply (dsp_healthy_ext
+             (fun pre r =>
+                (exists s, pre s /\
+                   (exists o, (getProgDSP m (fun _ => True) o
+                               /\ ~ getProgDSP m (fun t => t <> s) o)
+                              /\ match o with
+                                 | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
+                                                     /\ ~ getProgDSP (k a) (fun t => t <> smid) r
+                                 | None => r = None
+                                 end))
+                /\ (forall s,
+                      (exists o, (getProgDSP m (fun _ => True) o
+                                  /\ ~ getProgDSP m (fun t => t <> s) o)
+                                 /\ match o with
+                                    | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
+                                                        /\ ~ getProgDSP (k a) (fun t => t <> smid) r
+                                    | None => r = None
+                                    end) -> pre s))).
+    - intros pre r. split.
+      + intros [He Hall]. split;
+          [ exact (proj2 (bind_asp_parts m k pre r) He)
+          | exact (proj2 (bind_dslp_parts m k pre r) Hall) ].
+      + intros [Ha Hd]. split;
+          [ exact (proj1 (bind_asp_parts m k pre r) Ha)
+          | exact (proj1 (bind_dslp_parts m k pre r) Hd) ].
+    - apply dsp_shape_wf.
   Qed.
 
   (** The relation recovered from [retDSPProg a] is [fun s r => r = Some (a, s)]. *)
@@ -1865,6 +2145,35 @@ Section ProgDSPMonad.
      /\ ~ getProgDSP (retDSPProg a) (fun t => t <> s) r)
     <-> r = Some (a, s).
   Proof. exact (dsp_recov (fun s0 r0 => r0 = Some (a, s0)) s r). Qed.
+
+  (** [bindDSPProg m k] is pointwise the DSP of the composite relation. *)
+  Lemma bindDSPProg_dsp {A B} (m : DSPProgSP A) (k : A -> DSPProgSP B) pre r :
+    getProgDSP (bindDSPProg m k) pre r
+    <-> ((exists s, pre s /\
+            (exists o, (getProgDSP m (fun _ => True) o
+                        /\ ~ getProgDSP m (fun t => t <> s) o)
+                       /\ match o with
+                          | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
+                                              /\ ~ getProgDSP (k a) (fun t => t <> smid) r
+                          | None => r = None
+                          end))
+         /\ (forall s,
+               (exists o, (getProgDSP m (fun _ => True) o
+                           /\ ~ getProgDSP m (fun t => t <> s) o)
+                          /\ match o with
+                             | Some (a, smid) => getProgDSP (k a) (fun _ => True) r
+                                                 /\ ~ getProgDSP (k a) (fun t => t <> smid) r
+                             | None => r = None
+                             end) -> pre s)).
+  Proof.
+    split.
+    - intros [Ha Hd]. split;
+        [ exact (proj1 (bind_asp_parts m k pre r) Ha)
+        | exact (proj1 (bind_dslp_parts m k pre r) Hd) ].
+    - intros [He Hall]. split;
+        [ exact (proj2 (bind_asp_parts m k pre r) He)
+        | exact (proj2 (bind_dslp_parts m k pre r) Hall) ].
+  Qed.
 
   (** The relation recovered from [bindDSPProg m k] is the composite. *)
   Lemma rec_bindDSPProg {A B} (m : DSPProgSP A) (k : A -> DSPProgSP B)
@@ -1879,16 +2188,17 @@ Section ProgDSPMonad.
                       | None => r = None
                       end).
   Proof.
-    exact (dsp_recov
-             (fun s0 r0 =>
-                exists o, (getProgDSP m (fun _ => True) o
-                           /\ ~ getProgDSP m (fun t => t <> s0) o)
-                          /\ match o with
-                             | Some (a, smid) => getProgDSP (k a) (fun _ => True) r0
-                                                 /\ ~ getProgDSP (k a) (fun t => t <> smid) r0
-                             | None => r0 = None
-                             end)
-             s r).
+    refine (iff_trans (dsp_rec_ext _ _ (bindDSPProg_dsp m k) s r)
+              (dsp_recov
+                 (fun s0 r0 =>
+                    exists o, (getProgDSP m (fun _ => True) o
+                               /\ ~ getProgDSP m (fun t => t <> s0) o)
+                              /\ match o with
+                                 | Some (a, smid) => getProgDSP (k a) (fun _ => True) r0
+                                                     /\ ~ getProgDSP (k a) (fun t => t <> smid) r0
+                                 | None => r0 = None
+                                 end)
+                 s r)).
   Qed.
 
   #[global]
@@ -1941,7 +2251,9 @@ Section ProgDSPMonad.
                     (fun a1 s1 r1 => getProgDSP (f a1) (fun _ => True) r1
                                      /\ ~ getProgDSP (f a1) (fun t => t <> s1) r1)
                     s r0)). }
-      exact (iff_trans (dsp_cong _ _ Hc pre r) (iff_sym (getProgDSP_carrier (f x) pre r))).
+      exact (iff_trans (bindDSPProg_dsp (retDSPProg x) f pre r)
+               (iff_trans (dsp_cong _ _ Hc pre r)
+                  (iff_sym (getProgDSP_carrier (f x) pre r)))).
     - (* bind_ret_r : the composite of [m] with [retDSPProg] is [m] *)
       intros A m. unfold eq1, Eq1__ProgDSP. intros pre r.
       assert (Hc : forall (s : S) (r0 : option (A * S)),
@@ -1971,7 +2283,9 @@ Section ProgDSPMonad.
                     (fun s1 r1 => getProgDSP m (fun _ => True) r1
                                   /\ ~ getProgDSP m (fun t => t <> s1) r1)
                     s r0)). }
-      exact (iff_trans (dsp_cong _ _ Hc pre r) (iff_sym (getProgDSP_carrier m pre r))).
+      exact (iff_trans (bindDSPProg_dsp m _ pre r)
+               (iff_trans (dsp_cong _ _ Hc pre r)
+                  (iff_sym (getProgDSP_carrier m pre r)))).
     - (* bind_bind : associativity of the composite *)
       intros A B C x f g. unfold eq1, Eq1__ProgDSP. intros pre r.
       assert (Hc : forall (s : S) (r0 : option (C * S)),
@@ -2041,7 +2355,9 @@ Section ProgDSPMonad.
                        (fun s1 r1 => iff_refl _)
                        (fun a1 s1 r1 => iff_sym (rec_bindDSPProg (f a1) g s1 r1))
                        s r0))). }
-      exact (dsp_cong _ _ Hc pre r).
+      exact (iff_trans (bindDSPProg_dsp (bindDSPProg x f) g pre r)
+               (iff_trans (dsp_cong _ _ Hc pre r)
+                  (iff_sym (bindDSPProg_dsp x (fun a => bindDSPProg (f a) g) pre r)))).
     - (* Proper_bind *)
       intros A B x y Hxy f g Hfg. unfold eq1, Eq1__ProgDSP in *. intros pre r.
       assert (Hc : forall (s : S) (r0 : option (B * S)),
@@ -2075,10 +2391,12 @@ Section ProgDSPMonad.
                  (fun a1 s1 r1 =>
                     dsp_rec_ext (getProgDSP (f a1)) (getProgDSP (g a1)) (Hfg a1) s1 r1)
                  s r0). }
-      exact (dsp_cong _ _ Hc pre r).
+      exact (iff_trans (bindDSPProg_dsp x f pre r)
+               (iff_trans (dsp_cong _ _ Hc pre r)
+                  (iff_sym (bindDSPProg_dsp y g pre r)))).
   Qed.
 End ProgDSPMonad.
-  
+
 Arguments retDSPProg {_} {_}.
 Arguments bindDSPProg {_} {_} {_}.
 Arguments getProgDSP {_} {_}.
@@ -2129,17 +2447,20 @@ Section ObsDSP.
     { intros a s y.
       exact (dsp_recov S
                (fun s1 r1 => unOptionT (unOptionT (runStateT (f a) s1)) (Some r1)) s y). }
-    apply (dsp_cong S
-             (fun s r0 => unOptionT (unOptionT (runStateT (x >>= f) s)) (Some r0))
-             (fun s r0 =>
-                exists o, (getProgDSP (obsDSP x) (fun _ => True) o
-                           /\ ~ getProgDSP (obsDSP x) (fun t => t <> s) o)
-                          /\ match o with
-                             | Some (a, smid) =>
-                                 getProgDSP (obsDSP (f a)) (fun _ => True) r0
-                                 /\ ~ getProgDSP (obsDSP (f a)) (fun t => t <> smid) r0
-                             | None => r0 = None
-                             end)).
+    refine (iff_trans
+              (dsp_cong S
+                 (fun s r0 => unOptionT (unOptionT (runStateT (x >>= f) s)) (Some r0))
+                 (fun s r0 =>
+                    exists o, (getProgDSP (obsDSP x) (fun _ => True) o
+                               /\ ~ getProgDSP (obsDSP x) (fun t => t <> s) o)
+                              /\ match o with
+                                 | Some (a, smid) =>
+                                     getProgDSP (obsDSP (f a)) (fun _ => True) r0
+                                     /\ ~ getProgDSP (obsDSP (f a)) (fun t => t <> smid) r0
+                                 | None => r0 = None
+                                 end)
+                 _ pre r)
+              (iff_sym (bindDSPProg_dsp S (obsDSP x) (fun a => obsDSP (f a)) pre r))).
     intros s r0. split.
     - intro H. apply (outcomes_bind S) in H. destruct H as [oy [Hxx Hk]].
       destruct oy as [[[a s']|]|].
@@ -2170,6 +2491,47 @@ Section DSPTriple.
 
   Definition ordProgDSP {S A} (m1 m2 : DSPProgSP S A) : Prop :=
     forall pre r, getProgDSP m1 pre r -> getProgDSP m2 pre r.
+
+  Definition pp2dsp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, p s -> pre s) -> post r.
+
+  Definition pp2dsp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, pre s -> p s) /\ post r.
+
+  Definition tripleDSPspec {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop)
+    : Prop :=
+    match kind with
+    | Over => ordProgSP (getProgDSP (obsDSP prog)) (pp2dsp_over pre post)
+    | Under => ordProgSP (pp2dsp_under pre post) (getProgDSP (obsDSP prog))
+    end.
+
+  Theorem tripleDSPDefEq {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop) :
+    tripleDSP prog kind pre post <-> tripleDSPspec prog kind pre post.
+  Proof.
+    unfold tripleDSP, tripleDSPspec, ordProgSP, pp2dsp_over, pp2dsp_under.
+    destruct kind; split.
+    - (* Under: both conjuncts of the DSP move along [pre <= p] *)
+      intros H p r [Hsub Hpost].
+      destruct (H r Hpost) as [[s [Hp Hout]] Hall]. split.
+      + exists s. split; [ exact (Hsub s Hp) | exact Hout ].
+      + intros s' Hout'. exact (Hsub s' (Hall s' Hout')).
+    - intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
+    - (* Over: and along [p <= pre] in the other direction *)
+      intros H p r [[s [Hp Hout]] Hall] Hsub. apply (H r). split.
+      + exists s. split; [ exact (Hsub s Hp) | exact Hout ].
+      + intros s' Hout'. exact (Hsub s' (Hall s' Hout')).
+    - intros H r Hobs. exact (H pre r Hobs (fun s Hs => Hs)).
+  Qed.
 End DSPTriple.
 
 Arguments tripleDSP {_} {_}.
@@ -2371,32 +2733,228 @@ Section ProgASLPMonad.
     fun pre r => (retASPProg a pre r) \/ (retDSLPProg a pre r).
   Next Obligation. exact (aslp_shape_wf (fun s r => r = Some (a, s))). Qed.
 
-  (* [Program] would otherwise rewrite the [match] below into an
-     equality-carrying dependent match, which no longer matches [aslp_wf]. *)
-  #[local] Unset Program Cases.
+  (** The two probe forms are the ASP and the DSLP of the recovered relation. *)
+  Lemma aspPartaslp_closed {A} (w : ASLPProgSP A) pre r :
+    (~ getProgASLP w (fun _ => False) r /\ getProgASLP w pre r)
+    <-> (exists s, pre s /\ (~ getProgASLP w (fun _ => False) r
+                             /\ getProgASLP w (fun t => t = s) r)).
+  Proof.
+    split.
+    - intros [Hn Hw]. destruct (proj1 (getProgASLP_carrier w pre r) Hw) as [He | Hall];
+        [ exact He |].
+      apply NNPP. intro Hno. apply Hn. apply getProgASLP_carrier. right.
+      intros s Hs. exfalso. exact (Hno (ex_intro _ s (conj (Hall s Hs) Hs))).
+    - intros [s [Hp Hs]]. split.
+      + intro Hc. destruct (proj1 (getProgASLP_carrier w (fun _ => False) r) Hc)
+          as [[s0 [[] _]] | Hall]. exact (Hall s Hs).
+      + apply getProgASLP_carrier. left. exists s. split; [ exact Hp | exact Hs ].
+  Qed.
 
-  #[program] Definition bindASLPProg {A B}
-    (m : ASLPProgSP A) (k : A -> ASLPProgSP B) : ASLPProgSP B :=
-    let C : S -> option (B * S) -> Prop :=
-      fun s r =>
-        exists o, (~ getProgASLP m (fun _ => False) o
-                   /\ getProgASLP m (fun t => t = s) o)
-                  /\ match o with
-                     | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
-                                         /\ getProgASLP (k a) (fun t => t = smid) r
-                     | None => r = None
-                     end in
-    fun pre r => (exists s, pre s /\ C s r) \/ (forall s, C s r -> pre s).
+  Lemma dslpPartaslp_closed {A} (w : ASLPProgSP A) pre r :
+    (getProgASLP w (fun _ => False) r \/ ~ getProgASLP w (fun s => ~ pre s) r)
+    <-> (forall s, (~ getProgASLP w (fun _ => False) r
+                    /\ getProgASLP w (fun t => t = s) r) -> pre s).
+  Proof.
+    split.
+    - intros [Hbot | Hn] s Hs.
+      + exfalso. destruct (proj1 (getProgASLP_carrier w (fun _ => False) r) Hbot)
+          as [[s0 [[] _]] | Hall]. exact (Hall s Hs).
+      + apply NNPP. intro Hnp. apply Hn. apply getProgASLP_carrier. left.
+        exists s. split; [ exact Hnp | exact Hs ].
+    - intro Hall.
+      destruct (classic (exists s, ~ getProgASLP w (fun _ => False) r
+                                   /\ getProgASLP w (fun t => t = s) r)) as [[s0 Hs0] | Hno].
+      + right. intro Hc.
+        destruct (proj1 (getProgASLP_carrier w (fun t => ~ pre t) r) Hc)
+          as [[s [Hnp Hs]] | Hev].
+        * exact (Hnp (Hall s Hs)).
+        * exact (Hev s0 Hs0 (Hall s0 Hs0)).
+      + left. apply getProgASLP_carrier. right. intros s Hs.
+        exfalso. exact (Hno (ex_intro _ s Hs)).
+  Qed.
+
+  Lemma singletonProg_ext' {A} (w1 w2 : @ProgSP S A) :
+    (forall pre r, w1 pre r <-> w2 pre r) -> SingletonProg S w1 -> SingletonProg S w2.
+  Proof.
+    intros Hext H pre r. split.
+    - intro Hw. destruct (proj1 (H pre r) (proj2 (Hext pre r) Hw)) as [s0 [Hp Hs]].
+      exists s0. split; [ exact Hp | exact (proj1 (Hext _ r) Hs) ].
+    - intros [s0 [Hp Hs]]. apply Hext. apply (H pre r).
+      exists s0. split; [ exact Hp | exact (proj2 (Hext _ r) Hs) ].
+  Qed.
+
+  Lemma aslp_healthy_ext {A} (w1 w2 : @ProgSP S A) :
+    (forall pre r, w1 pre r <-> w2 pre r) ->
+    TerminatingPositivelyJoinPreserving w1 -> TerminatingPositivelyJoinPreserving w2.
+  Proof.
+    intros Hext [HT HD]. split.
+    - intro r. apply Hext. exact (HT r).
+    - intros I i0 p r. split.
+      + intro Hw. destruct (proj1 (HD I i0 p r) (proj2 (Hext _ r) Hw)) as [i Hi].
+        exists i. apply Hext. exact Hi.
+      + intros [i Hi]. apply Hext. apply (HD I i0 p r).
+        exists i. exact (proj2 (Hext _ r) Hi).
+  Qed.
+
+  #[program] Definition aspPartaslp {A} (w : ASLPProgSP A) : ASPProgSP S A :=
+    fun pre r => ~ getProgASLP w (fun _ => False) r /\ getProgASLP w pre r.
   Next Obligation.
-    exact (aslp_shape_wf
-             (fun s r =>
-                exists o, (~ getProgASLP m (fun _ => False) o
+    apply (singletonProg_ext'
+             (fun pre r => exists s, pre s /\ (~ getProgASLP w (fun _ => False) r
+                                               /\ getProgASLP w (fun t => t = s) r))).
+    - intros pre r. exact (iff_sym (aspPartaslp_closed w pre r)).
+    - intros pre r. split.
+      + intros [s [Hp Hs]]. exists s. split; [ exact Hp |].
+        exists s. split; [ reflexivity | exact Hs ].
+      + intros [s0 [Hp [s [Heq Hs]]]]. subst s.
+        exists s0. split; [ exact Hp | exact Hs ].
+  Qed.
+
+  #[program] Definition dslpPartaslp {A} (w : ASLPProgSP A) : DSLPProgSP S A :=
+    fun pre r => getProgASLP w (fun _ => False) r \/ ~ getProgASLP w (fun s => ~ pre s) r.
+  Next Obligation.
+    apply (msingletonProg_ext S
+             (fun pre r => forall s, (~ getProgASLP w (fun _ => False) r
+                                      /\ getProgASLP w (fun t => t = s) r) -> pre s)).
+    - intros pre r. exact (iff_sym (dslpPartaslp_closed w pre r)).
+    - apply dslp_msingleton.
+  Qed.
+
+  Theorem aslp_split {A} (w : ASLPProgSP A) pre r :
+    getProgASLP w pre r <-> (getProgASP (aspPartaslp w) pre r \/ getProgDSLP (dslpPartaslp w) pre r).
+  Proof.
+    refine (iff_trans (getProgASLP_carrier w pre r) _). split.
+    - intros [He | Hall].
+      + left. exact (proj2 (aspPartaslp_closed w pre r) He).
+      + right. exact (proj2 (dslpPartaslp_closed w pre r) Hall).
+    - intros [Ha | Hd].
+      + left. exact (proj1 (aspPartaslp_closed w pre r) Ha).
+      + right. exact (proj1 (dslpPartaslp_closed w pre r) Hd).
+  Qed.
+
+  (** Both binds compute the SAME composite relation. *)
+  Lemma bind_asp_parts' {A B} (m : ASLPProgSP A) (k : A -> ASLPProgSP B) pre r :
+    getProgASP (bindASPProg (aspPartaslp m) (fun a => aspPartaslp (k a))) pre r
+    <-> (exists s, pre s /\
+           (exists o, (~ getProgASLP m (fun _ => False) o
+                       /\ getProgASLP m (fun t => t = s) o)
+                      /\ match o with
+                         | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
+                                             /\ getProgASLP (k a) (fun t => t = smid) r
+                         | None => r = None
+                         end)).
+  Proof.
+    split.
+    - intros [[a Hk] | [Hr Hm]].
+      + destruct (proj1 (aspPartaslp_closed (k a)
+                           (fun s0 => getProgASP (aspPartaslp m) pre (Some (a, s0))) r) Hk)
+          as [smid [Hp Hrk]].
+        destruct (proj1 (aspPartaslp_closed m pre (Some (a, smid))) Hp) as [s [Hps Hrm]].
+        exists s. split; [ exact Hps |].
+        exists (Some (a, smid)). split; [ exact Hrm | exact Hrk ].
+      + destruct (proj1 (aspPartaslp_closed m pre None) Hm) as [s [Hps Hrm]].
+        exists s. split; [ exact Hps |].
+        exists None. split; [ exact Hrm | exact Hr ].
+    - intros [s [Hps [[[a smid]|] [Hrm Hrk]]]].
+      + left. exists a.
+        exact (proj2 (aspPartaslp_closed (k a)
+                        (fun s0 => getProgASP (aspPartaslp m) pre (Some (a, s0))) r)
+                 (ex_intro _ smid
+                    (conj (proj2 (aspPartaslp_closed m pre (Some (a, smid)))
+                             (ex_intro _ s (conj Hps Hrm))) Hrk))).
+      + right. split; [ exact Hrk |].
+        exact (proj2 (aspPartaslp_closed m pre None) (ex_intro _ s (conj Hps Hrm))).
+  Qed.
+
+  Lemma bind_dslp_parts' {A B} (m : ASLPProgSP A) (k : A -> ASLPProgSP B) pre r :
+    getProgDSLP (bindDSLPProg (dslpPartaslp m) (fun a => dslpPartaslp (k a))) pre r
+    <-> (forall s,
+           (exists o, (~ getProgASLP m (fun _ => False) o
+                       /\ getProgASLP m (fun t => t = s) o)
+                      /\ match o with
+                         | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
+                                             /\ getProgASLP (k a) (fun t => t = smid) r
+                         | None => r = None
+                         end) -> pre s).
+  Proof.
+    split.
+    - intros [H1 H2] s [[[a smid]|] [Hrm Hrk]].
+      + exact (proj1 (dslpPartaslp_closed m pre (Some (a, smid)))
+                 (proj1 (dslpPartaslp_closed (k a)
+                           (fun s0 => getProgDSLP (dslpPartaslp m) pre (Some (a, s0))) r)
+                    (H1 a) smid Hrk) s Hrm).
+      + exact (proj1 (dslpPartaslp_closed m pre None) (H2 Hrk) s Hrm).
+    - intro H. split.
+      + intro a.
+        exact (proj2 (dslpPartaslp_closed (k a)
+                        (fun s0 => getProgDSLP (dslpPartaslp m) pre (Some (a, s0))) r)
+                 (fun smid Hrk =>
+                    proj2 (dslpPartaslp_closed m pre (Some (a, smid)))
+                      (fun s Hrm => H s (ex_intro _ (Some (a, smid)) (conj Hrm Hrk))))).
+      + intro Hr.
+        exact (proj2 (dslpPartaslp_closed m pre None)
+                 (fun s Hrm => H s (ex_intro _ None (conj Hrm Hr)))).
+  Qed.
+
+  #[program] Definition bindASLPProg {A B} (m : ASLPProgSP A) (k : A -> ASLPProgSP B) : ASLPProgSP B :=
+    fun pre r => bindASPProg (aspPartaslp m) (fun a => aspPartaslp (k a)) pre r \/
+                   bindDSLPProg (dslpPartaslp m) (fun a => dslpPartaslp (k a)) pre r.
+  Next Obligation.
+    apply (aslp_healthy_ext
+             (fun pre r =>
+                (exists s, pre s /\
+                   (exists o, (~ getProgASLP m (fun _ => False) o
+                               /\ getProgASLP m (fun t => t = s) o)
+                              /\ match o with
+                                 | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
+                                                     /\ getProgASLP (k a) (fun t => t = smid) r
+                                 | None => r = None
+                                 end))
+                \/ (forall s,
+                      (exists o, (~ getProgASLP m (fun _ => False) o
+                                  /\ getProgASLP m (fun t => t = s) o)
+                                 /\ match o with
+                                    | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
+                                                        /\ getProgASLP (k a) (fun t => t = smid) r
+                                    | None => r = None
+                                    end) -> pre s))).
+    - intros pre r. split.
+      + intros [He | Hall];
+          [ left; exact (proj2 (bind_asp_parts' m k pre r) He)
+          | right; exact (proj2 (bind_dslp_parts' m k pre r) Hall) ].
+      + intros [Ha | Hd];
+          [ left; exact (proj1 (bind_asp_parts' m k pre r) Ha)
+          | right; exact (proj1 (bind_dslp_parts' m k pre r) Hd) ].
+    - apply aslp_shape_wf.
+  Qed.
+
+  (** [bindASLPProg m k] is pointwise the ASLP of the composite relation. *)
+  Lemma bindASLPProg_aslp {A B} (m : ASLPProgSP A) (k : A -> ASLPProgSP B) pre r :
+    getProgASLP (bindASLPProg m k) pre r
+    <-> ((exists s, pre s /\
+            (exists o, (~ getProgASLP m (fun _ => False) o
+                        /\ getProgASLP m (fun t => t = s) o)
+                       /\ match o with
+                          | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
+                                              /\ getProgASLP (k a) (fun t => t = smid) r
+                          | None => r = None
+                          end))
+         \/ (forall s,
+               (exists o, (~ getProgASLP m (fun _ => False) o
                            /\ getProgASLP m (fun t => t = s) o)
                           /\ match o with
                              | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r
                                                  /\ getProgASLP (k a) (fun t => t = smid) r
                              | None => r = None
-                             end)).
+                             end) -> pre s)).
+  Proof.
+    split.
+    - intros [Ha | Hd];
+        [ left; exact (proj1 (bind_asp_parts' m k pre r) Ha)
+        | right; exact (proj1 (bind_dslp_parts' m k pre r) Hd) ].
+    - intros [He | Hall];
+        [ left; exact (proj2 (bind_asp_parts' m k pre r) He)
+        | right; exact (proj2 (bind_dslp_parts' m k pre r) Hall) ].
   Qed.
 
   Lemma rec_retASLPProg {A} (a : A) (s : S) (r : option (A * S)) :
@@ -2417,17 +2975,19 @@ Section ProgASLPMonad.
                       | None => r = None
                       end).
   Proof.
-    exact (aslp_recov
-             (fun s0 r0 =>
-                exists o, (~ getProgASLP m (fun _ => False) o
-                           /\ getProgASLP m (fun t => t = s0) o)
-                          /\ match o with
-                             | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r0
-                                                 /\ getProgASLP (k a) (fun t => t = smid) r0
-                             | None => r0 = None
-                             end)
-             s r).
+    refine (iff_trans (aslp_rec_ext _ _ (bindASLPProg_aslp m k) s r)
+              (aslp_recov
+                 (fun s0 r0 =>
+                    exists o, (~ getProgASLP m (fun _ => False) o
+                               /\ getProgASLP m (fun t => t = s0) o)
+                              /\ match o with
+                                 | Some (a, smid) => ~ getProgASLP (k a) (fun _ => False) r0
+                                                     /\ getProgASLP (k a) (fun t => t = smid) r0
+                                 | None => r0 = None
+                                 end)
+                 s r)).
   Qed.
+
 
   #[global]
     Instance Monad__ASLPProgSP : Monad ASLPProgSP :=
@@ -2479,7 +3039,9 @@ Section ProgASLPMonad.
                     (fun a1 s1 r1 => ~ getProgASLP (f a1) (fun _ => False) r1
                                      /\ getProgASLP (f a1) (fun t => t = s1) r1)
                     s r0)). }
-      exact (iff_trans (aslp_cong _ _ Hc pre r) (iff_sym (getProgASLP_carrier (f x) pre r))).
+      exact (iff_trans (bindASLPProg_aslp (retASLPProg x) f pre r)
+               (iff_trans (aslp_cong _ _ Hc pre r)
+                  (iff_sym (getProgASLP_carrier (f x) pre r)))).
     - (* bind_ret_r *)
       intros A m. unfold eq1, Eq1__ProgASLP. intros pre r.
       assert (Hc : forall (s : S) (r0 : option (A * S)),
@@ -2509,7 +3071,9 @@ Section ProgASLPMonad.
                     (fun s1 r1 => ~ getProgASLP m (fun _ => False) r1
                                   /\ getProgASLP m (fun t => t = s1) r1)
                     s r0)). }
-      exact (iff_trans (aslp_cong _ _ Hc pre r) (iff_sym (getProgASLP_carrier m pre r))).
+      exact (iff_trans (bindASLPProg_aslp m _ pre r)
+               (iff_trans (aslp_cong _ _ Hc pre r)
+                  (iff_sym (getProgASLP_carrier m pre r)))).
     - (* bind_bind *)
       intros A B C x f g. unfold eq1, Eq1__ProgASLP. intros pre r.
       assert (Hc : forall (s : S) (r0 : option (C * S)),
@@ -2580,7 +3144,9 @@ Section ProgASLPMonad.
                        (fun s1 r1 => iff_refl _)
                        (fun a1 s1 r1 => iff_sym (rec_bindASLPProg (f a1) g s1 r1))
                        s r0))). }
-      exact (aslp_cong _ _ Hc pre r).
+      exact (iff_trans (bindASLPProg_aslp (bindASLPProg x f) g pre r)
+               (iff_trans (aslp_cong _ _ Hc pre r)
+                  (iff_sym (bindASLPProg_aslp x (fun a => bindASLPProg (f a) g) pre r)))).
     - (* Proper_bind *)
       intros A B x y Hxy f g Hfg. unfold eq1, Eq1__ProgASLP in *. intros pre r.
       assert (Hc : forall (s : S) (r0 : option (B * S)),
@@ -2614,7 +3180,9 @@ Section ProgASLPMonad.
                  (fun a1 s1 r1 =>
                     aslp_rec_ext (getProgASLP (f a1)) (getProgASLP (g a1)) (Hfg a1) s1 r1)
                  s r0). }
-      exact (aslp_cong _ _ Hc pre r).
+      exact (iff_trans (bindASLPProg_aslp x f pre r)
+               (iff_trans (aslp_cong _ _ Hc pre r)
+                  (iff_sym (bindASLPProg_aslp y g pre r)))).
   Qed.
 End ProgASLPMonad.
 
@@ -2667,17 +3235,20 @@ Section ObsASLP.
     { intros a s y.
       exact (aslp_recov S
                (fun s1 r1 => unOptionT (unOptionT (runStateT (f a) s1)) (Some r1)) s y). }
-    apply (aslp_cong S
-             (fun s r0 => unOptionT (unOptionT (runStateT (x >>= f) s)) (Some r0))
-             (fun s r0 =>
-                exists o, (~ getProgASLP (obsASLP x) (fun _ => False) o
-                           /\ getProgASLP (obsASLP x) (fun t => t = s) o)
-                          /\ match o with
-                             | Some (a, smid) =>
-                                 ~ getProgASLP (obsASLP (f a)) (fun _ => False) r0
-                                 /\ getProgASLP (obsASLP (f a)) (fun t => t = smid) r0
-                             | None => r0 = None
-                             end)).
+    refine (iff_trans
+              (aslp_cong S
+                 (fun s r0 => unOptionT (unOptionT (runStateT (x >>= f) s)) (Some r0))
+                 (fun s r0 =>
+                    exists o, (~ getProgASLP (obsASLP x) (fun _ => False) o
+                               /\ getProgASLP (obsASLP x) (fun t => t = s) o)
+                              /\ match o with
+                                 | Some (a, smid) =>
+                                     ~ getProgASLP (obsASLP (f a)) (fun _ => False) r0
+                                     /\ getProgASLP (obsASLP (f a)) (fun t => t = smid) r0
+                                 | None => r0 = None
+                                 end)
+                 _ pre r)
+              (iff_sym (bindASLPProg_aslp S (obsASLP x) (fun a => obsASLP (f a)) pre r))).
     intros s r0. split.
     - intro H. apply (outcomes_bind S) in H. destruct H as [oy [Hxx Hk]].
       destruct oy as [[[a s']|]|].
@@ -2709,6 +3280,48 @@ Section ASLPTriple.
   Definition ordProgASLP {S A} (m1 m2 : ASLPProgSP S A) : Prop :=
     forall pre r, getProgASLP m1 pre r -> getProgASLP m2 pre r.
 
+
+  Definition pp2aslp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, p s -> pre s) -> post r.
+
+  Definition pp2aslp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @ProgSP S A :=
+    fun p r => (forall s, pre s -> p s) /\ post r.
+
+  Definition tripleASLPspec {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop)
+    : Prop :=
+    match kind with
+    | Over => ordProgSP (getProgASLP (obsASLP prog)) (pp2aslp_over pre post)
+    | Under => ordProgSP (pp2aslp_under pre post) (getProgASLP (obsASLP prog))
+    end.
+
+  Theorem tripleASLPDefEq {S A}
+    (prog : nditprog S A)
+    (kind : approxKind)
+    (pre : S -> Prop)
+    (post : option (A * S) -> Prop) :
+    tripleASLP prog kind pre post <-> tripleASLPspec prog kind pre post.
+  Proof.
+    unfold tripleASLP, tripleASLPspec, ordProgSP, pp2aslp_over, pp2aslp_under.
+    destruct kind; split.
+    - (* Under: whichever disjunct held still holds after weakening *)
+      intros H p r [Hsub Hpost].
+      destruct (H r Hpost) as [[s [Hp Hout]] | Hall].
+      + left. exists s. split; [ exact (Hsub s Hp) | exact Hout ].
+      + right. intros s' Hout'. exact (Hsub s' (Hall s' Hout')).
+    - intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
+    - (* Over *)
+      intros H p r Hobs Hsub. apply (H r).
+      destruct Hobs as [[s [Hp Hout]] | Hall].
+      + left. exists s. split; [ exact (Hsub s Hp) | exact Hout ].
+      + right. intros s' Hout'. exact (Hsub s' (Hall s' Hout')).
+    - intros H r Hobs. exact (H pre r Hobs (fun s Hs => Hs)).
+  Qed.
 End ASLPTriple.
 
 Arguments tripleASLP {_} {_}.
