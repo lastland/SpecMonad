@@ -3139,3 +3139,1474 @@ Proof.
   unfold tripleSP, obsASP, asp. intro H.
   destruct (H (Some (tt, 42)) I) as [s [[] _]].
 Qed.*)
+
+(* ================================================================= *)
+(** ** [PureSP] / [ProgSP]: the spec monad of *additive* strongest-
+       postcondition predicate transformers                          *)
+(* ================================================================= *)
+
+(** Forward (strongest-postcondition) counterpart of [PureWP] / [ProgWP].
+
+    A *point* SP transformer has type [SPT A = Prop -> A -> Prop]: it turns
+    a precondition (a [Prop] — at a point there is no input value to
+    quantify over) into a postcondition on [A].  This is the naive dual of
+    [PureWP A = (A -> Prop) -> Prop], and it is exactly the (now commented
+    out, "INCORRECT DEFINITION") [ProgSP] above.
+
+    The naive version is not a monad.  Sequencing forward transformers is
+    relational composition, so [bind m k] must run [k] at the *intermediate*
+    postcondition produced by [m]; the only way to write that with the
+    continuation seeing a single [Prop] is
+
+      [bind m k p b := exists a, m p a /\ k a True b]
+
+    and then the left-unit law [bind (ret a) k ≈ k a] reduces to
+    [p /\ k a True b <-> k a p b], which holds *iff* [k a] is ADDITIVE.
+
+    [AdditiveSP t] is join-preservation ([AdditiveSP_join],
+    [AdditiveSP_strict], [AdditiveSP_mono]; conversely [AdditiveSP_of_join]
+    recovers it from join-preservation plus congruence).  Over [Prop] every
+    [p] is the join [\/_{h : p} True], so join-preservation has the closed
+    form [t p a <-> p /\ t True a], which we take as the definition.
+
+    Restricting to additive transformers therefore yields a genuine monad
+    [PureSP], with [MonadLawsE] proved below, and hence
+    [ProgSP S = stateT S (optionT PureSP)] inherits [MonadLawsE] through the
+    generic transformer instances of [ProgFacts.v] — exactly as [ProgWP]
+    does in [WPFacts.v].
+
+    The closed form is also a *representation theorem*: an additive [t] is
+    determined by its value at [True] ([ofSet] / [spSet] are mutually
+    inverse, [spSet_ofSet] / [ofSet_spSet]), so [PureSP] is the transformer
+    presentation of the powerset monad.  That is the precise sense in which
+    "additive strongest postcondition transformer" = "reachability
+    relation": it is the same content as [WPred.v]'s [ProgWPred], but
+    packaged as predicate transformers with the laws proved. *)
+
+Section PureSPMonad.
+
+  Definition SPT (A : Type) : Type := Prop -> A -> Prop.
+
+  (** Additivity, in the closed form justified above. *)
+  Definition AdditiveSP {A} (t : SPT A) : Prop :=
+    forall (p : Prop) (a : A), t p a <-> (p /\ t True a).
+
+  Lemma AdditiveSP_join {A} (t : SPT A) (Ht : AdditiveSP t)
+    (I : Type) (f : I -> Prop) (a : A) :
+    t (exists i, f i) a <-> exists i, t (f i) a.
+  Proof.
+    split.
+    - intro H. apply Ht in H. destruct H as [[i Hi] Ht0].
+      exists i. apply Ht. split; [exact Hi | exact Ht0].
+    - intros [i Hi]. apply Ht in Hi. destruct Hi as [Hf Ht0].
+      apply Ht. split; [exists i; exact Hf | exact Ht0].
+  Qed.
+
+  Lemma AdditiveSP_strict {A} (t : SPT A) (Ht : AdditiveSP t) (a : A) :
+    t False a <-> False.
+  Proof.
+    split; [| contradiction]. intro H. apply Ht in H. exact (proj1 H).
+  Qed.
+
+  Lemma AdditiveSP_mono {A} (t : SPT A) (Ht : AdditiveSP t) (p q : Prop) (a : A) :
+    (p -> q) -> t p a -> t q a.
+  Proof.
+    intros Hpq H. apply Ht in H. destruct H as [Hp Ht0].
+    apply Ht. split; [exact (Hpq Hp) | exact Ht0].
+  Qed.
+
+  (** Converse: join-preservation (plus congruence in the precondition,
+      which is needed because [(exists _ : p, True)] is only *logically*
+      equal to [p]) implies the closed form. *)
+  Lemma AdditiveSP_of_join {A} (t : SPT A)
+    (Hcong : forall (p q : Prop) (a : A), (p <-> q) -> (t p a <-> t q a))
+    (Hjoin : forall (I : Type) (f : I -> Prop) (a : A),
+        t (exists i, f i) a <-> exists i, t (f i) a) :
+    AdditiveSP t.
+  Proof.
+    intros p a.
+    assert (Hc : t p a <-> t (exists _ : p, True) a).
+    { apply Hcong. split; [intro H; exists H; exact I | intros [H _]; exact H]. }
+    pose proof (Hjoin p (fun _ => True) a) as Hj.
+    split.
+    - intro H. apply Hc in H. apply Hj in H. destruct H as [Hp Ht]. split; assumption.
+    - intros [Hp Ht]. apply Hc. apply Hj. exists Hp. exact Ht.
+  Qed.
+
+  Definition PureSP (A : Type) : Type := { t : SPT A | AdditiveSP t }.
+
+  Definition spApp {A} (t : PureSP A) : Prop -> A -> Prop := proj1_sig t.
+
+  Lemma spApp_additive {A} (t : PureSP A) (p : Prop) (a : A) :
+    spApp t p a <-> (p /\ spApp t True a).
+  Proof. exact (proj2_sig t p a). Qed.
+
+  (** The representation: [spSet] reads off the value at [True], [ofSet]
+      rebuilds the transformer.  They are mutually inverse. *)
+  Definition spSet {A} (t : PureSP A) : A -> Prop := fun a => spApp t True a.
+
+  #[program] Definition ofSet {A} (Q : A -> Prop) : PureSP A :=
+    fun p a => p /\ Q a.
+  Next Obligation. unfold AdditiveSP. intros. tauto. Qed.
+
+  Lemma spApp_ofSet {A} (Q : A -> Prop) (p : Prop) (a : A) :
+    spApp (ofSet Q) p a <-> (p /\ Q a).
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma spSet_ofSet {A} (Q : A -> Prop) (a : A) : spSet (ofSet Q) a <-> Q a.
+  Proof. unfold spSet. rewrite spApp_ofSet. tauto. Qed.
+
+  Lemma ofSet_spSet {A} (t : PureSP A) (p : Prop) (a : A) :
+    spApp (ofSet (spSet t)) p a <-> spApp t p a.
+  Proof. rewrite spApp_ofSet. unfold spSet. symmetry. apply spApp_additive. Qed.
+
+  #[program] Definition retSP {A} (a : A) : PureSP A :=
+    fun p a' => p /\ a' = a.
+  Next Obligation. unfold AdditiveSP. intros. tauto. Qed.
+
+  (** Relational composition: the continuation is run at the intermediate
+      postcondition, i.e. at [True] once [a] has been produced. *)
+  #[program] Definition bindSP {A B} (m : PureSP A) (k : A -> PureSP B) : PureSP B :=
+    fun p b => exists a, spApp m p a /\ spApp (k a) True b.
+  Next Obligation.
+    unfold AdditiveSP. intros p b. split.
+    - intros [a [Hm Hk]]. apply spApp_additive in Hm. destruct Hm as [Hp Hm].
+      split; [exact Hp |]. exists a. split; assumption.
+    - intros [Hp [a [Hm Hk]]]. exists a. split; [| exact Hk].
+      apply spApp_additive. split; assumption.
+  Qed.
+
+  Lemma spApp_retSP {A} (a : A) (p : Prop) (a' : A) :
+    spApp (retSP a) p a' <-> (p /\ a' = a).
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma spApp_bindSP {A B} (m : PureSP A) (k : A -> PureSP B) (p : Prop) (b : B) :
+    spApp (bindSP m k) p b <-> (exists a, spApp m p a /\ spApp (k a) True b).
+  Proof. split; intro H; exact H. Qed.
+
+  #[global] Instance Monad_PureSP : Monad PureSP :=
+    {| ret := fun _ => retSP ;
+       bind := fun _ _ => bindSP |}.
+
+End PureSPMonad.
+
+(** [Eq1] is pointwise [iff] (not Leibniz [eq] as for [PureWP]: [PureSP] is
+    a subset type, so extensional equality is the right notion and no
+    functional extensionality is needed anywhere below). *)
+Section PureSPLaws.
+
+  #[global] Instance Eq1_PureSP : Eq1 PureSP :=
+    fun A m n => forall p a, spApp m p a <-> spApp n p a.
+
+  #[global] Instance Eq1Equivalence_PureSP
+    : @Eq1Equivalence PureSP _ Eq1_PureSP.
+  Proof.
+    intro A. constructor.
+    - intros x p a. tauto.
+    - intros x y H p a. specialize (H p a). tauto.
+    - intros x y z H1 H2 p a. specialize (H1 p a). specialize (H2 p a). tauto.
+  Qed.
+
+  (** [bind_ret_l] is where additivity is used: it is exactly
+      [k x p b <-> p /\ k x True b]. *)
+  #[global] Instance MonadLawsE_PureSP
+    : @MonadLawsE PureSP Eq1_PureSP _.
+  Proof.
+    constructor.
+    - (* bind_ret_l *)
+      intros A B f x. unfold eq1, Eq1_PureSP. intros p b.
+      rewrite spApp_bindSP. split.
+      + intros [a [Hr Hk]]. rewrite spApp_retSP in Hr. destruct Hr as [Hp ->].
+        apply spApp_additive. split; assumption.
+      + intro H. apply spApp_additive in H. destruct H as [Hp Hk].
+        exists x. split; [rewrite spApp_retSP; split; [exact Hp | reflexivity] | exact Hk].
+    - (* bind_ret_r *)
+      intros A x. unfold eq1, Eq1_PureSP. intros p a.
+      rewrite spApp_bindSP. split.
+      + intros [a0 [Hx Hr]]. rewrite spApp_retSP in Hr. destruct Hr as [_ ->]. exact Hx.
+      + intro Hx. exists a. split; [exact Hx | rewrite spApp_retSP; split; [exact I | reflexivity]].
+    - (* bind_bind *)
+      intros A B C x f g. unfold eq1, Eq1_PureSP. intros p c.
+      rewrite !spApp_bindSP. split.
+      + intros [b [Hb Hg]]. rewrite spApp_bindSP in Hb. destruct Hb as [a [Hx Hf]].
+        exists a. split; [exact Hx | rewrite spApp_bindSP; exists b; split; assumption].
+      + intros [a [Hx Hbc]]. rewrite spApp_bindSP in Hbc. destruct Hbc as [b [Hf Hg]].
+        exists b. split; [rewrite spApp_bindSP; exists a; split; assumption | exact Hg].
+    - (* Proper_bind *)
+      intros A B x y Hxy f g Hfg. unfold eq1, Eq1_PureSP in *. intros p b.
+      rewrite !spApp_bindSP. split.
+      + intros [a [Hx Hf]]. exists a. split; [apply Hxy; exact Hx | apply Hfg; exact Hf].
+      + intros [a [Hy Hg]]. exists a. split; [apply Hxy; exact Hy | apply Hfg; exact Hg].
+  Qed.
+
+End PureSPLaws.
+
+(** [ProgSP S = stateT S (optionT PureSP)] — the same transformer stack as
+    [ProgWP S = stateT S (optionT PureWP)], with the forward base.  The
+    [Monad] / [MonadState] / [MonadExc] bundle mirrors [WP.v]; [Eq1] and
+    [MonadLawsE] chain through [ProgFacts.v] exactly as in [WPFacts.v]. *)
+Section ProgSPMonad.
+
+  Variable S : Type.
+
+  Definition ProgSP := stateT S (optionT PureSP).
+
+  #[local] Existing Instance Monad_stateT.
+
+  Definition retProgSP {A} (a : A) : ProgSP A :=
+    @ret (stateT _ _) _ _ a.
+
+  Definition bindProgSP {A B} (m : ProgSP A) (k : A -> ProgSP B) : ProgSP B :=
+    @bind (stateT _ _) _ _ _ m k.
+
+  #[global] Instance Monad__ProgSP : Monad ProgSP :=
+    {| ret := fun _ => @retProgSP _ ;
+       bind := fun _ _ => @bindProgSP _ _ |}.
+
+  Definition getProgSP : ProgSP S := @get _ (stateT _ _) _.
+  Definition putProgSP (s : S) : ProgSP unit := @put _ (stateT _ _) _ s.
+
+  #[global] Instance MonadState__ProgSP : MonadState S ProgSP :=
+    {| get := getProgSP ; put := putProgSP |}.
+
+  #[local] Existing Instance OptionTError.
+
+  Definition raiseProgSP {A} (_ : unit) : ProgSP A := @raise _ (stateT _ _) _ _ tt.
+  Definition catchProgSP {A} (m : ProgSP A) (c : unit -> ProgSP A) : ProgSP A :=
+    @catch _ (stateT _ _) _ _ m c.
+
+  #[global] Instance MonadExc__ProgSP : MonadExc unit ProgSP :=
+    {| raise := fun _ => raiseProgSP ; catch := fun _ => catchProgSP |}.
+
+  #[global] Instance Eq1__ProgSP : Eq1 ProgSP := Eq1_stateT S (optionT PureSP).
+
+  Definition MonadLawsE__ProgSP : @MonadLawsE ProgSP Eq1__ProgSP _ :=
+    MonadLawsE_stateT S (optionT PureSP).
+
+End ProgSPMonad.
+
+Arguments retProgSP {_} {_}.
+Arguments bindProgSP {_} {_} {_}.
+
+(* ----------------------------------------------------------------- *)
+(** *** The [ProgSP]-valued SP observation                            *)
+(* ----------------------------------------------------------------- *)
+
+(** [obsSP m] packages the reachability relation [obsRel m] as an additive
+    forward transformer, one per initial state.  Note the initial state is
+    threaded by [stateT], so [obsSP m] carries exactly [obsRel m] — no more
+    and no less.  In particular divergence (the outer [None] outcome of
+    [nditprog]) is invisible here, as it already is in [obsRel]. *)
+Definition obsSP {S A} (m : nditprog S A) : ProgSP S A :=
+  mkStateT (fun s => @mkOptionT PureSP _ (ofSet (obsRel m s))).
+
+(** Accessors: [applySP] is the transformer at a given initial state,
+    [runSP] its value at precondition [True] (= the underlying relation). *)
+Definition applySP {S A} (M : ProgSP S A) (s : S) : Prop -> option (A * S) -> Prop :=
+  spApp (unOptionT (runStateT M s)).
+
+Definition runSP {S A} (M : ProgSP S A) : Pred S (option (A * S)) :=
+  fun s r => applySP M s True r.
+
+Lemma applySP_obsSP {S A} (m : nditprog S A) s p r :
+  applySP (obsSP m) s p r <-> (p /\ obsRel m s r).
+Proof. unfold applySP, obsSP, spApp, ofSet. cbn. tauto. Qed.
+
+Lemma runSP_obsSP {S A} (m : nditprog S A) s r :
+  runSP (obsSP m) s r <-> obsRel m s r.
+Proof. unfold runSP. rewrite applySP_obsSP. tauto. Qed.
+
+Lemma applySP_ret {S A} (a : A) (s : S) p r :
+  applySP (ret a : ProgSP S A) s p r <-> (p /\ r = Some (a, s)).
+Proof. split; intro H; exact H. Qed.
+
+Lemma applySP_bind {S A B} (M : ProgSP S A) (K : A -> ProgSP S B) s p r :
+  applySP (M >>= K) s p r <->
+  (exists oas, applySP M s p oas /\
+     match oas with
+     | Some (a, s') => applySP (K a) s' True r
+     | None => r = None
+     end).
+Proof.
+  split.
+  - intros [oas [Hm HK]]. exists oas. split; [exact Hm|].
+    destruct oas as [[a s']|]; [exact HK | exact (proj2 HK)].
+  - intros [oas [Hm HK]]. exists oas. split; [exact Hm|].
+    destruct oas as [[a s']|]; [exact HK | exact (conj I HK)].
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** The four SP observations as readings of one [ProgSP] element  *)
+(* ----------------------------------------------------------------- *)
+
+(** A [ProgSP] element is pointwise in the initial state; to state triples
+    the precondition must be a *predicate* [S -> Prop] (this is what the
+    old, commented-out [ProgSPObs] got wrong: it universally quantified the
+    initial state, so [Under] degenerated — cf. [progSP_under_not_point]).
+    The extension along [S] is exactly the [asp] / [dslp] pair of [SPost.v]
+    applied to [runSP], giving back the four readings verbatim. *)
+Definition spASP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+  asp (runSP M).
+Definition spDSLP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+  dslp (runSP M).
+Definition spDSP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+  fun pre r => asp (runSP M) pre r /\ dslp (runSP M) pre r.
+Definition spASLP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+  fun pre r => asp (runSP M) pre r \/ dslp (runSP M) pre r.
+
+(** Every SP observation factors through [obsSP]: [obsX m = spX (obsSP m)]. *)
+Lemma obsASP_spASP {S A} (m : nditprog S A) pre r :
+  obsASP m pre r <-> spASP (obsSP m) pre r.
+Proof.
+  unfold obsASP, spASP, asp. split.
+  - intros [s [Hp Hr]]. exists s. split; [exact Hp | exact (proj2 (runSP_obsSP m s r) Hr)].
+  - intros [s [Hp Hr]]. exists s. split; [exact Hp | exact (proj1 (runSP_obsSP m s r) Hr)].
+Qed.
+
+Lemma obsDSLP_spDSLP {S A} (m : nditprog S A) pre r :
+  obsDSLP m pre r <-> spDSLP (obsSP m) pre r.
+Proof.
+  unfold obsDSLP, spDSLP, dslp. split.
+  - intros H s Hr. exact (H s (proj1 (runSP_obsSP m s r) Hr)).
+  - intros H s Hr. exact (H s (proj2 (runSP_obsSP m s r) Hr)).
+Qed.
+
+Lemma obsDSP_spDSP {S A} (m : nditprog S A) pre r :
+  obsDSP m pre r <-> spDSP (obsSP m) pre r.
+Proof.
+  pose proof (obsASP_spASP m pre r) as Ha. pose proof (obsDSLP_spDSLP m pre r) as Hd.
+  unfold obsASP, spASP in Ha. unfold obsDSLP, spDSLP in Hd.
+  unfold obsDSP, spDSP. tauto.
+Qed.
+
+Lemma obsASLP_spASLP {S A} (m : nditprog S A) pre r :
+  obsASLP m pre r <-> spASLP (obsSP m) pre r.
+Proof.
+  pose proof (obsASP_spASP m pre r) as Ha. pose proof (obsDSLP_spDSLP m pre r) as Hd.
+  unfold obsASP, spASP in Ha. unfold obsDSLP, spDSLP in Hd.
+  unfold obsASLP, spASLP. tauto.
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** [tripleSPm]: [tripleSP] over the [ProgSP] monad               *)
+(* ----------------------------------------------------------------- *)
+
+(** The SP triple, restated so that the observation is *monad-valued*
+    ([obs : nditprog S A -> ProgSP S A]) and the comparison with [post]
+    goes through an explicit reading of that element.  Instantiating
+    [read] at [spASP] / [spDSLP] / [spDSP] / [spASLP] recovers the four
+    old triples on the nose ([tripleSPm_ASP] .. [tripleSPm_ASLP]), so the
+    original [tripleSP] and every lemma about it survive unchanged; the
+    transported statements are collected below. *)
+Definition tripleSPm {S A}
+  (read : ProgSP S A -> (S -> Prop) -> option (A * S) -> Prop)
+  (obs : nditprog S A -> ProgSP S A)
+  (prog : nditprog S A)
+  (kind : approximationKind)
+  (pre : S -> Prop)
+  (post : option (A * S) -> Prop)
+  : Prop :=
+  match kind with
+  | Over  => forall r, read (obs prog) pre r -> post r
+  | Under => forall r, post r -> read (obs prog) pre r
+  end.
+
+Lemma tripleSPm_ASP {S A} (prog : nditprog S A) kind pre post :
+  tripleSPm spASP obsSP prog kind pre post <-> tripleSP obsASP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (obsASP_spASP prog pre r) (H r Hr))
+          | exact (proj2 (obsASP_spASP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (obsASP_spASP prog pre r) Hr)
+          | apply H; exact (proj2 (obsASP_spASP prog pre r) Hr) ].
+Qed.
+
+Lemma tripleSPm_DSLP {S A} (prog : nditprog S A) kind pre post :
+  tripleSPm spDSLP obsSP prog kind pre post <-> tripleSP obsDSLP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (obsDSLP_spDSLP prog pre r) (H r Hr))
+          | exact (proj2 (obsDSLP_spDSLP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (obsDSLP_spDSLP prog pre r) Hr)
+          | apply H; exact (proj2 (obsDSLP_spDSLP prog pre r) Hr) ].
+Qed.
+
+Lemma tripleSPm_DSP {S A} (prog : nditprog S A) kind pre post :
+  tripleSPm spDSP obsSP prog kind pre post <-> tripleSP obsDSP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (obsDSP_spDSP prog pre r) (H r Hr))
+          | exact (proj2 (obsDSP_spDSP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (obsDSP_spDSP prog pre r) Hr)
+          | apply H; exact (proj2 (obsDSP_spDSP prog pre r) Hr) ].
+Qed.
+
+Lemma tripleSPm_ASLP {S A} (prog : nditprog S A) kind pre post :
+  tripleSPm spASLP obsSP prog kind pre post <-> tripleSP obsASLP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (obsASLP_spASLP prog pre r) (H r Hr))
+          | exact (proj2 (obsASLP_spASLP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (obsASLP_spASLP prog pre r) Hr)
+          | apply H; exact (proj2 (obsASLP_spASLP prog pre r) Hr) ].
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** [obsSP] is a monad morphism [nditprog S ==> ProgSP S]         *)
+(* ----------------------------------------------------------------- *)
+
+(** [eqProgSP] is the unfolding of [eq1] at [ProgSP] ([eqProgSP_eq1]:
+    they are convertible), kept for readability of the proofs. *)
+Definition eqProgSP {S A} (M N : ProgSP S A) : Prop :=
+  forall s p r, applySP M s p r <-> applySP N s p r.
+
+Lemma eqProgSP_eq1 {S A} (M N : ProgSP S A) : eqProgSP M N <-> eq1 M N.
+Proof. split; intro H; exact H. Qed.
+
+Theorem obsSP_ret {S A} (a : A) : eq1 (obsSP (ret a : nditprog S A)) (ret a).
+Proof.
+  apply eqProgSP_eq1. intros s p r.
+  split.
+  - intro H. apply applySP_obsSP in H. destruct H as [Hp Hrel].
+    apply applySP_ret. split; [exact Hp|].
+    unfold obsRel in Hrel. destruct r as [[b s']|]; cbn in Hrel; congruence.
+  - intro H. apply applySP_ret in H. destruct H as [Hp Hrel].
+    apply applySP_obsSP. split; [exact Hp|].
+    unfold obsRel. destruct r as [[b s']|]; cbn; congruence.
+Qed.
+
+(** Divergence is dropped by [obsRel], but this does *not* break the bind
+    law: a divergent branch of [x] contributes only the outer [None]
+    outcome to [x >>= f], which both sides discard.  Exceptions ([Some
+    None]) short-circuit on both sides alike. *)
+Theorem obsSP_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+  eq1 (obsSP (x >>= f)) (obsSP x >>= (fun a => obsSP (f a))).
+Proof.
+  apply eqProgSP_eq1. intros s p r. split.
+  - intro H. apply applySP_obsSP in H. destruct H as [Hp Hrel].
+    apply applySP_bind. apply obsRel_bind in Hrel.
+    destruct Hrel as [[a [s' [Hx Hf]]] | [Hx Heq]].
+    + exists (Some (a, s')). split.
+      * apply applySP_obsSP. split; assumption.
+      * apply applySP_obsSP. split; [exact I | exact Hf].
+    + exists None. split; [apply applySP_obsSP; split; assumption | exact Heq].
+  - intro H. apply applySP_bind in H. destruct H as [oas [Hm HK]].
+    apply applySP_obsSP in Hm. destruct Hm as [Hp Hx].
+    apply applySP_obsSP. split; [exact Hp|]. apply obsRel_bind.
+    destruct oas as [[a s']|].
+    + left. exists a, s'. split; [exact Hx|].
+      apply applySP_obsSP in HK. exact (proj2 HK).
+    + right. split; [exact Hx | exact HK].
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** What is and is not additive                                   *)
+(* ----------------------------------------------------------------- *)
+
+(** [spASP] — the extension of a [ProgSP] element along the precondition
+    predicate — is additive, i.e. it preserves arbitrary unions of
+    preconditions.  This is the [S]-indexed counterpart of [AdditiveSP]. *)
+Theorem spASP_join {S A} (M : ProgSP S A) (I : Type) (F : I -> S -> Prop) r :
+  spASP M (fun s => exists i, F i s) r <-> exists i, spASP M (F i) r.
+Proof.
+  unfold spASP, asp. split.
+  - intros [s [[i Hi] Hr]]. exists i, s. split; assumption.
+  - intros [i [s [Hi Hr]]]. exists s. split; [exists i; exact Hi | exact Hr].
+Qed.
+
+Theorem spASP_join2 {S A} (M : ProgSP S A) (P Q : S -> Prop) r :
+  spASP M (fun s => P s \/ Q s) r <-> (spASP M P r \/ spASP M Q r).
+Proof.
+  unfold spASP, asp. split.
+  - intros [s [[HP|HQ] Hr]]; [left|right]; exists s; split; assumption.
+  - intros [[s [HP Hr]] | [s [HQ Hr]]]; exists s;
+      (split; [ solve [left; exact HP | right; exact HQ] | exact Hr ]).
+Qed.
+
+Theorem spASP_monotone {S A} (M : ProgSP S A) (p q : S -> Prop) r :
+  (forall s, p s -> q s) -> spASP M p r -> spASP M q r.
+Proof. intros Hsub [s [Hp Hr]]. exists s. split; [exact (Hsub s Hp) | exact Hr]. Qed.
+
+(** [obsDSLP] is NOT additive: [progEx] reaches state [42] from every
+    initial state, so [dslp] at [Some (tt, 42)] is "[pre] holds
+    everywhere", which holds of a union without holding of either
+    disjunct. *)
+Lemma progEx_reaches_42 : forall s, obsRel progEx s (Some (tt, 42)).
+Proof. intro s. unfold obsRel. cbn. sauto. Qed.
+
+Definition preZero : nat -> Prop := fun s => s = 0.
+Definition preNonZero : nat -> Prop := fun s => s <> 0.
+
+Theorem obsDSLP_not_additive :
+  obsDSLP progEx (fun s => preZero s \/ preNonZero s) (Some (tt, 42))
+  /\ ~ obsDSLP progEx preZero (Some (tt, 42))
+  /\ ~ obsDSLP progEx preNonZero (Some (tt, 42)).
+Proof.
+  split; [| split].
+  - intros s _. unfold preZero, preNonZero.
+    destruct s; [left; reflexivity | right; discriminate].
+  - intro H. specialize (H 1 (progEx_reaches_42 1)). unfold preZero in H. discriminate.
+  - intro H. specialize (H 0 (progEx_reaches_42 0)). unfold preNonZero in H.
+    exact (H eq_refl).
+Qed.
+
+(** Consequence, and the honest limitation of this monad: there is no
+    [ProgSP] element whose (additive) reading is the demonic-liberal
+    transformer.  So the four SP observations cannot be four *different*
+    [ProgSP]-valued observations — only [obsASP] is an element of the
+    additive monad.  What does hold is the factorization above: all four
+    are readings of the single element [obsSP m], because that element
+    carries the whole reachability relation. *)
+Corollary obsDSLP_not_spASP :
+  ~ exists M : ProgSP nat unit, forall pre r, spASP M pre r <-> obsDSLP progEx pre r.
+Proof.
+  intros [M HM]. destruct obsDSLP_not_additive as [Hj [Hz Hnz]].
+  apply (proj2 (HM _ _)) in Hj. apply spASP_join2 in Hj.
+  destruct Hj as [H | H]; [apply Hz | apply Hnz]; exact (proj1 (HM _ _) H).
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** The SP taxonomy, transported to [tripleSPm]                   *)
+(* ----------------------------------------------------------------- *)
+
+(** Every statement below is the corresponding theorem earlier in this
+    file, with [tripleSP obsX] replaced by [tripleSPm spX obsSP]; each is
+    discharged by rewriting with the [tripleSPm_*] agreements. *)
+Ltac to_pointwise_sp :=
+  repeat first [ rewrite tripleSPm_ASP  | rewrite tripleSPm_DSLP
+               | rewrite tripleSPm_DSP  | rewrite tripleSPm_ASLP ].
+
+Theorem m_cc_aslp_implies_asp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASLP obsSP m Over pre post -> tripleSPm spASP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply cc_aslp_implies_asp. Qed.
+
+Theorem m_cc_aslp_implies_dslp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASLP obsSP m Over pre post -> tripleSPm spDSLP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply cc_aslp_implies_dslp. Qed.
+
+Theorem m_cc_dslp_implies_dsp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSLP obsSP m Over pre post -> tripleSPm spDSP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply cc_dslp_implies_dsp. Qed.
+
+Theorem m_cc_asp_implies_dsp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASP obsSP m Over pre post -> tripleSPm spDSP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply cc_asp_implies_dsp. Qed.
+
+Theorem m_ii_dsp_implies_dslp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSP obsSP m Under pre post -> tripleSPm spDSLP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ii_dsp_implies_dslp. Qed.
+
+Theorem m_ii_dslp_implies_aslp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSLP obsSP m Under pre post -> tripleSPm spASLP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ii_dslp_implies_aslp. Qed.
+
+Theorem m_ii_asp_implies_aslp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASP obsSP m Under pre post -> tripleSPm spASLP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ii_asp_implies_aslp. Qed.
+
+Theorem m_ii_dsp_implies_asp : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSP obsSP m Under pre post -> tripleSPm spASP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ii_dsp_implies_asp. Qed.
+
+Theorem m_ci_aslp_dsp_contrapositive : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASLP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spDSP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_aslp_dsp_contrapositive. Qed.
+
+Theorem m_ci_aslp_dsp_contrapositive' : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spASLP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_aslp_dsp_contrapositive'. Qed.
+
+Theorem m_ci_asp_dslp_contrapositive : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spDSLP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_asp_dslp_contrapositive. Qed.
+
+Theorem m_ci_asp_dslp_contrapositive' : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSLP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spASP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_asp_dslp_contrapositive'. Qed.
+
+Theorem m_ci_dslp_asp_contrapositive : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSLP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spASP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_dslp_asp_contrapositive. Qed.
+
+Theorem m_ci_dslp_asp_contrapositive' : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spDSLP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_dslp_asp_contrapositive'. Qed.
+
+Theorem m_ci_dsp_aslp_contrapositive : forall S A (m : nditprog S A) pre post,
+    tripleSPm spDSP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spASLP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_dsp_aslp_contrapositive. Qed.
+
+Theorem m_ci_dsp_aslp_contrapositive' : forall S A (m : nditprog S A) pre post,
+    tripleSPm spASLP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleSPm spDSP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply ci_dsp_aslp_contrapositive'. Qed.
+
+(** The two Galois connections with the WP side survive verbatim. *)
+Theorem m_dwlp_asp : forall S A (m : nditprog S A) pre post,
+    tripleWP obsDWLP m pre SubsetOf post <-> tripleSPm spASP obsSP m Over pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply dwlp_asp. Qed.
+
+Theorem m_awp_dslp : forall S A (m : nditprog S A) pre post,
+    tripleWP obsAWP m pre SupersetOf post <-> tripleSPm spDSLP obsSP m Under pre post.
+Proof. intros S A m pre post. to_pointwise_sp. apply awp_dslp. Qed.
+
+(** O'Hearn's rewriting rules and the agreement/denial principles. *)
+Theorem m_first_symmetry_rule_asp : forall S A (m : nditprog S A) pre post1 post2,
+    (tripleSPm spASP obsSP m Under pre post1 /\
+     tripleSPm spASP obsSP m Under pre post2) <->
+    tripleSPm spASP obsSP m Under pre (fun r => post1 r \/ post2 r).
+Proof. intros S A m pre post1 post2. to_pointwise_sp. apply first_symmetry_rule_asp. Qed.
+
+Theorem m_second_symmetry_rule_asp : forall S A (m : nditprog S A) pre post1 post2,
+    (tripleSPm spASP obsSP m Over pre post1 /\
+     tripleSPm spASP obsSP m Over pre post2) <->
+    tripleSPm spASP obsSP m Over pre (fun r => post1 r /\ post2 r).
+Proof. intros S A m pre post1 post2. to_pointwise_sp. apply second_symmetry_rule_asp. Qed.
+
+Theorem m_first_imp_symmetry_rule_asp : forall S A (m : nditprog S A) pre pre' post post',
+    (tripleSPm spASP obsSP m Under pre post /\
+     (forall r, pre r -> pre' r) /\ (forall r, post' r -> post r)) ->
+    tripleSPm spASP obsSP m Under pre' post'.
+Proof. intros S A m pre pre' post post'. to_pointwise_sp. apply first_imp_symmetry_rule_asp. Qed.
+
+Theorem m_second_imp_symmetry_rule_asp : forall S A (m : nditprog S A) pre pre' post post',
+    (tripleSPm spASP obsSP m Over pre post /\
+     (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) ->
+    tripleSPm spASP obsSP m Over pre' post'.
+Proof. intros S A m pre pre' post post'. to_pointwise_sp. apply second_imp_symmetry_rule_asp. Qed.
+
+Theorem m_second_imp_symmetry_rule_dwp : forall S A (m : nditprog S A) pre pre' post post',
+    (tripleWP obsDWLP m pre SubsetOf post /\
+     (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) ->
+    tripleSPm spASP obsSP m Over pre' post'.
+Proof. intros S A m pre pre' post post'. to_pointwise_sp. apply second_imp_symmetry_rule_dwp. Qed.
+
+Theorem m_principle_of_agreement_asp : forall S A (m : nditprog S A) u u' o o',
+    (tripleSPm spASP obsSP m Under u u' /\ tripleSPm spASP obsSP m Over o o' /\
+     (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
+Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_agreement_asp. Qed.
+
+Theorem m_principle_of_agreement_dwp : forall S A (m : nditprog S A) u u' o o',
+    (tripleSPm spASP obsSP m Under u u' /\ tripleWP obsDWLP m o SubsetOf o' /\
+     (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
+Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_agreement_dwp. Qed.
+
+Theorem m_principle_of_denial_asp : forall S A (m : nditprog S A) u u' o o',
+    (tripleSPm spASP obsSP m Under u u' /\ (forall r, u r -> o r) /\
+     ~ (forall r, u' r -> o' r)) -> ~ tripleSPm spASP obsSP m Over o o'.
+Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_denial_asp. Qed.
+
+Theorem m_principle_of_denial_dwp : forall S A (m : nditprog S A) u u' o o',
+    (tripleSPm spASP obsSP m Under u u' /\ (forall r, u r -> o r) /\
+     ~ (forall r, u' r -> o' r)) -> ~ tripleWP obsDWLP m o SubsetOf o'.
+Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_denial_dwp. Qed.
+
+(** Refinement ("spec-as-element") form, and its agreement with the direct
+    one — the [ProgSP] counterpart of [tripleSPDefEq].  Monotonicity of the
+    reading is [spASP_monotone]. *)
+Definition tripleSPmspec {S A}
+  (read : ProgSP S A -> (S -> Prop) -> option (A * S) -> Prop)
+  (obs : nditprog S A -> ProgSP S A)
+  (prog : nditprog S A) (kind : approximationKind)
+  (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+  match kind with
+  | Over  => ordProgSP (read (obs prog)) (pp2sp_over pre post)
+  | Under => ordProgSP (pp2sp_under pre post) (read (obs prog))
+  end.
+
+Lemma tripleSPmspec_ASP {S A} (prog : nditprog S A) kind pre post :
+  tripleSPmspec spASP obsSP prog kind pre post <-> tripleSPspec obsASP prog kind pre post.
+Proof.
+  destruct kind; cbn; unfold ordProgSP; split; intros H b r Hr;
+    first [ exact (H b r (proj1 (obsASP_spASP prog b r) Hr))
+          | exact (H b r (proj2 (obsASP_spASP prog b r) Hr))
+          | exact (proj1 (obsASP_spASP prog b r) (H b r Hr))
+          | exact (proj2 (obsASP_spASP prog b r) (H b r Hr)) ].
+Qed.
+
+Theorem m_tripleSPDefEq {S A} (prog : nditprog S A) kind pre post :
+  tripleSPm spASP obsSP prog kind pre post <->
+  tripleSPmspec spASP obsSP prog kind pre post.
+Proof.
+  rewrite tripleSPm_ASP, tripleSPmspec_ASP.
+  apply tripleSPDefEq. intros p q Hsub r Hr.
+  apply (proj2 (obsASP_spASP prog q r)).
+  apply (spASP_monotone _ p q r Hsub).
+  exact (proj1 (obsASP_spASP prog p r) Hr).
+Qed.
+
+(** Worked examples in the new triple. *)
+Example m_progA_under_42 :
+  tripleSPm spASP obsSP progA Under (fun _ => True) (fun r => r = Some (tt, 42)).
+Proof. to_pointwise_sp. exact progA_42. Qed.
+
+Example m_progB_over_42 :
+  tripleSPm spASP obsSP progB Over (fun _ => True)
+    (fun r : option (unit * nat) =>
+       match r with Some (_, s) => s = 42 | None => False end).
+Proof. to_pointwise_sp. exact progB_ASP_42. Qed.
+
+(* ================================================================= *)
+(** ** [PureSPM] / [ProgSPM]: the *multiplicative* SP spec monad      *)
+(* ================================================================= *)
+
+(** The de Morgan dual of [PureSP].  Where an additive transformer
+    factors as [t p a <-> p /\ t True a] (a *join* of per-outcome
+    contributions), a MULTIPLICATIVE one factors as
+
+      [t p a <-> p \/ t False a]
+
+    which is meet-preservation ([MultiplicativeSP_meet]; the converse
+    [MultiplicativeSP_of_meet] recovers the closed form from
+    meet-preservation plus congruence, using [p <-> (~p -> False)]).
+    The corresponding representation is the *co-set*
+    [spCoSet t a := ~ t False a], with [t p a <-> (spCoSet t a -> p)]
+    ([spAppM_repr]).  Concretely: an additive transformer says "[p]
+    holds AND [a] is reachable"; a multiplicative one says "[a] is
+    reachable IMPLIES [p]".
+
+    Sequencing is again relational composition, but written in the
+    dual (universal) way:
+
+      [bindSPM m k p b := forall a, m (k a p b) a]
+
+    — a nesting rather than an existential, exactly like [PureWP]'s
+    continuation-style [bind].  This is a genuine monad ([MonadLawsE]
+    below), and [ProgSPM S = stateT S (optionT PureSPM)] inherits the
+    laws through [ProgFacts.v] just as [ProgSP] and [ProgWP] do.
+
+    Classical logic ([Classical_Prop.classic], already used by this
+    file's contrapositive theorems) is needed on this side: the
+    representation [t p a <-> (Q a -> p)] passes through [~~p -> p]. *)
+
+Section PureSPMMonad.
+
+  Definition MultiplicativeSP {A} (t : SPT A) : Prop :=
+    forall (p : Prop) (a : A), t p a <-> (p \/ t False a).
+
+  Lemma MultiplicativeSP_top {A} (t : SPT A) (Ht : MultiplicativeSP t) (a : A) :
+    t True a.
+  Proof. apply Ht. left. exact I. Qed.
+
+  Lemma MultiplicativeSP_mono {A} (t : SPT A) (Ht : MultiplicativeSP t)
+    (p q : Prop) (a : A) : (p -> q) -> t p a -> t q a.
+  Proof.
+    intros Hpq H. apply Ht in H. apply Ht.
+    destruct H as [Hp | Hf]; [left; exact (Hpq Hp) | right; exact Hf].
+  Qed.
+
+  Lemma MultiplicativeSP_meet {A} (t : SPT A) (Ht : MultiplicativeSP t)
+    (I : Type) (f : I -> Prop) (a : A) :
+    t (forall i, f i) a <-> forall i, t (f i) a.
+  Proof.
+    split.
+    - intros H i. apply (MultiplicativeSP_mono t Ht (forall j, f j) (f i) a); [| exact H].
+      intro Hall. exact (Hall i).
+    - intro H. apply Ht.
+      destruct (classic (t False a)) as [Hf | Hnf]; [right; exact Hf |].
+      left. intro i. specialize (H i). apply Ht in H.
+      destruct H as [Hfi | Hf]; [exact Hfi | contradiction].
+  Qed.
+
+  Lemma MultiplicativeSP_of_meet {A} (t : SPT A)
+    (Hcong : forall (p q : Prop) (a : A), (p <-> q) -> (t p a <-> t q a))
+    (Hmeet : forall (I : Type) (f : I -> Prop) (a : A),
+        t (forall i, f i) a <-> forall i, t (f i) a) :
+    MultiplicativeSP t.
+  Proof.
+    intros p a.
+    assert (Hc : t p a <-> t (forall _ : ~ p, False) a).
+    { apply Hcong. split; [intros Hp Hnp; exact (Hnp Hp) | intro H; apply NNPP; exact H]. }
+    pose proof (Hmeet (~ p) (fun _ => False) a) as Hm.
+    split.
+    - intro H. pose proof (proj1 Hm (proj1 Hc H)) as H'.
+      destruct (classic p) as [Hp | Hnp]; [left; exact Hp | right; exact (H' Hnp)].
+    - intros [Hp | Hf].
+      + apply Hc. apply Hm. intro Hnp. contradiction.
+      + apply Hc. apply Hm. intro Hnp. exact Hf.
+  Qed.
+
+  Definition PureSPM (A : Type) : Type := { t : SPT A | MultiplicativeSP t }.
+
+  Definition spAppM {A} (t : PureSPM A) : Prop -> A -> Prop := proj1_sig t.
+
+  Lemma spAppM_mult {A} (t : PureSPM A) (p : Prop) (a : A) :
+    spAppM t p a <-> (p \/ spAppM t False a).
+  Proof. exact (proj2_sig t p a). Qed.
+
+  (** The co-set representation, dual to [spSet] / [ofSet]. *)
+  Definition spCoSet {A} (t : PureSPM A) : A -> Prop := fun a => ~ spAppM t False a.
+
+  #[program] Definition ofCoSet {A} (Q : A -> Prop) : PureSPM A :=
+    fun p a => Q a -> p.
+  Next Obligation.
+    unfold MultiplicativeSP. intros p a. split.
+    - intro H. destruct (classic p) as [Hp | Hnp];
+        [left; exact Hp | right; intro HQ; exact (Hnp (H HQ))].
+    - intros [Hp | Hn] HQ; [exact Hp | destruct (Hn HQ)].
+  Qed.
+
+  Lemma spAppM_ofCoSet {A} (Q : A -> Prop) (p : Prop) (a : A) :
+    spAppM (ofCoSet Q) p a <-> (Q a -> p).
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma spCoSet_ofCoSet {A} (Q : A -> Prop) (a : A) : spCoSet (ofCoSet Q) a <-> Q a.
+  Proof.
+    unfold spCoSet. rewrite spAppM_ofCoSet. split.
+    - intro H. apply NNPP. intro HnQ. apply H. intro HQ. exact (HnQ HQ).
+    - intros HQ H. exact (H HQ).
+  Qed.
+
+  Lemma spAppM_repr {A} (t : PureSPM A) (p : Prop) (a : A) :
+    spAppM t p a <-> (spCoSet t a -> p).
+  Proof.
+    unfold spCoSet. split.
+    - intro H. apply spAppM_mult in H. destruct H as [Hp | Hf];
+        [intros _; exact Hp | intro Hn; contradiction].
+    - intro H. apply spAppM_mult.
+      destruct (classic (spAppM t False a)) as [Hf | Hnf];
+        [right; exact Hf | left; exact (H Hnf)].
+  Qed.
+
+  Lemma ofCoSet_spCoSet {A} (t : PureSPM A) (p : Prop) (a : A) :
+    spAppM (ofCoSet (spCoSet t)) p a <-> spAppM t p a.
+  Proof. rewrite spAppM_ofCoSet. symmetry. apply spAppM_repr. Qed.
+
+  Lemma spAppM_cong {A} (t : PureSPM A) (p q : Prop) (a : A) :
+    (p <-> q) -> (spAppM t p a <-> spAppM t q a).
+  Proof. intro Hpq. rewrite !spAppM_repr. tauto. Qed.
+
+  Definition retSPM {A} (a : A) : PureSPM A := ofCoSet (fun a' => a' = a).
+
+  (** Dual of [bindSP]: a nesting, not an existential. *)
+  #[program] Definition bindSPM {A B} (m : PureSPM A) (k : A -> PureSPM B) : PureSPM B :=
+    fun p b => forall a, spAppM m (spAppM (k a) p b) a.
+  Next Obligation.
+    unfold MultiplicativeSP. intros p b. split.
+    - intro H. destruct (classic p) as [Hp | Hnp]; [left; exact Hp | right].
+      intro a. specialize (H a). rewrite spAppM_repr in H. apply spAppM_repr.
+      intro Hm. specialize (H Hm). rewrite spAppM_repr in H. apply spAppM_repr.
+      intro Hk. exact (Hnp (H Hk)).
+    - intros [Hp | H] a; apply spAppM_repr; intro Hm.
+      + apply spAppM_repr. intros _. exact Hp.
+      + specialize (H a). rewrite spAppM_repr in H. specialize (H Hm).
+        rewrite spAppM_repr in H. apply spAppM_repr. intro Hk. destruct (H Hk).
+  Qed.
+
+  Lemma spAppM_retSPM {A} (a : A) (p : Prop) (a' : A) :
+    spAppM (retSPM a) p a' <-> (a' = a -> p).
+  Proof. unfold retSPM. exact (spAppM_ofCoSet (fun x => x = a) p a'). Qed.
+
+  Lemma spAppM_bindSPM {A B} (m : PureSPM A) (k : A -> PureSPM B) (p : Prop) (b : B) :
+    spAppM (bindSPM m k) p b <-> (forall a, spAppM m (spAppM (k a) p b) a).
+  Proof. split; intro H; exact H. Qed.
+
+  #[global] Instance Monad_PureSPM : Monad PureSPM :=
+    {| ret := fun _ => retSPM ;
+       bind := fun _ _ => bindSPM |}.
+
+End PureSPMMonad.
+
+Section PureSPMLaws.
+
+  #[global] Instance Eq1_PureSPM : Eq1 PureSPM :=
+    fun A m n => forall p a, spAppM m p a <-> spAppM n p a.
+
+  #[global] Instance Eq1Equivalence_PureSPM
+    : @Eq1Equivalence PureSPM _ Eq1_PureSPM.
+  Proof.
+    intro A. constructor.
+    - intros x p a. tauto.
+    - intros x y H p a. specialize (H p a). tauto.
+    - intros x y z H1 H2 p a. specialize (H1 p a). specialize (H2 p a). tauto.
+  Qed.
+
+  #[global] Instance MonadLawsE_PureSPM
+    : @MonadLawsE PureSPM Eq1_PureSPM _.
+  Proof.
+    constructor.
+    - (* bind_ret_l *)
+      intros A B f x. unfold eq1, Eq1_PureSPM. intros p b.
+      rewrite spAppM_bindSPM. split.
+      + intro H. specialize (H x). rewrite spAppM_retSPM in H. exact (H eq_refl).
+      + intros H a. rewrite spAppM_retSPM. intro Heq. subst a. exact H.
+    - (* bind_ret_r *)
+      intros A x. unfold eq1, Eq1_PureSPM. intros p a.
+      rewrite spAppM_bindSPM. split.
+      + intro H. specialize (H a). rewrite spAppM_repr in H. apply spAppM_repr.
+        intro Hm. specialize (H Hm). rewrite spAppM_retSPM in H. exact (H eq_refl).
+      + intros H a0. apply spAppM_repr. intro Hm.
+        rewrite spAppM_retSPM. intro Heq. subst a.
+        exact (proj1 (spAppM_repr x p a0) H Hm).
+    - (* bind_bind *)
+      intros A B C x f g. unfold eq1, Eq1_PureSPM. intros p c.
+      rewrite !spAppM_bindSPM. split.
+      + intros H a. apply spAppM_repr. intros Hm b.
+        specialize (H b). rewrite spAppM_bindSPM in H. specialize (H a).
+        rewrite spAppM_repr in H. exact (H Hm).
+      + intros H b. rewrite spAppM_bindSPM. intro a.
+        apply spAppM_repr. intro Hm. specialize (H a).
+        rewrite spAppM_repr in H. exact (H Hm b).
+    - (* Proper_bind *)
+      intros A B x y Hxy f g Hfg. unfold eq1, Eq1_PureSPM in *. intros p b.
+      rewrite !spAppM_bindSPM. split; intros H a; specialize (H a).
+      + apply Hxy. exact (proj1 (spAppM_cong x _ _ a (Hfg a p b)) H).
+      + apply Hxy. exact (proj2 (spAppM_cong y _ _ a (Hfg a p b)) H).
+  Qed.
+
+End PureSPMLaws.
+
+Section ProgSPMMonad.
+
+  Variable S : Type.
+
+  Definition ProgSPM := stateT S (optionT PureSPM).
+
+  #[local] Existing Instance Monad_stateT.
+
+  Definition retProgSPM {A} (a : A) : ProgSPM A := @ret (stateT _ _) _ _ a.
+  Definition bindProgSPM {A B} (m : ProgSPM A) (k : A -> ProgSPM B) : ProgSPM B :=
+    @bind (stateT _ _) _ _ _ m k.
+
+  #[global] Instance Monad__ProgSPM : Monad ProgSPM :=
+    {| ret := fun _ => @retProgSPM _ ;
+       bind := fun _ _ => @bindProgSPM _ _ |}.
+
+  Definition getProgSPM : ProgSPM S := @get _ (stateT _ _) _.
+  Definition putProgSPM (s : S) : ProgSPM unit := @put _ (stateT _ _) _ s.
+
+  #[global] Instance MonadState__ProgSPM : MonadState S ProgSPM :=
+    {| get := getProgSPM ; put := putProgSPM |}.
+
+  #[local] Existing Instance OptionTError.
+
+  Definition raiseProgSPM {A} (_ : unit) : ProgSPM A := @raise _ (stateT _ _) _ _ tt.
+  Definition catchProgSPM {A} (m : ProgSPM A) (c : unit -> ProgSPM A) : ProgSPM A :=
+    @catch _ (stateT _ _) _ _ m c.
+
+  #[global] Instance MonadExc__ProgSPM : MonadExc unit ProgSPM :=
+    {| raise := fun _ => raiseProgSPM ; catch := fun _ => catchProgSPM |}.
+
+  #[global] Instance Eq1__ProgSPM : Eq1 ProgSPM := Eq1_stateT S (optionT PureSPM).
+
+  Definition MonadLawsE__ProgSPM : @MonadLawsE ProgSPM Eq1__ProgSPM _ :=
+    MonadLawsE_stateT S (optionT PureSPM).
+
+End ProgSPMMonad.
+
+Arguments retProgSPM {_} {_}.
+Arguments bindProgSPM {_} {_} {_}.
+
+Definition applySPM {S A} (M : ProgSPM S A) (s : S) : Prop -> option (A * S) -> Prop :=
+  spAppM (unOptionT (runStateT M s)).
+
+Lemma applySPM_ret {S A} (a : A) (s : S) p r :
+  applySPM (ret a : ProgSPM S A) s p r <-> (r = Some (a, s) -> p).
+Proof. split; intro H; exact H. Qed.
+
+Lemma applySPM_bind {S A B} (M : ProgSPM S A) (K : A -> ProgSPM S B) s p r :
+  applySPM (M >>= K) s p r <->
+  (forall oas, applySPM M s
+     (match oas with
+      | Some (a, s') => applySPM (K a) s' p r
+      | None => r = None -> p
+      end) oas).
+Proof.
+  split; intros H oas; specialize (H oas); destruct oas as [[a s']|]; exact H.
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** Readings: join over initial states / meet over initial states *)
+(* ----------------------------------------------------------------- *)
+
+(** A [ProgSP] / [ProgSPM] element is pointwise in the initial state.
+    Extending it to a precondition *predicate* is a join in the additive
+    case and a meet in the multiplicative case — the two readings are
+    forced by the two monads, not chosen. *)
+Definition readSP {S A} (M : ProgSP S A) (pre : S -> Prop) (r : option (A * S)) : Prop :=
+  exists s, applySP M s (pre s) r.
+
+Definition readSPM {S A} (M : ProgSPM S A) (pre : S -> Prop) (r : option (A * S)) : Prop :=
+  forall s, applySPM M s (pre s) r.
+
+Lemma readSP_spASP {S A} (M : ProgSP S A) pre r : readSP M pre r <-> spASP M pre r.
+Proof.
+  unfold readSP, spASP, asp, runSP, applySP. split.
+  - intros [s H]. rewrite spApp_additive in H. destruct H as [Hp Hb].
+    exists s. split; assumption.
+  - intros [s [Hp Hb]]. exists s. rewrite spApp_additive. split; assumption.
+Qed.
+
+(** The join reading is strict and join-preserving; the meet reading is
+    top-preserving and meet-preserving.  These four facts are what make
+    [obsDSP] / [obsASLP] impossible below. *)
+Lemma readSP_strict {S A} (M : ProgSP S A) r : ~ readSP M (fun _ => False) r.
+Proof. unfold readSP, applySP. intros [s H]. rewrite spApp_additive in H. exact (proj1 H). Qed.
+
+Lemma readSP_join2 {S A} (M : ProgSP S A) (P Q : S -> Prop) r :
+  readSP M (fun s => P s \/ Q s) r <-> (readSP M P r \/ readSP M Q r).
+Proof.
+  unfold readSP, applySP. split.
+  - intros [s H]. rewrite spApp_additive in H. destruct H as [[HP|HQ] Hb];
+      [left | right]; exists s; rewrite spApp_additive; split; assumption.
+  - intros [[s H] | [s H]]; exists s; rewrite spApp_additive in H;
+      destruct H as [Hx Hb]; rewrite spApp_additive; split;
+      solve [ left; exact Hx | right; exact Hx | exact Hb ].
+Qed.
+
+Lemma readSPM_top {S A} (M : ProgSPM S A) r : readSPM M (fun _ => True) r.
+Proof. intros s. unfold applySPM. apply spAppM_mult. left. exact I. Qed.
+
+Lemma readSPM_meet2 {S A} (M : ProgSPM S A) (P Q : S -> Prop) r :
+  readSPM M (fun s => P s /\ Q s) r <-> (readSPM M P r /\ readSPM M Q r).
+Proof.
+  unfold readSPM, applySPM. split.
+  - intro H. split; intro s; specialize (H s); rewrite spAppM_repr in H;
+      apply spAppM_repr; intro Hc; exact (proj1 (H Hc)) || exact (proj2 (H Hc)).
+  - intros [H1 H2] s. specialize (H1 s). specialize (H2 s).
+    rewrite spAppM_repr in H1. rewrite spAppM_repr in H2. apply spAppM_repr.
+    intro Hc. exact (conj (H1 Hc) (H2 Hc)).
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** Two independent monad-valued SP observations                  *)
+(* ----------------------------------------------------------------- *)
+
+(** [obsASP] and [obsDSLP] are now defined *separately*, straight off the
+    program's outcome predicate, and land in *different* monads — they
+    are no longer two readings ([asp] / [dslp]) applied to one shared
+    [obsRel] object.  The shapes are dual:
+
+      [obsASP  m s p r  =  p /\ (m can reach r from s)]      (additive)
+      [obsDSLP m s p r  =  (m can reach r from s) -> p]      (multiplicative)
+
+    Each is a monad morphism into its own monad ([obsASPmorph_ret]/[obsASPmorph_bind],
+    [obsDSLPmorph_ret]/[obsDSLPmorph_bind]).  That both definitions mention the
+    program's outcome set is unavoidable — that is what an observation is;
+    what is gone is the single spec object with four readings hung off it. *)
+Module SPMonadObs.
+
+  Definition obsASP {S A} (m : nditprog S A) : ProgSP S A :=
+    mkStateT (fun s => @mkOptionT PureSP _
+      (ofSet (fun r => unOptionT (unOptionT (runStateT m s)) (Some r)))).
+
+  Definition obsDSLP {S A} (m : nditprog S A) : ProgSPM S A :=
+    mkStateT (fun s => @mkOptionT PureSPM _
+      (ofCoSet (fun r => unOptionT (unOptionT (runStateT m s)) (Some r)))).
+
+  Definition tripleJoin {S A} (obs : nditprog S A -> ProgSP S A)
+    (prog : nditprog S A) (kind : approximationKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, readSP (obs prog) pre r -> post r
+    | Under => forall r, post r -> readSP (obs prog) pre r
+    end.
+
+  Definition tripleMeet {S A} (obs : nditprog S A -> ProgSPM S A)
+    (prog : nditprog S A) (kind : approximationKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, readSPM (obs prog) pre r -> post r
+    | Under => forall r, post r -> readSPM (obs prog) pre r
+    end.
+
+End SPMonadObs.
+
+Lemma applySP_obsASP {S A} (m : nditprog S A) s p r :
+  applySP (SPMonadObs.obsASP m) s p r <-> (p /\ obsRel m s r).
+Proof.
+  unfold applySP, SPMonadObs.obsASP, spApp, ofSet. cbn.
+  rewrite obsRel_outcomes. tauto.
+Qed.
+
+Lemma applySPM_obsDSLP {S A} (m : nditprog S A) s p r :
+  applySPM (SPMonadObs.obsDSLP m) s p r <-> (obsRel m s r -> p).
+Proof.
+  unfold applySPM, SPMonadObs.obsDSLP, spAppM, ofCoSet. cbn.
+  rewrite obsRel_outcomes. tauto.
+Qed.
+
+(** The two readings recover the old [asp] / [dslp] observations, so both
+    triples coincide with the original [tripleSP] and the whole SP
+    taxonomy transports as before. *)
+Lemma readSP_obsASP {S A} (m : nditprog S A) pre r :
+  readSP (SPMonadObs.obsASP m) pre r <-> obsASP m pre r.
+Proof.
+  unfold readSP, obsASP, asp. split.
+  - intros [s H]. rewrite applySP_obsASP in H. exists s. exact H.
+  - intros [s H]. exists s. rewrite applySP_obsASP. exact H.
+Qed.
+
+Lemma readSPM_obsDSLP {S A} (m : nditprog S A) pre r :
+  readSPM (SPMonadObs.obsDSLP m) pre r <-> obsDSLP m pre r.
+Proof.
+  unfold readSPM, obsDSLP, dslp. split.
+  - intros H s. specialize (H s). rewrite applySPM_obsDSLP in H. exact H.
+  - intros H s. rewrite applySPM_obsDSLP. exact (H s).
+Qed.
+
+Lemma tripleJoin_ASP {S A} (prog : nditprog S A) kind pre post :
+  SPMonadObs.tripleJoin SPMonadObs.obsASP prog kind pre post <->
+  tripleSP obsASP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (readSP_obsASP prog pre r) (H r Hr))
+          | exact (proj2 (readSP_obsASP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (readSP_obsASP prog pre r) Hr)
+          | apply H; exact (proj2 (readSP_obsASP prog pre r) Hr) ].
+Qed.
+
+Lemma tripleMeet_DSLP {S A} (prog : nditprog S A) kind pre post :
+  SPMonadObs.tripleMeet SPMonadObs.obsDSLP prog kind pre post <->
+  tripleSP obsDSLP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (readSPM_obsDSLP prog pre r) (H r Hr))
+          | exact (proj2 (readSPM_obsDSLP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (readSPM_obsDSLP prog pre r) Hr)
+          | apply H; exact (proj2 (readSPM_obsDSLP prog pre r) Hr) ].
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** Both observations are monad morphisms                         *)
+(* ----------------------------------------------------------------- *)
+
+Definition eqProgSPM {S A} (M N : ProgSPM S A) : Prop :=
+  forall s p r, applySPM M s p r <-> applySPM N s p r.
+
+Lemma eqProgSPM_eq1 {S A} (M N : ProgSPM S A) : eqProgSPM M N <-> eq1 M N.
+Proof. split; intro H; exact H. Qed.
+
+Theorem obsASPmorph_ret {S A} (a : A) :
+  eq1 (SPMonadObs.obsASP (ret a : nditprog S A)) (ret a).
+Proof.
+  apply (proj1 (eqProgSP_eq1 _ _)). intros s p r.
+  rewrite applySP_obsASP, applySP_ret. split.
+  - intros [Hp Hrel]. split; [exact Hp|].
+    unfold obsRel in Hrel. destruct r as [[b s']|]; cbn in Hrel; congruence.
+  - intros [Hp Hrel]. split; [exact Hp|].
+    unfold obsRel. destruct r as [[b s']|]; cbn; congruence.
+Qed.
+
+Theorem obsASPmorph_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+  eq1 (SPMonadObs.obsASP (x >>= f))
+      (SPMonadObs.obsASP x >>= (fun a => SPMonadObs.obsASP (f a))).
+Proof.
+  apply (proj1 (eqProgSP_eq1 _ _)). intros s p r.
+  rewrite applySP_obsASP, applySP_bind. split.
+  - intros [Hp Hrel]. apply obsRel_bind in Hrel.
+    destruct Hrel as [[a [s' [Hx Hf]]] | [Hx Heq]].
+    + exists (Some (a, s')). split.
+      * apply applySP_obsASP. split; assumption.
+      * apply applySP_obsASP. split; [exact I | exact Hf].
+    + exists None. split; [apply applySP_obsASP; split; assumption | exact Heq].
+  - intros [oas [Hm HK]]. rewrite applySP_obsASP in Hm. destruct Hm as [Hp Hx].
+    split; [exact Hp|]. apply obsRel_bind. destruct oas as [[a s']|].
+    + left. exists a, s'. split; [exact Hx|].
+      rewrite applySP_obsASP in HK. exact (proj2 HK).
+    + right. split; [exact Hx | exact HK].
+Qed.
+
+Theorem obsDSLPmorph_ret {S A} (a : A) :
+  eq1 (SPMonadObs.obsDSLP (ret a : nditprog S A)) (ret a).
+Proof.
+  apply (proj1 (eqProgSPM_eq1 _ _)). intros s p r.
+  rewrite applySPM_obsDSLP, applySPM_ret. split.
+  - intros H Heq. apply H. subst r. unfold obsRel. cbn. reflexivity.
+  - intros H Hrel. apply H.
+    unfold obsRel in Hrel. destruct r as [[b s']|]; cbn in Hrel; congruence.
+Qed.
+
+Theorem obsDSLPmorph_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+  eq1 (SPMonadObs.obsDSLP (x >>= f))
+      (SPMonadObs.obsDSLP x >>= (fun a => SPMonadObs.obsDSLP (f a))).
+Proof.
+  apply (proj1 (eqProgSPM_eq1 _ _)). intros s p r.
+  rewrite applySPM_obsDSLP. split.
+  - intro H. apply applySPM_bind. intro oas.
+    destruct oas as [[a s']|]; apply applySPM_obsDSLP; intro Hx.
+    + apply applySPM_obsDSLP. intro Hf. apply H. apply obsRel_bind.
+      left. exists a, s'. split; assumption.
+    + intro Heq. apply H. apply obsRel_bind. right. split; assumption.
+  - intro H. pose proof (proj1 (applySPM_bind _ _ s p r) H) as H'.
+    intro Hrel. apply obsRel_bind in Hrel.
+    destruct Hrel as [[a [s' [Hx Hf]]] | [Hx Heq]].
+    + specialize (H' (Some (a, s'))). rewrite applySPM_obsDSLP in H'.
+      specialize (H' Hx). rewrite applySPM_obsDSLP in H'. exact (H' Hf).
+    + specialize (H' None). rewrite applySPM_obsDSLP in H'.
+      exact (H' Hx Heq).
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** No-go: [obsDSP] and [obsASLP] fit NEITHER monad               *)
+(* ----------------------------------------------------------------- *)
+
+(** The requested signatures [obsDSP : nditprog S A -> ProgSPM S A] and
+    [obsASLP : nditprog S A -> ProgSP S A] cannot be realised, and neither
+    can the swapped assignment.  The obstruction is sharp: DSP and ASLP
+    preserve *binary* meets/joins respectively ([obsDSP_meet2],
+    [obsASLP_join2]) but fail the *empty* ones —
+
+      [obsDSP  pre r = (r is reachable at all) /\ (all reachers satisfy pre)]
+        so [obsDSP (fun _ => True) r] is FALSE at an unreachable [r]
+        (no top-preservation, which every meet reading has);
+
+      [obsASLP pre r = (some reacher satisfies pre) \/ (all reachers do)]
+        so [obsASLP (fun _ => False) r] is TRUE at an unreachable [r]
+        (no strictness, which every join reading has).
+
+    Both witnesses use [progEx], whose exception outcome [None] is
+    unreachable. *)
+
+Lemma progEx_no_exception : forall s, ~ obsRel progEx s None.
+Proof. intros s H. unfold obsRel in H. cbn in H. sauto. Qed.
+
+Theorem obsDSP_meet2 {S A} (m : nditprog S A) (P Q : S -> Prop) r :
+  obsDSP m (fun s => P s /\ Q s) r <-> (obsDSP m P r /\ obsDSP m Q r).
+Proof.
+  unfold obsDSP, asp, dslp. split.
+  - intros [[s [[HP HQ] Hr]] Hall]. split.
+    + split; [exists s; split; assumption | intros s' Hr'; exact (proj1 (Hall s' Hr'))].
+    + split; [exists s; split; assumption | intros s' Hr'; exact (proj2 (Hall s' Hr'))].
+  - intros [[[s [HP Hr]] HallP] [_ HallQ]].
+    split; [exists s; split; [split; [exact HP | exact (HallQ s Hr)] | exact Hr] |].
+    intros s' Hr'. split; [exact (HallP s' Hr') | exact (HallQ s' Hr')].
+Qed.
+
+Theorem obsASLP_join2 {S A} (m : nditprog S A) (P Q : S -> Prop) r :
+  obsASLP m (fun s => P s \/ Q s) r <-> (obsASLP m P r \/ obsASLP m Q r).
+Proof.
+  unfold obsASLP, asp, dslp. split.
+  - intros [[s [[HP|HQ] Hr]] | Hall].
+    + left. left. exists s. split; assumption.
+    + right. left. exists s. split; assumption.
+    + destruct (classic (exists s, obsRel m s r)) as [[s Hr] | Hno].
+      * destruct (Hall s Hr) as [HP | HQ];
+          [left; left; exists s; split; assumption
+          | right; left; exists s; split; assumption].
+      * left. right. intros s Hr. exfalso. apply Hno. exists s. exact Hr.
+  - intros [[[s [HP Hr]] | Hall] | [[s [HQ Hr]] | Hall]].
+    + left. exists s. split; [left; exact HP | exact Hr].
+    + right. intros s Hr. left. exact (Hall s Hr).
+    + left. exists s. split; [right; exact HQ | exact Hr].
+    + right. intros s Hr. right. exact (Hall s Hr).
+Qed.
+
+Theorem obsDSP_not_top : ~ obsDSP progEx (fun _ => True) None.
+Proof. intros [[s [_ Hrel]] _]. exact (progEx_no_exception s Hrel). Qed.
+
+Theorem obsASLP_not_strict : obsASLP progEx (fun _ => False) None.
+Proof. right. intros s Hrel. exact (progEx_no_exception s Hrel). Qed.
+
+Theorem obsDSP_not_join2 :
+  obsDSP progEx (fun s => preZero s \/ preNonZero s) (Some (tt, 42))
+  /\ ~ obsDSP progEx preZero (Some (tt, 42))
+  /\ ~ obsDSP progEx preNonZero (Some (tt, 42)).
+Proof.
+  split; [| split].
+  - split.
+    + exists 0. split; [left; reflexivity | exact (progEx_reaches_42 0)].
+    + intros s _. unfold preZero, preNonZero.
+      destruct s; [left; reflexivity | right; discriminate].
+  - intros [_ Hd]. specialize (Hd 1 (progEx_reaches_42 1)).
+    unfold preZero in Hd. discriminate.
+  - intros [_ Hd]. specialize (Hd 0 (progEx_reaches_42 0)).
+    unfold preNonZero in Hd. exact (Hd eq_refl).
+Qed.
+
+Theorem obsASLP_not_meet2 :
+  ~ obsASLP progEx (fun s => preZero s /\ preNonZero s) (Some (tt, 42))
+  /\ obsASLP progEx preZero (Some (tt, 42))
+  /\ obsASLP progEx preNonZero (Some (tt, 42)).
+Proof.
+  split; [| split].
+  - intros [[s [[H1 H2] _]] | Hd].
+    + exact (H2 H1).
+    + destruct (Hd 0 (progEx_reaches_42 0)) as [_ Hne]. exact (Hne eq_refl).
+  - left. exists 0. split; [reflexivity | exact (progEx_reaches_42 0)].
+  - left. exists 1. split; [discriminate | exact (progEx_reaches_42 1)].
+Qed.
+
+(** The requested assignment. *)
+Corollary no_ProgSPM_for_obsDSP :
+  ~ exists M : ProgSPM nat unit, forall pre r, readSPM M pre r <-> obsDSP progEx pre r.
+Proof.
+  intros [M HM]. apply obsDSP_not_top.
+  apply (proj1 (HM (fun _ => True) None)). apply readSPM_top.
+Qed.
+
+Corollary no_ProgSP_for_obsASLP :
+  ~ exists M : ProgSP nat unit, forall pre r, readSP M pre r <-> obsASLP progEx pre r.
+Proof.
+  intros [M HM]. apply (readSP_strict M None).
+  apply (proj2 (HM (fun _ => False) None)). exact obsASLP_not_strict.
+Qed.
+
+(** The swapped assignment fails too, so there is no rescue by exchanging
+    the two monads. *)
+Corollary no_ProgSP_for_obsDSP :
+  ~ exists M : ProgSP nat unit, forall pre r, readSP M pre r <-> obsDSP progEx pre r.
+Proof.
+  intros [M HM]. destruct obsDSP_not_join2 as [Hj [Hz Hnz]].
+  apply (proj2 (HM _ _)) in Hj. apply readSP_join2 in Hj.
+  destruct Hj as [H | H]; [apply Hz | apply Hnz]; exact (proj1 (HM _ _) H).
+Qed.
+
+Corollary no_ProgSPM_for_obsASLP :
+  ~ exists M : ProgSPM nat unit, forall pre r, readSPM M pre r <-> obsASLP progEx pre r.
+Proof.
+  intros [M HM]. destruct obsASLP_not_meet2 as [Hn [Hz Hnz]].
+  apply Hn. apply (proj1 (HM _ _)). apply readSPM_meet2.
+  split; apply (proj2 (HM _ _)); assumption.
+Qed.
+
+(* ----------------------------------------------------------------- *)
+(** *** What does work for DSP / ASLP: the product monad              *)
+(* ----------------------------------------------------------------- *)
+
+(** [ProgSPB S A = ProgSP S A * ProgSPM S A] is the product of the two
+    monads (componentwise [ret]/[bind]; [MonadLawsE] componentwise from
+    the two factors).  [obsDSP] and [obsASLP] land there — a DSP/ASLP
+    observation must carry BOTH the additive and the multiplicative
+    element, and the two differ only in how the pair is read (meet vs
+    join).  This is forced: [dsp = asp /\ dslp] and [aslp = asp \/ dslp]
+    ([SPost.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
+    of the two extremes, and neither is an extreme itself.
+
+    Note this breaks the [stateT S (optionT base)] shape used elsewhere:
+    the product is taken at the outer level, which is what makes the
+    morphism laws componentwise. *)
+
+Definition ProgSPB (S : Type) : Type -> Type :=
+  fun A => (ProgSP S A * ProgSPM S A)%type.
+
+Definition retProgSPB {S A} (a : A) : ProgSPB S A := (ret a, ret a).
+Definition bindProgSPB {S A B} (m : ProgSPB S A) (k : A -> ProgSPB S B) : ProgSPB S B :=
+  (bind (fst m) (fun a => fst (k a)), bind (snd m) (fun a => snd (k a))).
+
+#[global] Instance Monad__ProgSPB {S} : Monad (ProgSPB S) :=
+  {| ret := fun _ => @retProgSPB S _ ;
+     bind := fun _ _ => @bindProgSPB S _ _ |}.
+
+#[global] Instance Eq1__ProgSPB {S} : Eq1 (ProgSPB S) :=
+  fun A m n => eq1 (fst m) (fst n) /\ eq1 (snd m) (snd n).
+
+#[global] Instance Eq1Equivalence__ProgSPB {S}
+  : @Eq1Equivalence (ProgSPB S) _ Eq1__ProgSPB.
+Proof.
+  intro A. constructor.
+  - intro x. split; reflexivity.
+  - intros x y [H1 H2]. split; symmetry; assumption.
+  - intros x y z [H1 H2] [K1 K2]. split; etransitivity; eassumption.
+Qed.
+
+#[local] Existing Instance MonadLawsE__ProgSP.
+#[local] Existing Instance MonadLawsE__ProgSPM.
+
+#[global] Instance MonadLawsE__ProgSPB {S}
+  : @MonadLawsE (ProgSPB S) Eq1__ProgSPB _.
+Proof.
+  constructor.
+  - intros A B f x. split;
+      [ exact (bind_ret_l (M := ProgSP S) A B (fun a => fst (f a)) x)
+      | exact (bind_ret_l (M := ProgSPM S) A B (fun a => snd (f a)) x) ].
+  - intros A x. split;
+      [ exact (bind_ret_r (M := ProgSP S) A (fst x))
+      | exact (bind_ret_r (M := ProgSPM S) A (snd x)) ].
+  - intros A B C x f g. split;
+      [ exact (bind_bind (M := ProgSP S) A B C (fst x)
+                 (fun a => fst (f a)) (fun b => fst (g b)))
+      | exact (bind_bind (M := ProgSPM S) A B C (snd x)
+                 (fun a => snd (f a)) (fun b => snd (g b))) ].
+  - intros A B x y [H1 H2] f g Hfg. split;
+      [ apply (Proper_bind (M := ProgSP S)) | apply (Proper_bind (M := ProgSPM S)) ];
+      solve [ assumption | intro a; exact (proj1 (Hfg a)) | intro a; exact (proj2 (Hfg a)) ].
+Qed.
+
+Module SPMonadObsB.
+
+  Definition obsDSP {S A} (m : nditprog S A) : ProgSPB S A :=
+    (SPMonadObs.obsASP m, SPMonadObs.obsDSLP m).
+
+  Definition obsASLP {S A} (m : nditprog S A) : ProgSPB S A :=
+    (SPMonadObs.obsASP m, SPMonadObs.obsDSLP m).
+
+  Definition readMeet {S A} (M : ProgSPB S A) (pre : S -> Prop) r : Prop :=
+    readSP (fst M) pre r /\ readSPM (snd M) pre r.
+
+  Definition readJoin {S A} (M : ProgSPB S A) (pre : S -> Prop) r : Prop :=
+    readSP (fst M) pre r \/ readSPM (snd M) pre r.
+
+  Definition tripleMeet {S A} (obs : nditprog S A -> ProgSPB S A)
+    (prog : nditprog S A) (kind : approximationKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, readMeet (obs prog) pre r -> post r
+    | Under => forall r, post r -> readMeet (obs prog) pre r
+    end.
+
+  Definition tripleJoin {S A} (obs : nditprog S A -> ProgSPB S A)
+    (prog : nditprog S A) (kind : approximationKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, readJoin (obs prog) pre r -> post r
+    | Under => forall r, post r -> readJoin (obs prog) pre r
+    end.
+
+End SPMonadObsB.
+
+Lemma readMeet_obsDSP {S A} (m : nditprog S A) pre r :
+  SPMonadObsB.readMeet (SPMonadObsB.obsDSP m) pre r <-> obsDSP m pre r.
+Proof.
+  unfold SPMonadObsB.readMeet, SPMonadObsB.obsDSP, obsDSP. cbn.
+  pose proof (readSP_obsASP m pre r) as Ha. unfold obsASP in Ha.
+  pose proof (readSPM_obsDSLP m pre r) as Hd. unfold obsDSLP in Hd.
+  tauto.
+Qed.
+
+Lemma readJoin_obsASLP {S A} (m : nditprog S A) pre r :
+  SPMonadObsB.readJoin (SPMonadObsB.obsASLP m) pre r <-> obsASLP m pre r.
+Proof.
+  unfold SPMonadObsB.readJoin, SPMonadObsB.obsASLP, obsASLP. cbn.
+  pose proof (readSP_obsASP m pre r) as Ha. unfold obsASP in Ha.
+  pose proof (readSPM_obsDSLP m pre r) as Hd. unfold obsDSLP in Hd.
+  tauto.
+Qed.
+
+Theorem obsDSPB_ret {S A} (a : A) :
+  eq1 (SPMonadObsB.obsDSP (ret a : nditprog S A)) (ret a).
+Proof. split; [exact (obsASPmorph_ret a) | exact (obsDSLPmorph_ret a)]. Qed.
+
+Theorem obsDSPB_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+  eq1 (SPMonadObsB.obsDSP (x >>= f))
+      (SPMonadObsB.obsDSP x >>= (fun a => SPMonadObsB.obsDSP (f a))).
+Proof. split; [exact (obsASPmorph_bind x f) | exact (obsDSLPmorph_bind x f)]. Qed.
+
+Lemma tripleMeet_DSP {S A} (prog : nditprog S A) kind pre post :
+  SPMonadObsB.tripleMeet SPMonadObsB.obsDSP prog kind pre post <->
+  tripleSP obsDSP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (readMeet_obsDSP prog pre r) (H r Hr))
+          | exact (proj2 (readMeet_obsDSP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (readMeet_obsDSP prog pre r) Hr)
+          | apply H; exact (proj2 (readMeet_obsDSP prog pre r) Hr) ].
+Qed.
+
+Lemma tripleJoin_ASLP {S A} (prog : nditprog S A) kind pre post :
+  SPMonadObsB.tripleJoin SPMonadObsB.obsASLP prog kind pre post <->
+  tripleSP obsASLP prog kind pre post.
+Proof.
+  destruct kind; cbn; split; intros H r Hr;
+    first [ exact (proj1 (readJoin_obsASLP prog pre r) (H r Hr))
+          | exact (proj2 (readJoin_obsASLP prog pre r) (H r Hr))
+          | apply H; exact (proj1 (readJoin_obsASLP prog pre r) Hr)
+          | apply H; exact (proj2 (readJoin_obsASLP prog pre r) Hr) ].
+Qed.
