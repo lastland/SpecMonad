@@ -2,7 +2,7 @@ From ExtLib Require Import
   Monad MonadState MonadExc
   StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy Require Import NonDetDivProg SPSpecMonads NonDetItObservationNew.
+From Incorrectness.Taxonomy Require Import NonDetDivProg SPSpecMonads.
 Require Import Coq.Logic.Classical_Prop.
 
 Import MonadNotation.
@@ -271,47 +271,6 @@ Section NDObservations.
   Qed.
 
   (* ================================================================== *)
-  (** ** Divergence                                                     *)
-  (* ================================================================== *)
-
-  Lemma outcomes_diverge {A} (s : S) (r : option (A * S)) :
-    unOptionT (runStateT (divergeD : nddprog S A) s) r <-> r = None.
-  Proof. cbn. split; intro H; congruence. Qed.
-
-  (** [divergeD] is absorbing: once you may diverge, nothing after it runs. *)
-  Lemma diverge_bind {A B} (k : A -> nddprog S B) s ob :
-    unOptionT (runStateT (divergeD >>= k) s) ob
-    <-> unOptionT (runStateT (divergeD : nddprog S B) s) ob.
-  Proof.
-    refine (iff_trans (outcomes_bind divergeD k s ob) _).
-    refine (iff_trans _ (iff_sym (outcomes_diverge s ob))). split.
-    - intros [oy [Hd Hk]]. apply outcomes_diverge in Hd. subst oy. exact Hk.
-    - intro Hob. exists None.
-      split; [ apply outcomes_diverge; reflexivity | exact Hob ].
-  Qed.
-
-  (** [mayDiverge] is exactly what the observations see at the outcome [None]. *)
-  Lemma obsASP_diverge {A} (m : nddprog S A) pre :
-    getProgASP (obsASP m) pre None <-> (exists s, pre s /\ mayDiverge m s).
-  Proof. split; intro H; exact H. Qed.
-
-  Lemma obsDSLP_diverge {A} (m : nddprog S A) pre :
-    getProgDSLP (obsDSLP m) pre None <-> (forall s, mayDiverge m s -> pre s).
-  Proof. split; intro H; exact H. Qed.
-
-  (** Sanity: from any nonempty precondition, [divergeD] may diverge and
-      nothing else is reachable. *)
-  Lemma obsASP_divergeD {A} (pre : S -> Prop) (r : option (A * S)) :
-    getProgASP (obsASP divergeD) pre r <-> ((exists s, pre s) /\ r = None).
-  Proof.
-    split.
-    - intros [s [Hp Hr]]. apply outcomes_diverge in Hr.
-      split; [ exists s; exact Hp | exact Hr ].
-    - intros [[s Hp] Hr]. exists s.
-      split; [ exact Hp | apply outcomes_diverge; exact Hr ].
-  Qed.
-
-  (* ================================================================== *)
   (** ** Contrapositive pairs                                           *)
   (* ================================================================== *)
 
@@ -324,6 +283,15 @@ Section NDObservations.
       intros s Hr Hp. apply Habs. exists s. split; [ exact Hp | exact Hr ].
   Qed.
 
+  Theorem obsDSLP_contrapositive {A} (m : nddprog S A) pre r :
+    getProgDSLP (obsDSLP m) pre r <-> ~ getProgASP (obsASP m) (fun x => ~ pre x) r.
+  Proof.
+    split.
+    - intros Hall [s [Hnp Hr]]. exact (Hnp (Hall s Hr)).
+    - intros Hnn s Hr. apply NNPP. intro Hnp.
+      exact (Hnn (ex_intro _ s (conj Hnp Hr))).
+  Qed.
+  
   Theorem obsDSP_contrapositive {A} (m : nddprog S A) pre r :
     getProgDSP (obsDSP m) pre r <-> ~ getProgASLP (obsASLP m) (fun x => ~ pre x) r.
   Proof.
@@ -338,6 +306,48 @@ Section NDObservations.
         exists s. split; [ exact Hnp | exact Hr ].
   Qed.
 
+  Theorem obsASLP_contrapositive {A} (m : nddprog S A) pre r :
+    getProgASLP (obsASLP m) pre r <-> ~ getProgDSP (obsDSP m) (fun x => ~ pre x) r.
+  Proof.
+    split.
+    - intros [[s [Hp Hr]] | Hall] [[s0 [Hnp0 Hr0]] Hall0].
+      + exact (Hall0 s Hr Hp).
+      + exact (Hnp0 (Hall s0 Hr0)).
+    - intro Hnn.
+      destruct (classic (exists s, pre s /\ unOptionT (runStateT m s) r))
+        as [He | Hno]; [ left; exact He |].
+      right. intros s Hr. apply NNPP. intro Hnp.
+      apply Hnn. split.
+      + exists s. split; [ exact Hnp | exact Hr ].
+      + intros s0 Hr0 Hp0. exact (Hno (ex_intro _ s0 (conj Hp0 Hr0))).
+  Qed.
+
+  Theorem DSP_conjunction {A} (m : nddprog S A) pre r :
+    getProgDSP (obsDSP m) pre r <-> (getProgASP (obsASP m) pre r /\ getProgDSLP (obsDSLP m) pre r).
+  Proof. split; intro H; exact H. Qed.
+
+  Theorem ASLP_disjunction {A} (m : nddprog S A) pre r :
+    getProgASLP (obsASLP m) pre r <-> (getProgASP (obsASP m) pre r \/ getProgDSLP (obsDSLP m) pre r).
+  Proof. split; intro H; exact H. Qed.
+
+  Theorem ASP_ordering {A} (m : nddprog S A) pre r :
+    getProgASP (obsASP m) pre r -> getProgASLP (obsASLP m) pre r.
+  Proof. intro H. left. exact H. Qed.
+
+  Theorem DSP_ordering {A} (m : nddprog S A) pre r :
+    getProgDSP (obsDSP m) pre r -> getProgASP (obsASP m) pre r.
+  Proof. exact (@proj1 _ _). Qed.
+
+  Theorem DSP_DSLP_ordering {A} (m : nddprog S A) pre r :
+    getProgDSP (obsDSP m) pre r -> getProgDSLP (obsDSLP m) pre r.
+  Proof. exact (@proj2 _ _). Qed.
+
+  Theorem DSLP_ordering {A} (m : nddprog S A) pre r :
+    getProgDSLP (obsDSLP m) pre r -> getProgASLP (obsASLP m) pre r.
+  Proof. intro H. right. exact H. Qed.
+
+
+    
 End NDObservations.
 
 Arguments obsASP {_} {_}.
@@ -424,6 +434,84 @@ Section NDTriples.
     - intros H r Hpost s Hout.
       exact (H (fun t => post r -> pre t) r (fun t Ht => Ht) s Hout Hpost).
   Qed.
+
+  (** ** The other two directions, via an order scoped to one precondition
+
+      [tripleASP _ Under] and [tripleDSLP _ Over] are NOT relation inclusions —
+      each asserts an existential over states — so no target characterises them
+      in the GLOBAL orders [ordProgASP] / [ordProgDSLP]
+      (the witnessing programs have several incomparable minimal elements).
+
+      Scoping the order to the single precondition [pre] removes exactly the
+      information that made those up-sets non-principal, and then a target does
+      exist.  The price is a nonemptiness side condition, and it is the one each
+      healthiness condition forces: [SingletonProg] makes every ASP FALSE at the
+      empty precondition, so [pre] must be inhabited; dually [MSingletonProg]
+      makes every DSLP TRUE at the full precondition, so [pre] must be
+      co-inhabited.  Neither condition is removable. *)
+
+  #[program] Definition pp2asp_under' {S A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : ASPProgSP S A :=
+    fun p r => exists s, p s /\ (pre s /\ post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s.
+      exists s0. split; [ exact Hp | exact Hc ].
+  Qed.
+
+  #[program] Definition pp2dslp_over' {S A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : DSLPProgSP S A :=
+    fun p r => forall s, (~ post r /\ ~ pre s) -> p s.
+  Next Obligation.
+    exact (dslp_msingleton S (fun s r => ~ post r /\ ~ pre s)).
+  Qed.
+
+  (** Each target, evaluated AT [pre] itself, collapses to [post]. *)
+
+  Lemma pp2asp_under'_at {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    (Hne : exists s, pre s) (r : option (A * S)) :
+    getProgASP (pp2asp_under' pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intros [s [_ [_ Hpost]]]. exact Hpost.
+    - intro Hpost. destruct Hne as [s Hs].
+      exists s. split; [ exact Hs | split; [ exact Hs | exact Hpost ] ].
+  Qed.
+
+  Lemma pp2dslp_over'_at {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    (Hco : exists s, ~ pre s) (r : option (A * S)) :
+    getProgDSLP (pp2dslp_over' pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intro H. apply NNPP. intro Hnp. destruct Hco as [s0 Hs0].
+      exact (Hs0 (H s0 (conj Hnp Hs0))).
+    - intros Hpost s [Hnp _]. destruct (Hnp Hpost).
+  Qed.
+
+  (** [Under] compares [target <= obs]; [Over] compares [obs <= target] — the
+      same convention as the two global cases above. *)
+
+  Theorem tripleASP_under_inmonad {S A} (prog : nddprog S A) pre post
+    (Hne : exists s, pre s) :
+    tripleASP prog Under pre post
+    <-> ordProgASPAt pre (pp2asp_under' pre post) (obsASP prog).
+  Proof.
+    split.
+    - intros H r Ht. exact (H r (proj1 (pp2asp_under'_at pre post Hne r) Ht)).
+    - intros H r Hpost. exact (H r (proj2 (pp2asp_under'_at pre post Hne r) Hpost)).
+  Qed.
+
+  Theorem tripleDSLP_over_inmonad {S A} (prog : nddprog S A) pre post
+    (Hco : exists s, ~ pre s) :
+    tripleDSLP prog Over pre post
+    <-> ordProgDSLPAt pre (obsDSLP prog) (pp2dslp_over' pre post).
+  Proof.
+    split.
+    - intros H r Hd. exact (proj2 (pp2dslp_over'_at pre post Hco r) (H r Hd)).
+    - intros H r Hd. exact (proj1 (pp2dslp_over'_at pre post Hco r) (H r Hd)).
+  Qed.
 End NDTriples.
 
 Arguments tripleASP {_} {_}.
@@ -475,18 +563,6 @@ Section NDTaxonomy.
     tripleDSLP m Under pre post -> tripleASLP m Under pre post.
   Proof. intros H r Hpost. right. exact (H r Hpost). Qed.
 
-  (** [Under]-DSP splits exactly; [Over]-DSP only gets implications, because
-      there the observation is a premise. *)
-  Theorem tripleDSP_under A (m : nddprog S A) pre post :
-    tripleDSP m Under pre post
-    <-> (tripleASP m Under pre post /\ tripleDSLP m Under pre post).
-  Proof.
-    split.
-    - intro H. split; intros r Hp;
-        [ exact (proj1 (H r Hp)) | exact (proj2 (H r Hp)) ].
-    - intros [H1 H2] r Hp. split; [ exact (H1 r Hp) | exact (H2 r Hp) ].
-  Qed.
-
   (** The two contrapositive diagonals. *)
 
   Theorem ci_asp_dslp_contrapositive A (m : nddprog S A) pre post :
@@ -527,6 +603,32 @@ Section NDTaxonomy.
     destruct Haslp as [[s [Hp Hr]] | Hall2].
     - exact (Hall s Hr Hp).
     - exact (Hnp (Hall2 s0 Hr0)).
+  Qed.
+
+  Theorem ci_dsp_aslp_contrapositive A (m : nddprog S A) pre post :
+    tripleDSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleASLP m Under pre post.
+  Proof.
+    intros H r Hpost. apply NNPP. intro Hno.
+    apply (H r); [| exact Hpost ]. split.
+    - (* [~ asp pre] is [dslp (~pre)] ... *)
+      apply NNPP. intro Hnex. apply Hno. right.
+      intros s Hr. apply NNPP. intro Hnp.
+      exact (Hnex (ex_intro _ s (conj Hnp Hr))).
+    - (* ... and [~ dslp pre] is [asp (~pre)] *)
+      intros s Hr. apply NNPP. intro Hnnp. apply Hno. left.
+      exists s. split; [ apply NNPP; exact Hnnp | exact Hr ].
+  Qed.
+
+
+
+  Theorem ci_dslp_asp_contrapositive' A (m : nddprog S A) pre post :
+    tripleASP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
+    tripleDSLP m Over pre post.
+  Proof.
+    intros H r Hdslp. apply NNPP. intro Hnpost.
+    destruct (H r Hnpost) as [s [Hnp Hr]].
+    exact (Hnp (Hdslp s Hr)).
   Qed.
 
 End NDTaxonomy.
