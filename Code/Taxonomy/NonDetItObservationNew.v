@@ -79,8 +79,6 @@ End ObsASP.
 Arguments obsASP {_} {_}.
 
 Section ASPTriple.
-  Inductive approxKind := | Under | Over.
-
   Definition tripleASP {S A}
     (prog : nditprog S A)
     (kind : approxKind)
@@ -93,22 +91,8 @@ Section ASPTriple.
       end.
 
   (** Neither of these is [SingletonProg], so they are plain [ProgSP]: at the
-      empty precondition [pp2asp_over] still yields [post r], and at the full
-      one [pp2asp_under] holds even when no single state carries [pre]. *)
-  Definition pp2asp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, p s -> pre s) -> post r.
-
-  Definition pp2asp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, pre s -> p s) /\ post r.
-
-  Definition ordProgASP {S A} (m1 m2 : ASPProgSP S A) : Prop :=
-    forall pre r, getProgASP m1 pre r -> getProgASP m2 pre r.
-
-  Definition ordProgSP {S A} (m1 m2 : @ProgSP S A) : Prop :=
-    forall pre r, m1 pre r -> m2 pre r.
-
+      empty precondition [pp2_over] still yields [post r], and at the full
+      one [pp2_under] holds even when no single state carries [pre]. *)
   Definition tripleASPspec {S A}
     (prog : nditprog S A)
     (kind : approxKind)
@@ -117,8 +101,8 @@ Section ASPTriple.
     : Prop
     :=
     match kind with
-    | Over => ordProgSP (getProgASP (obsASP prog)) (pp2asp_over pre post)
-    | Under => ordProgSP (pp2asp_under pre post) (getProgASP (obsASP prog))
+    | Over => ordProgSP (getProgASP (obsASP prog)) (pp2_over pre post)
+    | Under => ordProgSP (pp2_under pre post) (getProgASP (obsASP prog))
     end.
 
   Theorem tripleASPDefEq {S A}
@@ -128,7 +112,7 @@ Section ASPTriple.
     (post : option (A * S) -> Prop) :
     tripleASP prog kind pre post <-> tripleASPspec prog kind pre post.
   Proof.
-    unfold tripleASP, tripleASPspec, ordProgSP, pp2asp_over, pp2asp_under.
+    unfold tripleASP, tripleASPspec, ordProgSP, pp2_over, pp2_under.
     destruct kind; split.
     - (* Under: instantiate the quantified precondition at [pre] itself *)
       intros H p r [Hsub Hpost]. destruct (H r Hpost) as [s [Hpre Hreach]].
@@ -315,22 +299,11 @@ Section DSLPTriple.
     | Under => forall r, post r -> getProgDSLP (obsDSLP prog) pre r
     end.
 
-  Definition ordProgDSLP {S A} (m1 m2 : DSLPProgSP S A) : Prop :=
-    forall pre r, getProgDSLP m1 pre r -> getProgDSLP m2 pre r.
-
 
   (** As on the ASP side, neither of these is [MSingletonProg], so both are
       plain [ProgSP].  They are in fact the same two transformers used for
       ASP: the [Over] / [Under] readings turn only on the observation being
       monotone in its precondition, which all four observations are. *)
-  Definition pp2dslp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, p s -> pre s) -> post r.
-
-  Definition pp2dslp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, pre s -> p s) /\ post r.
-
   Definition tripleDSLPspec {S A}
     (prog : nditprog S A)
     (kind : approxKind)
@@ -338,8 +311,8 @@ Section DSLPTriple.
     (post : option (A * S) -> Prop)
     : Prop :=
     match kind with
-    | Over => ordProgSP (getProgDSLP (obsDSLP prog)) (pp2dslp_over pre post)
-    | Under => ordProgSP (pp2dslp_under pre post) (getProgDSLP (obsDSLP prog))
+    | Over => ordProgSP (getProgDSLP (obsDSLP prog)) (pp2_over pre post)
+    | Under => ordProgSP (pp2_under pre post) (getProgDSLP (obsDSLP prog))
     end.
 
   Theorem tripleDSLPDefEq {S A}
@@ -349,7 +322,7 @@ Section DSLPTriple.
     (post : option (A * S) -> Prop) :
     tripleDSLP prog kind pre post <-> tripleDSLPspec prog kind pre post.
   Proof.
-    unfold tripleDSLP, tripleDSLPspec, ordProgSP, pp2dslp_over, pp2dslp_under.
+    unfold tripleDSLP, tripleDSLPspec, ordProgSP, pp2_over, pp2_under.
     destruct kind; split.
     - (* Under: push the quantified precondition through [pre <= p] *)
       intros H p r [Hsub Hpost] s Hout. exact (Hsub s (H r Hpost s Hout)).
@@ -650,17 +623,6 @@ Section DSPTriple.
     | Under => forall r, post r -> getProgDSP (obsDSP prog) pre r
     end.
 
-  Definition ordProgDSP {S A} (m1 m2 : DSPProgSP S A) : Prop :=
-    forall pre r, getProgDSP m1 pre r -> getProgDSP m2 pre r.
-
-  Definition pp2dsp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, p s -> pre s) -> post r.
-
-  Definition pp2dsp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, pre s -> p s) /\ post r.
-
   Definition tripleDSPspec {S A}
     (prog : nditprog S A)
     (kind : approxKind)
@@ -668,8 +630,8 @@ Section DSPTriple.
     (post : option (A * S) -> Prop)
     : Prop :=
     match kind with
-    | Over => ordProgSP (getProgDSP (obsDSP prog)) (pp2dsp_over pre post)
-    | Under => ordProgSP (pp2dsp_under pre post) (getProgDSP (obsDSP prog))
+    | Over => ordProgSP (getProgDSP (obsDSP prog)) (pp2_over pre post)
+    | Under => ordProgSP (pp2_under pre post) (getProgDSP (obsDSP prog))
     end.
 
   Theorem tripleDSPDefEq {S A}
@@ -679,7 +641,7 @@ Section DSPTriple.
     (post : option (A * S) -> Prop) :
     tripleDSP prog kind pre post <-> tripleDSPspec prog kind pre post.
   Proof.
-    unfold tripleDSP, tripleDSPspec, ordProgSP, pp2dsp_over, pp2dsp_under.
+    unfold tripleDSP, tripleDSPspec, ordProgSP, pp2_over, pp2_under.
     destruct kind; split.
     - (* Under: both conjuncts of the DSP move along [pre <= p] *)
       intros H p r [Hsub Hpost].
@@ -783,17 +745,6 @@ Section ASLPTriple.
     | Under => forall r, post r -> getProgASLP (obsASLP prog) pre r
     end.
 
-  Definition ordProgASLP {S A} (m1 m2 : ASLPProgSP S A) : Prop :=
-    forall pre r, getProgASLP m1 pre r -> getProgASLP m2 pre r.
-
-
-  Definition pp2aslp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, p s -> pre s) -> post r.
-
-  Definition pp2aslp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : @ProgSP S A :=
-    fun p r => (forall s, pre s -> p s) /\ post r.
 
   Definition tripleASLPspec {S A}
     (prog : nditprog S A)
@@ -802,8 +753,8 @@ Section ASLPTriple.
     (post : option (A * S) -> Prop)
     : Prop :=
     match kind with
-    | Over => ordProgSP (getProgASLP (obsASLP prog)) (pp2aslp_over pre post)
-    | Under => ordProgSP (pp2aslp_under pre post) (getProgASLP (obsASLP prog))
+    | Over => ordProgSP (getProgASLP (obsASLP prog)) (pp2_over pre post)
+    | Under => ordProgSP (pp2_under pre post) (getProgASLP (obsASLP prog))
     end.
 
   Theorem tripleASLPDefEq {S A}
@@ -813,7 +764,7 @@ Section ASLPTriple.
     (post : option (A * S) -> Prop) :
     tripleASLP prog kind pre post <-> tripleASLPspec prog kind pre post.
   Proof.
-    unfold tripleASLP, tripleASLPspec, ordProgSP, pp2aslp_over, pp2aslp_under.
+    unfold tripleASLP, tripleASLPspec, ordProgSP, pp2_over, pp2_under.
     destruct kind; split.
     - (* Under: whichever disjunct held still holds after weakening *)
       intros H p r [Hsub Hpost].
