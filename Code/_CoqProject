@@ -11,6 +11,9 @@ Common/NonDetSpecMonads.v
 Common/Guarded.v
 Common/IOStateExc.v
 Common.v
+Recipes/DMRecipe.v
+Recipes/Logic.v
+Recipes/DijkstraMonad.v
 Identity/Identity.v
 Identity/IdentityVariations.v
 Reader/Reader.v
