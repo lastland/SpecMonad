@@ -4,7 +4,8 @@ From ExtLib Require Import
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Pred PredFacts SPost WPred NonDetItObservation.
+From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Pred PredFacts SPost WPred WPNonDetItObservations.
+From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
@@ -159,86 +160,6 @@ End ASPTriple.
 
 Arguments tripleASP {_} {_}.
 
-Section ASPExamples.
-  Example progA : nditprog nat unit :=
-  put 42 ;;
-  s <- get ;;
-  orP _ (put s) (put (s + 1)).
-
-  Theorem progA_all :
-    tripleASP progA Over
-      (fun _ => True)
-      (fun r =>
-         match r with
-         | Some (_, s') => s' >= 42
-         | None => False
-         end).
-  Proof.
-    unfold tripleASP. intros r [sigma [_ Hrel]].
-    destruct r as [[[] s'] |]; cbn in Hrel; sauto.
-  Qed.
-
-  Theorem progA_42 :
-    tripleASP progA Under
-      (fun _ => True)
-      (fun r => r = Some (tt, 42)).
-  Proof.
-    unfold tripleASP. intros r ->. exists 0. split.
-    - exact I.
-    - cbn. sauto.
-  Qed.
-
-  Theorem progA_43 :
-    tripleASP progA Under
-      (fun _ => True)
-      (fun r => r = Some (tt, 43)).
-  Proof.
-    unfold tripleASP. intros r ->. exists 0. split.
-    - exact I.
-    - cbn. sauto.
-  Qed.
-
-  (* ================================================================= *)
-  (** ** Examples: nondeterminism + divergence                          *)
-  (* ================================================================= *)
-
-  Example progB : nditprog nat unit :=
-    put 42 ;;
-    s <- get ;;
-    orP _ (put s) (spinP _).
-
-  Theorem progB_42 :
-    tripleASP progB Under
-      (fun _ => True)
-      (fun r => r = Some (tt, 42)).
-  Proof.
-    unfold tripleASP. intros r ->. exists 0. split; [exact I | sauto].
-  Qed.
-
-  Theorem progB_not_None :
-    tripleASP progB Over
-      (fun _ => True)
-      (fun r => r <> None).
-  Proof.
-    unfold tripleASP. intros r [sigma [_ Hrel]] ->. cbn in Hrel. sauto.
-  Qed.
-    
-  (** [progEx] reaches [Some (tt, 1)] only from state [0] — enough for the
-      [Under] triple, which asks for *some* [pre] state to reach each [post]
-      outcome. *)
-  Example progEx : nditprog nat unit :=
-    s <- get ;;
-    orP _ (put (s + 1)) (put 42).
-
-  Theorem progEx_under :
-    tripleASP progEx Under
-      (fun _ => True)
-      (fun r => r = Some (tt, 1)).
-  Proof.
-    intros r ->. exists 0. split; [exact I | cbn; sauto].
-  Qed.
-
-End ASPExamples.
 Section ObsDSLP.
   Variable S : Type.
 
@@ -358,183 +279,6 @@ End DSLPTriple.
 
 Arguments tripleDSLP {_} {_}.
 
-Section OHearnExample.
-  Definition example_state : nditprog (nat * nat * nat) unit :=
-    s <- get ;;
-    let '(x, y, _) := s in
-    if Nat.even x then
-      if negb (Nat.even y) then put (x, y, 42) else ret tt
-    else ret tt.
-
-  Theorem example_incorrect_1 :
-    tripleASP example_state Under
-      (fun '(x, _, z) => z = 11)
-      (fun r =>
-         match r with
-         | Some (tt, (x, y, z)) =>
-             z = 42 /\ Nat.even x = true /\ negb (Nat.even y) = true
-         | _ => False
-         end).
-  Proof.
-    unfold tripleASP.
-    intros [[[] [[x y] z]]|] H; [| contradiction].
-    destruct H as [-> [Hx Hy]].
-    exists (x, y, 11). split; [reflexivity |].
-    cbn. eexists. split; [reflexivity |].
-    cbn. rewrite Hx, Hy. reflexivity.
-  Qed.
-  
-  Theorem example_incorrect_2 :
-    tripleASP example_state Under
-      (fun _ => True)
-      (fun r =>
-         match r with
-         | Some (tt, (_, _, z)) => z = 42
-         | _ => False
-         end).
-  Proof.
-    unfold tripleASP.
-    intros [[[] [[x y] z]]|] H; [| contradiction].
-    cbn in H. subst z.
-    (* the final state itself is a witness: both branches preserve [x], [y]
-       and either set [z := 42] or leave it at [42] *)
-    exists (x, y, 42). split; [exact I |].
-    cbn. eexists. split; [reflexivity |].
-    cbn. destruct (Nat.even x); destruct (negb (Nat.even y)); reflexivity.
-  Qed.
-
-  Theorem example_incorrect_unprovable :
-    ~ tripleASP example_state Under
-        (fun '(_, _, z) => z = 11)
-        (fun r =>
-           match r with
-           | Some (tt, (_, _, z)) => z = 42
-           | _ => False
-           end).
-  Proof.
-    (* [Some (tt, (1, 0, 42))] satisfies the postcondition but is reachable
-       only from itself — and its [z] is [42], not [11] *)
-    intro H.
-    specialize (H (Some (tt, (1, 0, 42))) eq_refl).
-    destruct H as [[[x y] z] [Hpre Hrel]].
-    cbn in Hpre. subst z.
-    cbn in Hrel. destruct Hrel as [a [Ha Hrel]]. subst a. cbn in Hrel.
-    destruct (Nat.even x) eqn:Hx; destruct (negb (Nat.even y)) eqn:Hy;
-      cbn in Hrel; inversion Hrel; subst; try discriminate Hx.
-  Qed.
-End OHearnExample.
-
-Section OHearnRewritingRules.
-  Variable S : Type.
-
-  Theorem first_symmetry_rule_1_asp :
-    forall A (m : nditprog S A) pre post1 post2,
-      (tripleASP m Under pre post1 /\
-       tripleASP m Under pre post2) ->
-        tripleASP m Under pre (fun r => post1 r \/ post2 r).
-  Proof.
-    intros A m pre post1 post2 [H1 H2] r [Hr1 | Hr2].
-    - exact (H1 r Hr1).
-    - exact (H2 r Hr2).
-  Qed.
-
-  Theorem first_symmetry_rule_2_asp :
-    forall A (m : nditprog S A) pre post1 post2,
-      tripleASP m Under pre (fun r => post1 r \/ post2 r) ->
-      (tripleASP m Under pre post1 /\
-       tripleASP m Under pre post2).
-  Proof.
-    intros A m pre post1 post2 H. split.
-    - intros r Hr. exact (H r (or_introl Hr)).
-    - intros r Hr. exact (H r (or_intror Hr)).
-  Qed.
-
-  Theorem first_symmetry_rule_asp :
-    forall A (m : nditprog S A) pre post1 post2,
-      (tripleASP m Under pre post1 /\
-       tripleASP m Under pre post2) <->
-        tripleASP m Under pre (fun r => post1 r \/ post2 r).
-  Proof.
-    intros A m pre post1 post2. split.
-    - apply first_symmetry_rule_1_asp.
-    - apply first_symmetry_rule_2_asp.
-  Qed.
-
-  Theorem second_symmetry_rule_asp_1 :
-    forall A (m : nditprog S A) pre post1 post2,
-      (tripleASP m Over pre post1 /\
-         tripleASP m Over pre post2) ->
-      tripleASP m Over pre (fun r => post1 r /\ post2 r).
-  Proof.
-    intros A m pre post1 post2 [H1 H2] r Hasp.
-    split; [exact (H1 r Hasp) | exact (H2 r Hasp)].
-  Qed.
-
-  Theorem second_symmetry_rule_asp_2 :
-    forall A (m : nditprog S A) pre post1 post2,
-      tripleASP m Over pre (fun r => post1 r /\ post2 r) ->
-      (tripleASP m Over pre post1 /\
-         tripleASP m Over pre post2).
-  Proof.
-    intros A m pre post1 post2 H. split; intros r Hasp;
-      [exact (proj1 (H r Hasp)) | exact (proj2 (H r Hasp))].
-  Qed.
-
-  Theorem second_symmetry_rule_asp :
-    forall A (m : nditprog S A) pre post1 post2,
-      (tripleASP m Over pre post1 /\
-         tripleASP m Over pre post2) <->
-        tripleASP m Over pre (fun r => post1 r /\ post2 r).
-  Proof.
-    intros A m pre post1 post2. split.
-    - apply second_symmetry_rule_asp_1.
-    - apply second_symmetry_rule_asp_2.
-  Qed.
-
-  (** Rule of consequence, [Under]: WEAKEN the precondition and SHRINK the
-      postcondition — the opposite of the [Over] direction below, because
-      [Under] has the observation in the conclusion. *)
-  Theorem first_imp_symmetry_rule_asp :
-      forall A (m : nditprog S A) pre pre' post post',
-        (tripleASP m Under pre post /\
-           (forall r, pre r -> pre' r) /\ (forall r, post' r -> post r)) -> tripleASP m Under pre' post'.
-  Proof.
-    intros A m pre pre' post post' [Htriple [Hpre Hpost]] r Hpost'.
-    destruct (Htriple r (Hpost r Hpost')) as [s [Hp Hr]].
-    exists s. split; [exact (Hpre s Hp) | exact Hr].
-  Qed.
-
-  Theorem second_imp_symmetry_rule_asp :
-      forall A (m : nditprog S A) pre pre' post post',
-        (tripleASP m Over pre post /\
-           (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) -> tripleASP m Over pre' post'.
-  Proof.
-    intros A m pre pre' post post' [Htriple [Hpre Hpost]] r [s [Hp' Hr]].
-    apply Hpost. apply Htriple. exists s. split; [exact (Hpre s Hp') | exact Hr].
-  Qed.
-
-  (** A result witnessed by the under-approximation is reached from a [u]-state;
-      if [u] entails [o], the over-approximation must accept it. *)
-  Theorem principle_of_agreement_asp :
-      forall A (m : nditprog S A) u u' o o',
-        (tripleASP m Under u u' /\ tripleASP m Over o o' /\
-           (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
-  Proof.
-    intros A m u u' o o' [Hinc [Hcor Himp]] r Hu'.
-    destruct (Hinc r Hu') as [s [Hu Hr]].
-    apply Hcor. exists s. split; [exact (Himp s Hu) | exact Hr].
-  Qed.
-
-  Theorem principle_of_denial_asp :
-      forall A (m : nditprog S A) u u' o o',
-        (tripleASP m Under u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleASP m Over o o').
-  Proof.
-    intros A m u u' o o' [Hinc [Himp Hnot]] Hcor.
-    apply Hnot.
-    apply (principle_of_agreement_asp A m u u' o o').
-    exact (conj Hinc (conj Hcor Himp)).
-  Qed.
-End OHearnRewritingRules.
 Section ObsDSP.
   Variable S : Type.
 
@@ -1024,28 +768,6 @@ Section SPExamples.
     intros [Hasp | Hdslp];
       [ exact (progEx_asp_not_99 Hasp) | exact (progEx_dslp_not_99 Hdslp) ].
   Qed.
-
-  Example progRet : nditprog nat unit := ret tt.
-
-  Definition preEq0 : nat -> Prop := fun s => s = 0.
-  Definition postEq0 : option (unit * nat) -> Prop :=
-    fun r => r = Some (tt, 0).
-
-  Theorem progRet_asp_inc :
-    tripleASP progRet Under preEq0 postEq0.
-  Proof.
-    intros r Hpost. unfold postEq0 in Hpost. subst r.
-    exists 0. split; [reflexivity | cbn; sauto].
-  Qed.
-
-  Theorem progRet_dsp_inc :
-    tripleDSP progRet Under preEq0 postEq0.
-  Proof.
-    intros r Hpost. split; [ exact (progRet_asp_inc r Hpost) |].
-    unfold postEq0 in Hpost. subst r.
-    intros s Hr. cbn in Hr. unfold preEq0. sauto.
-  Qed.
-  
 End SPExamples.
 
 Section GaloisConnection.
@@ -1098,15 +820,3 @@ Section GaloisConnection.
   Qed.
 End GaloisConnection.
 
-(*Section PrePostEmbedding.
-  Variable S : Type.
-
-  Definition PrePostS (A : Type) := ((S -> Prop) * (S -> option (A * S) -> Prop))%type.
-
-  Definition ret_PrePostS {A} (a : A) : PrePostS A := (fun _ => True, fun s r => r = Some (a, s)).
-
-  Definition bind_PrePostS {A B} (m : PrePostS A) (k : A -> PrePostS B) : PrePostS B :=
-    (fun s0 x => fst m s0 /\ (forall a s1, snd m s0 (Some (a, s1)) -> fst (k a) s1),
-     fun s0 x => (exists a s1, snd m s0 (Some (a, s1)) /\ snd (k a) s1 x) \/ (x = None /\ snd m s0 None)).
-
-End PrePostEmbedding.*)

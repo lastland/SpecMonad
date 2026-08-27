@@ -2,7 +2,7 @@ From ExtLib Require Import
   Monad MonadState
   StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy Require Import NonDetDivProg SPSpecMonadsSt.
+From Incorrectness.Taxonomy Require Import NonDetDivProg SPSimplerSpecMonads.
 Require Import Coq.Logic.Classical_Prop.
 
 Import MonadNotation.
@@ -11,7 +11,7 @@ Open Scope monad_scope.
 (** * SP observations of [nddprog] over a plain stateful outcome
 
     [nddprog S A] has outcome set [option (A * S) -> Prop], with [None] read as
-    divergence.  [SPSpecMonadsSt] indexes its transformers by [A * S], so the
+    divergence.  [SPSimplerSpecMonads] indexes its transformers by [A * S], so the
     observations here read the TERMINATING SLICE
 
       [unOptionT (runStateT m s) (Some r)]     with [r : A * S]
