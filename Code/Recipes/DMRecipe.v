@@ -5,6 +5,15 @@ From ITree.Extra Require Export Dijkstra.DijkstraMonad.
 Definition dualOrder {W : Type -> Type} (order : OrderM W) : OrderM W :=
   fun A x y => order A y x.
 
+Class RefinementOrder (W : Type -> Type) := {
+  refines : OrderM W
+}.
+
+Arguments refines {W RefinementOrder A} _ _.
+
+Declare Scope refinement_scope.
+Infix "⊑" := refines (at level 70) : refinement_scope.
+
 Inductive Direction :=
 | Over
 | Under.
