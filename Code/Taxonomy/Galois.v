@@ -83,18 +83,7 @@ Lemma adjunction_ASP_Rel {A B}
   (R : Rel A B) (f : PureASPostArr A B) :
   PureASPostArr_le (alpha_asp R) f <-> Rel_le R (gamma_asp f).
 Proof.
-  unfold PureASPostArr_le, Rel_le, alpha_asp, gamma_asp. split.
-  - intros Hord a b HR.
-    rewrite <- (asp_singleton (sp_rel (proj1_sig f)) a b).
-    apply (proj1 (proj2_sig f (fun a' => a = a') b)).
-    apply Hord.
-    rewrite (proj2_sig (mkASP R) (fun a' => a = a') b).
-    unfold asp. exists a. split; [reflexivity | exact HR].
-  - intros Hle pre b Hpt.
-    apply (proj2 (proj2_sig f pre b)).
-    unfold asp.
-    destruct (proj1 (proj2_sig (mkASP R) pre b) Hpt) as [a [Hpre HR]].
-    exists a. split; [exact Hpre | apply Hle; exact HR].
+  apply PureASPostArr_le_iff.
 Qed.
 
 Definition Galois_Rel_ASPost :=
