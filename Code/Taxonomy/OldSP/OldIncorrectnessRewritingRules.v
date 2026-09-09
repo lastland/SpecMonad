@@ -4,14 +4,15 @@
     observations it reasons about live in [OldSPObservations.v]. *)
 
 From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import
-  Monad MonadState MonadExc
-  StateMonad OptionMonad.
+From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Pred PredFacts SPost WPred WPNonDetItObservations.
-From Incorrectness.Taxonomy.OldSP Require Import OldSPObservations.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
+From Incorrectness.Taxonomy Require Import OldSPObservations.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -21,7 +22,7 @@ Section OHearnRewritingRules.
   Variable S : Type.
 
   Theorem first_symmetry_rule_1_asp :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       (tripleSP obsASP m Under pre post1 /\
        tripleSP obsASP m Under pre post2) ->
         tripleSP obsASP m Under pre (fun r => post1 r \/ post2 r).
@@ -35,7 +36,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem first_symmetry_rule_2_asp :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       tripleSP obsASP m Under pre (fun r => post1 r \/ post2 r) ->
       (tripleSP obsASP m Under pre post1 /\
        tripleSP obsASP m Under pre post2).
@@ -48,7 +49,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem first_symmetry_rule_asp :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       (tripleSP obsASP m Under pre post1 /\
        tripleSP obsASP m Under pre post2) <->
         tripleSP obsASP m Under pre (fun r => post1 r \/ post2 r).
@@ -59,7 +60,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem second_symmetry_rule_asp_1 :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       (tripleSP obsASP m Over pre post1 /\
          tripleSP obsASP m Over pre post2) ->
       tripleSP obsASP m Over pre (fun r => post1 r /\ post2 r).
@@ -72,7 +73,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem second_symmetry_rule_asp_2 :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       tripleSP obsASP m Over pre (fun r => post1 r /\ post2 r) ->
       (tripleSP obsASP m Over pre post1 /\
          tripleSP obsASP m Over pre post2).
@@ -85,7 +86,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem second_symmetry_rule_asp :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       (tripleSP obsASP m Over pre post1 /\
          tripleSP obsASP m Over pre post2) <->
         tripleSP obsASP m Over pre (fun r => post1 r /\ post2 r).
@@ -96,7 +97,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem second_symmetry_rule_dwp_1 :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       (tripleWP obsDWLP m pre SubsetOf post1 /\
          tripleWP obsDWLP m pre SubsetOf post2) ->
       tripleWP obsDWLP m pre SubsetOf (fun r => post1 r /\ post2 r).
@@ -112,7 +113,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem second_symmetry_rule_dwp_2 :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       tripleWP obsDWLP m pre SubsetOf (fun r => post1 r /\ post2 r) ->
        (tripleWP obsDWLP m pre SubsetOf post1 /\
          tripleWP obsDWLP m pre SubsetOf post2).
@@ -130,7 +131,7 @@ Section OHearnRewritingRules.
   Qed.
 
   Theorem second_symmetry_rule_dwp :
-    forall A (m : nditprog S A) pre post1 post2,
+    forall A (m : stdivexcnd S A) pre post1 post2,
       (tripleWP obsDWLP m pre SubsetOf post1 /\
          tripleWP obsDWLP m pre SubsetOf post2) <->
         tripleWP obsDWLP m pre SubsetOf (fun r => post1 r /\ post2 r).
@@ -143,7 +144,7 @@ Section OHearnRewritingRules.
     (** Rule of consequence for SP-Incorrect: weaken the precondition
         and shrink the postcondition. *)
     Theorem first_imp_symmetry_rule_asp :
-      forall A (m : nditprog S A) pre pre' post post',
+      forall A (m : stdivexcnd S A) pre pre' post post',
         (tripleSP obsASP m Under pre post /\
            (forall r, pre r -> pre' r) /\ (forall r, post' r -> post r)) -> tripleSP obsASP m Under pre' post'.
     Proof.
@@ -158,7 +159,7 @@ Section OHearnRewritingRules.
     (** Rule of consequence for SP-Correct: strengthen the precondition
         and weaken the postcondition. *)
     Theorem second_imp_symmetry_rule_asp :
-      forall A (m : nditprog S A) pre pre' post post',
+      forall A (m : stdivexcnd S A) pre pre' post post',
         (tripleSP obsASP m Over pre post /\
            (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) -> tripleSP obsASP m Over pre' post'.
     Proof.
@@ -174,7 +175,7 @@ Section OHearnRewritingRules.
         reachable from a [pre']-state is a terminating outcome there, so
         the demonic partial transformer forces the postcondition. *)
     Theorem second_imp_symmetry_rule_dwp :
-      forall A (m : nditprog S A) pre pre' post post',
+      forall A (m : stdivexcnd S A) pre pre' post post',
         (tripleWP obsDWLP m pre SubsetOf post /\
            (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) -> tripleSP obsASP m Over pre' post'.
     Proof.
@@ -195,7 +196,7 @@ Section OHearnRewritingRules.
         precondition [o], then the over-approximation postcondition [o']
         holds of every [u']-result. *)
     Theorem principle_of_agreement_asp :
-      forall A (m : nditprog S A) u u' o o',
+      forall A (m : stdivexcnd S A) u u' o o',
         (tripleSP obsASP m Under u u' /\ tripleSP obsASP m Over o o' /\
            (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
     Proof.
@@ -209,7 +210,7 @@ Section OHearnRewritingRules.
 
     (** Principle of agreement, demonic-partial-WP variant. *)
     Theorem principle_of_agreement_dwp :
-      forall A (m : nditprog S A) u u' o o',
+      forall A (m : stdivexcnd S A) u u' o o',
         (tripleSP obsASP m Under u u' /\ tripleWP obsDWLP m o SubsetOf o' /\
            (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
     Proof.
@@ -227,7 +228,7 @@ Section OHearnRewritingRules.
 
     (** Principle of denial (SP): contrapositive of agreement. *)
     Theorem principle_of_denial_asp :
-      forall A (m : nditprog S A) u u' o o',
+      forall A (m : stdivexcnd S A) u u' o o',
         (tripleSP obsASP m Under u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleSP obsASP m Over o o').
     Proof.
       intros A m u u' o o' [Hinc [Himp Hnot]] Hcor.
@@ -238,7 +239,7 @@ Section OHearnRewritingRules.
 
     (** Principle of denial, demonic-partial-WP variant. *)
     Theorem principle_of_denial_dwp :
-      forall A (m : nditprog S A) u u' o o',
+      forall A (m : stdivexcnd S A) u u' o o',
         (tripleSP obsASP m Under u u' /\ (forall r, u r -> o r) /\ ~(forall r, u' r -> o' r)) -> ~(tripleWP obsDWLP m o SubsetOf o').
     Proof.
       intros A m u u' o o' [Hinc [Himp Hnot]] Hwp.
@@ -255,52 +256,52 @@ End OHearnRewritingRules.
 (* ================================================================= *)
 
 (** O'Hearn's rewriting rules and the agreement/denial principles. *)
-Theorem m_first_symmetry_rule_asp : forall S A (m : nditprog S A) pre post1 post2,
+Theorem m_first_symmetry_rule_asp : forall S A (m : stdivexcnd S A) pre post1 post2,
     (tripleSPm spASP obsSP m Under pre post1 /\
      tripleSPm spASP obsSP m Under pre post2) <->
     tripleSPm spASP obsSP m Under pre (fun r => post1 r \/ post2 r).
 Proof. intros S A m pre post1 post2. to_pointwise_sp. apply first_symmetry_rule_asp. Qed.
 
-Theorem m_second_symmetry_rule_asp : forall S A (m : nditprog S A) pre post1 post2,
+Theorem m_second_symmetry_rule_asp : forall S A (m : stdivexcnd S A) pre post1 post2,
     (tripleSPm spASP obsSP m Over pre post1 /\
      tripleSPm spASP obsSP m Over pre post2) <->
     tripleSPm spASP obsSP m Over pre (fun r => post1 r /\ post2 r).
 Proof. intros S A m pre post1 post2. to_pointwise_sp. apply second_symmetry_rule_asp. Qed.
 
-Theorem m_first_imp_symmetry_rule_asp : forall S A (m : nditprog S A) pre pre' post post',
+Theorem m_first_imp_symmetry_rule_asp : forall S A (m : stdivexcnd S A) pre pre' post post',
     (tripleSPm spASP obsSP m Under pre post /\
      (forall r, pre r -> pre' r) /\ (forall r, post' r -> post r)) ->
     tripleSPm spASP obsSP m Under pre' post'.
 Proof. intros S A m pre pre' post post'. to_pointwise_sp. apply first_imp_symmetry_rule_asp. Qed.
 
-Theorem m_second_imp_symmetry_rule_asp : forall S A (m : nditprog S A) pre pre' post post',
+Theorem m_second_imp_symmetry_rule_asp : forall S A (m : stdivexcnd S A) pre pre' post post',
     (tripleSPm spASP obsSP m Over pre post /\
      (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) ->
     tripleSPm spASP obsSP m Over pre' post'.
 Proof. intros S A m pre pre' post post'. to_pointwise_sp. apply second_imp_symmetry_rule_asp. Qed.
 
-Theorem m_second_imp_symmetry_rule_dwp : forall S A (m : nditprog S A) pre pre' post post',
+Theorem m_second_imp_symmetry_rule_dwp : forall S A (m : stdivexcnd S A) pre pre' post post',
     (tripleWP obsDWLP m pre SubsetOf post /\
      (forall r, pre' r -> pre r) /\ (forall r, post r -> post' r)) ->
     tripleSPm spASP obsSP m Over pre' post'.
 Proof. intros S A m pre pre' post post'. to_pointwise_sp. apply second_imp_symmetry_rule_dwp. Qed.
 
-Theorem m_principle_of_agreement_asp : forall S A (m : nditprog S A) u u' o o',
+Theorem m_principle_of_agreement_asp : forall S A (m : stdivexcnd S A) u u' o o',
     (tripleSPm spASP obsSP m Under u u' /\ tripleSPm spASP obsSP m Over o o' /\
      (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
 Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_agreement_asp. Qed.
 
-Theorem m_principle_of_agreement_dwp : forall S A (m : nditprog S A) u u' o o',
+Theorem m_principle_of_agreement_dwp : forall S A (m : stdivexcnd S A) u u' o o',
     (tripleSPm spASP obsSP m Under u u' /\ tripleWP obsDWLP m o SubsetOf o' /\
      (forall r, u r -> o r)) -> (forall r, u' r -> o' r).
 Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_agreement_dwp. Qed.
 
-Theorem m_principle_of_denial_asp : forall S A (m : nditprog S A) u u' o o',
+Theorem m_principle_of_denial_asp : forall S A (m : stdivexcnd S A) u u' o o',
     (tripleSPm spASP obsSP m Under u u' /\ (forall r, u r -> o r) /\
      ~ (forall r, u' r -> o' r)) -> ~ tripleSPm spASP obsSP m Over o o'.
 Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_denial_asp. Qed.
 
-Theorem m_principle_of_denial_dwp : forall S A (m : nditprog S A) u u' o o',
+Theorem m_principle_of_denial_dwp : forall S A (m : stdivexcnd S A) u u' o o',
     (tripleSPm spASP obsSP m Under u u' /\ (forall r, u r -> o r) /\
      ~ (forall r, u' r -> o' r)) -> ~ tripleWP obsDWLP m o SubsetOf o'.
 Proof. intros S A m u u' o o'. to_pointwise_sp. apply principle_of_denial_dwp. Qed.

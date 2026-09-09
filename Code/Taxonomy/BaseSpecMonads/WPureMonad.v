@@ -8,7 +8,7 @@
       [WStExc S A]    = stateT S (optionT WPure) A  (* W^StExc  *)
 
     Monotonicity is part of the carrier, not a side condition: it is exactly
-    what the [PrePost -| WPure] adjunctions of [GaloisNew.v] need, and they
+    what the [PrePost -| WPure] adjunctions of [BaseGaloisConnections.v] need, and they
     are false without it.
 
     Unfolded, [WSt S A = S -> (A * S -> Prop) -> Prop]: every outcome is a
@@ -200,7 +200,7 @@ Definition ordWStExc {S A} (m1 m2 : WStExc S A) : Prop :=
 (** Both chain through the generic [optionT] / [stateT] instances, which are
     [Eq1]-generic, so [Eq1_WPure] (pointwise iff) serves throughout. *)
 
-From Incorrectness.Taxonomy.ComputationMonads Require Import Prog.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
 
 Section WStLaws.
   Variable S : Type.

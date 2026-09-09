@@ -125,6 +125,9 @@ Section Denote.
       while ExtLib's [stateT] uses [(A * S)] (result first),
       hence the swap in the [Leaf] pattern. *)
 
+  (* stdivexcnd S A := option (option (A * S)) -> Prop *)
+  (* can you define a recursive program? *)
+
   Definition denote {A} (m : freeprog A) : stdivexcnd S A :=
     mkStateT (fun s =>
       let t := throw_prefix (run_state m s) in

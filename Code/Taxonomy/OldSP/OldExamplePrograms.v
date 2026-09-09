@@ -7,29 +7,28 @@
     could not live in one file. *)
 
 From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import
-  Monad MonadState MonadExc
-  StateMonad OptionMonad.
+From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import
-  NonDetProg NonDetItProg ProgFacts WP Pred PredFacts SPost WPred
-  WPNonDetItObservations ExampleProgramDefs.
-From Incorrectness.Taxonomy.OldSP Require Import
-  OldSPObservations OldIncorrectnessRewritingRules.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
+From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
+From Incorrectness.Taxonomy Require Import OldSPObservations OldIncorrectnessRewritingRules.
 
 Import MonadNotation.
 Open Scope monad_scope.
 
 (* ================================================================= *)
-(** ** O'Hearn's Example 3.1, ported to [nditprog] / [tripleSP obsASP] *)
+(** ** O'Hearn's Example 3.1, ported to [stdivexcnd] / [tripleSP obsASP] *)
 (* ================================================================= *)
 
-(** A port of [ST/Pred.v]'s [OHearnExample] module.  The original
+(** A port of [ST/PredArr.v]'s [OHearnExample] module.  The original
     operates on the pure state monad [state S A := S -> A * S] with a
     bespoke [Incorrect] predicate (reachability of a final state from
-    some initial state).  Here we use [nditprog S A] (deterministic in
+    some initial state).  Here we use [stdivexcnd S A] (deterministic in
     this example) and [tripleSP obsASP _ Under].
 
     Program (O'Hearn, "Incorrectness Logic", Example 3.1): swap [z]
@@ -274,7 +273,7 @@ Module OHearnExample.
 
   (** Weaker incorrectness triple (vacuous precondition): from *some*
       initial state, the program reaches a final state with [z = 42].
-      The original proof in [ST/Pred.v] also leaves [x], [y], [z]
+      The original proof in [ST/PredArr.v] also leaves [x], [y], [z]
       unconstrained and exhibits any state with [x] even and [y]
       odd as the witness. *)
   Theorem example_incorrect_2 :
@@ -300,7 +299,7 @@ Module OHearnExample.
 
   (** Unprovable triple (paper-noted): from any state with [z = 11],
       the program reaches a final state with [z = 42].  This is
-      [example_3_1_incorrect_unprovable] in [ST/Pred.v]; we mirror
+      [example_3_1_incorrect_unprovable] in [ST/PredArr.v]; we mirror
       its failure here.
 
       Refutation: pick [r = Some (tt, (1, 0, 42))] — it satisfies the
