@@ -48,6 +48,41 @@ Section PureASPMonad.
       + intros [i Hw]. destruct (proj1 (H (p i) a) Hw) as [Hpi Htrue].
         exact (proj2 (H (exists j, p j) a) (conj (ex_intro _ i Hpi) Htrue)).
   Qed.
+
+  (** [join_to_singleton] uses only its [Strict] half, so [Strict] alone
+      already forces [Singleton].  Stated separately because the DSP carrier
+      pairs [Strict] with [Conjunctive] rather than [Disjunctive]. *)
+  Lemma strict_to_singleton {A} (w : SPPure A) : Strict w -> Singleton w.
+  Proof.
+    intros HS p a. split.
+    - intro Hw.
+      assert (Hp : p).
+      { apply NNPP. intro Hnp.
+        assert (HF : p = False)
+          by (apply propositional_extensionality; split; [ exact Hnp | intros [] ]).
+        rewrite HF in Hw. exact (HS a Hw). }
+      assert (HT : p = True)
+        by (apply propositional_extensionality;
+            split; [ intros _; exact I | intros _; exact Hp ]).
+      rewrite HT in Hw. split; [ exact Hp | exact Hw ].
+    - intros [Hp Hw].
+      assert (HT : p = True)
+        by (apply propositional_extensionality;
+            split; [ intros _; exact I | intros _; exact Hp ]).
+      rewrite HT. exact Hw.
+  Qed.
+
+  (** [Singleton] gives the OTHER connective too: an additive transformer
+      preserves non-empty meets as well as non-empty joins. *)
+  Lemma singleton_to_conjunctive {A} (w : SPPure A) :
+    Singleton w -> Conjunctive w.
+  Proof.
+    intros H I i0 p a. rewrite (H (forall i, p i) a). split.
+    - intros [Hall Ht] i. exact (proj2 (H (p i) a) (conj (Hall i) Ht)).
+    - intro Hi. split.
+      + intro i. exact (proj1 (proj1 (H (p i) a) (Hi i))).
+      + exact (proj2 (proj1 (H (p i0) a) (Hi i0))).
+  Qed.
   
   Theorem join_iff_singleton {A} (w : SPPure A) :
     JoinPreserving w <-> Singleton w.
@@ -158,6 +193,22 @@ Section PureASPMonad.
       + apply Hfg. exact Hk.
   Qed.
 End PureASPMonad.
+
+(* ================================================================= *)
+(** ** Orders on the pure variant                                     *)
+(* ================================================================= *)
+
+Section PureASPOrders.
+  Definition ordASPSP {A} (m1 m2 : ASPSP A) : Prop :=
+    forall p a, getASP m1 p a -> getASP m2 p a.
+  Definition ordASPSPAt {A} (pre : Prop) (m1 m2 : ASPSP A) : Prop :=
+    forall a, getASP m1 pre a -> getASP m2 pre a.
+
+  (** The degeneracy that forces the side condition on the [Under]
+      characterization: [Singleton] makes every ASP false at [False]. *)
+  Lemma asp_bot_pure {A} (w : ASPSP A) (a : A) : ~ getASP w False a.
+  Proof. intro Hc. exact (proj1 (getASP_split w False a Hc)). Qed.
+End PureASPOrders.
 
 Section ProgASPMonad.
   Variable S : Type.

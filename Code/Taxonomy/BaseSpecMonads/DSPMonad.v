@@ -9,6 +9,103 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicate
 Import MonadNotation.
 Open Scope monad_scope.
 
+(* ================================================================= *)
+(** ** The pure variant                                              *)
+(* ================================================================= *)
+
+(** At [SPPure] the precondition is a [Prop], and the DSP carrier condition
+    [Strict /\ Conjunctive] turns out to be EQUIVALENT to the ASP one
+    ([Singleton]) — see [strict_conj_iff_singleton] below.  [Strict] alone
+    already forces [Singleton] ([strict_to_singleton]), and [Singleton] gives
+    both connectives back ([singleton_to_join], [singleton_to_conjunctive]).
+
+    So [DSPSP] is not a new monad: it is [ASPSP] under a different
+    presentation of the same subset of [SPPure].  Its monad structure is
+    therefore transported along that equivalence rather than rebuilt — none of
+    the relation-recovery machinery that [DSPStExc] needs is required here,
+    because the degeneracy that makes DSP interesting (a precondition that is
+    a SET of states, so that [R⁻¹(r) ⊆ pre] carries more information than
+    [R⁻¹(r) ∩ pre ≠ ∅]) is exactly what disappears when the state is
+    dropped. *)
+
+Section PureDSPMonad.
+
+  Definition StrictConjunctive {A} (w : SPPure A) : Prop :=
+    Strict w /\ Conjunctive w.
+
+  Definition DSPSP (A : Type) : Type := { w : SPPure A | StrictConjunctive w }.
+
+  Definition getDSP {A} (w : DSPSP A) : SPPure A := proj1_sig w.
+
+  Theorem strict_conj_iff_singleton {A} (w : SPPure A) :
+    StrictConjunctive w <-> Singleton w.
+  Proof.
+    split.
+    - intros [HS _]. exact (strict_to_singleton w HS).
+    - intro H. split;
+        [ exact (proj1 (singleton_to_join w H))
+        | exact (singleton_to_conjunctive w H) ].
+  Qed.
+
+  (** The transports.  Both are the identity on the underlying transformer, so
+      every law below is the corresponding [ASPSP] law read through them. *)
+
+  Definition asp_to_dsp {A} (w : ASPSP A) : DSPSP A :=
+    exist _ (getASP w) (proj2 (strict_conj_iff_singleton (getASP w)) (proj2_sig w)).
+
+  Definition dsp_to_asp {A} (w : DSPSP A) : ASPSP A :=
+    exist _ (getDSP w) (proj1 (strict_conj_iff_singleton (getDSP w)) (proj2_sig w)).
+
+  Lemma getDSP_asp_to_dsp {A} (w : ASPSP A) p a :
+    getDSP (asp_to_dsp w) p a <-> getASP w p a.
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma getASP_dsp_to_asp {A} (w : DSPSP A) p a :
+    getASP (dsp_to_asp w) p a <-> getDSP w p a.
+  Proof. split; intro H; exact H. Qed.
+
+  Definition retDSP {A} (v : A) : DSPSP A := asp_to_dsp (retASP v).
+
+  Definition bindDSP {A B} (m : DSPSP A) (k : A -> DSPSP B) : DSPSP B :=
+    asp_to_dsp (bindASP (dsp_to_asp m) (fun a => dsp_to_asp (k a))).
+
+  #[global] Instance Monad_DSPSP : Monad DSPSP :=
+    {| ret := fun _ => retDSP ;
+      bind := fun _ _ => bindDSP |}.
+
+  #[global] Instance Eq1_DSPSP : Eq1 DSPSP :=
+    fun A m n => forall p a, getDSP m p a <-> getDSP n p a.
+
+  #[global] Instance Eq1Equivalence_DSPSP
+    : @Eq1Equivalence DSPSP _ Eq1_DSPSP.
+  Proof.
+    intro A. constructor.
+    - intros x p a. tauto.
+    - intros x y H p a. specialize (H p a). tauto.
+    - intros x y z H1 H2 p a. specialize (H1 p a); specialize (H2 p a). tauto.
+  Qed.
+
+  #[global] Instance MonadLawsE_DSPSP : @MonadLawsE DSPSP Eq1_DSPSP _.
+  Proof.
+    destruct (@MonadLawsE_ASPSP) as [Lbrl Lbrr Lbb Lpb].
+    constructor.
+    - intros A B f x. exact (Lbrl A B (fun a => dsp_to_asp (f a)) x).
+    - intros A x. exact (Lbrr A (dsp_to_asp x)).
+    - intros A B C x f g.
+      exact (Lbb A B C (dsp_to_asp x) (fun a => dsp_to_asp (f a))
+               (fun b => dsp_to_asp (g b))).
+    - intros A B x y Hxy f g Hfg.
+      exact (Lpb A B (dsp_to_asp x) (dsp_to_asp y) Hxy
+               (fun a => dsp_to_asp (f a)) (fun a => dsp_to_asp (g a)) Hfg).
+  Qed.
+
+  Definition ordDSPSP {A} (m1 m2 : DSPSP A) : Prop :=
+    forall p a, getDSP m1 p a -> getDSP m2 p a.
+  Definition ordDSPSPAt {A} (pre : Prop) (m1 m2 : DSPSP A) : Prop :=
+    forall a, getDSP m1 pre a -> getDSP m2 pre a.
+
+End PureDSPMonad.
+
 Section ProgDSPMonad.
   Variable S : Type.
 

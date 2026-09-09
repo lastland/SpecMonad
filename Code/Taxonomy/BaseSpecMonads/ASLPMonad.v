@@ -9,6 +9,94 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicate
 Import MonadNotation.
 Open Scope monad_scope.
 
+(* ================================================================= *)
+(** ** The pure variant                                              *)
+(* ================================================================= *)
+
+(** Dual to [PureDSPMonad] in [DSPMonad.v]: at [SPPure] the ASLP carrier
+    condition [Terminating /\ Disjunctive] is EQUIVALENT to the DSLP one
+    ([MSingleton]).  [Terminating] alone already forces [MSingleton]
+    ([terminating_to_msingleton]), and [MSingleton] gives both connectives
+    back ([msingleton_to_meet], [msingleton_to_disjunctive]).
+
+    So [ASLPSP] is [DSLPSP] under a different presentation of the same subset
+    of [SPPure], and its monad structure is transported rather than rebuilt. *)
+
+Section PureASLPMonad.
+
+  Definition TerminatingDisjunctive {A} (w : SPPure A) : Prop :=
+    Terminating w /\ Disjunctive w.
+
+  Definition ASLPSP (A : Type) : Type := { w : SPPure A | TerminatingDisjunctive w }.
+
+  Definition getASLP {A} (w : ASLPSP A) : SPPure A := proj1_sig w.
+
+  Theorem term_disj_iff_msingleton {A} (w : SPPure A) :
+    TerminatingDisjunctive w <-> MSingleton w.
+  Proof.
+    split.
+    - intros [HT _]. exact (terminating_to_msingleton w HT).
+    - intro H. split;
+        [ exact (proj1 (msingleton_to_meet w H))
+        | exact (msingleton_to_disjunctive w H) ].
+  Qed.
+
+  Definition dslp_to_aslp {A} (w : DSLPSP A) : ASLPSP A :=
+    exist _ (getDSLP w) (proj2 (term_disj_iff_msingleton (getDSLP w)) (proj2_sig w)).
+
+  Definition aslp_to_dslp {A} (w : ASLPSP A) : DSLPSP A :=
+    exist _ (getASLP w) (proj1 (term_disj_iff_msingleton (getASLP w)) (proj2_sig w)).
+
+  Lemma getASLP_dslp_to_aslp {A} (w : DSLPSP A) p a :
+    getASLP (dslp_to_aslp w) p a <-> getDSLP w p a.
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma getDSLP_aslp_to_dslp {A} (w : ASLPSP A) p a :
+    getDSLP (aslp_to_dslp w) p a <-> getASLP w p a.
+  Proof. split; intro H; exact H. Qed.
+
+  Definition retASLP {A} (v : A) : ASLPSP A := dslp_to_aslp (retDSLP v).
+
+  Definition bindASLP {A B} (m : ASLPSP A) (k : A -> ASLPSP B) : ASLPSP B :=
+    dslp_to_aslp (bindDSLP (aslp_to_dslp m) (fun a => aslp_to_dslp (k a))).
+
+  #[global] Instance Monad_ASLPSP : Monad ASLPSP :=
+    {| ret := fun _ => retASLP ;
+      bind := fun _ _ => bindASLP |}.
+
+  #[global] Instance Eq1_ASLPSP : Eq1 ASLPSP :=
+    fun A m n => forall p a, getASLP m p a <-> getASLP n p a.
+
+  #[global] Instance Eq1Equivalence_ASLPSP
+    : @Eq1Equivalence ASLPSP _ Eq1_ASLPSP.
+  Proof.
+    intro A. constructor.
+    - intros x p a. tauto.
+    - intros x y H p a. specialize (H p a). tauto.
+    - intros x y z H1 H2 p a. specialize (H1 p a); specialize (H2 p a). tauto.
+  Qed.
+
+  #[global] Instance MonadLawsE_ASLPSP : @MonadLawsE ASLPSP Eq1_ASLPSP _.
+  Proof.
+    destruct (@MonadLawsE_DSLPSP) as [Lbrl Lbrr Lbb Lpb].
+    constructor.
+    - intros A B f x. exact (Lbrl A B (fun a => aslp_to_dslp (f a)) x).
+    - intros A x. exact (Lbrr A (aslp_to_dslp x)).
+    - intros A B C x f g.
+      exact (Lbb A B C (aslp_to_dslp x) (fun a => aslp_to_dslp (f a))
+               (fun b => aslp_to_dslp (g b))).
+    - intros A B x y Hxy f g Hfg.
+      exact (Lpb A B (aslp_to_dslp x) (aslp_to_dslp y) Hxy
+               (fun a => aslp_to_dslp (f a)) (fun a => aslp_to_dslp (g a)) Hfg).
+  Qed.
+
+  Definition ordASLPSP {A} (m1 m2 : ASLPSP A) : Prop :=
+    forall p a, getASLP m1 p a -> getASLP m2 p a.
+  Definition ordASLPSPAt {A} (pre : Prop) (m1 m2 : ASLPSP A) : Prop :=
+    forall a, getASLP m1 pre a -> getASLP m2 pre a.
+
+End PureASLPMonad.
+
 Section ProgASLPMonad.
   Variable S : Type.
 

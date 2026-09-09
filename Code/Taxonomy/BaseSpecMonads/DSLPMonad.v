@@ -48,6 +48,33 @@ Section PureDSLPMonad.
           [ exact Hpi | destruct (Hnf Hf) ].
   Qed.
 
+  (** Dually to [strict_to_singleton]: [meet_to_msingleton] uses only its
+      [Terminating] half, so [Terminating] alone forces [MSingleton]. *)
+  Lemma terminating_to_msingleton {A} (w : SPPure A) :
+    Terminating w -> MSingleton w.
+  Proof.
+    intros HT p a. destruct (classic p) as [Hp | Hnp].
+    - assert (Heq : p = True)
+        by (apply propositional_extensionality;
+            split; [ intros _; exact I | intros _; exact Hp ]).
+      rewrite Heq. split; [ intros _; left; exact I | intros _; exact (HT a) ].
+    - assert (Heq : p = False)
+        by (apply propositional_extensionality; split; [ exact Hnp | intros [] ]).
+      rewrite Heq. split; [ intro H; right; exact H | intros [[] | H]; exact H ].
+  Qed.
+
+  (** [MSingleton] gives the OTHER connective too. *)
+  Lemma msingleton_to_disjunctive {A} (w : SPPure A) :
+    MSingleton w -> Disjunctive w.
+  Proof.
+    intros H I i0 p a. rewrite (H (exists i, p i) a). split.
+    - intros [[i Hi] | Hf].
+      + exists i. apply H. left. exact Hi.
+      + exists i0. apply H. right. exact Hf.
+    - intros [i Hi]. destruct (proj1 (H (p i) a) Hi) as [Hp | Hf];
+        [ left; exists i; exact Hp | right; exact Hf ].
+  Qed.
+
   Theorem meet_iff_msingleton {A} (w : SPPure A) :
     MeetPreserving w <-> MSingleton w.
   Proof. split; [apply meet_to_msingleton | apply msingleton_to_meet]. Qed.
@@ -205,6 +232,21 @@ Section PureDSLPMonad.
                  (proj2 (Hfg a _ b) H)).
   Qed.
 End PureDSLPMonad.
+
+(* ================================================================= *)
+(** ** Orders on the pure variant                                     *)
+(* ================================================================= *)
+
+Section PureDSLPOrders.
+  Definition ordDSLPSP {A} (m1 m2 : DSLPSP A) : Prop :=
+    forall p a, getDSLP m1 p a -> getDSLP m2 p a.
+  Definition ordDSLPSPAt {A} (pre : Prop) (m1 m2 : DSLPSP A) : Prop :=
+    forall a, getDSLP m1 pre a -> getDSLP m2 pre a.
+
+  (** Dual to [asp_bot_pure]: [MSingleton] makes every DSLP true at [True]. *)
+  Lemma dslp_top_pure {A} (w : DSLPSP A) (a : A) : getDSLP w True a.
+  Proof. exact (getMSP_merge w True a (or_introl I)). Qed.
+End PureDSLPOrders.
 
 Section ProgDSLPMonad.
   Variable S : Type.
