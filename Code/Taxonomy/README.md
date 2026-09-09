@@ -25,7 +25,8 @@ A second separation runs alongside it: **defining** an observation and
 
 ```
 Taxonomy/
-  ComputationMonads/     StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet
+  ComputationMonads/     StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet,
+                         DivNonDet
   BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
                          RelPrePostMonad             -- the five DM4all monads
                          SPPredicateTransformers     -- SP carriers + healthiness
@@ -37,7 +38,7 @@ Taxonomy/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
                          StDivExcNonDet_WStExc, StDivNonDet_WSt
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
-                         StDivNonDet_SPSt
+                         StDivNonDet_SPSt, DivNonDet_SPPure
       (root)             Taxonomy_StDivExcNonDet_StExc,
                          Taxonomy_StDivNonDet_StExc, Taxonomy_StDivNonDet_St
   OldSP/                 the earlier reading-based SP presentation
@@ -59,6 +60,7 @@ on.
 | `stexcnd S A` | `stateT S (optionT SetM) A` | `ComputationMonads/StExcNonDet.v` | state, nondeterminism, **exceptions** |
 | `stdivnd S A` | `stateT S (optionT SetM) A` | `ComputationMonads/StDivNonDet.v` | state, nondeterminism, **divergence** |
 | `stdivexcnd S A` | `stateT S (optionT (optionT SetM)) A` | `ComputationMonads/StDivExcNonDet.v` | state, nondeterminism, exceptions **and** divergence |
+| `divnd A` | `optionT SetM A` | `ComputationMonads/DivNonDet.v` | nondeterminism, **divergence** (no state) |
 
 `stexcnd` and `stdivnd` share a carrier and differ only in the *reading* of the
 distinguished outcome `None`: an exception in the first, divergence in the
@@ -72,6 +74,13 @@ comments.
 
 `StDivNonDet.v` also carries `stdivndNE`, the non-empty fragment, which the
 `WSt` observations need for healthiness.
+
+`divnd` is the state-free base of that stack — `stdivnd S A = stateT S divnd A`
+by `eq_refl` — standing to `StDivNonDet.v` as `SPPure` does to `SPSt` /
+`SPStExc` on the specification side. It carries the same operations minus
+`get`/`put` (`divergeD`, `orD`, `mayDiverge`), the same non-empty fragment
+`divndNE`, and additionally the pointwise `outcomes_bind` /
+`diverge_absorbing` / `mayDiverge_bind`, which are axiom-free.
 
 Only `stdivexcnd` can distinguish the two effects, via its second `optionT`.
 
@@ -155,6 +164,34 @@ so on), mirroring the top-level dependency chain. Separate per-file modules are
 used rather than reassembling one combined module with `Include`, because
 `Include` copies constants — the copies are convertible but display and unify
 against the originals, which is a latent source of confusion.
+
+### The pure variants, and why DSP and ASLP collapse there
+
+Each monad also has a state-free variant over `SPPure A = Prop -> A -> Prop`:
+`ASPSP` / `DSLPSP` in their own files, and `DSPSP` / `ASLPSP` in
+`Section PureDSPMonad` / `Section PureASLPMonad`. All four have `Monad`,
+`Eq1`, `MonadLawsE` and their orders (`ordASPSP` / `ordASPSPAt`, &c.).
+
+But the last two are **not new monads**. At `SPPure` the precondition is a
+`Prop`, and:
+
+```coq
+strict_conj_iff_singleton   : Strict w /\ Conjunctive w   <-> Singleton w    (* DSP  = ASP  *)
+term_disj_iff_msingleton    : Terminating w /\ Disjunctive w <-> MSingleton w (* ASLP = DSLP *)
+```
+
+`Strict` alone already forces `Singleton` (`strict_to_singleton`, using only
+propositional extensionality and `NNPP` — `join_to_singleton` never used its
+`Disjunctive` half), and `Singleton` returns *both* connectives
+(`singleton_to_join`, `singleton_to_conjunctive`); dually for the multiplicative
+side. So `DSPSP` and `ASPSP` are two presentations of the same subset of
+`SPPure`, and their monad structure is **transported** along that equivalence
+(`asp_to_dsp` / `dsp_to_asp`, both the identity on the underlying transformer)
+rather than rebuilt — none of the relation-recovery machinery is needed.
+
+What disappears is exactly what makes DSP interesting: a precondition that is a
+*set* of states, so that `R⁻¹(r) ⊆ pre` carries more information than
+`R⁻¹(r) ∩ pre ≠ ∅`. With one `Prop` in the precondition slot the two coincide.
 
 ### In-monad characterizations
 
@@ -263,6 +300,7 @@ healthy.
 | `StDivExcNonDet_SPStExc.v` | `stdivexcnd` | `SPStExc` | **no** — reads the terminating slice | — |
 | `StDivNonDet_SPStExc.v` | `stdivnd` | `SPStExc` | **yes** — `None` is an ordinary outcome | `FullOutcomeObs` |
 | `StDivNonDet_SPSt.v` | `stdivnd` | `SPSt` | **no** — reads the terminating slice | `TermSliceObs` |
+| `DivNonDet_SPPure.v` | `divnd` | `SPPure` | **no** — reads the terminating slice | `PureObs` |
 
 Note the deliberate contrast in the fourth column:
 
@@ -284,6 +322,17 @@ observe the same computation monad into differently-indexed targets, so their
 
 `StDivNonDet_SPStExc.v` imports only its computation monad and the SP monads —
 no sibling observation file. That is the intended shape for a new observation.
+
+`DivNonDet_SPPure.v` is the state-free case of `StDivNonDet_SPSt.v`: stripping
+`S` collapses every `S -> Prop` precondition to a single `Prop`, the
+existential `exists s, pre s /\ _` to `pre /\ _`, and the universal
+`forall s, _ -> pre s` to `_ -> pre`. It carries all four observations, but
+`obsDSP` and `obsASLP` **degenerate** — `obsDSP_is_obsASP` and
+`obsASLP_is_obsDSLP` prove them pointwise equal to the angelic and
+demonic-liberal readings, and `tripleDSP_is_tripleASP` /
+`tripleASLP_is_tripleDSLP` carry that up to the triples. With no state there
+is a single "input", so `R⁻¹(a) ⊆ pre` and `R⁻¹(a) ∩ pre ≠ ∅` say the same
+thing whenever `R⁻¹(a)` is inhabited. See §3 for the carrier-level reason.
 
 ## 6. Comparing observations — `Taxonomy_*.v`
 
@@ -377,8 +426,19 @@ adjunction (`wp_pp_over_adjunction`, over the *over* pair
 - the four in-monad characterizations `gen_asp_over` / `gen_asp_under` /
   `gen_dslp_under` / `gen_dslp_over`
 
-`Module StSP` repeats the whole section for the terminating slice, where the
-targets keep the `tASPover` / `tASPunder` / `tDSLPunder` / `tDSLPover` naming.
+Two modules repeat the section at the other outcome types:
+
+- `Module StSP` — the terminating slice, where the targets keep the
+  `tASPover` / `tASPunder` / `tDSLPunder` / `tDSLPover` naming and land in
+  `ASPSt` / `DSLPSt`.
+- `Module PureSP` — the state-free case, where the Hoare pair is a
+  `PPM.PrePost A` (so `pre : Prop`, `post : A -> Prop`) and the targets land in
+  `ASPSP` / `DSLPSP`. The shapes collapse by dropping the witness:
+  `exists s, p s /\ _` becomes `p /\ _`, and `forall s, _ -> p s` becomes
+  `_ -> p`. Its two side conditions are the pure shadows of the stateful ones —
+  `exists s, pre s` becomes `pre`, `exists s, ~ pre s` becomes `~ pre` — and
+  are justified by `asp_bot_pure` / `dslp_top_pure` in the monad files.
+
 The `gen_*` theorems are stated for an **arbitrary** `w` in the relevant monad;
 each observation file obtains its own version by `exact`, since e.g.
 `tripleASP m Over pre post` is *definitionally* the left-hand side.
@@ -501,7 +561,7 @@ directory's only `Admitted` is in `Observation.v`.
 
 ## 11. Build status
 
-`_CoqProject` lists 66 files and builds **clean from scratch**, with **no
+`_CoqProject` lists 68 files and builds **clean from scratch**, with **no
 `Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
 classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /
@@ -546,6 +606,11 @@ module qualifies them (`StASP.MonadLawsE__ASPSt`).
 
 and likewise for `DSLP`, `DSP`, `ASLP`. The raw order is `ordSPStExc` /
 `ordSPSt`; the WP side matches, with `ordWStExc` / `ordWSt`.
+
+The state-free variants follow the same rule with `SP` in place of `SPSt` —
+`ASPSP` / `DSLPSP`, `getASP` / `getDSLP`, `ordASPSP` / `ordASPSPAt` and
+`ordDSLPSP` / `ordDSLPSPAt` — and, being at top level rather than in a `Module
+St*`, they need no qualification.
 
 The `Module St*` wrappers are still needed: the healthiness conditions
 (`StrictProg`, `TerminatingProg`, …) and the `NewGaloisConnections.v` embeddings
