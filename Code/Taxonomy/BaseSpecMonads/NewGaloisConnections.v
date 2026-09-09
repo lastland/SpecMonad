@@ -311,3 +311,100 @@ Arguments tDSLPunder {_} {_}.
 Arguments tDSLPover {_} {_}.
 
 End StSP.
+
+(* ================================================================= *)
+(** ** The pure copies                                                *)
+(* ================================================================= *)
+
+(** The state-free case: the Hoare pair is a [PPM.PrePost A], so [pre] is a
+    [Prop] and [post] a predicate on results.  The shapes collapse by dropping
+    the witness — [exists s, p s /\ _] becomes [p /\ _], and
+    [forall s, _ -> p s] becomes [_ -> p].
+
+    Names mirror the option-outcome ones above; the module is what tells them
+    apart, as with [StSP]. *)
+
+Module PureSP.
+
+  #[program] Definition pp2asp_over {A} (pre : Prop) (post : A -> Prop)
+    : ASPSP A := fun p a => p /\ (pre -> post a).
+  Next Obligation. intros p a. split; [ tauto | tauto ]. Qed.
+
+  #[program] Definition pp2asp_under {A} (pre : Prop) (post : A -> Prop)
+    : ASPSP A := fun p a => p /\ (pre /\ post a).
+  Next Obligation. intros p a. split; [ tauto | tauto ]. Qed.
+
+  (** Unlike the additive pair above, both multiplicative ones need [classic]:
+      [((post a -> pre) -> p) <-> p \/ ~ (post a -> pre)] is not constructive. *)
+  #[program] Definition pp2dslp_under {A} (pre : Prop) (post : A -> Prop)
+    : DSLPSP A := fun p a => (post a -> pre) -> p.
+  Next Obligation.
+    intros p a. split.
+    - intro H. destruct (classic (post a -> pre)) as [Hy | Hn];
+        [ left; exact (H Hy) | right; intro Hy; exact (Hn Hy) ].
+    - intros [Hp | Hf] Hy; [ exact Hp | destruct (Hf Hy) ].
+  Qed.
+
+  #[program] Definition pp2dslp_over {A} (pre : Prop) (post : A -> Prop)
+    : DSLPSP A := fun p a => (~ post a /\ ~ pre) -> p.
+  Next Obligation.
+    intros p a. split.
+    - intro H. destruct (classic (~ post a /\ ~ pre)) as [Hy | Hn];
+        [ left; exact (H Hy) | right; intro Hy; exact (Hn Hy) ].
+    - intros [Hp | Hf] Hy; [ exact Hp | destruct (Hf Hy) ].
+  Qed.
+
+  (** The same diagonal as the stateful case: ASP is global on [Over] and
+      scoped on [Under], DSLP the mirror image.  The two side conditions are
+      the pure shadows of [exists s, pre s] / [exists s, ~ pre s], and are not
+      removable — see [asp_bot_pure] / [dslp_top_pure]. *)
+
+  Theorem gen_asp_over {A} (w : ASPSP A) (pre : Prop) (post : A -> Prop) :
+    (forall a, getASP w pre a -> post a)
+    <-> ordASPSP w (pp2asp_over pre post).
+  Proof.
+    unfold ordASPSP; cbn. split.
+    - intros H p a Hw. destruct (getASP_split w p a Hw) as [Hp Ht].
+      split; [ exact Hp
+             | intro Hpre; apply H; exact (getASP_merge w pre a (conj Hpre Ht)) ].
+    - intros H a Hw. destruct (getASP_split w pre a Hw) as [Hpre Ht].
+      exact (proj2 (H pre a Hw) Hpre).
+  Qed.
+
+  Theorem gen_asp_under {A} (w : ASPSP A) (pre : Prop) (post : A -> Prop)
+    (Hne : pre) :
+    (forall a, post a -> getASP w pre a)
+    <-> ordASPSPAt pre (pp2asp_under pre post) w.
+  Proof.
+    unfold ordASPSPAt; cbn. split.
+    - intros H a [_ [_ Hpost]]. exact (H a Hpost).
+    - intros H a Hpost. apply H. split; [ exact Hne | split; assumption ].
+  Qed.
+
+  Theorem gen_dslp_under {A} (w : DSLPSP A) (pre : Prop) (post : A -> Prop) :
+    (forall a, post a -> getDSLP w pre a)
+    <-> ordDSLPSP (pp2dslp_under pre post) w.
+  Proof.
+    unfold ordDSLPSP; cbn. split.
+    - intros H p a Hemb.
+      destruct (classic (post a -> pre)) as [Hy | Hn].
+      + exact (getMSP_merge w p a (or_introl (Hemb Hy))).
+      + apply not_imply_elim in Hn as Hpost.
+        apply not_imply_elim2 in Hn as Hnpre.
+        destruct (getMSP_split w pre a (H a Hpost)) as [Hc | Hf];
+          [ destruct (Hnpre Hc) | exact (getMSP_merge w p a (or_intror Hf)) ].
+    - intros H a Hpost. apply H. intro Hy. exact (Hy Hpost).
+  Qed.
+
+  Theorem gen_dslp_over {A} (w : DSLPSP A) (pre : Prop) (post : A -> Prop)
+    (Hco : ~ pre) :
+    (forall a, getDSLP w pre a -> post a)
+    <-> ordDSLPSPAt pre w (pp2dslp_over pre post).
+  Proof.
+    unfold ordDSLPSPAt; cbn. split.
+    - intros H a Hw [Hnp _]. destruct (Hnp (H a Hw)).
+    - intros H a Hw. apply NNPP. intro Hnp.
+      exact (Hco (H a Hw (conj Hnp Hco))).
+  Qed.
+
+End PureSP.
