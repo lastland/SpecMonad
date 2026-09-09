@@ -1,17 +1,18 @@
 From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import
-  Monad MonadState MonadExc
-  StateMonad OptionMonad.
+From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy Require Import NonDetProg NonDetItProg ProgFacts WP Pred PredFacts SPost WPred WPNonDetItObservations.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
 Import MonadNotation.
 Open Scope monad_scope.
 
-(* Original idea for represent sppts in the Pred monad *)
+(* Original idea for represent sppts in the PredArr monad *)
 (* Problem: observations map from computation monad into
      specification arrow - does not really match the story
      of DM4All - computation monad -> specification monad. *)
@@ -22,8 +23,8 @@ Module OriginalTripleSP.
 
     Variable S : Type.
 
-    Definition obsRel {A} (m : nditprog S A)
-    : Pred (unit * S) (option (A * S)) :=
+    Definition obsRel {A} (m : stdivexcnd S A)
+    : PredArr (unit * S) (option (A * S)) :=
     fun '(tt, s) r =>
       match r with
       | Some (a, s') =>
@@ -33,18 +34,18 @@ Module OriginalTripleSP.
       end.
 
     (** Angelic strongest postcondition (total). *)
-    Definition obsASP {A} (m : nditprog S A) : ASPostArr S A :=
+    Definition obsASP {A} (m : stdivexcnd S A) : ASPostArr S A :=
       mkASP (obsRel m).
 
     (** Demonic strongest liberal postcondition. *)
-    Definition obsDSLP {A} (m : nditprog S A) : DSLPostArr S A :=
+    Definition obsDSLP {A} (m : stdivexcnd S A) : DSLPostArr S A :=
       mkDSLP (obsRel m).
 
-    #[program] Definition obsDSP {A} (m : nditprog S A)
+    #[program] Definition obsDSP {A} (m : stdivexcnd S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
     sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
 
-    #[program] Definition obsASLP {A} (m : nditprog S A)
+    #[program] Definition obsASLP {A} (m : stdivexcnd S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
     sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
 
@@ -55,7 +56,7 @@ Module OriginalTripleSP.
     - a plain predicate transformer is the identity;
     - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
       [sp_pt] extracted;
-    - a plain relation [Pred (unit * S) (option (A * S))] is lifted
+    - a plain relation [PredArr (unit * S) (option (A * S))] is lifted
       angelically via [asp]. *)
     Class AsSPObs {S A : Type} (T : Type) :=
       as_sp_obs : T -> (unit * S -> Prop) -> option (A * S) -> Prop.
@@ -73,12 +74,12 @@ Module OriginalTripleSP.
       fun d => sp_pt (proj1_sig d).
     
     #[global] Instance AsSPObs_Pred {S A} :
-      @AsSPObs S A (Pred (unit * S) (option (A * S))) :=
+      @AsSPObs S A (PredArr (unit * S) (option (A * S))) :=
       fun R => asp R.
 
     Definition tripleSP {S A T} `{@AsSPObs S A T}
-      (obs : nditprog S A -> T)
-      (prog : nditprog S A)
+      (obs : stdivexcnd S A -> T)
+      (prog : stdivexcnd S A)
       (is_correct : approximationKind)
       (pre : S -> Prop)
       (post : option (A * S) -> Prop)
@@ -96,7 +97,7 @@ Module OriginalTripleSP.
 End OriginalTripleSP.
 
 (* Came from the observation that the arrow can be represented by
-   Pred A B. However, this requires moving the interpretation of
+   PredArr A B. However, this requires moving the interpretation of
    whether the observation is angelic or demonic into the triple
    definition. While this seems correct at first (and it is good
    that WPred A is indeed a monad), it means that the inclusions
@@ -108,29 +109,29 @@ Module WPredTripleSP.
 
   Section NonDetItObservationSP.
 
-    Definition obsRel {S A} (m : nditprog S A)
-    : Pred S (option (A * S)) :=
+    Definition obsRel {S A} (m : stdivexcnd S A)
+    : PredArr S (option (A * S)) :=
     fun s r =>
       match r with
       | Some (a, s') => unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
       | None => unOptionT (unOptionT (runStateT m s)) (Some None)
       end.
 
-    Definition obsSP {S A} (m : nditprog S A) : ProgWPred S A :=
+    Definition obsSP {S A} (m : stdivexcnd S A) : PredStExc S A :=
     mkStateT
-      (fun s => @mkOptionT WPred _ (fun r => (obsRel m) s r)).
+      (fun s => @mkOptionT PredM.Pred _ (fun r => (obsRel m) s r)).
 
-    Definition asp' {S A} (sp : ProgWPred S A) (pre : S -> Prop) : (option (A * S)) -> Prop :=
+    Definition asp' {S A} (sp : PredStExc S A) (pre : S -> Prop) : (option (A * S)) -> Prop :=
       fun b => exists a, pre a /\ (unOptionT (runStateT sp a) b).
 
-    Definition dslp' {S A} (sp : ProgWPred S A) (pre : S -> Prop) : (option (A * S)) -> Prop :=
+    Definition dslp' {S A} (sp : PredStExc S A) (pre : S -> Prop) : (option (A * S)) -> Prop :=
       fun b => forall a, (unOptionT (runStateT sp a) b) -> pre a.
 
     Inductive approximationKind := | Correct | Incorrect.
     
     Definition tripleASP {S A}
-      (obs : nditprog S A -> ProgWPred S A) 
-      (prog : nditprog S A)
+      (obs : stdivexcnd S A -> PredStExc S A) 
+      (prog : stdivexcnd S A)
       (is_correct : approximationKind)
       (pre : S -> Prop)
       (post : option (A * S) -> Prop)
@@ -161,8 +162,8 @@ Section NonDetItObservationSP.
       Divergence is NOT a reachable final state — it is the absence of
       reaching any final state (dual to how divergence in WP is the
       absence of termination). *)
-  Definition obsRel {A} (m : nditprog S A)
-    : Pred S (option (A * S)) :=
+  Definition obsRel {A} (m : stdivexcnd S A)
+    : PredArr S (option (A * S)) :=
     fun s r =>
       match r with
       | Some (a, s') =>
@@ -174,33 +175,33 @@ Section NonDetItObservationSP.
   (** The four strongest-postcondition transformers are *readings* of the
       single reachability relation [obsRel] — no [ASPostArr]/[SPRecord]
       wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
-      [SPost.v], as are [spDSP]/[spASLP] (their meet/join). *)
-  Definition obsASP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := asp (obsRel m). 
-  Definition obsDSLP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := dslp (obsRel m).
-  Definition obsDSP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
-  Definition obsASLP {A} (m : nditprog S A)
-    : Pred (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
+      [SPostArr.v], as are [spDSP]/[spASLP] (their meet/join). *)
+  Definition obsASP {A} (m : stdivexcnd S A)
+    : PredArr (S -> Prop) (option (A * S)) := asp (obsRel m). 
+  Definition obsDSLP {A} (m : stdivexcnd S A)
+    : PredArr (S -> Prop) (option (A * S)) := dslp (obsRel m).
+  Definition obsDSP {A} (m : stdivexcnd S A)
+    : PredArr (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
+  Definition obsASLP {A} (m : stdivexcnd S A)
+    : PredArr (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
 
   (* -------------------------------------------------------------- *)
   (** *** Theorem 3.7: Square inclusions                             *)
   (* -------------------------------------------------------------- *)
 
-  Theorem obsDSP_sub_obsASP {A} (m : nditprog S A) pre r :
+  Theorem obsDSP_sub_obsASP {A} (m : stdivexcnd S A) pre r :
     obsDSP m pre r -> obsASP m pre r.
   Proof. intros [H _]. exact H. Qed.
 
-  Theorem obsDSP_sub_obsDSLP {A} (m : nditprog S A) pre r :
+  Theorem obsDSP_sub_obsDSLP {A} (m : stdivexcnd S A) pre r :
     obsDSP m pre r -> obsDSLP m pre r.
   Proof. intros [_ H]. exact H. Qed.
 
-  Theorem obsASP_sub_obsASLP {A} (m : nditprog S A) pre r :
+  Theorem obsASP_sub_obsASLP {A} (m : stdivexcnd S A) pre r :
     obsASP m pre r -> obsASLP m pre r.
   Proof. intro H. left. exact H. Qed.
 
-  Theorem obsDSLP_sub_obsASLP {A} (m : nditprog S A) pre r :
+  Theorem obsDSLP_sub_obsASLP {A} (m : stdivexcnd S A) pre r :
     obsDSLP m pre r -> obsASLP m pre r.
   Proof. intro H. right. exact H. Qed.
 
@@ -208,7 +209,7 @@ Section NonDetItObservationSP.
   (** *** Characterizations (paper Definitions 3.5 and 3.6)          *)
   (* -------------------------------------------------------------- *)
 
-  Corollary obsDSP_char {A} (m : nditprog S A) pre r :
+  Corollary obsDSP_char {A} (m : stdivexcnd S A) pre r :
     obsDSP m pre r <->
     (exists sigma, obsRel m sigma r) /\
     (forall sigma, obsRel m sigma r -> pre sigma).
@@ -216,7 +217,7 @@ Section NonDetItObservationSP.
     unfold obsDSP. symmetry. apply dsp_asp_dslp.
   Qed.
 
-  Corollary obsASLP_char {A} (m : nditprog S A) pre r :
+  Corollary obsASLP_char {A} (m : stdivexcnd S A) pre r :
     obsASLP m pre r <->
     (exists sigma, pre sigma /\ obsRel m sigma r) \/
     ~ (exists sigma, obsRel m sigma r).
@@ -228,7 +229,7 @@ Section NonDetItObservationSP.
   (** *** Theorem 3.8: Contrapositive transformers SP               *)
   (* -------------------------------------------------------------- *)
 
-  Theorem obsASP_contrapositive {A} (m : nditprog S A) pre r :
+  Theorem obsASP_contrapositive {A} (m : stdivexcnd S A) pre r :
     obsASP m pre r <->
     ~ obsDSLP m (fun x => ~ pre x) r.
   Proof.
@@ -241,7 +242,7 @@ Section NonDetItObservationSP.
       apply Habs. exists a. exact (conj Hpre Hrel).
   Qed.
 
-  Theorem obsDSP_contrapositive {A} (m : nditprog S A) pre r :
+  Theorem obsDSP_contrapositive {A} (m : stdivexcnd S A) pre r :
     obsDSP m pre r <->
     ~ obsASLP m (fun x => ~ pre x) r.
   Proof.
@@ -284,8 +285,8 @@ Inductive approximationKind := | Under | Over.
     [obsASP] / [obsDSLP] / [obsDSP] / [obsASLP] — the four readings of the
     single reachability relation [obsRel]. *)
 Definition tripleSP {S A}
-  (obs : nditprog S A -> Pred (S -> Prop) (option (A * S)))
-  (prog : nditprog S A)
+  (obs : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S)))
+  (prog : stdivexcnd S A)
   (kind : approximationKind)
   (pre : S -> Prop)
   (post : option (A * S) -> Prop)
@@ -297,26 +298,26 @@ Definition tripleSP {S A}
         forall r, post r -> obs prog pre r
     end.
 
-Definition pp2sp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : Pred (S -> Prop) (option (A * S)) :=
+Definition pp2sp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : PredArr (S -> Prop) (option (A * S)) :=
   fun p r => (forall s, p s -> pre s) -> post r.
 
-Definition pp2sp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : Pred (S -> Prop) (option (A * S)) :=
+Definition pp2sp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : PredArr (S -> Prop) (option (A * S)) :=
   fun p r => (forall s, pre s -> p s) /\ post r.
 
-Definition ordProgSP {S A} (m1 m2 : Pred (S -> Prop) (option (A * S))) : Prop :=
+Definition ordSPStExc {S A} (m1 m2 : PredArr (S -> Prop) (option (A * S))) : Prop :=
   forall pre r, m1 pre r -> m2 pre r.
 
 Definition tripleSPspec {S A}
-  (obs : nditprog S A -> Pred (S -> Prop) (option (A * S)))
-  (prog : nditprog S A)
+  (obs : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S)))
+  (prog : stdivexcnd S A)
   (kind:approximationKind)
   (pre : S -> Prop)
   (post : option (A * S) -> Prop)
   : Prop
   :=
   match kind with
-  | Over  => ordProgSP (obs prog) (pp2sp_over pre post)
-  | Under => ordProgSP (pp2sp_under pre post) (obs prog)
+  | Over  => ordSPStExc (obs prog) (pp2sp_over pre post)
+  | Under => ordSPStExc (pp2sp_under pre post) (obs prog)
   end.
 
 Section tripleSPDefEq.
@@ -330,8 +331,8 @@ Section tripleSPDefEq.
       [p <= pre] / [pre <= p].  Without monotonicity only
       [tripleSPspec -> tripleSP] holds (instantiate [p := pre]). *)
   Theorem tripleSPDefEq {A}
-  (obs : nditprog S A -> Pred (S -> Prop) (option (A * S)))
-  (prog : nditprog S A)
+  (obs : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S)))
+  (prog : stdivexcnd S A)
   (kind:approximationKind)
   (pre : S -> Prop)
   (post : option (A * S) -> Prop)
@@ -340,7 +341,7 @@ Section tripleSPDefEq.
      forall r, obs prog p r -> obs prog q r) :
     tripleSP obs prog kind pre post <-> tripleSPspec obs prog kind pre post.
   Proof.
-    unfold tripleSP, tripleSPspec, ordProgSP, pp2sp_over, pp2sp_under.
+    unfold tripleSP, tripleSPspec, ordSPStExc, pp2sp_over, pp2sp_under.
     destruct kind; split.
     - intros H p r [Hsub Hpost]. apply (Hmono pre p Hsub r). apply H. exact Hpost.
     - intros H r Hpost. apply (H pre r). split; [intros s hs; exact hs | exact Hpost].
@@ -357,7 +358,7 @@ Section TaxonomySPTransformers.
       left disjunct of ASLP, so any postcondition entailed by the
       whole disjunction is entailed by ASP alone. *)
   Theorem cc_aslp_implies_asp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsASLP m Over pre post ->
       tripleSP obsASP m Over pre post.
   Proof.
@@ -366,7 +367,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem cc_aslp_implies_dslp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsASLP m Over pre post ->
       tripleSP obsDSLP m Over pre post.
   Proof.
@@ -376,7 +377,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem cc_dslp_implies_dsp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsDSLP m Over pre post ->
       tripleSP obsDSP m Over pre post.
   Proof.
@@ -386,7 +387,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem cc_asp_implies_dsp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsASP m Over pre post ->
       tripleSP obsDSP m Over pre post.
   Proof.
@@ -396,7 +397,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ii_dsp_implies_dslp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsDSP m Under pre post ->
       tripleSP obsDSLP m Under pre post.
   Proof.
@@ -405,7 +406,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ii_dslp_implies_aslp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsDSLP m Under pre post ->
       tripleSP obsASLP m Under pre post.
   Proof.
@@ -415,7 +416,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ii_asp_implies_aslp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsASP m Under pre post ->
       tripleSP obsASLP m Under pre post.
   Proof.
@@ -425,7 +426,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ii_dsp_implies_asp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleSP obsDSP m Under pre post ->
       tripleSP obsASP m Under pre post.
   Proof.
@@ -434,7 +435,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ci_aslp_dsp_contrapositive :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsASLP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsDSP m Under pre post.
   Proof.
@@ -450,7 +451,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ci_aslp_dsp_contrapositive' :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsDSP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsASLP m Over pre post.
   Proof.
@@ -464,7 +465,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ci_asp_dslp_contrapositive :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsASP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsDSLP m Under pre post.
   Proof.
@@ -476,7 +477,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ci_asp_dslp_contrapositive' :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsDSLP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsASP m Over pre post.
   Proof.
@@ -488,7 +489,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ci_dslp_asp_contrapositive :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsDSLP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsASP m Under pre post.
   Proof.
@@ -500,7 +501,7 @@ Section TaxonomySPTransformers.
   Qed.
 
   Theorem ci_dslp_asp_contrapositive' :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsASP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsDSLP m Over pre post.
   Proof.
@@ -512,7 +513,7 @@ Section TaxonomySPTransformers.
   Qed.
 
    Theorem ci_dsp_aslp_contrapositive :
-    forall A (m : nditprog S A) pre post,
+    forall A (m : stdivexcnd S A) pre post,
       tripleSP obsDSP m Over (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
       tripleSP obsASLP m Under pre post.
   Proof.
@@ -529,7 +530,7 @@ Section TaxonomySPTransformers.
   Qed.
 
    Theorem ci_dsp_aslp_contrapositive' :
-     forall A (m : nditprog S A) pre post,
+     forall A (m : stdivexcnd S A) pre post,
        tripleSP obsASLP m Under (fun s => ~ (pre s)) (fun r => ~ (post r)) ->
        tripleSP obsDSP m Over pre post.
   Proof.
@@ -549,11 +550,11 @@ Section TaxonomyGaloisConnections.
 
   (** [obsRel] is exactly the terminating ([Some _]) slice of the
       outcome set: divergence ([None]) is never an [obsRel] reacher. *)
-  Lemma obsRel_outcomes {A} (m : nditprog S A) s r :
+  Lemma obsRel_outcomes {A} (m : stdivexcnd S A) s r :
     obsRel m s r = unOptionT (unOptionT (runStateT m s)) (Some r).
   Proof. unfold obsRel. destruct r as [[a s']|]; reflexivity. Qed.
 
-  (** Galois connection (correctness side): the demonic-liberal WP
+  (** GaloisArr connection (correctness side): the demonic-liberal WP
       observation and the angelic SP observation induce the same
       [Correct] triples.
 
@@ -569,7 +570,7 @@ Section TaxonomyGaloisConnections.
       [->]: instantiate the WP hypothesis at [p := post]; its second
       antecedent becomes reflexivity. *)
   Theorem dwlp_asp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleWP obsDWLP m pre SubsetOf post <->
         tripleSP obsASP m Over pre post.
   Proof.
@@ -592,7 +593,7 @@ Section TaxonomyGaloisConnections.
       rewrite obsRel_outcomes, Hm. cbn. exact Hoa.
   Qed.
 
-  (** Galois connection (incorrectness side) — the connection
+  (** GaloisArr connection (incorrectness side) — the connection
       [awp⟦m⟧(c) ⊆ b  iff  c ⊆ dslp⟦m⟧(b)] introduced by Zhang &
       Kaminski (OOPSLA 2022) and depicted in Verscht & Kaminski's
       Fig. 5.
@@ -609,7 +610,7 @@ Section TaxonomyGaloisConnections.
       were artefacts of the old [pp2wp] refinement encoding, under which
       [tripleWP obsAWP _ Over] degenerated). *)
   Theorem awp_dslp :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleWP obsAWP m pre SupersetOf post <->
         tripleSP obsDSLP m Under pre post.
   Proof.
@@ -634,7 +635,7 @@ Section TaxonomyGaloisConnections.
   (** The [->] direction in isolation (kept for use by the taxonomy
       implications below). *)
   Theorem awp_implies_dslp_inc :
-    forall A (m: nditprog S A) pre post,
+    forall A (m: stdivexcnd S A) pre post,
       tripleWP obsAWP m pre SupersetOf post ->
         tripleSP obsDSLP m Under pre post.
   Proof. intros A m pre post; apply awp_dslp. Qed.
@@ -647,61 +648,53 @@ Section TripleDefinitions.
   (* UNDER *)
    
   Theorem dwlp_under {A} :
-    forall (m : nditprog S A) pre post,
+    forall (m : stdivexcnd S A) pre post,
       (forall s, pre s -> unOptionT (runStateT (obsDWLP m) s) post) <->
       (forall s p, (pre s /\ (forall r, post r -> p r)) -> unOptionT (runStateT (obsDWLP m) s) p).
   Proof.
     intros m pre post. split.
     - intros H s p [Hpre Hsub]. specialize (H s Hpre).
-      unfold obsDWLP in *. cbn [runStateT unOptionT] in *.
-      destruct (runStateT m s) as [[outcomes]].
-      intros oa Hoa. specialize (H oa Hoa). destruct oa as [r|]; [|exact I].
-      exact (Hsub r H).
+
+      exact (obsDWLP_mono _ m s post p Hsub H).
     - intros H s Hpre.
       apply (H s post). split; [exact Hpre | intros r hr; exact hr].
   Qed.
 
     Theorem awlp_under {A} :
-    forall (m : nditprog S A) pre post,
+    forall (m : stdivexcnd S A) pre post,
       (forall s, pre s -> unOptionT (runStateT (obsAWLP m) s) post) <->
       (forall s p, (pre s /\ (forall r, post r -> p r)) -> unOptionT (runStateT (obsAWLP m) s) p).
     Proof.
       intros m pre post. split.
       - intros H s p [Hpre Hsub]. specialize (H s Hpre).
-        unfold obsAWLP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        destruct H as [[r [Hr Hpost]] | Hdiv].
-        + left. exists r. split; [exact Hr | exact (Hsub r Hpost)].
-        + right. exact Hdiv.
+
+        exact (obsAWLP_mono _ m s post p Hsub H).
       - intros H s Hpre.
         apply (H s post). split; [exact Hpre | intros r hr; exact hr].
     Qed.
 
     Theorem dwp_under {A} :
-    forall (m : nditprog S A) pre post,
+    forall (m : stdivexcnd S A) pre post,
       (forall s, pre s -> unOptionT (runStateT (obsDWP m) s) post) <->
       (forall s p, (pre s /\ (forall r, post r -> p r)) -> unOptionT (runStateT (obsDWP m) s) p).
     Proof.
       intros m pre post. split.
       - intros H s p [Hpre Hsub]. specialize (H s Hpre).
-        unfold obsDWP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        intros oa Hoa. specialize (H oa Hoa).
-        destruct oa as [r|]; [exact (Hsub r H) | exact H].
+
+        exact (obsDWP_mono _ m s post p Hsub H).
       - intros H s Hpre.
         apply (H s post). split; [exact Hpre | intros r hr; exact hr].
     Qed.
 
     Theorem awp_under {A} :
-    forall (m : nditprog S A) pre post,
+    forall (m : stdivexcnd S A) pre post,
       (forall s, pre s -> unOptionT (runStateT (obsAWP m) s) post) <->
       (forall s p, (pre s /\ (forall r, post r -> p r)) -> unOptionT (runStateT (obsAWP m) s) p).
     Proof.
       intros m pre post. split.
       - intros H s p [Hpre Hsub]. specialize (H s Hpre).
-        unfold obsAWP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        destruct H as [r [Hr Hpost]]. exists r. split; [exact Hr | exact (Hsub r Hpost)].
+
+        exact (obsAWP_mono _ m s post p Hsub H).
       - intros H s Hpre.
         apply (H s post). split; [exact Hpre | intros r hr; exact hr].
     Qed.
@@ -712,65 +705,57 @@ Section TripleDefinitions.
         guard on the conclusion (not a conjunct to establish), which is what
         makes this hold — cf. the failing naive form in [dwlp_breaks]. *)
     Theorem dwlp_over {A} :
-      forall (m : nditprog S A) pre post,
+      forall (m : stdivexcnd S A) pre post,
         (forall s, unOptionT (runStateT (obsDWLP m) s) post -> pre s) <->
           (forall s p, unOptionT (runStateT (obsDWLP m) s) p ->
                        ((forall r, p r -> post r) -> pre s)).
     Proof.
       intros m pre post. split.
       - intros H s p Hp Hsub. apply H.
-        unfold obsDWLP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        intros oa Hoa. specialize (Hp oa Hoa).
-        destruct oa as [r|]; [exact (Hsub r Hp) | exact I].
+
+        exact (obsDWLP_mono _ m s p post Hsub Hp).
       - intros H s Hpost.
         apply (H s post Hpost). intros r hr; exact hr.
     Qed.
 
     Theorem awlp_over {A} :
-      forall (m : nditprog S A) pre post,
+      forall (m : stdivexcnd S A) pre post,
         (forall s, unOptionT (runStateT (obsAWLP m) s) post -> pre s) <->
           (forall s p, unOptionT (runStateT (obsAWLP m) s) p ->
                        ((forall r, p r -> post r) -> pre s)).
     Proof.
       intros m pre post. split.
       - intros H s p Hp Hsub. apply H.
-        unfold obsAWLP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        destruct Hp as [[r [Hr Hp]] | Hdiv].
-        + left. exists r. split; [exact Hr | exact (Hsub r Hp)].
-        + right. exact Hdiv.
+
+        exact (obsAWLP_mono _ m s p post Hsub Hp).
       - intros H s Hpost.
         apply (H s post Hpost). intros r hr; exact hr.
     Qed.
 
     Theorem dwp_over {A} :
-      forall (m : nditprog S A) pre post,
+      forall (m : stdivexcnd S A) pre post,
         (forall s, unOptionT (runStateT (obsDWP m) s) post -> pre s) <->
           (forall s p, unOptionT (runStateT (obsDWP m) s) p ->
                        ((forall r, p r -> post r) -> pre s)).
     Proof.
       intros m pre post. split.
       - intros H s p Hp Hsub. apply H.
-        unfold obsDWP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        intros oa Hoa. specialize (Hp oa Hoa).
-        destruct oa as [r|]; [exact (Hsub r Hp) | exact Hp].
+
+        exact (obsDWP_mono _ m s p post Hsub Hp).
       - intros H s Hpost.
         apply (H s post Hpost). intros r hr; exact hr.
     Qed.
     
     Theorem awp_over {A} :
-      forall (m : nditprog S A) pre post,
+      forall (m : stdivexcnd S A) pre post,
         (forall s, unOptionT (runStateT (obsAWP m) s) post -> pre s) <->
           (forall s p, unOptionT (runStateT (obsAWP m) s) p ->
                        ((forall r, p r -> post r) -> pre s)).
     Proof.
       intros m pre post. split.
       - intros H s p Hp Hsub. apply H.
-        unfold obsAWP in *. cbn [runStateT unOptionT] in *.
-        destruct (runStateT m s) as [[outcomes]].
-        destruct Hp as [r [Hr Hp]]. exists r. split; [exact Hr | exact (Hsub r Hp)].
+
+        exact (obsAWP_mono _ m s p post Hsub Hp).
       - intros H s Hpost.
         apply (H s post Hpost). intros r hr; exact hr.
     Qed.
@@ -785,7 +770,7 @@ Section MonadMorphismLawsSP.
   
 (** SP bind adequacy: [obsRel] composes as a Kleisli arrow (state +
     exception). *)
-  Lemma obsRel_bind {A B} (x : nditprog S A) (f : A -> nditprog S B) sigma r :
+  Lemma obsRel_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) sigma r :
   obsRel (x >>= f) sigma r <->
   (exists a s', obsRel x sigma (Some (a, s')) /\ obsRel (f a) s' r)
   \/ (obsRel x sigma None /\ r = None).
@@ -818,7 +803,7 @@ Section MonadMorphismLawsSP.
       intermediate outcome [Some (a, s')] the continuation is observed at
       the *singleton* precondition [eq s'] — [asp] re-localizing the
       precondition to the exact intermediate state (via [asp_singleton]). *)
-  Theorem obsASP_bind {A B} (x : nditprog S A) (f : A -> nditprog S B)
+  Theorem obsASP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B)
           (pre : S -> Prop) (r : option (B * S)) :
     obsASP (x >>= f) pre r <->
     (exists a s', obsASP x pre (Some (a, s')) /\ obsASP (f a) (eq s') r)
@@ -843,11 +828,11 @@ Section MonadMorphismLawsSP.
 
       The two preceding laws are [obsASP]'s [bind]-preservation; together
       with [obsASP_retG] below they are the monad-morphism *equations* for
-      [obsASP : nditprog S A -> Pred (S -> Prop) (option (A * S))], against
+      [obsASP : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S))], against
       the unit [retG] and bind [bindG] forced by [obsASP_bind].
 
       They do NOT promote [obsASP] to a genuine monad morphism, because
-      [(Pred (S -> Prop) (option (_ * S)), retG, bindG)] is not a lawful
+      [(PredArr (S -> Prop) (option (_ * S)), retG, bindG)] is not a lawful
       monad: [bindG] feeds the continuation the *singleton* precondition
       [eq s'], so it only sees a continuation through its values on
       singletons, and the left-unit law [bindG (retG a) k ≈ k a] fails
@@ -858,13 +843,13 @@ Section MonadMorphismLawsSP.
       (below) up to the iso [asp]/[asp_inv].  Hence the genuine monad
       morphism is [obsRelM], and [obsASP = asp ∘ obsRel] inherits only the
       equations. *)
-  Definition retG {A} (a : A) : Pred (S -> Prop) (option (A * S)) :=
+  Definition retG {A} (a : A) : PredArr (S -> Prop) (option (A * S)) :=
     fun pre r => exists s, pre s /\ r = Some (a, s).
 
   Definition bindG {A B}
-    (m : Pred (S -> Prop) (option (A * S)))
-    (k : A -> Pred (S -> Prop) (option (B * S)))
-    : Pred (S -> Prop) (option (B * S)) :=
+    (m : PredArr (S -> Prop) (option (A * S)))
+    (k : A -> PredArr (S -> Prop) (option (B * S)))
+    : PredArr (S -> Prop) (option (B * S)) :=
     fun pre r =>
       (exists a s', m pre (Some (a, s')) /\ k a (eq s') r)
       \/ (m pre None /\ r = None).
@@ -872,7 +857,7 @@ Section MonadMorphismLawsSP.
   (** Unit law: [obsASP (ret a) ≈ retG a] (the full characterization; the
       [obsASP_ret] above is just its [Some]-direction soundness half). *)
   Lemma obsASP_retG {A} (a : A) :
-    forall pre r, obsASP (ret a : nditprog S A) pre r <-> retG a pre r.
+    forall pre r, obsASP (ret a : stdivexcnd S A) pre r <-> retG a pre r.
   Proof.
     unfold obsASP, asp, retG. intros pre r. split.
     - intros [s [Hpre Hrel]]. exists s. split; [exact Hpre|].
@@ -882,14 +867,14 @@ Section MonadMorphismLawsSP.
   Qed.
 
   (** Bind law restated through [bindG] (a repackaging of [obsASP_bind]). *)
-  Lemma obsASP_bindG {A B} (x : nditprog S A) (f : A -> nditprog S B) :
+  Lemma obsASP_bindG {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
     forall pre r,
       obsASP (x >>= f) pre r <-> bindG (obsASP x) (fun a => obsASP (f a)) pre r.
   Proof. intros pre r. apply obsASP_bind. Qed.
 
   (** Every [obsASP] output is [asp]-closed: determined by its singletons.
       This is what lands [obsASP] in the lawful sub-monad. *)
-  Lemma obsASP_asp_closed {A} (m : nditprog S A) (pre : S -> Prop) r :
+  Lemma obsASP_asp_closed {A} (m : stdivexcnd S A) (pre : S -> Prop) r :
     obsASP m pre r <-> exists s, pre s /\ obsASP m (eq s) r.
   Proof.
     unfold obsASP, asp. split.
@@ -917,26 +902,26 @@ End MonadMorphismLawsSP.
 
   (** Reachability-level (relation) [ret]/[bind] — the bind is exactly the RHS
       of [obsRel_bind] (state-threaded, exception-propagating). *)
-  Definition retRel {A} (a : A) : Pred S (option (A * S)) :=
+  Definition retRel {A} (a : A) : PredArr S (option (A * S)) :=
     fun s r => r = Some (a, s).
   Definition bindRel {A B}
-    (m : Pred S (option (A * S))) (k : A -> Pred S (option (B * S)))
-    : Pred S (option (B * S)) :=
+    (m : PredArr S (option (A * S))) (k : A -> PredArr S (option (B * S)))
+    : PredArr S (option (B * S)) :=
     fun s r =>
       (exists a s', m s (Some (a, s')) /\ k a s' r) \/ (m s None /\ r = None).
 
   (** SP-level [ret]/[bind], DEFINED by conjugation:
       [bindSP = asp ∘ bindRel ∘ asp_inv]. *)
-  Definition retSP {A} (a : A) : Pred (S -> Prop) (option (A * S)) :=
+  Definition retSP {A} (a : A) : PredArr (S -> Prop) (option (A * S)) :=
     asp (retRel a).
   Definition bindSP {A B}
-    (m : Pred (S -> Prop) (option (A * S)))
-    (k : A -> Pred (S -> Prop) (option (B * S)))
-    : Pred (S -> Prop) (option (B * S)) :=
+    (m : PredArr (S -> Prop) (option (A * S)))
+    (k : A -> PredArr (S -> Prop) (option (B * S)))
+    : PredArr (S -> Prop) (option (B * S)) :=
     asp (bindRel (asp_inv m) (fun a => asp_inv (k a))).
 
   (** [asp] and [bindRel] are congruences for pointwise equivalence. *)
-  Lemma asp_Proper {A} (R1 R2 : Pred S (option (A * S))) :
+  Lemma asp_Proper {A} (R1 R2 : PredArr S (option (A * S))) :
     (forall s r, R1 s r <-> R2 s r) ->
     forall pre r, asp R1 pre r <-> asp R2 pre r.
   Proof.
@@ -945,8 +930,8 @@ End MonadMorphismLawsSP.
     - intros [s [Hp Hr]]. exists s. split; [exact Hp | exact (proj2 (H s r) Hr)].
   Qed.
 
-  Lemma bindRel_Proper {A B} (m1 m2 : Pred S (option (A * S)))
-    (k1 k2 : A -> Pred S (option (B * S))) :
+  Lemma bindRel_Proper {A B} (m1 m2 : PredArr S (option (A * S)))
+    (k1 k2 : A -> PredArr S (option (B * S))) :
     (forall s r, m1 s r <-> m2 s r) ->
     (forall a s r, k1 a s r <-> k2 a s r) ->
     forall s r, bindRel m1 k1 s r <-> bindRel m2 k2 s r.
@@ -967,9 +952,9 @@ End MonadMorphismLawsSP.
       [asp rxf ≈ bindSP (asp rx) (asp ∘ kf)].  The proof is pure conjugation:
       unfold [bindSP], cancel [asp_inv ∘ asp] via [asp_asp_inv]. *)
   Lemma asp_conj_bind {A B}
-    (rxf : Pred S (option (B * S)))
-    (rx : Pred S (option (A * S)))
-    (kf : A -> Pred S (option (B * S))) :
+    (rxf : PredArr S (option (B * S)))
+    (rx : PredArr S (option (A * S)))
+    (kf : A -> PredArr S (option (B * S))) :
     (forall s r, rxf s r <-> bindRel rx kf s r) ->
     forall pre r,
       asp rxf pre r <-> bindSP (asp rx) (fun a => asp (kf a)) pre r.
@@ -999,7 +984,7 @@ End MonadMorphismLawsSP.
     unfold obsASP, retSP. apply asp_Proper. intros s r0. apply obsRel_ret_iff.
   Qed.
 
-  Lemma obsASP_bind_conj {A B} (x : nditprog S A) (f : A -> nditprog S B) pre r :
+  Lemma obsASP_bind_conj {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) pre r :
     obsASP (x >>= f) pre r <->
     bindSP (obsASP x) (fun a => obsASP (f a)) pre r.
   Proof.
@@ -1016,13 +1001,13 @@ End AspConjugation.
 
 (** The [obsRel]/[obsASP] above are the *arrow*/reading view, used to
     state triples; they are not inhabitants of a [Monad] (and the [asp]
-    reading would target the flagged-incorrect [ProgSP]).  Here is the
-    *monad-view* observation [obsRelM : nditprog S A -> nditPredM S A]
-    into the spec monad [nditPredM = stateT S (optionT (optionT (Pred
-    unit)))] (the SP mirror of [ProgWP], with base [Pred unit] instead of
-    [SetM]; lawful [Monad] + [MonadLawsE] via [PredFacts.v]).  It is the
-    lifting along the base iso [SetM ~ Pred unit] — it copies [nditprog]'s
-    full outcome predicate (divergence included) into [Pred unit].
+    reading would target the flagged-incorrect [SPStExc]).  Here is the
+    *monad-view* observation [obsRelM : stdivexcnd S A -> nditPredM S A]
+    into the spec monad [nditPredM = stateT S (optionT (optionT (PredArr
+    unit)))] (the SP mirror of [WStExc], with base [PredArr unit] instead of
+    [SetM]; lawful [Monad] + [MonadLawsE] via [PredArr.v]).  It is the
+    lifting along the base iso [SetM ~ PredArr unit] — it copies [stdivexcnd]'s
+    full outcome predicate (divergence included) into [PredArr unit].
 
     [obsRelM] is a genuine monad morphism: [obsRelM_ret] and [obsRelM_bind]
     are its unit/bind laws, stated as [eq1] ([≈]) in [nditPredM] — purely
@@ -1037,19 +1022,19 @@ Section ObsRelM.
   #[local] Existing Instance Monad_optionT.
 
   (** Codomain is definitionally [nditPredM S A]. *)
-  Definition obsRelM {A} (m : nditprog S A)
-    : stateT S (optionT (optionT (Pred unit))) A :=
+  Definition obsRelM {A} (m : stdivexcnd S A)
+    : stateT S (optionT (optionT (PredArr unit))) A :=
     mkStateT (fun s =>
-      @mkOptionT (optionT (Pred unit)) (A * S) (
-        @mkOptionT (Pred unit) (option (A * S)) (
+      @mkOptionT (optionT (PredArr unit)) (A * S) (
+        @mkOptionT (PredArr unit) (option (A * S)) (
           fun (_ : unit) (oa : option (option (A * S))) =>
             unOptionT (unOptionT (runStateT m s)) oa))).
 
   (** *** Connection to the arrow-view observations [obsRel] / [obsASP] *)
 
-  (** [obsRelM] applied is just [nditprog]'s raw outcome predicate (the
+  (** [obsRelM] applied is just [stdivexcnd]'s raw outcome predicate (the
       [unit] slot is ignored) — the [obsX_unfold]-style accessor. *)
-  Lemma obsRelM_apply {A} (m : nditprog S A) s u oa :
+  Lemma obsRelM_apply {A} (m : stdivexcnd S A) s u oa :
     unOptionT (unOptionT (runStateT (obsRelM m) s)) u oa
     <-> unOptionT (unOptionT (runStateT m s)) oa.
   Proof. unfold obsRelM. cbn. tauto. Qed.
@@ -1059,7 +1044,7 @@ Section ObsRelM.
       *terminating-slice* reading of [obsRelM] at [tt]: drop divergence,
       keep the [Some r] outcomes.  So [obsRelM] is the monad morphism and
       the observations used in triples are its readings. *)
-  Lemma obsRel_obsRelM {A} (m : nditprog S A) s r :
+  Lemma obsRel_obsRelM {A} (m : stdivexcnd S A) s r :
     obsRel m s r <-> unOptionT (unOptionT (runStateT (obsRelM m) s)) tt (Some r).
   Proof. rewrite obsRelM_apply. unfold obsRel. destruct r as [[a s']|]; tauto. Qed.
 
@@ -1068,36 +1053,36 @@ Section ObsRelM.
   (* -------------------------------------------------------------- *)
 
   (** [reach] extracts the reachability *relation* from an element of the
-      reachability monad [nditPredM S A = stateT S (optionT (optionT (Pred
+      reachability monad [nditPredM S A = stateT S (optionT (optionT (PredArr
       unit)))]: the terminating ([Some r]) outcomes read off at the trivial
       [tt] precondition slot. *)
-  Definition reach {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred S (option (A * S)) :=
+  Definition reach {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
+    : PredArr S (option (A * S)) :=
     fun s r => unOptionT (unOptionT (runStateT M s)) tt (Some r).
 
   (** The four strongest-postcondition readings, as functions of a
       reachability-monad element: [asp] (angelic), [dslp] (demonic-liberal),
       and their meet ([DSP]) and join ([ASLP]). *)
-  Definition readASP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) := asp (reach M).
-  Definition readDSLP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) := dslp (reach M).
-  Definition readDSP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) :=
+  Definition readASP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
+    : PredArr (S -> Prop) (option (A * S)) := asp (reach M).
+  Definition readDSLP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
+    : PredArr (S -> Prop) (option (A * S)) := dslp (reach M).
+  Definition readDSP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
+    : PredArr (S -> Prop) (option (A * S)) :=
     fun pre r => asp (reach M) pre r /\ dslp (reach M) pre r.
-  Definition readASLP {A} (M : stateT S (optionT (optionT (Pred unit))) A)
-    : Pred (S -> Prop) (option (A * S)) :=
+  Definition readASLP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
+    : PredArr (S -> Prop) (option (A * S)) :=
     fun pre r => asp (reach M) pre r \/ dslp (reach M) pre r.
 
   (** [obsRel] and all four SP observations factor through the monad morphism
       [obsRelM]: [obsX m = readX (obsRelM m)].  So each observation is just a
       fixed reading applied to the program's image [obsRelM m] in the
       reachability monad. *)
-  Lemma obsRel_reach {A} (m : nditprog S A) s r :
+  Lemma obsRel_reach {A} (m : stdivexcnd S A) s r :
     obsRel m s r <-> reach (obsRelM m) s r.
   Proof. exact (obsRel_obsRelM m s r). Qed.
 
-  Lemma obsASP_factor {A} (m : nditprog S A) pre r :
+  Lemma obsASP_factor {A} (m : stdivexcnd S A) pre r :
     obsASP m pre r <-> readASP (obsRelM m) pre r.
   Proof.
     unfold obsASP, readASP, asp. split.
@@ -1107,7 +1092,7 @@ Section ObsRelM.
         [ exact Hpre | exact (proj2 (obsRel_reach m s r) Hr) ].
   Qed.
 
-  Lemma obsDSLP_factor {A} (m : nditprog S A) pre r :
+  Lemma obsDSLP_factor {A} (m : stdivexcnd S A) pre r :
     obsDSLP m pre r <-> readDSLP (obsRelM m) pre r.
   Proof.
     unfold obsDSLP, readDSLP, dslp. split.
@@ -1115,7 +1100,7 @@ Section ObsRelM.
     - intros H s Hr. exact (H s (proj1 (obsRel_reach m s r) Hr)).
   Qed.
 
-  Lemma obsDSP_factor {A} (m : nditprog S A) pre r :
+  Lemma obsDSP_factor {A} (m : stdivexcnd S A) pre r :
     obsDSP m pre r <-> readDSP (obsRelM m) pre r.
   Proof.
     unfold obsDSP, readDSP.
@@ -1124,7 +1109,7 @@ Section ObsRelM.
     tauto.
   Qed.
 
-  Lemma obsASLP_factor {A} (m : nditprog S A) pre r :
+  Lemma obsASLP_factor {A} (m : stdivexcnd S A) pre r :
     obsASLP m pre r <-> readASLP (obsRelM m) pre r.
   Proof.
     unfold obsASLP, readASLP.
@@ -1152,10 +1137,10 @@ Section ObsRelM.
 
   (** Bind law of the monad morphism: [obsRelM (x >>= f) ≈ obsRelM x >>=
       (obsRelM ∘ f)].  The two sides are [exists b, (x at b) /\ (cont at
-      oa)] decompositions ([SetM]-bind vs [Pred unit]-bind); they differ
+      oa)] decompositions ([SetM]-bind vs [PredArr unit]-bind); they differ
       only by equation orientation in the exception/divergence branches
       ([retPred]), discharged by [congruence]. *)
-  Lemma obsRelM_bind {A B} (x : nditprog S A) (f : A -> nditprog S B) :
+  Lemma obsRelM_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
     eq1 (obsRelM (x >>= f)) (obsRelM x >>= (fun a => obsRelM (f a))).
   Proof.
     unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Pred. intros s u oa.
@@ -1167,30 +1152,30 @@ Section ObsRelM.
 End ObsRelM.
 
 (* ================================================================= *)
-(** ** [ProgSP]: the strongest-postcondition spec monad              *)
+(** ** [SPStExc]: the strongest-postcondition spec monad              *)
 (* INCORRECT DEFINITION *)
 (* ================================================================= *)
 
 (** Forward / strongest-postcondition spec monad, dual to
-    [ProgWP = stateT S (optionT PureWP)] (whose backward transformer is
-    [PureWP A = (A -> Prop) -> Prop]).
+    [WStExc = stateT S (optionT WPure)] (whose backward transformer is
+    [WPure A = (A -> Prop) -> Prop]).
 
     Modelled on the [ForwardPredTransformer] / [SP] monad of *Dijkstra
     Monads for All* (Maillard et al.): there [SP X = { f : forall p:SProp,
     X -> SPropOver p | monotone }] carries a *precondition* [p] forward to
     a postcondition that holds "over [p]" (i.e. implies [p]).  We keep the
     bare transformer (no bundled [over]/monotonicity) to match this
-    project's bare [PureWP]. *)
+    project's bare [WPure]. *)
 Section ProgSPMonad.
 
-  (** [PureSP] = forward predicate transformer: a precondition [Prop] and a
+  (** [SPPure] = forward predicate transformer: a precondition [Prop] and a
       value determine the strongest postcondition [Prop]. *)
-  Definition PureSP (A : Type) : Type := Prop -> A -> Prop.
+  Definition SPPure (A : Type) : Type := Prop -> A -> Prop.
 
-  Definition ProgSP (S A : Type) : Type := stateT S (optionT PureSP) A.
+  Definition SPStExc (S A : Type) : Type := stateT S (optionT SPPure) A.
 
   (** Refinement-form embeddings of a Hoare pre-/post-condition pair as a
-      [ProgSP], split by approximation kind (mirroring [pp2wp_under] /
+      [SPStExc], split by approximation kind (mirroring [pp2wp_under] /
       [pp2wp_over]).  Both keep DM4All's forward shape
       [pp2sp0 (P, Q) p x := p /\ <body s0 r>]; they differ in the body
       exactly as the WP pair does — [Over] uses an implication ([pre -> post])
@@ -1201,47 +1186,47 @@ Section ProgSPMonad.
       - [pp2sp_under]: [p /\ (pre s0 /\ post r)]  (used as the *source*,
         [pp2sp_under ⊑ obs]). *)
   Definition pp2sp_over_PureSP {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : ProgSP S A :=
-    mkStateT (fun s0 => @mkOptionT PureSP _
+    : SPStExc S A :=
+    mkStateT (fun s0 => @mkOptionT SPPure _
                           (fun p r => p /\ (pre s0 -> post r))).
 
   Definition pp2sp_under_PureSP {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
-    : ProgSP S A :=
-    mkStateT (fun s0 => @mkOptionT PureSP _
+    : SPStExc S A :=
+    mkStateT (fun s0 => @mkOptionT SPPure _
                           (fun p r => p /\ (pre s0 /\ post r))).
 
-  (** Pointwise refinement order on [ProgSP] — DM4All's [SP_rel]
+  (** Pointwise refinement order on [SPStExc] — DM4All's [SP_rel]
       [fun m1 m2 => forall p x, Spr1 m1 p x -> Spr1 m2 p x], threaded through
       the state [s] and precondition [p].  (Suffixed [_PureSP] to avoid
-      clashing with the top-level [ordProgSP] on [(S -> Prop) -> _ -> Prop].) *)
-  Definition ordProgSP_PureSP {S A} (m1 m2 : ProgSP S A) : Prop :=
+      clashing with the top-level [ordSPStExc] on [(S -> Prop) -> _ -> Prop].) *)
+  Definition ordProgSP_PureSP {S A} (m1 m2 : SPStExc S A) : Prop :=
     forall s p r,
       unOptionT (runStateT m1 s) p r -> unOptionT (runStateT m2 s) p r.
 
 End ProgSPMonad.
 
 (* ================================================================= *)
-(** ** [ProgSP]-valued observation and refinement-style triple         *)
+(** ** [SPStExc]-valued observation and refinement-style triple         *)
 (* ================================================================= *)
 
-(** The [ProgSP] analogues of the WP observation [obsAWP] and the
+(** The [SPStExc] analogues of the WP observation [obsAWP] and the
     refinement triple, in a module to avoid clashing with the
     [ASPostArr]-valued [obsASP] / [as_sp_obs]-based [tripleSP] above
     (cf. [Observation.WPredObs]).  Refer to them as [ProgSPObs.obsASP]
     and [ProgSPObs.tripleSP]. *)
 Module ProgSPObs.
 
-  (** Angelic strongest-postcondition observation as a [ProgSP]: from
+  (** Angelic strongest-postcondition observation as a [SPStExc]: from
       initial state [s] under precondition [p], outcome [r] is in the
       strongest postcondition iff [p] held and [r] is reachable from [s].
       This is DM4All's [SP_ret]-style [fun p y => p s/\ a ≡ y] generalised
       to the reachability relation [obsRel]. *)
-  Definition obsASP {S A} (m : nditprog S A) : ProgSP S A :=
-    mkStateT (fun s => @mkOptionT PureSP _
+  Definition obsASP {S A} (m : stdivexcnd S A) : SPStExc S A :=
+    mkStateT (fun s => @mkOptionT SPPure _
                          (fun p r => p /\ obsRel m s r)).
 
   (** SP triple in the spec-as-element / refinement style, using
-      [pp2sp_under] / [pp2sp_over] and [ordProgSP] (dual to the WP refinement
+      [pp2sp_under] / [pp2sp_over] and [ordSPStExc] (dual to the WP refinement
       triple [tripleWPspec]).
 
       - [Over]  is over-approximation  [sp(pre) ⊆ post]  (= [obs ⊑ pp2sp_over]);
@@ -1251,7 +1236,7 @@ Module ProgSPObs.
       triple, since SP is the forward (covariant) transformer.  See the
       [progSP_tripleSP_*_char] checks below for the unfolded meanings. *)
   Definition tripleSP {S A}
-    (obs : nditprog S A -> ProgSP S A) (prog : nditprog S A)
+    (obs : stdivexcnd S A -> SPStExc S A) (prog : stdivexcnd S A)
     (kind : approximationKind)
     (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     match kind with
@@ -1267,7 +1252,7 @@ End ProgSPObs.
 
 (** [Over] unfolds to the over-approximation [sp(pre) ⊆ post]: every
     outcome reachable from a [pre]-state lies in [post]. *)
-Lemma progSP_tripleSP_over_char {S A} (prog : nditprog S A) pre post :
+Lemma progSP_tripleSP_over_char {S A} (prog : stdivexcnd S A) pre post :
   ProgSPObs.tripleSP ProgSPObs.obsASP prog Over pre post <->
   (forall s r, pre s -> obsRel prog s r -> post r).
 Proof.
@@ -1285,7 +1270,7 @@ Qed.
     holds vacuously when [pre] is empty — see [progSP_under_not_point].
     (Coincides with the point reading when [prog] is state-independent or
     [pre] is a singleton.) *)
-Lemma progSP_tripleSP_under_char {S A} (prog : nditprog S A) pre post :
+Lemma progSP_tripleSP_under_char {S A} (prog : stdivexcnd S A) pre post :
   ProgSPObs.tripleSP ProgSPObs.obsASP prog Under pre post <->
   (forall s r, pre s -> post r -> obsRel prog s r).
 Proof.
@@ -1299,7 +1284,7 @@ Qed.
 
 (** [Over] agrees with the point-based [tripleSP] (line ~163, the [asp]
     reading): both are [sp(pre) ⊆ post]. *)
-Lemma progSP_tripleSP_over_agrees {S A} (prog : nditprog S A) pre post :
+Lemma progSP_tripleSP_over_agrees {S A} (prog : stdivexcnd S A) pre post :
   ProgSPObs.tripleSP ProgSPObs.obsASP prog Over pre post <->
   tripleSP obsASP prog Over pre post.
 Proof.
@@ -1336,7 +1321,7 @@ Qed.
 (** ** Faithful forward SP refinement (precondition carried as a predicate) *)
 (* ================================================================= *)
 
-(** The [ProgSP]/[ordProgSP] refinement above threads the initial state via
+(** The [SPStExc]/[ordSPStExc] refinement above threads the initial state via
     [stateT] and quantifies it universally, so the [exists]-over-initial-states
     in under-approximation is lost ([progSP_under_not_point]).  The fix is to
     carry the precondition as a *predicate* [S -> Prop] (the forward input),
@@ -1356,13 +1341,13 @@ Module SPredObs.
   Definition SPredT (S A : Type) : Type := (S -> Prop) -> option (A * S) -> Prop.
 
   (** Observation = the [asp] reading [exists s, b s /\ obsRel m s r]. *)
-  Definition obsASP {S A} (m : nditprog S A)
+  Definition obsASP {S A} (m : stdivexcnd S A)
     : SPredT S A := asp (obsRel m). 
-  Definition obsDSLP {S A} (m : nditprog S A)
+  Definition obsDSLP {S A} (m : stdivexcnd S A)
     : SPredT S A := dslp (obsRel m).
-  Definition obsDSP {S A} (m : nditprog S A)
+  Definition obsDSP {S A} (m : stdivexcnd S A)
     : SPredT S A := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
-  Definition obsASLP {S A} (m : nditprog S A)
+  Definition obsASLP {S A} (m : stdivexcnd S A)
     : SPredT S A := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
 
   Definition ordSP {S A} (m1 m2 : SPredT S A) : Prop :=
@@ -1377,7 +1362,7 @@ Module SPredObs.
     fun b r => (forall s, pre s -> b s) /\ post r.
 
   Definition tripleSP {S A}
-    (obs : nditprog S A -> SPredT S A) (prog : nditprog S A)
+    (obs : stdivexcnd S A -> SPredT S A) (prog : stdivexcnd S A)
     (kind : approximationKind)
     (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     match kind with
@@ -1388,7 +1373,7 @@ Module SPredObs.
 End SPredObs.
 
 (** Check: [Over] agrees with the point-based [tripleSP] ([sp(pre) ⊆ post]). *)
-Lemma SPred_tripleSP_over_agrees {S A} (prog : nditprog S A) pre post :
+Lemma SPred_tripleSP_over_agrees {S A} (prog : stdivexcnd S A) pre post :
   SPredObs.tripleSP SPredObs.obsASP prog Over pre post <->
   tripleSP obsASP prog Over pre post.
 Proof.
@@ -1404,7 +1389,7 @@ Qed.
 (** Check: [Under] now ALSO agrees with the point-based [tripleSP]
     ([post ⊆ sp(pre)]) — the existential over initial states is preserved,
     unlike the demonic [ProgSPObs] version. *)
-Lemma SPred_tripleSP_under_agrees {S A} (prog : nditprog S A) pre post :
+Lemma SPred_tripleSP_under_agrees {S A} (prog : stdivexcnd S A) pre post :
   SPredObs.tripleSP SPredObs.obsASP prog Under pre post <->
   tripleSP obsASP prog Under pre post.
 Proof.
@@ -1439,20 +1424,20 @@ Proof.
 Qed.*)
 
 (* Here are my first attempts at looking at a sub-monad of the
-   SPost monad - additive vs. disjunctive. *)
+   SPostArr monad - additive vs. disjunctive. *)
 
 (* ================================================================= *)
-(** ** [PureSP] / [ProgSP]: the spec monad of *additive* strongest-
+(** ** [SPPure] / [SPStExc]: the spec monad of *additive* strongest-
        postcondition predicate transformers                          *)
 (* ================================================================= *)
 
-(** Forward (strongest-postcondition) counterpart of [PureWP] / [ProgWP].
+(** Forward (strongest-postcondition) counterpart of [WPure] / [WStExc].
 
     A *point* SP transformer has type [SPT A = Prop -> A -> Prop]: it turns
     a precondition (a [Prop] — at a point there is no input value to
     quantify over) into a postcondition on [A].  This is the naive dual of
-    [PureWP A = (A -> Prop) -> Prop], and it is exactly the (now commented
-    out, "INCORRECT DEFINITION") [ProgSP] above.
+    [WPure A = (A -> Prop) -> Prop], and it is exactly the (now commented
+    out, "INCORRECT DEFINITION") [SPStExc] above.
 
     The naive version is not a monad.  Sequencing forward transformers is
     relational composition, so [bind m k] must run [k] at the *intermediate*
@@ -1471,17 +1456,17 @@ Qed.*)
     form [t p a <-> p /\ t True a], which we take as the definition.
 
     Restricting to additive transformers therefore yields a genuine monad
-    [PureSP], with [MonadLawsE] proved below, and hence
-    [ProgSP S = stateT S (optionT PureSP)] inherits [MonadLawsE] through the
-    generic transformer instances of [ProgFacts.v] — exactly as [ProgWP]
-    does in [WPFacts.v].
+    [SPPure], with [MonadLawsE] proved below, and hence
+    [SPStExc S = stateT S (optionT SPPure)] inherits [MonadLawsE] through the
+    generic transformer instances of [Prog.v] — exactly as [WStExc]
+    does in [WP.v].
 
     The closed form is also a *representation theorem*: an additive [t] is
     determined by its value at [True] ([ofSet] / [spSet] are mutually
-    inverse, [spSet_ofSet] / [ofSet_spSet]), so [PureSP] is the transformer
+    inverse, [spSet_ofSet] / [ofSet_spSet]), so [SPPure] is the transformer
     presentation of the powerset monad.  That is the precise sense in which
     "additive strongest postcondition transformer" = "reachability
-    relation": it is the same content as [WPred.v]'s [ProgWPred], but
+    relation": it is the same content as [PredMonad.v]'s [PredStExc], but
     packaged as predicate transformers with the laws proved. *)
 
 Section PureSPMonad.
@@ -1534,19 +1519,19 @@ Section PureSPMonad.
     - intros [Hp Ht]. apply Hc. apply Hj. exists Hp. exact Ht.
   Qed.
 
-  Definition PureSP (A : Type) : Type := { t : SPT A | AdditiveSP t }.
+  Definition SPPure (A : Type) : Type := { t : SPT A | AdditiveSP t }.
 
-  Definition spApp {A} (t : PureSP A) : Prop -> A -> Prop := proj1_sig t.
+  Definition spApp {A} (t : SPPure A) : Prop -> A -> Prop := proj1_sig t.
 
-  Lemma spApp_additive {A} (t : PureSP A) (p : Prop) (a : A) :
+  Lemma spApp_additive {A} (t : SPPure A) (p : Prop) (a : A) :
     spApp t p a <-> (p /\ spApp t True a).
   Proof. exact (proj2_sig t p a). Qed.
 
   (** The representation: [spSet] reads off the value at [True], [ofSet]
       rebuilds the transformer.  They are mutually inverse. *)
-  Definition spSet {A} (t : PureSP A) : A -> Prop := fun a => spApp t True a.
+  Definition spSet {A} (t : SPPure A) : A -> Prop := fun a => spApp t True a.
 
-  #[program] Definition ofSet {A} (Q : A -> Prop) : PureSP A :=
+  #[program] Definition ofSet {A} (Q : A -> Prop) : SPPure A :=
     fun p a => p /\ Q a.
   Next Obligation. unfold AdditiveSP. intros. tauto. Qed.
 
@@ -1557,17 +1542,17 @@ Section PureSPMonad.
   Lemma spSet_ofSet {A} (Q : A -> Prop) (a : A) : spSet (ofSet Q) a <-> Q a.
   Proof. unfold spSet. rewrite spApp_ofSet. tauto. Qed.
 
-  Lemma ofSet_spSet {A} (t : PureSP A) (p : Prop) (a : A) :
+  Lemma ofSet_spSet {A} (t : SPPure A) (p : Prop) (a : A) :
     spApp (ofSet (spSet t)) p a <-> spApp t p a.
   Proof. rewrite spApp_ofSet. unfold spSet. symmetry. apply spApp_additive. Qed.
 
-  #[program] Definition retSP {A} (a : A) : PureSP A :=
+  #[program] Definition retSP {A} (a : A) : SPPure A :=
     fun p a' => p /\ a' = a.
   Next Obligation. unfold AdditiveSP. intros. tauto. Qed.
 
   (** Relational composition: the continuation is run at the intermediate
       postcondition, i.e. at [True] once [a] has been produced. *)
-  #[program] Definition bindSP {A B} (m : PureSP A) (k : A -> PureSP B) : PureSP B :=
+  #[program] Definition bindSP {A B} (m : SPPure A) (k : A -> SPPure B) : SPPure B :=
     fun p b => exists a, spApp m p a /\ spApp (k a) True b.
   Next Obligation.
     unfold AdditiveSP. intros p b. split.
@@ -1581,26 +1566,26 @@ Section PureSPMonad.
     spApp (retSP a) p a' <-> (p /\ a' = a).
   Proof. split; intro H; exact H. Qed.
 
-  Lemma spApp_bindSP {A B} (m : PureSP A) (k : A -> PureSP B) (p : Prop) (b : B) :
+  Lemma spApp_bindSP {A B} (m : SPPure A) (k : A -> SPPure B) (p : Prop) (b : B) :
     spApp (bindSP m k) p b <-> (exists a, spApp m p a /\ spApp (k a) True b).
   Proof. split; intro H; exact H. Qed.
 
-  #[global] Instance Monad_PureSP : Monad PureSP :=
+  #[global] Instance Monad_PureSP : Monad SPPure :=
     {| ret := fun _ => retSP ;
        bind := fun _ _ => bindSP |}.
 
 End PureSPMonad.
 
-(** [Eq1] is pointwise [iff] (not Leibniz [eq] as for [PureWP]: [PureSP] is
+(** [Eq1] is pointwise [iff] (not Leibniz [eq] as for [WPure]: [SPPure] is
     a subset type, so extensional equality is the right notion and no
     functional extensionality is needed anywhere below). *)
 Section PureSPLaws.
 
-  #[global] Instance Eq1_PureSP : Eq1 PureSP :=
+  #[global] Instance Eq1_PureSP : Eq1 SPPure :=
     fun A m n => forall p a, spApp m p a <-> spApp n p a.
 
   #[global] Instance Eq1Equivalence_PureSP
-    : @Eq1Equivalence PureSP _ Eq1_PureSP.
+    : @Eq1Equivalence SPPure _ Eq1_PureSP.
   Proof.
     intro A. constructor.
     - intros x p a. tauto.
@@ -1611,7 +1596,7 @@ Section PureSPLaws.
   (** [bind_ret_l] is where additivity is used: it is exactly
       [k x p b <-> p /\ k x True b]. *)
   #[global] Instance MonadLawsE_PureSP
-    : @MonadLawsE PureSP Eq1_PureSP _.
+    : @MonadLawsE SPPure Eq1_PureSP _.
   Proof.
     constructor.
     - (* bind_ret_l *)
@@ -1649,47 +1634,47 @@ End PureSPLaws.
    (S -> Prop) -> option (A * S) -> Prop *)
 
 
-(** [ProgSP S = stateT S (optionT PureSP)] — the same transformer stack as
-    [ProgWP S = stateT S (optionT PureWP)], with the forward base.  The
+(** [SPStExc S = stateT S (optionT SPPure)] — the same transformer stack as
+    [WStExc S = stateT S (optionT WPure)], with the forward base.  The
     [Monad] / [MonadState] / [MonadExc] bundle mirrors [WP.v]; [Eq1] and
-    [MonadLawsE] chain through [ProgFacts.v] exactly as in [WPFacts.v]. *)
+    [MonadLawsE] chain through [Prog.v] exactly as in [WP.v]. *)
 Section ProgSPMonad.
 
   Variable S : Type.
 
-  Definition ProgSP := stateT S (optionT PureSP).
+  Definition SPStExc := stateT S (optionT SPPure).
 
   #[local] Existing Instance Monad_stateT.
 
-  Definition retProgSP {A} (a : A) : ProgSP A :=
+  Definition retProgSP {A} (a : A) : SPStExc A :=
     @ret (stateT _ _) _ _ a.
 
-  Definition bindProgSP {A B} (m : ProgSP A) (k : A -> ProgSP B) : ProgSP B :=
+  Definition bindProgSP {A B} (m : SPStExc A) (k : A -> SPStExc B) : SPStExc B :=
     @bind (stateT _ _) _ _ _ m k.
 
-  #[global] Instance Monad__ProgSP : Monad ProgSP :=
+  #[global] Instance Monad__ProgSP : Monad SPStExc :=
     {| ret := fun _ => @retProgSP _ ;
        bind := fun _ _ => @bindProgSP _ _ |}.
 
-  Definition getProgSP : ProgSP S := @get _ (stateT _ _) _.
-  Definition putProgSP (s : S) : ProgSP unit := @put _ (stateT _ _) _ s.
+  Definition getProgSP : SPStExc S := @get _ (stateT _ _) _.
+  Definition putProgSP (s : S) : SPStExc unit := @put _ (stateT _ _) _ s.
 
-  #[global] Instance MonadState__ProgSP : MonadState S ProgSP :=
+  #[global] Instance MonadState__ProgSP : MonadState S SPStExc :=
     {| get := getProgSP ; put := putProgSP |}.
 
   #[local] Existing Instance OptionTError.
 
-  Definition raiseProgSP {A} (_ : unit) : ProgSP A := @raise _ (stateT _ _) _ _ tt.
-  Definition catchProgSP {A} (m : ProgSP A) (c : unit -> ProgSP A) : ProgSP A :=
+  Definition raiseProgSP {A} (_ : unit) : SPStExc A := @raise _ (stateT _ _) _ _ tt.
+  Definition catchProgSP {A} (m : SPStExc A) (c : unit -> SPStExc A) : SPStExc A :=
     @catch _ (stateT _ _) _ _ m c.
 
-  #[global] Instance MonadExc__ProgSP : MonadExc unit ProgSP :=
+  #[global] Instance MonadExc__ProgSP : MonadExc unit SPStExc :=
     {| raise := fun _ => raiseProgSP ; catch := fun _ => catchProgSP |}.
 
-  #[global] Instance Eq1__ProgSP : Eq1 ProgSP := Eq1_stateT S (optionT PureSP).
+  #[global] Instance Eq1__ProgSP : Eq1 SPStExc := Eq1_stateT S (optionT SPPure).
 
-  Definition MonadLawsE__ProgSP : @MonadLawsE ProgSP Eq1__ProgSP _ :=
-    MonadLawsE_stateT S (optionT PureSP).
+  Definition MonadLawsE__ProgSP : @MonadLawsE SPStExc Eq1__ProgSP _ :=
+    MonadLawsE_stateT S (optionT SPPure).
 
 End ProgSPMonad.
 
@@ -1697,38 +1682,38 @@ Arguments retProgSP {_} {_}.
 Arguments bindProgSP {_} {_} {_}.
 
 (* ----------------------------------------------------------------- *)
-(** *** The [ProgSP]-valued SP observation                            *)
+(** *** The [SPStExc]-valued SP observation                            *)
 (* ----------------------------------------------------------------- *)
 
 (** [obsSP m] packages the reachability relation [obsRel m] as an additive
     forward transformer, one per initial state.  Note the initial state is
     threaded by [stateT], so [obsSP m] carries exactly [obsRel m] — no more
     and no less.  In particular divergence (the outer [None] outcome of
-    [nditprog]) is invisible here, as it already is in [obsRel]. *)
-Definition obsSP {S A} (m : nditprog S A) : ProgSP S A :=
-  mkStateT (fun s => @mkOptionT PureSP _ (ofSet (obsRel m s))).
+    [stdivexcnd]) is invisible here, as it already is in [obsRel]. *)
+Definition obsSP {S A} (m : stdivexcnd S A) : SPStExc S A :=
+  mkStateT (fun s => @mkOptionT SPPure _ (ofSet (obsRel m s))).
 
 (** Accessors: [applySP] is the transformer at a given initial state,
     [runSP] its value at precondition [True] (= the underlying relation). *)
-Definition applySP {S A} (M : ProgSP S A) (s : S) : Prop -> option (A * S) -> Prop :=
+Definition applySP {S A} (M : SPStExc S A) (s : S) : Prop -> option (A * S) -> Prop :=
   spApp (unOptionT (runStateT M s)).
 
-Definition runSP {S A} (M : ProgSP S A) : Pred S (option (A * S)) :=
+Definition runSP {S A} (M : SPStExc S A) : PredArr S (option (A * S)) :=
   fun s r => applySP M s True r.
 
-Lemma applySP_obsSP {S A} (m : nditprog S A) s p r :
+Lemma applySP_obsSP {S A} (m : stdivexcnd S A) s p r :
   applySP (obsSP m) s p r <-> (p /\ obsRel m s r).
 Proof. unfold applySP, obsSP, spApp, ofSet. cbn. tauto. Qed.
 
-Lemma runSP_obsSP {S A} (m : nditprog S A) s r :
+Lemma runSP_obsSP {S A} (m : stdivexcnd S A) s r :
   runSP (obsSP m) s r <-> obsRel m s r.
 Proof. unfold runSP. rewrite applySP_obsSP. tauto. Qed.
 
 Lemma applySP_ret {S A} (a : A) (s : S) p r :
-  applySP (ret a : ProgSP S A) s p r <-> (p /\ r = Some (a, s)).
+  applySP (ret a : SPStExc S A) s p r <-> (p /\ r = Some (a, s)).
 Proof. split; intro H; exact H. Qed.
 
-Lemma applySP_bind {S A B} (M : ProgSP S A) (K : A -> ProgSP S B) s p r :
+Lemma applySP_bind {S A B} (M : SPStExc S A) (K : A -> SPStExc S B) s p r :
   applySP (M >>= K) s p r <->
   (exists oas, applySP M s p oas /\
      match oas with
@@ -1744,26 +1729,26 @@ Proof.
 Qed.
 
 (* ----------------------------------------------------------------- *)
-(** *** The four SP observations as readings of one [ProgSP] element  *)
+(** *** The four SP observations as readings of one [SPStExc] element  *)
 (* ----------------------------------------------------------------- *)
 
-(** A [ProgSP] element is pointwise in the initial state; to state triples
+(** A [SPStExc] element is pointwise in the initial state; to state triples
     the precondition must be a *predicate* [S -> Prop] (this is what the
     old, commented-out [ProgSPObs] got wrong: it universally quantified the
     initial state, so [Under] degenerated — cf. [progSP_under_not_point]).
-    The extension along [S] is exactly the [asp] / [dslp] pair of [SPost.v]
+    The extension along [S] is exactly the [asp] / [dslp] pair of [SPostArr.v]
     applied to [runSP], giving back the four readings verbatim. *)
-Definition spASP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+Definition spASP {S A} (M : SPStExc S A) : (S -> Prop) -> option (A * S) -> Prop :=
   asp (runSP M).
-Definition spDSLP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+Definition spDSLP {S A} (M : SPStExc S A) : (S -> Prop) -> option (A * S) -> Prop :=
   dslp (runSP M).
-Definition spDSP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+Definition spDSP {S A} (M : SPStExc S A) : (S -> Prop) -> option (A * S) -> Prop :=
   fun pre r => asp (runSP M) pre r /\ dslp (runSP M) pre r.
-Definition spASLP {S A} (M : ProgSP S A) : (S -> Prop) -> option (A * S) -> Prop :=
+Definition spASLP {S A} (M : SPStExc S A) : (S -> Prop) -> option (A * S) -> Prop :=
   fun pre r => asp (runSP M) pre r \/ dslp (runSP M) pre r.
 
 (** Every SP observation factors through [obsSP]: [obsX m = spX (obsSP m)]. *)
-Lemma obsASP_spASP {S A} (m : nditprog S A) pre r :
+Lemma obsASP_spASP {S A} (m : stdivexcnd S A) pre r :
   obsASP m pre r <-> spASP (obsSP m) pre r.
 Proof.
   unfold obsASP, spASP, asp. split.
@@ -1771,7 +1756,7 @@ Proof.
   - intros [s [Hp Hr]]. exists s. split; [exact Hp | exact (proj1 (runSP_obsSP m s r) Hr)].
 Qed.
 
-Lemma obsDSLP_spDSLP {S A} (m : nditprog S A) pre r :
+Lemma obsDSLP_spDSLP {S A} (m : stdivexcnd S A) pre r :
   obsDSLP m pre r <-> spDSLP (obsSP m) pre r.
 Proof.
   unfold obsDSLP, spDSLP, dslp. split.
@@ -1779,7 +1764,7 @@ Proof.
   - intros H s Hr. exact (H s (proj2 (runSP_obsSP m s r) Hr)).
 Qed.
 
-Lemma obsDSP_spDSP {S A} (m : nditprog S A) pre r :
+Lemma obsDSP_spDSP {S A} (m : stdivexcnd S A) pre r :
   obsDSP m pre r <-> spDSP (obsSP m) pre r.
 Proof.
   pose proof (obsASP_spASP m pre r) as Ha. pose proof (obsDSLP_spDSLP m pre r) as Hd.
@@ -1787,7 +1772,7 @@ Proof.
   unfold obsDSP, spDSP. tauto.
 Qed.
 
-Lemma obsASLP_spASLP {S A} (m : nditprog S A) pre r :
+Lemma obsASLP_spASLP {S A} (m : stdivexcnd S A) pre r :
   obsASLP m pre r <-> spASLP (obsSP m) pre r.
 Proof.
   pose proof (obsASP_spASP m pre r) as Ha. pose proof (obsDSLP_spDSLP m pre r) as Hd.
@@ -1796,20 +1781,20 @@ Proof.
 Qed.
 
 (* ----------------------------------------------------------------- *)
-(** *** [tripleSPm]: [tripleSP] over the [ProgSP] monad               *)
+(** *** [tripleSPm]: [tripleSP] over the [SPStExc] monad               *)
 (* ----------------------------------------------------------------- *)
 
 (** The SP triple, restated so that the observation is *monad-valued*
-    ([obs : nditprog S A -> ProgSP S A]) and the comparison with [post]
+    ([obs : stdivexcnd S A -> SPStExc S A]) and the comparison with [post]
     goes through an explicit reading of that element.  Instantiating
     [read] at [spASP] / [spDSLP] / [spDSP] / [spASLP] recovers the four
     old triples on the nose ([tripleSPm_ASP] .. [tripleSPm_ASLP]), so the
     original [tripleSP] and every lemma about it survive unchanged; the
     transported statements are collected below. *)
 Definition tripleSPm {S A}
-  (read : ProgSP S A -> (S -> Prop) -> option (A * S) -> Prop)
-  (obs : nditprog S A -> ProgSP S A)
-  (prog : nditprog S A)
+  (read : SPStExc S A -> (S -> Prop) -> option (A * S) -> Prop)
+  (obs : stdivexcnd S A -> SPStExc S A)
+  (prog : stdivexcnd S A)
   (kind : approximationKind)
   (pre : S -> Prop)
   (post : option (A * S) -> Prop)
@@ -1819,7 +1804,7 @@ Definition tripleSPm {S A}
   | Under => forall r, post r -> read (obs prog) pre r
   end.
 
-Lemma tripleSPm_ASP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleSPm_ASP {S A} (prog : stdivexcnd S A) kind pre post :
   tripleSPm spASP obsSP prog kind pre post <-> tripleSP obsASP prog kind pre post.
 Proof.
   destruct kind; cbn; split; intros H r Hr;
@@ -1829,7 +1814,7 @@ Proof.
           | apply H; exact (proj2 (obsASP_spASP prog pre r) Hr) ].
 Qed.
 
-Lemma tripleSPm_DSLP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleSPm_DSLP {S A} (prog : stdivexcnd S A) kind pre post :
   tripleSPm spDSLP obsSP prog kind pre post <-> tripleSP obsDSLP prog kind pre post.
 Proof.
   destruct kind; cbn; split; intros H r Hr;
@@ -1839,7 +1824,7 @@ Proof.
           | apply H; exact (proj2 (obsDSLP_spDSLP prog pre r) Hr) ].
 Qed.
 
-Lemma tripleSPm_DSP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleSPm_DSP {S A} (prog : stdivexcnd S A) kind pre post :
   tripleSPm spDSP obsSP prog kind pre post <-> tripleSP obsDSP prog kind pre post.
 Proof.
   destruct kind; cbn; split; intros H r Hr;
@@ -1849,7 +1834,7 @@ Proof.
           | apply H; exact (proj2 (obsDSP_spDSP prog pre r) Hr) ].
 Qed.
 
-Lemma tripleSPm_ASLP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleSPm_ASLP {S A} (prog : stdivexcnd S A) kind pre post :
   tripleSPm spASLP obsSP prog kind pre post <-> tripleSP obsASLP prog kind pre post.
 Proof.
   destruct kind; cbn; split; intros H r Hr;
@@ -1860,18 +1845,18 @@ Proof.
 Qed.
 
 (* ----------------------------------------------------------------- *)
-(** *** [obsSP] is a monad morphism [nditprog S ==> ProgSP S]         *)
+(** *** [obsSP] is a monad morphism [stdivexcnd S ==> SPStExc S]         *)
 (* ----------------------------------------------------------------- *)
 
-(** [eqProgSP] is the unfolding of [eq1] at [ProgSP] ([eqProgSP_eq1]:
+(** [eqProgSP] is the unfolding of [eq1] at [SPStExc] ([eqProgSP_eq1]:
     they are convertible), kept for readability of the proofs. *)
-Definition eqProgSP {S A} (M N : ProgSP S A) : Prop :=
+Definition eqProgSP {S A} (M N : SPStExc S A) : Prop :=
   forall s p r, applySP M s p r <-> applySP N s p r.
 
-Lemma eqProgSP_eq1 {S A} (M N : ProgSP S A) : eqProgSP M N <-> eq1 M N.
+Lemma eqProgSP_eq1 {S A} (M N : SPStExc S A) : eqProgSP M N <-> eq1 M N.
 Proof. split; intro H; exact H. Qed.
 
-Theorem obsSP_ret {S A} (a : A) : eq1 (obsSP (ret a : nditprog S A)) (ret a).
+Theorem obsSP_ret {S A} (a : A) : eq1 (obsSP (ret a : stdivexcnd S A)) (ret a).
 Proof.
   apply eqProgSP_eq1. intros s p r.
   split.
@@ -1887,7 +1872,7 @@ Qed.
     law: a divergent branch of [x] contributes only the outer [None]
     outcome to [x >>= f], which both sides discard.  Exceptions ([Some
     None]) short-circuit on both sides alike. *)
-Theorem obsSP_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+Theorem obsSP_bind {S A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
   eq1 (obsSP (x >>= f)) (obsSP x >>= (fun a => obsSP (f a))).
 Proof.
   apply eqProgSP_eq1. intros s p r. split.
@@ -1911,10 +1896,10 @@ Qed.
 (** *** What is and is not additive                                   *)
 (* ----------------------------------------------------------------- *)
 
-(** [spASP] — the extension of a [ProgSP] element along the precondition
+(** [spASP] — the extension of a [SPStExc] element along the precondition
     predicate — is additive, i.e. it preserves arbitrary unions of
     preconditions.  This is the [S]-indexed counterpart of [AdditiveSP]. *)
-Theorem spASP_join {S A} (M : ProgSP S A) (I : Type) (F : I -> S -> Prop) r :
+Theorem spASP_join {S A} (M : SPStExc S A) (I : Type) (F : I -> S -> Prop) r :
   spASP M (fun s => exists i, F i s) r <-> exists i, spASP M (F i) r.
 Proof.
   unfold spASP, asp. split.
@@ -1922,7 +1907,7 @@ Proof.
   - intros [i [s [Hi Hr]]]. exists s. split; [exists i; exact Hi | exact Hr].
 Qed.
 
-Theorem spASP_join2 {S A} (M : ProgSP S A) (P Q : S -> Prop) r :
+Theorem spASP_join2 {S A} (M : SPStExc S A) (P Q : S -> Prop) r :
   spASP M (fun s => P s \/ Q s) r <-> (spASP M P r \/ spASP M Q r).
 Proof.
   unfold spASP, asp. split.
@@ -1931,7 +1916,7 @@ Proof.
       (split; [ solve [left; exact HP | right; exact HQ] | exact Hr ]).
 Qed.
 
-Theorem spASP_monotone {S A} (M : ProgSP S A) (p q : S -> Prop) r :
+Theorem spASP_monotone {S A} (M : SPStExc S A) (p q : S -> Prop) r :
   (forall s, p s -> q s) -> spASP M p r -> spASP M q r.
 Proof. intros Hsub [s [Hp Hr]]. exists s. split; [exact (Hsub s Hp) | exact Hr]. Qed.
 
@@ -1959,14 +1944,14 @@ Proof.
 Qed.
 
 (** Consequence, and the honest limitation of this monad: there is no
-    [ProgSP] element whose (additive) reading is the demonic-liberal
+    [SPStExc] element whose (additive) reading is the demonic-liberal
     transformer.  So the four SP observations cannot be four *different*
-    [ProgSP]-valued observations — only [obsASP] is an element of the
+    [SPStExc]-valued observations — only [obsASP] is an element of the
     additive monad.  What does hold is the factorization above: all four
     are readings of the single element [obsSP m], because that element
     carries the whole reachability relation. *)
 Corollary obsDSLP_not_spASP :
-  ~ exists M : ProgSP nat unit, forall pre r, spASP M pre r <-> obsDSLP progEx pre r.
+  ~ exists M : SPStExc nat unit, forall pre r, spASP M pre r <-> obsDSLP progEx pre r.
 Proof.
   intros [M HM]. destruct obsDSLP_not_additive as [Hj [Hz Hnz]].
   apply (proj2 (HM _ _)) in Hj. apply spASP_join2 in Hj.
@@ -1984,111 +1969,111 @@ Ltac to_pointwise_sp :=
   repeat first [ rewrite tripleSPm_ASP  | rewrite tripleSPm_DSLP
                | rewrite tripleSPm_DSP  | rewrite tripleSPm_ASLP ].
 
-Theorem m_cc_aslp_implies_asp : forall S A (m : nditprog S A) pre post,
+Theorem m_cc_aslp_implies_asp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASLP obsSP m Over pre post -> tripleSPm spASP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply cc_aslp_implies_asp. Qed.
 
-Theorem m_cc_aslp_implies_dslp : forall S A (m : nditprog S A) pre post,
+Theorem m_cc_aslp_implies_dslp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASLP obsSP m Over pre post -> tripleSPm spDSLP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply cc_aslp_implies_dslp. Qed.
 
-Theorem m_cc_dslp_implies_dsp : forall S A (m : nditprog S A) pre post,
+Theorem m_cc_dslp_implies_dsp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSLP obsSP m Over pre post -> tripleSPm spDSP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply cc_dslp_implies_dsp. Qed.
 
-Theorem m_cc_asp_implies_dsp : forall S A (m : nditprog S A) pre post,
+Theorem m_cc_asp_implies_dsp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASP obsSP m Over pre post -> tripleSPm spDSP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply cc_asp_implies_dsp. Qed.
 
-Theorem m_ii_dsp_implies_dslp : forall S A (m : nditprog S A) pre post,
+Theorem m_ii_dsp_implies_dslp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSP obsSP m Under pre post -> tripleSPm spDSLP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ii_dsp_implies_dslp. Qed.
 
-Theorem m_ii_dslp_implies_aslp : forall S A (m : nditprog S A) pre post,
+Theorem m_ii_dslp_implies_aslp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSLP obsSP m Under pre post -> tripleSPm spASLP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ii_dslp_implies_aslp. Qed.
 
-Theorem m_ii_asp_implies_aslp : forall S A (m : nditprog S A) pre post,
+Theorem m_ii_asp_implies_aslp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASP obsSP m Under pre post -> tripleSPm spASLP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ii_asp_implies_aslp. Qed.
 
-Theorem m_ii_dsp_implies_asp : forall S A (m : nditprog S A) pre post,
+Theorem m_ii_dsp_implies_asp : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSP obsSP m Under pre post -> tripleSPm spASP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ii_dsp_implies_asp. Qed.
 
-Theorem m_ci_aslp_dsp_contrapositive : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_aslp_dsp_contrapositive : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASLP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spDSP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_aslp_dsp_contrapositive. Qed.
 
-Theorem m_ci_aslp_dsp_contrapositive' : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_aslp_dsp_contrapositive' : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spASLP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_aslp_dsp_contrapositive'. Qed.
 
-Theorem m_ci_asp_dslp_contrapositive : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_asp_dslp_contrapositive : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spDSLP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_asp_dslp_contrapositive. Qed.
 
-Theorem m_ci_asp_dslp_contrapositive' : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_asp_dslp_contrapositive' : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSLP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spASP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_asp_dslp_contrapositive'. Qed.
 
-Theorem m_ci_dslp_asp_contrapositive : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_dslp_asp_contrapositive : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSLP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spASP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_dslp_asp_contrapositive. Qed.
 
-Theorem m_ci_dslp_asp_contrapositive' : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_dslp_asp_contrapositive' : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spDSLP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_dslp_asp_contrapositive'. Qed.
 
-Theorem m_ci_dsp_aslp_contrapositive : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_dsp_aslp_contrapositive : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spDSP obsSP m Over (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spASLP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_dsp_aslp_contrapositive. Qed.
 
-Theorem m_ci_dsp_aslp_contrapositive' : forall S A (m : nditprog S A) pre post,
+Theorem m_ci_dsp_aslp_contrapositive' : forall S A (m : stdivexcnd S A) pre post,
     tripleSPm spASLP obsSP m Under (fun s => ~ pre s) (fun r => ~ post r) ->
     tripleSPm spDSP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply ci_dsp_aslp_contrapositive'. Qed.
 
-(** The two Galois connections with the WP side survive verbatim. *)
-Theorem m_dwlp_asp : forall S A (m : nditprog S A) pre post,
+(** The two GaloisArr connections with the WP side survive verbatim. *)
+Theorem m_dwlp_asp : forall S A (m : stdivexcnd S A) pre post,
     tripleWP obsDWLP m pre SubsetOf post <-> tripleSPm spASP obsSP m Over pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply dwlp_asp. Qed.
 
-Theorem m_awp_dslp : forall S A (m : nditprog S A) pre post,
+Theorem m_awp_dslp : forall S A (m : stdivexcnd S A) pre post,
     tripleWP obsAWP m pre SupersetOf post <-> tripleSPm spDSLP obsSP m Under pre post.
 Proof. intros S A m pre post. to_pointwise_sp. apply awp_dslp. Qed.
 
 (** Refinement ("spec-as-element") form, and its agreement with the direct
-    one — the [ProgSP] counterpart of [tripleSPDefEq].  Monotonicity of the
+    one — the [SPStExc] counterpart of [tripleSPDefEq].  Monotonicity of the
     reading is [spASP_monotone]. *)
 Definition tripleSPmspec {S A}
-  (read : ProgSP S A -> (S -> Prop) -> option (A * S) -> Prop)
-  (obs : nditprog S A -> ProgSP S A)
-  (prog : nditprog S A) (kind : approximationKind)
+  (read : SPStExc S A -> (S -> Prop) -> option (A * S) -> Prop)
+  (obs : stdivexcnd S A -> SPStExc S A)
+  (prog : stdivexcnd S A) (kind : approximationKind)
   (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
   match kind with
-  | Over  => ordProgSP (read (obs prog)) (pp2sp_over pre post)
-  | Under => ordProgSP (pp2sp_under pre post) (read (obs prog))
+  | Over  => ordSPStExc (read (obs prog)) (pp2sp_over pre post)
+  | Under => ordSPStExc (pp2sp_under pre post) (read (obs prog))
   end.
 
-Lemma tripleSPmspec_ASP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleSPmspec_ASP {S A} (prog : stdivexcnd S A) kind pre post :
   tripleSPmspec spASP obsSP prog kind pre post <-> tripleSPspec obsASP prog kind pre post.
 Proof.
-  destruct kind; cbn; unfold ordProgSP; split; intros H b r Hr;
+  destruct kind; cbn; unfold ordSPStExc; split; intros H b r Hr;
     first [ exact (H b r (proj1 (obsASP_spASP prog b r) Hr))
           | exact (H b r (proj2 (obsASP_spASP prog b r) Hr))
           | exact (proj1 (obsASP_spASP prog b r) (H b r Hr))
           | exact (proj2 (obsASP_spASP prog b r) (H b r Hr)) ].
 Qed.
 
-Theorem m_tripleSPDefEq {S A} (prog : nditprog S A) kind pre post :
+Theorem m_tripleSPDefEq {S A} (prog : stdivexcnd S A) kind pre post :
   tripleSPm spASP obsSP prog kind pre post <->
   tripleSPmspec spASP obsSP prog kind pre post.
 Proof.
@@ -2104,7 +2089,7 @@ Qed.
 (** ** [PureSPM] / [ProgSPM]: the *multiplicative* SP spec monad      *)
 (* ================================================================= *)
 
-(** The de Morgan dual of [PureSP].  Where an additive transformer
+(** The de Morgan dual of [SPPure].  Where an additive transformer
     factors as [t p a <-> p /\ t True a] (a *join* of per-outcome
     contributions), a MULTIPLICATIVE one factors as
 
@@ -2124,10 +2109,10 @@ Qed.
 
       [bindSPM m k p b := forall a, m (k a p b) a]
 
-    — a nesting rather than an existential, exactly like [PureWP]'s
+    — a nesting rather than an existential, exactly like [WPure]'s
     continuation-style [bind].  This is a genuine monad ([MonadLawsE]
     below), and [ProgSPM S = stateT S (optionT PureSPM)] inherits the
-    laws through [ProgFacts.v] just as [ProgSP] and [ProgWP] do.
+    laws through [Prog.v] just as [SPStExc] and [WStExc] do.
 
     Classical logic ([Classical_Prop.classic], already used by this
     file's contrapositive theorems) is needed on this side: the
@@ -2373,17 +2358,17 @@ Qed.
 (** *** Readings: join over initial states / meet over initial states *)
 (* ----------------------------------------------------------------- *)
 
-(** A [ProgSP] / [ProgSPM] element is pointwise in the initial state.
+(** A [SPStExc] / [ProgSPM] element is pointwise in the initial state.
     Extending it to a precondition *predicate* is a join in the additive
     case and a meet in the multiplicative case — the two readings are
     forced by the two monads, not chosen. *)
-Definition readSP {S A} (M : ProgSP S A) (pre : S -> Prop) (r : option (A * S)) : Prop :=
+Definition readSP {S A} (M : SPStExc S A) (pre : S -> Prop) (r : option (A * S)) : Prop :=
   exists s, applySP M s (pre s) r.
 
 Definition readSPM {S A} (M : ProgSPM S A) (pre : S -> Prop) (r : option (A * S)) : Prop :=
   forall s, applySPM M s (pre s) r.
 
-Lemma readSP_spASP {S A} (M : ProgSP S A) pre r : readSP M pre r <-> spASP M pre r.
+Lemma readSP_spASP {S A} (M : SPStExc S A) pre r : readSP M pre r <-> spASP M pre r.
 Proof.
   unfold readSP, spASP, asp, runSP, applySP. split.
   - intros [s H]. rewrite spApp_additive in H. destruct H as [Hp Hb].
@@ -2394,10 +2379,10 @@ Qed.
 (** The join reading is strict and join-preserving; the meet reading is
     top-preserving and meet-preserving.  These four facts are what make
     [obsDSP] / [obsASLP] impossible below. *)
-Lemma readSP_strict {S A} (M : ProgSP S A) r : ~ readSP M (fun _ => False) r.
+Lemma readSP_strict {S A} (M : SPStExc S A) r : ~ readSP M (fun _ => False) r.
 Proof. unfold readSP, applySP. intros [s H]. rewrite spApp_additive in H. exact (proj1 H). Qed.
 
-Lemma readSP_join2 {S A} (M : ProgSP S A) (P Q : S -> Prop) r :
+Lemma readSP_join2 {S A} (M : SPStExc S A) (P Q : S -> Prop) r :
   readSP M (fun s => P s \/ Q s) r <-> (readSP M P r \/ readSP M Q r).
 Proof.
   unfold readSP, applySP. split.
@@ -2440,24 +2425,24 @@ Qed.
     what is gone is the single spec object with four readings hung off it. *)
 Module SPMonadObs.
 
-  Definition obsASP {S A} (m : nditprog S A) : ProgSP S A :=
-    mkStateT (fun s => @mkOptionT PureSP _
+  Definition obsASP {S A} (m : stdivexcnd S A) : SPStExc S A :=
+    mkStateT (fun s => @mkOptionT SPPure _
       (ofSet (fun r => unOptionT (unOptionT (runStateT m s)) (Some r)))).
 
-  Definition obsDSLP {S A} (m : nditprog S A) : ProgSPM S A :=
+  Definition obsDSLP {S A} (m : stdivexcnd S A) : ProgSPM S A :=
     mkStateT (fun s => @mkOptionT PureSPM _
       (ofCoSet (fun r => unOptionT (unOptionT (runStateT m s)) (Some r)))).
 
-  Definition tripleJoin {S A} (obs : nditprog S A -> ProgSP S A)
-    (prog : nditprog S A) (kind : approximationKind)
+  Definition tripleJoin {S A} (obs : stdivexcnd S A -> SPStExc S A)
+    (prog : stdivexcnd S A) (kind : approximationKind)
     (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     match kind with
     | Over  => forall r, readSP (obs prog) pre r -> post r
     | Under => forall r, post r -> readSP (obs prog) pre r
     end.
 
-  Definition tripleMeet {S A} (obs : nditprog S A -> ProgSPM S A)
-    (prog : nditprog S A) (kind : approximationKind)
+  Definition tripleMeet {S A} (obs : stdivexcnd S A -> ProgSPM S A)
+    (prog : stdivexcnd S A) (kind : approximationKind)
     (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     match kind with
     | Over  => forall r, readSPM (obs prog) pre r -> post r
@@ -2466,14 +2451,14 @@ Module SPMonadObs.
 
 End SPMonadObs.
 
-Lemma applySP_obsASP {S A} (m : nditprog S A) s p r :
+Lemma applySP_obsASP {S A} (m : stdivexcnd S A) s p r :
   applySP (SPMonadObs.obsASP m) s p r <-> (p /\ obsRel m s r).
 Proof.
   unfold applySP, SPMonadObs.obsASP, spApp, ofSet. cbn.
   rewrite obsRel_outcomes. tauto.
 Qed.
 
-Lemma applySPM_obsDSLP {S A} (m : nditprog S A) s p r :
+Lemma applySPM_obsDSLP {S A} (m : stdivexcnd S A) s p r :
   applySPM (SPMonadObs.obsDSLP m) s p r <-> (obsRel m s r -> p).
 Proof.
   unfold applySPM, SPMonadObs.obsDSLP, spAppM, ofCoSet. cbn.
@@ -2483,7 +2468,7 @@ Qed.
 (** The two readings recover the old [asp] / [dslp] observations, so both
     triples coincide with the original [tripleSP] and the whole SP
     taxonomy transports as before. *)
-Lemma readSP_obsASP {S A} (m : nditprog S A) pre r :
+Lemma readSP_obsASP {S A} (m : stdivexcnd S A) pre r :
   readSP (SPMonadObs.obsASP m) pre r <-> obsASP m pre r.
 Proof.
   unfold readSP, obsASP, asp. split.
@@ -2491,7 +2476,7 @@ Proof.
   - intros [s H]. exists s. rewrite applySP_obsASP. exact H.
 Qed.
 
-Lemma readSPM_obsDSLP {S A} (m : nditprog S A) pre r :
+Lemma readSPM_obsDSLP {S A} (m : stdivexcnd S A) pre r :
   readSPM (SPMonadObs.obsDSLP m) pre r <-> obsDSLP m pre r.
 Proof.
   unfold readSPM, obsDSLP, dslp. split.
@@ -2499,7 +2484,7 @@ Proof.
   - intros H s. rewrite applySPM_obsDSLP. exact (H s).
 Qed.
 
-Lemma tripleJoin_ASP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleJoin_ASP {S A} (prog : stdivexcnd S A) kind pre post :
   SPMonadObs.tripleJoin SPMonadObs.obsASP prog kind pre post <->
   tripleSP obsASP prog kind pre post.
 Proof.
@@ -2510,7 +2495,7 @@ Proof.
           | apply H; exact (proj2 (readSP_obsASP prog pre r) Hr) ].
 Qed.
 
-Lemma tripleMeet_DSLP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleMeet_DSLP {S A} (prog : stdivexcnd S A) kind pre post :
   SPMonadObs.tripleMeet SPMonadObs.obsDSLP prog kind pre post <->
   tripleSP obsDSLP prog kind pre post.
 Proof.
@@ -2532,7 +2517,7 @@ Lemma eqProgSPM_eq1 {S A} (M N : ProgSPM S A) : eqProgSPM M N <-> eq1 M N.
 Proof. split; intro H; exact H. Qed.
 
 Theorem obsASPmorph_ret {S A} (a : A) :
-  eq1 (SPMonadObs.obsASP (ret a : nditprog S A)) (ret a).
+  eq1 (SPMonadObs.obsASP (ret a : stdivexcnd S A)) (ret a).
 Proof.
   apply (proj1 (eqProgSP_eq1 _ _)). intros s p r.
   rewrite applySP_obsASP, applySP_ret. split.
@@ -2542,7 +2527,7 @@ Proof.
     unfold obsRel. destruct r as [[b s']|]; cbn; congruence.
 Qed.
 
-Theorem obsASPmorph_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+Theorem obsASPmorph_bind {S A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
   eq1 (SPMonadObs.obsASP (x >>= f))
       (SPMonadObs.obsASP x >>= (fun a => SPMonadObs.obsASP (f a))).
 Proof.
@@ -2562,7 +2547,7 @@ Proof.
 Qed.
 
 Theorem obsDSLPmorph_ret {S A} (a : A) :
-  eq1 (SPMonadObs.obsDSLP (ret a : nditprog S A)) (ret a).
+  eq1 (SPMonadObs.obsDSLP (ret a : stdivexcnd S A)) (ret a).
 Proof.
   apply (proj1 (eqProgSPM_eq1 _ _)). intros s p r.
   rewrite applySPM_obsDSLP, applySPM_ret. split.
@@ -2571,7 +2556,7 @@ Proof.
     unfold obsRel in Hrel. destruct r as [[b s']|]; cbn in Hrel; congruence.
 Qed.
 
-Theorem obsDSLPmorph_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+Theorem obsDSLPmorph_bind {S A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
   eq1 (SPMonadObs.obsDSLP (x >>= f))
       (SPMonadObs.obsDSLP x >>= (fun a => SPMonadObs.obsDSLP (f a))).
 Proof.
@@ -2595,8 +2580,8 @@ Qed.
 (** *** No-go: [obsDSP] and [obsASLP] fit NEITHER monad               *)
 (* ----------------------------------------------------------------- *)
 
-(** The requested signatures [obsDSP : nditprog S A -> ProgSPM S A] and
-    [obsASLP : nditprog S A -> ProgSP S A] cannot be realised, and neither
+(** The requested signatures [obsDSP : stdivexcnd S A -> ProgSPM S A] and
+    [obsASLP : stdivexcnd S A -> SPStExc S A] cannot be realised, and neither
     can the swapped assignment.  The obstruction is sharp: DSP and ASLP
     preserve *binary* meets/joins respectively ([obsDSP_meet2],
     [obsASLP_join2]) but fail the *empty* ones —
@@ -2615,7 +2600,7 @@ Qed.
 Lemma progEx_no_exception : forall s, ~ obsRel progEx s None.
 Proof. intros s H. unfold obsRel in H. cbn in H. sauto. Qed.
 
-Theorem obsDSP_meet2 {S A} (m : nditprog S A) (P Q : S -> Prop) r :
+Theorem obsDSP_meet2 {S A} (m : stdivexcnd S A) (P Q : S -> Prop) r :
   obsDSP m (fun s => P s /\ Q s) r <-> (obsDSP m P r /\ obsDSP m Q r).
 Proof.
   unfold obsDSP, asp, dslp. split.
@@ -2627,7 +2612,7 @@ Proof.
     intros s' Hr'. split; [exact (HallP s' Hr') | exact (HallQ s' Hr')].
 Qed.
 
-Theorem obsASLP_join2 {S A} (m : nditprog S A) (P Q : S -> Prop) r :
+Theorem obsASLP_join2 {S A} (m : stdivexcnd S A) (P Q : S -> Prop) r :
   obsASLP m (fun s => P s \/ Q s) r <-> (obsASLP m P r \/ obsASLP m Q r).
 Proof.
   unfold obsASLP, asp, dslp. split.
@@ -2690,7 +2675,7 @@ Proof.
 Qed.
 
 Corollary no_ProgSP_for_obsASLP :
-  ~ exists M : ProgSP nat unit, forall pre r, readSP M pre r <-> obsASLP progEx pre r.
+  ~ exists M : SPStExc nat unit, forall pre r, readSP M pre r <-> obsASLP progEx pre r.
 Proof.
   intros [M HM]. apply (readSP_strict M None).
   apply (proj2 (HM (fun _ => False) None)). exact obsASLP_not_strict.
@@ -2699,7 +2684,7 @@ Qed.
 (** The swapped assignment fails too, so there is no rescue by exchanging
     the two monads. *)
 Corollary no_ProgSP_for_obsDSP :
-  ~ exists M : ProgSP nat unit, forall pre r, readSP M pre r <-> obsDSP progEx pre r.
+  ~ exists M : SPStExc nat unit, forall pre r, readSP M pre r <-> obsDSP progEx pre r.
 Proof.
   intros [M HM]. destruct obsDSP_not_join2 as [Hj [Hz Hnz]].
   apply (proj2 (HM _ _)) in Hj. apply readSP_join2 in Hj.
@@ -2718,13 +2703,13 @@ Qed.
 (** *** What does work for DSP / ASLP: the product monad              *)
 (* ----------------------------------------------------------------- *)
 
-(** [ProgSPB S A = ProgSP S A * ProgSPM S A] is the product of the two
+(** [ProgSPB S A = SPStExc S A * ProgSPM S A] is the product of the two
     monads (componentwise [ret]/[bind]; [MonadLawsE] componentwise from
     the two factors).  [obsDSP] and [obsASLP] land there — a DSP/ASLP
     observation must carry BOTH the additive and the multiplicative
     element, and the two differ only in how the pair is read (meet vs
     join).  This is forced: [dsp = asp /\ dslp] and [aslp = asp \/ dslp]
-    ([SPost.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
+    ([SPostArr.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
     of the two extremes, and neither is an extreme itself.
 
     Note this breaks the [stateT S (optionT base)] shape used elsewhere:
@@ -2732,7 +2717,7 @@ Qed.
     morphism laws componentwise. *)
 
 Definition ProgSPB (S : Type) : Type -> Type :=
-  fun A => (ProgSP S A * ProgSPM S A)%type.
+  fun A => (SPStExc S A * ProgSPM S A)%type.
 
 Definition retProgSPB {S A} (a : A) : ProgSPB S A := (ret a, ret a).
 Definition bindProgSPB {S A B} (m : ProgSPB S A) (k : A -> ProgSPB S B) : ProgSPB S B :=
@@ -2762,27 +2747,27 @@ Qed.
 Proof.
   constructor.
   - intros A B f x. split;
-      [ exact (bind_ret_l (M := ProgSP S) A B (fun a => fst (f a)) x)
+      [ exact (bind_ret_l (M := SPStExc S) A B (fun a => fst (f a)) x)
       | exact (bind_ret_l (M := ProgSPM S) A B (fun a => snd (f a)) x) ].
   - intros A x. split;
-      [ exact (bind_ret_r (M := ProgSP S) A (fst x))
+      [ exact (bind_ret_r (M := SPStExc S) A (fst x))
       | exact (bind_ret_r (M := ProgSPM S) A (snd x)) ].
   - intros A B C x f g. split;
-      [ exact (bind_bind (M := ProgSP S) A B C (fst x)
+      [ exact (bind_bind (M := SPStExc S) A B C (fst x)
                  (fun a => fst (f a)) (fun b => fst (g b)))
       | exact (bind_bind (M := ProgSPM S) A B C (snd x)
                  (fun a => snd (f a)) (fun b => snd (g b))) ].
   - intros A B x y [H1 H2] f g Hfg. split;
-      [ apply (Proper_bind (M := ProgSP S)) | apply (Proper_bind (M := ProgSPM S)) ];
+      [ apply (Proper_bind (M := SPStExc S)) | apply (Proper_bind (M := ProgSPM S)) ];
       solve [ assumption | intro a; exact (proj1 (Hfg a)) | intro a; exact (proj2 (Hfg a)) ].
 Qed.
 
 Module SPMonadObsB.
 
-  Definition obsDSP {S A} (m : nditprog S A) : ProgSPB S A :=
+  Definition obsDSP {S A} (m : stdivexcnd S A) : ProgSPB S A :=
     (SPMonadObs.obsASP m, SPMonadObs.obsDSLP m).
 
-  Definition obsASLP {S A} (m : nditprog S A) : ProgSPB S A :=
+  Definition obsASLP {S A} (m : stdivexcnd S A) : ProgSPB S A :=
     (SPMonadObs.obsASP m, SPMonadObs.obsDSLP m).
 
   Definition readMeet {S A} (M : ProgSPB S A) (pre : S -> Prop) r : Prop :=
@@ -2791,16 +2776,16 @@ Module SPMonadObsB.
   Definition readJoin {S A} (M : ProgSPB S A) (pre : S -> Prop) r : Prop :=
     readSP (fst M) pre r \/ readSPM (snd M) pre r.
 
-  Definition tripleMeet {S A} (obs : nditprog S A -> ProgSPB S A)
-    (prog : nditprog S A) (kind : approximationKind)
+  Definition tripleMeet {S A} (obs : stdivexcnd S A -> ProgSPB S A)
+    (prog : stdivexcnd S A) (kind : approximationKind)
     (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     match kind with
     | Over  => forall r, readMeet (obs prog) pre r -> post r
     | Under => forall r, post r -> readMeet (obs prog) pre r
     end.
 
-  Definition tripleJoin {S A} (obs : nditprog S A -> ProgSPB S A)
-    (prog : nditprog S A) (kind : approximationKind)
+  Definition tripleJoin {S A} (obs : stdivexcnd S A -> ProgSPB S A)
+    (prog : stdivexcnd S A) (kind : approximationKind)
     (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     match kind with
     | Over  => forall r, readJoin (obs prog) pre r -> post r
@@ -2809,7 +2794,7 @@ Module SPMonadObsB.
 
 End SPMonadObsB.
 
-Lemma readMeet_obsDSP {S A} (m : nditprog S A) pre r :
+Lemma readMeet_obsDSP {S A} (m : stdivexcnd S A) pre r :
   SPMonadObsB.readMeet (SPMonadObsB.obsDSP m) pre r <-> obsDSP m pre r.
 Proof.
   unfold SPMonadObsB.readMeet, SPMonadObsB.obsDSP, obsDSP. cbn.
@@ -2818,7 +2803,7 @@ Proof.
   tauto.
 Qed.
 
-Lemma readJoin_obsASLP {S A} (m : nditprog S A) pre r :
+Lemma readJoin_obsASLP {S A} (m : stdivexcnd S A) pre r :
   SPMonadObsB.readJoin (SPMonadObsB.obsASLP m) pre r <-> obsASLP m pre r.
 Proof.
   unfold SPMonadObsB.readJoin, SPMonadObsB.obsASLP, obsASLP. cbn.
@@ -2828,15 +2813,15 @@ Proof.
 Qed.
 
 Theorem obsDSPB_ret {S A} (a : A) :
-  eq1 (SPMonadObsB.obsDSP (ret a : nditprog S A)) (ret a).
+  eq1 (SPMonadObsB.obsDSP (ret a : stdivexcnd S A)) (ret a).
 Proof. split; [exact (obsASPmorph_ret a) | exact (obsDSLPmorph_ret a)]. Qed.
 
-Theorem obsDSPB_bind {S A B} (x : nditprog S A) (f : A -> nditprog S B) :
+Theorem obsDSPB_bind {S A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
   eq1 (SPMonadObsB.obsDSP (x >>= f))
       (SPMonadObsB.obsDSP x >>= (fun a => SPMonadObsB.obsDSP (f a))).
 Proof. split; [exact (obsASPmorph_bind x f) | exact (obsDSLPmorph_bind x f)]. Qed.
 
-Lemma tripleMeet_DSP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleMeet_DSP {S A} (prog : stdivexcnd S A) kind pre post :
   SPMonadObsB.tripleMeet SPMonadObsB.obsDSP prog kind pre post <->
   tripleSP obsDSP prog kind pre post.
 Proof.
@@ -2847,7 +2832,7 @@ Proof.
           | apply H; exact (proj2 (readMeet_obsDSP prog pre r) Hr) ].
 Qed.
 
-Lemma tripleJoin_ASLP {S A} (prog : nditprog S A) kind pre post :
+Lemma tripleJoin_ASLP {S A} (prog : stdivexcnd S A) kind pre post :
   SPMonadObsB.tripleJoin SPMonadObsB.obsASLP prog kind pre post <->
   tripleSP obsASLP prog kind pre post.
 Proof.
