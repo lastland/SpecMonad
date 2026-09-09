@@ -1,0 +1,446 @@
+From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ITree Require Import Basics.Monad.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
+Require Import Coq.Logic.Classical_Prop.
+
+Import MonadNotation.
+Open Scope monad_scope.
+
+(** * SP observations for [stdivnd]
+
+    [stdivnd S A = stateT S (optionT SetM) A] is the nondeterministic, possibly
+    DIVERGENT stateful monad of [StDivNonDet]: its outcome set has type
+    [option (A * S) -> Prop], with [None] read as divergence.
+
+    The specification monads of [NonDetItObservationNew] never mention the
+    computation monad: they are predicate transformers
+    [(S -> Prop) -> option (A * S) -> Prop] carved out by a healthiness
+    condition.  So the whole of that development — [ASPStExc], [DSLPStExc],
+    [DSPStExc], [ASLPStExc], their monad instances and laws, the carrier
+    bridges, [pp2*] and [ordSPStExc] — is reused verbatim here.  What this file
+    re-does is the ONE layer that depends on the computation monad: the four
+    observations, that they are monad morphisms, and the triples over them.
+
+    Note the contrast with [stdivexcnd].  There the SP observations read the
+    TERMINATING SLICE [unOptionT (unOptionT (runStateT m s)) (Some r)], which
+    discards the divergent outcome, so the [stdivexcnd] spec transformers cannot
+    talk about divergence at all.  Here [None] is an ordinary member of the
+    outcome set, so the transformers constrain divergence directly: e.g.
+    [getASPStExc (obsASP m) pre None] says "some [pre]-state may diverge" and
+    [getDSLPStExc (obsDSLP m) pre None] says "every state that may diverge
+    satisfies [pre]".
+
+    Everything is wrapped in a module so the names do not clash with the
+    [stdivexcnd] observations of the imported file. *)
+
+Module FullOutcomeObs.
+
+Section NDObservations.
+  Variable S : Type.
+
+  (** The outcome set of a bind, one step.  Two cases rather than [stdivexcnd]'s
+      three: normal return, and divergence — which is absorbing, exactly the
+      propagation rule divergence needs. *)
+  Lemma outcomes_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) s ob :
+    unOptionT (runStateT (x >>= f) s) ob <->
+    (exists oy, unOptionT (runStateT x s) oy /\
+       match oy with
+       | Some (a, s') => unOptionT (runStateT (f a) s') ob
+       | None => ob = None
+       end).
+  Proof.
+    cbn. split.
+    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
+      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
+    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
+      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
+  Qed.
+
+  Lemma outcomes_ret {A} (a : A) (s : S) (r : option (A * S)) :
+    unOptionT (runStateT (ret a : stdivnd S A) s) r <-> r = Some (a, s).
+  Proof. cbn. split; intro H; congruence. Qed.
+
+  (* ================================================================== *)
+  (** ** The four observations                                          *)
+  (* ================================================================== *)
+
+  (** Outcome space is the FULL [option (A * S)]: [r = None] is divergence,
+      so these observations can constrain divergent behaviour. *)
+  #[program] Definition obsASP {A} (m : stdivnd S A) : ASPMonad.ASPStExc S A :=
+    fun pre (r : option (A * S)) => exists s, pre s /\ unOptionT (runStateT m s) r.
+  Next Obligation.
+    intros pre r. split.
+    - intros [s [Hp Hr]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hr ].
+    - intros [s0 [Hp [s [Heq Hr]]]]. subst s.
+      exists s0. split; [ exact Hp | exact Hr ].
+  Qed.
+
+  #[program] Definition obsDSLP {A} (m : stdivnd S A) : DSLPMonad.DSLPStExc S A :=
+    fun pre (r : option (A * S)) => forall s, unOptionT (runStateT m s) r -> pre s.
+  Next Obligation.
+    exact (dslp_msingleton S (fun s r => unOptionT (runStateT m s) r)).
+  Qed.
+
+  #[program] Definition obsDSP {A} (m : stdivnd S A) : DSPMonad.DSPStExc S A :=
+    fun pre (r : option (A * S)) => (obsASP m pre r) /\ (obsDSLP m pre r).
+  Next Obligation.
+    exact (dsp_shape_wf S (fun s r => unOptionT (runStateT m s) r)).
+  Qed.
+
+  #[program] Definition obsASLP {A} (m : stdivnd S A) : ASLPMonad.ASLPStExc S A :=
+    fun pre (r : option (A * S)) => (obsASP m pre r) \/ (obsDSLP m pre r).
+  Next Obligation.
+    exact (aslp_shape_wf S (fun s r => unOptionT (runStateT m s) r)).
+  Qed.
+
+  (** Applying an observation IS the corresponding reading of the outcome set. *)
+  Lemma getProgASP_obsASP {A} (m : stdivnd S A) pre r :
+    getASPStExc (obsASP m) pre r
+    <-> (exists s, pre s /\ unOptionT (runStateT m s) r).
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma getProgDSLP_obsDSLP {A} (m : stdivnd S A) pre r :
+    getDSLPStExc (obsDSLP m) pre r
+    <-> (forall s, unOptionT (runStateT m s) r -> pre s).
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma getProgDSP_obsDSP {A} (m : stdivnd S A) pre r :
+    getDSPStExc (obsDSP m) pre r
+    <-> ((exists s, pre s /\ unOptionT (runStateT m s) r)
+         /\ (forall s, unOptionT (runStateT m s) r -> pre s)).
+  Proof. split; intro H; exact H. Qed.
+
+  Lemma getProgASLP_obsASLP {A} (m : stdivnd S A) pre r :
+    getASLPStExc (obsASLP m) pre r
+    <-> ((exists s, pre s /\ unOptionT (runStateT m s) r)
+         \/ (forall s, unOptionT (runStateT m s) r -> pre s)).
+  Proof. split; intro H; exact H. Qed.
+
+  (* ================================================================== *)
+  (** ** Each observation is a monad morphism                           *)
+  (* ================================================================== *)
+
+  Theorem obsASP_ret {A} (a : A) : eq1 (obsASP (ret a : stdivnd S A)) (ret a).
+  Proof.
+    unfold eq1, Eq1__ASPStExc. intros pre r. split.
+    - intros [s [Hp Hr]]. exists s.
+      split; [ exact Hp | exact (proj1 (outcomes_ret a s r) Hr) ].
+    - intros [s [Hp Heq]]. exists s.
+      split; [ exact Hp | exact (proj2 (outcomes_ret a s r) Heq) ].
+  Qed.
+
+  Theorem obsASP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
+    eq1 (obsASP (x >>= f)) (obsASP x >>= (fun a => obsASP (f a))).
+  Proof.
+    unfold eq1, Eq1__ASPStExc. intros pre r. split.
+    - intros [s [Hp Hrel]]. apply outcomes_bind in Hrel.
+      destruct Hrel as [oy [Hx Hk]]. destruct oy as [[a s']|].
+      + left. exists a, s'. split; [| exact Hk ].
+        exists s. split; [ exact Hp | exact Hx ].
+      + right. split; [ exact Hk |]. exists s. split; [ exact Hp | exact Hx ].
+    - intros [[a [s' [[s [Hp Hx]] Hf]]] | [Hr [s [Hp Hx]]]].
+      + exists s. split; [ exact Hp |]. apply outcomes_bind.
+        exists (Some (a, s')). split; [ exact Hx | exact Hf ].
+      + exists s. split; [ exact Hp |]. apply outcomes_bind.
+        exists None. split; [ exact Hx | exact Hr ].
+  Qed.
+
+  Theorem obsDSLP_ret {A} (a : A) : eq1 (obsDSLP (ret a : stdivnd S A)) (ret a).
+  Proof.
+    unfold eq1, Eq1__DSLPStExc. intros pre r. split.
+    - intros H s0 Heq. exact (H s0 (proj2 (outcomes_ret a s0 r) Heq)).
+    - intros H s Hr. exact (H s (proj1 (outcomes_ret a s r) Hr)).
+  Qed.
+
+  Theorem obsDSLP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
+    eq1 (obsDSLP (x >>= f)) (obsDSLP x >>= (fun a => obsDSLP (f a))).
+  Proof.
+    unfold eq1, Eq1__DSLPStExc. intros pre r. split.
+    - intro H. split.
+      + intros a s' Hf s Hx. apply H. apply outcomes_bind.
+        exists (Some (a, s')). split; [ exact Hx | exact Hf ].
+      + intros Hr s Hx. apply H. apply outcomes_bind.
+        exists None. split; [ exact Hx | exact Hr ].
+    - intros [H1 H2] s Hrel. apply outcomes_bind in Hrel.
+      destruct Hrel as [oy [Hx Hk]]. destruct oy as [[a s']|].
+      + exact (H1 a s' Hk s Hx).
+      + exact (H2 Hk s Hx).
+  Qed.
+
+  Theorem obsDSP_ret {A} (a : A) : eq1 (obsDSP (ret a : stdivnd S A)) (ret a).
+  Proof.
+    unfold eq1, Eq1__DSPStExc. intros pre r.
+    apply (dsp_cong S
+             (fun s r0 => unOptionT (runStateT (ret a : stdivnd S A) s) r0)
+             (fun s r0 => r0 = Some (a, s))).
+    intros s r0. exact (outcomes_ret a s r0).
+  Qed.
+
+  Theorem obsDSP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
+    eq1 (obsDSP (x >>= f)) (obsDSP x >>= (fun a => obsDSP (f a))).
+  Proof.
+    unfold eq1, Eq1__DSPStExc. intros pre r.
+    assert (Hx : forall s y,
+               (getDSPStExc (obsDSP x) (fun _ => True) y
+                /\ ~ getDSPStExc (obsDSP x) (fun t => t <> s) y)
+               <-> unOptionT (runStateT x s) y).
+    { intros s y.
+      exact (dsp_recov S (fun s1 r1 => unOptionT (runStateT x s1) r1) s y). }
+    assert (Hf : forall a s y,
+               (getDSPStExc (obsDSP (f a)) (fun _ => True) y
+                /\ ~ getDSPStExc (obsDSP (f a)) (fun t => t <> s) y)
+               <-> unOptionT (runStateT (f a) s) y).
+    { intros a s y.
+      exact (dsp_recov S (fun s1 r1 => unOptionT (runStateT (f a) s1) r1) s y). }
+    refine (iff_trans
+              (dsp_cong S
+                 (fun s r0 => unOptionT (runStateT (x >>= f) s) r0)
+                 (fun s r0 =>
+                    exists o, (getDSPStExc (obsDSP x) (fun _ => True) o
+                               /\ ~ getDSPStExc (obsDSP x) (fun t => t <> s) o)
+                              /\ match o with
+                                 | Some (a, smid) =>
+                                     getDSPStExc (obsDSP (f a)) (fun _ => True) r0
+                                     /\ ~ getDSPStExc (obsDSP (f a)) (fun t => t <> smid) r0
+                                 | None => r0 = None
+                                 end)
+                 _ pre r)
+              (iff_sym (bindDSPProg_dsp S (obsDSP x) (fun a => obsDSP (f a)) pre r))).
+    intros s r0. split.
+    - intro H. apply outcomes_bind in H. destruct H as [oy [Hxx Hk]].
+      destruct oy as [[a s']|].
+      + exists (Some (a, s')). split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
+      + exists None. split; [ apply Hx; exact Hxx | exact Hk ].
+    - intros [[[a s']|] [Hm Hk]].
+      + apply Hx in Hm. apply Hf in Hk. apply outcomes_bind.
+        exists (Some (a, s')). split; [ exact Hm | exact Hk ].
+      + apply Hx in Hm. apply outcomes_bind.
+        exists None. split; [ exact Hm | exact Hk ].
+  Qed.
+
+  Theorem obsASLP_ret {A} (a : A) : eq1 (obsASLP (ret a : stdivnd S A)) (ret a).
+  Proof.
+    unfold eq1, Eq1__ASLPStExc. intros pre r.
+    apply (aslp_cong S
+             (fun s r0 => unOptionT (runStateT (ret a : stdivnd S A) s) r0)
+             (fun s r0 => r0 = Some (a, s))).
+    intros s r0. exact (outcomes_ret a s r0).
+  Qed.
+
+  Theorem obsASLP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
+    eq1 (obsASLP (x >>= f)) (obsASLP x >>= (fun a => obsASLP (f a))).
+  Proof.
+    unfold eq1, Eq1__ASLPStExc. intros pre r.
+    assert (Hx : forall s y,
+               (~ getASLPStExc (obsASLP x) (fun _ => False) y
+                /\ getASLPStExc (obsASLP x) (fun t => t = s) y)
+               <-> unOptionT (runStateT x s) y).
+    { intros s y.
+      exact (aslp_recov S (fun s1 r1 => unOptionT (runStateT x s1) r1) s y). }
+    assert (Hf : forall a s y,
+               (~ getASLPStExc (obsASLP (f a)) (fun _ => False) y
+                /\ getASLPStExc (obsASLP (f a)) (fun t => t = s) y)
+               <-> unOptionT (runStateT (f a) s) y).
+    { intros a s y.
+      exact (aslp_recov S (fun s1 r1 => unOptionT (runStateT (f a) s1) r1) s y). }
+    refine (iff_trans
+              (aslp_cong S
+                 (fun s r0 => unOptionT (runStateT (x >>= f) s) r0)
+                 (fun s r0 =>
+                    exists o, (~ getASLPStExc (obsASLP x) (fun _ => False) o
+                               /\ getASLPStExc (obsASLP x) (fun t => t = s) o)
+                              /\ match o with
+                                 | Some (a, smid) =>
+                                     ~ getASLPStExc (obsASLP (f a)) (fun _ => False) r0
+                                     /\ getASLPStExc (obsASLP (f a)) (fun t => t = smid) r0
+                                 | None => r0 = None
+                                 end)
+                 _ pre r)
+              (iff_sym (bindASLPProg_aslp S (obsASLP x) (fun a => obsASLP (f a)) pre r))).
+    intros s r0. split.
+    - intro H. apply outcomes_bind in H. destruct H as [oy [Hxx Hk]].
+      destruct oy as [[a s']|].
+      + exists (Some (a, s')). split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
+      + exists None. split; [ apply Hx; exact Hxx | exact Hk ].
+    - intros [[[a s']|] [Hm Hk]].
+      + apply Hx in Hm. apply Hf in Hk. apply outcomes_bind.
+        exists (Some (a, s')). split; [ exact Hm | exact Hk ].
+      + apply Hx in Hm. apply outcomes_bind.
+        exists None. split; [ exact Hm | exact Hk ].
+  Qed.
+
+End NDObservations.
+
+Arguments obsASP {_} {_}.
+Arguments obsDSLP {_} {_}.
+Arguments obsDSP {_} {_}.
+Arguments obsASLP {_} {_}.
+
+(* ==================================================================== *)
+(** * Triples                                                            *)
+(* ==================================================================== *)
+
+Section NDTriples.
+
+  Definition tripleASP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getASPStExc (obsASP prog) pre r -> post r
+    | Under => forall r, post r -> getASPStExc (obsASP prog) pre r
+    end.
+
+  Definition tripleDSLP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getDSLPStExc (obsDSLP prog) pre r -> post r
+    | Under => forall r, post r -> getDSLPStExc (obsDSLP prog) pre r
+    end.
+
+  Definition tripleDSP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getDSPStExc (obsDSP prog) pre r -> post r
+    | Under => forall r, post r -> getDSPStExc (obsDSP prog) pre r
+    end.
+
+  Definition tripleASLP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getASLPStExc (obsASLP prog) pre r -> post r
+    | Under => forall r, post r -> getASLPStExc (obsASLP prog) pre r
+    end.
+
+  #[program] Definition pp2asp_over' {S A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : ASPStExc S A :=
+    fun p r => exists s, p s /\ (pre s -> post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s.
+      exists s0. split; [ exact Hp | exact Hc ].
+  Qed.
+
+  #[program] Definition pp2dslp_under' {S A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : DSLPStExc S A :=
+    fun p r => forall s, (post r -> pre s) -> p s.
+  Next Obligation. exact (dslp_msingleton S (fun s r => post r -> pre s)). Qed.
+
+  (** [tripleASP _ Over pre post] is [Out <= {(s,r) | pre s -> post r}]. *)
+  Theorem tripleASP_over_inmonad {S A} (prog : stdivnd S A) pre post :
+    tripleASP prog Over pre post
+    <-> ordASPStExc (obsASP prog) (pp2asp_over' pre post).
+  Proof.
+    split.
+    - intros H p r [s [Hp Hout]]. exists s. split; [ exact Hp |].
+      intro Hpre. exact (H r (ex_intro _ s (conj Hpre Hout))).
+    - intros H r [s [Hpre Hout]].
+      destruct (H pre r (ex_intro _ s (conj Hpre Hout))) as [s1 [Hp1 Himp]].
+      exact (Himp Hp1).
+  Qed.
+
+  (** Dually, [tripleDSLP _ Under pre post] is [Out <= {(s,r) | post r -> pre s}].
+      Note the comparison REVERSES, because reading a relation as a DSLP is
+      antitone in the relation. *)
+  Theorem tripleDSLP_under_inmonad {S A} (prog : stdivnd S A) pre post :
+    tripleDSLP prog Under pre post
+    <-> ordDSLPStExc (pp2dslp_under' pre post) (obsDSLP prog).
+  Proof.
+    split.
+    - intros H p r Hd s Hout. apply Hd. intro Hpost. exact (H r Hpost s Hout).
+    - intros H r Hpost s Hout.
+      exact (H (fun t => post r -> pre t) r (fun t Ht => Ht) s Hout Hpost).
+  Qed.
+
+  (** ** The other two directions, via an order scoped to one precondition
+
+      [tripleASP _ Under] and [tripleDSLP _ Over] are NOT relation inclusions —
+      each asserts an existential over states — so no target characterises them
+      in the GLOBAL orders [ordASPStExc] / [ordDSLPStExc]
+      (the witnessing programs have several incomparable minimal elements).
+
+      Scoping the order to the single precondition [pre] removes exactly the
+      information that made those up-sets non-principal, and then a target does
+      exist.  The price is a nonemptiness side condition, and it is the one each
+      healthiness condition forces: [SingletonProg] makes every ASP FALSE at the
+      empty precondition, so [pre] must be inhabited; dually [MSingletonProg]
+      makes every DSLP TRUE at the full precondition, so [pre] must be
+      co-inhabited.  Neither condition is removable. *)
+
+  #[program] Definition pp2asp_under' {S A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : ASPStExc S A :=
+    fun p r => exists s, p s /\ (pre s /\ post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s.
+      exists s0. split; [ exact Hp | exact Hc ].
+  Qed.
+
+  #[program] Definition pp2dslp_over' {S A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : DSLPStExc S A :=
+    fun p r => forall s, (~ post r /\ ~ pre s) -> p s.
+  Next Obligation.
+    exact (dslp_msingleton S (fun s r => ~ post r /\ ~ pre s)).
+  Qed.
+
+  (** Each target, evaluated AT [pre] itself, collapses to [post]. *)
+
+  Lemma pp2asp_under'_at {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    (Hne : exists s, pre s) (r : option (A * S)) :
+    getASPStExc (pp2asp_under' pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intros [s [_ [_ Hpost]]]. exact Hpost.
+    - intro Hpost. destruct Hne as [s Hs].
+      exists s. split; [ exact Hs | split; [ exact Hs | exact Hpost ] ].
+  Qed.
+
+  Lemma pp2dslp_over'_at {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    (Hco : exists s, ~ pre s) (r : option (A * S)) :
+    getDSLPStExc (pp2dslp_over' pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intro H. apply NNPP. intro Hnp. destruct Hco as [s0 Hs0].
+      exact (Hs0 (H s0 (conj Hnp Hs0))).
+    - intros Hpost s [Hnp _]. destruct (Hnp Hpost).
+  Qed.
+
+  (** [Under] compares [target <= obs]; [Over] compares [obs <= target] — the
+      same convention as the two global cases above. *)
+
+  Theorem tripleASP_under_inmonad {S A} (prog : stdivnd S A) pre post
+    (Hne : exists s, pre s) :
+    tripleASP prog Under pre post
+    <-> ordASPStExcAt pre (pp2asp_under' pre post) (obsASP prog).
+  Proof.
+    split.
+    - intros H r Ht. exact (H r (proj1 (pp2asp_under'_at pre post Hne r) Ht)).
+    - intros H r Hpost. exact (H r (proj2 (pp2asp_under'_at pre post Hne r) Hpost)).
+  Qed.
+
+  Theorem tripleDSLP_over_inmonad {S A} (prog : stdivnd S A) pre post
+    (Hco : exists s, ~ pre s) :
+    tripleDSLP prog Over pre post
+    <-> ordDSLPStExcAt pre (obsDSLP prog) (pp2dslp_over' pre post).
+  Proof.
+    split.
+    - intros H r Hd. exact (proj2 (pp2dslp_over'_at pre post Hco r) (H r Hd)).
+    - intros H r Hd. exact (proj1 (pp2dslp_over'_at pre post Hco r) (H r Hd)).
+  Qed.
+End NDTriples.
+
+Arguments tripleASP {_} {_}.
+Arguments tripleDSLP {_} {_}.
+Arguments tripleDSP {_} {_}.
+Arguments tripleASLP {_} {_}.
+
+End FullOutcomeObs.
