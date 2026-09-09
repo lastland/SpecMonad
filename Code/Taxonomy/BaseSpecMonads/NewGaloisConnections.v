@@ -1,0 +1,313 @@
+From Coq Require Import Morphisms RelationClasses Classical_Prop.
+From ExtLib Require Import Monad.
+From ITree Require Import Basics.Monad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections.
+
+(* Second adjunction between PrePost and MonoWP *)
+Definition wp2pp_over {A} (w : WPure A) : PPM.PrePost A :=
+  ( forall p, runWPure w p
+    , fun x => exists p, ~ (runWPure w p) /\ p x ).
+
+#[program] Definition pp2wp_over {A} (pp : PPM.PrePost A) : WPure A :=
+  fun post => (forall x, post x -> PPM.post pp x) -> PPM.pre pp.
+Next Obligation.
+  intros k1 k2 Hk H Hsub. apply H. intros x Hx. exact (Hsub x (Hk x Hx)).
+Qed.
+
+Theorem wp_pp_over_adjunction {A} (pp : PPM.PrePost A) (w : WPure A) :
+  PP_le (wp2pp_over w) pp <-> WP_le w (pp2wp_over pp).
+Proof.
+  unfold PP_le, WP_le, wp2pp_over, pp2wp_over, PPM.pre, PPM.post,
+    runWPure, runWPure; cbn.
+  split.
+  - intros [H1 H2] q Hq.
+    destruct (classic (proj1_sig w q)) as [Hy | Hn]; [ exact Hy |].
+    exact (H1 (Hq (fun a Ha => H2 a (ex_intro _ q (conj Hn Ha)))) q).
+  - intro H. split.
+    + intros Hpre q. exact (H q (fun _ => Hpre)).
+    + intros a [q [Hnq Hqa]].
+      assert (Hn : ~ ((forall x, q x -> PPM.post pp x) -> PPM.pre pp))
+        by (intro Hc; exact (Hnq (H q Hc))).
+      exact (proj1 (imply_to_and _ _ Hn) a Hqa).
+Qed.
+
+(* ================================================================= *)
+(** * Embeddings between [PrePost] pairs and the four SP spec monads  *)
+(* ================================================================= *)
+
+Inductive approxKind := | Under | Over.
+
+Section SPPrePostEmbeddings.
+  Variable S : Type.
+
+  #[program] Definition pp2asp_over {A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : ASPStExc S A :=
+    fun p r => exists s, p s /\ (pre s -> post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s. exists s0. split; assumption.
+  Qed.
+
+  #[program] Definition pp2asp_under {A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : ASPStExc S A :=
+    fun p r => exists s, p s /\ (pre s /\ post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s. exists s0. split; assumption.
+  Qed.
+
+  #[program] Definition pp2dslp_under {A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : DSLPStExc S A :=
+    fun p r => forall s, (post r -> pre s) -> p s.
+  Next Obligation. exact (dslp_msingleton S (fun s r => post r -> pre s)). Qed.
+
+  #[program] Definition pp2dslp_over {A}
+    (pre : S -> Prop) (post : option (A * S) -> Prop) : DSLPStExc S A :=
+    fun p r => forall s, (~ post r /\ ~ pre s) -> p s.
+  Next Obligation. exact (dslp_msingleton S (fun s r => ~ post r /\ ~ pre s)). Qed.
+
+  (** ** The degeneracies that force the two side conditions
+
+      [SingletonProg] makes every ASP FALSE at the empty precondition, and
+      dually [MSingletonProg] makes every DSLP TRUE at the full one.  So at
+      those preconditions no target of the respective kind can see [post], and
+      the corresponding nonemptiness hypothesis below is not removable. *)
+  (** Each [At]-target, evaluated at [pre] itself, collapses to [post]. *)
+
+  Lemma tASPunder_at {A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    (Hne : exists s, pre s) (r : option (A * S)) :
+    getASPStExc (pp2asp_under pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intros [s [_ [_ Hpost]]]. exact Hpost.
+    - intro Hpost. destruct Hne as [s Hs].
+      exists s. split; [ exact Hs | split; [ exact Hs | exact Hpost ] ].
+  Qed.
+
+  Lemma tDSLPover_at {A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    (Hco : exists s, ~ pre s) (r : option (A * S)) :
+    getDSLPStExc (pp2dslp_over pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intro H. apply NNPP. intro Hnp. destruct Hco as [s0 Hs0].
+      exact (Hs0 (H s0 (conj Hnp Hs0))).
+    - intros Hpost s [Hnp _]. destruct (Hnp Hpost).
+  Qed.
+
+  (** ** The four in-monad characterizations
+
+      [Over] always compares [obs <= target]; [Under] always [target <= obs].
+      The two that are relation inclusions (ASP/[Over], DSLP/[Under]) work in
+      the GLOBAL order with no side condition; the two that are not work in the
+      [At]-order and pay the nonemptiness condition their healthiness condition
+      forces. *)
+
+  Theorem gen_asp_over {A} (w : ASPStExc S A)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) :
+    (forall r, getASPStExc w pre r -> post r) <-> ordASPStExc w (pp2asp_over pre post).
+  Proof.
+    split.
+    - intros H p r Hw.
+      destruct (proj1 (getProg_singleton S w p r) Hw) as [s0 [Hp Hs]].
+      exists s0. split; [ exact Hp |]. intro Hpre.
+      apply H. apply getProg_singleton. exists s0. split; [ exact Hpre | exact Hs ].
+    - intros H r Hw.
+      destruct (H pre r Hw) as [s1 [Hp1 Himp]]. exact (Himp Hp1).
+  Qed.
+
+  Theorem gen_asp_under {A} (w : ASPStExc S A)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) (Hne : exists s, pre s) :
+    (forall r, post r -> getASPStExc w pre r)
+    <-> ordASPStExcAt pre (pp2asp_under pre post) w.
+  Proof.
+    split.
+    - intros H r Ht. exact (H r (proj1 (tASPunder_at pre post Hne r) Ht)).
+    - intros H r Hpost. exact (H r (proj2 (tASPunder_at pre post Hne r) Hpost)).
+  Qed.
+
+  Theorem gen_dslp_under {A} (w : DSLPStExc S A)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) :
+    (forall r, post r -> getDSLPStExc w pre r)
+    <-> ordDSLPStExc (pp2dslp_under pre post) w.
+  Proof.
+    split.
+    - intros H p r Hd.
+      apply (msingletonProg_repr S (getDSLPStExc w) (proj2_sig w)).
+      intros s Hns. apply Hd. intro Hpost.
+      exact (proj1 (msingletonProg_repr S (getDSLPStExc w) (proj2_sig w) pre r)
+               (H r Hpost) s Hns).
+    - intros H r Hpost. exact (H pre r (fun t Ht => Ht Hpost)).
+  Qed.
+
+  Theorem gen_dslp_over {A} (w : DSLPStExc S A)
+    (pre : S -> Prop) (post : option (A * S) -> Prop) (Hco : exists s, ~ pre s) :
+    (forall r, getDSLPStExc w pre r -> post r)
+    <-> ordDSLPStExcAt pre w (pp2dslp_over pre post).
+  Proof.
+    split.
+    - intros H r Hd. exact (proj2 (tDSLPover_at pre post Hco r) (H r Hd)).
+    - intros H r Hd. exact (proj1 (tDSLPover_at pre post Hco r) (H r Hd)).
+  Qed.
+
+  (** The plain (non-[SingletonProg]) Hoare-pair embeddings that the [*spec]
+      forms of the triples compare against. *)
+  Definition pp2_over {A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @SPStExc S A :=
+    fun p r => (forall s, p s -> pre s) -> post r.
+
+  Definition pp2_under {A} (pre : S -> Prop) (post : option (A * S) -> Prop)
+    : @SPStExc S A :=
+    fun p r => (forall s, pre s -> p s) /\ post r.
+End SPPrePostEmbeddings.
+
+Arguments pp2_over {_} {_}.
+Arguments pp2_under {_} {_}.
+Arguments pp2asp_over {_} {_}.
+Arguments pp2asp_under {_} {_}.
+Arguments pp2dslp_under {_} {_}.
+Arguments pp2dslp_over {_} {_}.
+
+(* ================================================================= *)
+(** * The same embeddings for the TERMINATING SLICE                   *)
+(*                                                                    *)
+(** Outcomes are [A * S] rather than [option (A * S)]; otherwise this  *)
+(** is the development above verbatim.  Namespaced so the names can    *)
+(** mirror the option-outcome ones exactly.                            *)
+(* ================================================================= *)
+
+Module StSP.
+  Import StTrans StASP StDSLP StDSP StASLP.
+
+Inductive approxKind := | Under | Over.
+
+Section SPPrePostEmbeddings.
+  Variable S : Type.
+  
+  (** ** The in-monad comparison targets *)
+
+  #[program] Definition tASPover {A}
+    (pre : S -> Prop) (post : (A * S) -> Prop) : ASPSt S A :=
+    fun p r => exists s, p s /\ (pre s -> post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s. exists s0. split; assumption.
+  Qed.
+
+  #[program] Definition tASPunder {A}
+    (pre : S -> Prop) (post : (A * S) -> Prop) : ASPSt S A :=
+    fun p r => exists s, p s /\ (pre s /\ post r).
+  Next Obligation.
+    intros p r. split.
+    - intros [s [Hp Hc]]. exists s. split; [ exact Hp |].
+      exists s. split; [ reflexivity | exact Hc ].
+    - intros [s0 [Hp [s [Heq Hc]]]]. subst s. exists s0. split; assumption.
+  Qed.
+
+  #[program] Definition tDSLPunder {A}
+    (pre : S -> Prop) (post : (A * S) -> Prop) : DSLPSt S A :=
+    fun p r => forall s, (post r -> pre s) -> p s.
+  Next Obligation. exact (dslp_msingleton S (fun s r => post r -> pre s)). Qed.
+
+  #[program] Definition tDSLPover {A}
+    (pre : S -> Prop) (post : (A * S) -> Prop) : DSLPSt S A :=
+    fun p r => forall s, (~ post r /\ ~ pre s) -> p s.
+  Next Obligation. exact (dslp_msingleton S (fun s r => ~ post r /\ ~ pre s)). Qed.
+
+  (** ** The degeneracies that force the two side conditions
+
+      [SingletonProg] makes every ASP FALSE at the empty precondition, and
+      dually [MSingletonProg] makes every DSLP TRUE at the full one.  So at
+      those preconditions no target of the respective kind can see [post], and
+      the corresponding nonemptiness hypothesis below is not removable. *)
+  (** Each [At]-target, evaluated at [pre] itself, collapses to [post]. *)
+
+  Lemma tASPunder_at {A} (pre : S -> Prop) (post : (A * S) -> Prop)
+    (Hne : exists s, pre s) (r : (A * S)) :
+    getASPSt (tASPunder pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intros [s [_ [_ Hpost]]]. exact Hpost.
+    - intro Hpost. destruct Hne as [s Hs].
+      exists s. split; [ exact Hs | split; [ exact Hs | exact Hpost ] ].
+  Qed.
+
+  Lemma tDSLPover_at {A} (pre : S -> Prop) (post : (A * S) -> Prop)
+    (Hco : exists s, ~ pre s) (r : (A * S)) :
+    getDSLPSt (tDSLPover pre post) pre r <-> post r.
+  Proof.
+    split.
+    - intro H. apply NNPP. intro Hnp. destruct Hco as [s0 Hs0].
+      exact (Hs0 (H s0 (conj Hnp Hs0))).
+    - intros Hpost s [Hnp _]. destruct (Hnp Hpost).
+  Qed.
+
+  (** ** The four in-monad characterizations
+
+      [Over] always compares [obs <= target]; [Under] always [target <= obs].
+      The two that are relation inclusions (ASP/[Over], DSLP/[Under]) work in
+      the GLOBAL order with no side condition; the two that are not work in the
+      [At]-order and pay the nonemptiness condition their healthiness condition
+      forces. *)
+
+  Theorem gen_asp_over {A} (w : ASPSt S A)
+    (pre : S -> Prop) (post : (A * S) -> Prop) :
+    (forall r, getASPSt w pre r -> post r) <-> ordASPSt w (tASPover pre post).
+  Proof.
+    split.
+    - intros H p r Hw.
+      destruct (proj1 (getProg_singleton S w p r) Hw) as [s0 [Hp Hs]].
+      exists s0. split; [ exact Hp |]. intro Hpre.
+      apply H. apply getProg_singleton. exists s0. split; [ exact Hpre | exact Hs ].
+    - intros H r Hw.
+      destruct (H pre r Hw) as [s1 [Hp1 Himp]]. exact (Himp Hp1).
+  Qed.
+
+  Theorem gen_asp_under {A} (w : ASPSt S A)
+    (pre : S -> Prop) (post : (A * S) -> Prop) (Hne : exists s, pre s) :
+    (forall r, post r -> getASPSt w pre r)
+    <-> ordASPStAt pre (tASPunder pre post) w.
+  Proof.
+    split.
+    - intros H r Ht. exact (H r (proj1 (tASPunder_at pre post Hne r) Ht)).
+    - intros H r Hpost. exact (H r (proj2 (tASPunder_at pre post Hne r) Hpost)).
+  Qed.
+
+  Theorem gen_dslp_under {A} (w : DSLPSt S A)
+    (pre : S -> Prop) (post : (A * S) -> Prop) :
+    (forall r, post r -> getDSLPSt w pre r)
+    <-> ordDSLPSt (tDSLPunder pre post) w.
+  Proof.
+    split.
+    - intros H p r Hd.
+      apply (msingletonProg_repr S (getDSLPSt w) (proj2_sig w)).
+      intros s Hns. apply Hd. intro Hpost.
+      exact (proj1 (msingletonProg_repr S (getDSLPSt w) (proj2_sig w) pre r)
+               (H r Hpost) s Hns).
+    - intros H r Hpost. exact (H pre r (fun t Ht => Ht Hpost)).
+  Qed.
+
+  Theorem gen_dslp_over {A} (w : DSLPSt S A)
+    (pre : S -> Prop) (post : (A * S) -> Prop) (Hco : exists s, ~ pre s) :
+    (forall r, getDSLPSt w pre r -> post r)
+    <-> ordDSLPStAt pre w (tDSLPover pre post).
+  Proof.
+    split.
+    - intros H r Hd. exact (proj2 (tDSLPover_at pre post Hco r) (H r Hd)).
+    - intros H r Hd. exact (proj1 (tDSLPover_at pre post Hco r) (H r Hd)).
+  Qed.
+End SPPrePostEmbeddings.
+
+Arguments tASPover {_} {_}.
+Arguments tASPunder {_} {_}.
+Arguments tDSLPunder {_} {_}.
+Arguments tDSLPover {_} {_}.
+
+End StSP.
