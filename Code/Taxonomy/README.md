@@ -1,44 +1,84 @@
 # Taxonomy
 
 This directory is the core of the project. It defines a family of computation
-monads, a family of strongest-postcondition (SP) specification monads, and
-*observations* connecting them.
+monads, several families of specification monads, and *observations* connecting
+them.
 
-The directory has been through one substantial refactor. The organising
-principle of the current design is:
+The organising principle:
 
 > **The specification side never mentions a computation monad.** It is
 > parameterised only by the *outcome type*.
 
-`SPSpecMonads.v` compiles standalone against ExtLib/ITree and the logic
-axioms — that is the check that the separation is real. Everything that depends
-on a particular computation monad lives in an observation file, and amounts to
-just three things: `outcomes_bind`, `outcomes_ret`, and the observations
-themselves.
+Everything in `BaseSpecMonads/` compiles against ExtLib/ITree and the logic
+axioms alone — that is the check that the separation is real. Everything that
+depends on a particular computation monad lives in an observation file under
+`EffectObservations/`, and amounts to just three things: `outcomes_bind`,
+`outcomes_ret`, and the observations themselves.
+
+A second separation runs alongside it: **defining** an observation and
+**comparing** observations live in different files. `EffectObservations/WP/` and
+`EffectObservations/SP/` define; `EffectObservations/Taxonomy_*.v` compare.
 
 ---
 
-## 1. Computation monads
+## 1. Directory layout
+
+```
+Taxonomy/
+  ComputationMonads/     StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet
+  BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
+                         RelPrePostMonad             -- the five DM4all monads
+                         SPPredicateTransformers     -- SP carriers + healthiness
+                         ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
+                         BaseGaloisConnections, NewGaloisConnections
+  Arrows/                PredArr, PrePostArr, RelPrePostArr, SPostArr, WPArr,
+                         GaloisArr                   -- binary carriers
+  EffectObservations/
+      WP/                StDivITree_WStExc, StExcNonDet_WStExc,
+                         StDivExcNonDet_WStExc, StDivNonDet_WSt
+      SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
+                         StDivNonDet_SPSt
+      (root)             Taxonomy_StDivExcNonDet_StExc,
+                         Taxonomy_StDivNonDet_StExc, Taxonomy_StDivNonDet_St
+  OldSP/                 the earlier reading-based SP presentation
+  deprecated/            older iterations, excluded from the build
+  (root)                 ExampleProgramDefs, InCorrectnessPrinciples
+```
+
+Observation files are named `<computation monad>_<specification target>.v`, so
+the file name states exactly which observation it defines. Logical paths follow
+the directories: `Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad`,
+`Incorrectness.Taxonomy.EffectObservations.SP.StDivExcNonDet_SPStExc`, and so
+on.
+
+## 2. Computation monads
 
 | Type | Definition | File | Effects |
 |---|---|---|---|
-| `prog S A` | `stateT S (optionT (itree void1)) A` | `Prog.v` | state, exceptions, divergence (deterministic) |
-| `ndprog S A` | `stateT S (optionT SetM) A` | `NonDetProg.v` | state, nondeterminism, **exceptions** |
-| `nddprog S A` | `stateT S (optionT SetM) A` | `NonDetDivProg.v` | state, nondeterminism, **divergence** |
-| `nditprog S A` | `stateT S (optionT (optionT SetM)) A` | `NonDetItProg.v` | state, nondeterminism, exceptions **and** divergence |
+| `stdivitree S A` | `stateT S (optionT (itree void1)) A` | `ComputationMonads/StDivITree.v` | state, exceptions, divergence (deterministic) |
+| `stexcnd S A` | `stateT S (optionT SetM) A` | `ComputationMonads/StExcNonDet.v` | state, nondeterminism, **exceptions** |
+| `stdivnd S A` | `stateT S (optionT SetM) A` | `ComputationMonads/StDivNonDet.v` | state, nondeterminism, **divergence** |
+| `stdivexcnd S A` | `stateT S (optionT (optionT SetM)) A` | `ComputationMonads/StDivExcNonDet.v` | state, nondeterminism, exceptions **and** divergence |
 
-`ndprog` and `nddprog` share a carrier and differ only in the *reading* of the
+`stexcnd` and `stdivnd` share a carrier and differ only in the *reading* of the
 distinguished outcome `None`: an exception in the first, divergence in the
 second. Nothing in the type distinguishes them; what fixes the meaning is which
-operations are offered. `NonDetProg.v` supplies `MonadExc` (`raiseP`/`catchP`);
-`NonDetDivProg.v` deliberately supplies none, and offers `divergeD`,
-`mayDiverge` and `orD` instead. `None` is absorbing under `bind` either way,
-which is exactly the propagation rule divergence needs, so the monad structure
-is identical.
+operations are offered. `StExcNonDet.v` supplies `MonadExc` (`raiseP`/`catchP`);
+`StDivNonDet.v` deliberately supplies none, and offers `divergeD`, `mayDiverge`
+and `orD` instead. `None` is absorbing under `bind` either way, which is exactly
+the propagation rule divergence needs, so the monad structure is identical. The
+file and type names now carry that distinction, which used to live only in
+comments.
 
-Only `nditprog` can distinguish the two effects, via its second `optionT`.
+`StDivNonDet.v` also carries `stdivndNE`, the non-empty fragment, which the
+`WSt` observations need for healthiness.
 
-## 2. The SP specification monads
+Only `stdivexcnd` can distinguish the two effects, via its second `optionT`.
+
+`StDivITree.v` additionally provides the `Eq1`-generic `optionT` / `stateT`
+monad-law instances that every other stack chains through.
+
+## 3. The SP specification monads
 
 Predicate transformers `(S -> Prop) -> Outcome -> Prop`, carved into four
 monads by four healthiness conditions. **The bare transformer type is not a
@@ -46,22 +86,44 @@ monad**; only these subsets are.
 
 | Monad | Carrier condition | Equivalent healthiness class | Reading of a relation `R` |
 |---|---|---|---|
-| `ASPProgSP` | `SingletonProg` | strict, universally disjunctive | `∃s ∈ pre, R s r` (angelic) |
-| `DSLPProgSP` | `MSingletonProg` | terminating, universally conjunctive | `∀s, R s r → pre s` (demonic, liberal) |
-| `DSPProgSP` | `StrictProg ∧ ConjunctiveProg` | **strict conjunctive** | `R⁻¹(r) ≠ ∅ ∧ R⁻¹(r) ⊆ pre` |
-| `ASLPProgSP` | `TerminatingProg ∧ DisjunctiveProg` | **terminating disjunctive** | `R⁻¹(r) = ∅ ∨ pre ∩ R⁻¹(r) ≠ ∅` |
+| `ASPStExc` | `SingletonProg` | strict, universally disjunctive | `∃s ∈ pre, R s r` (angelic) |
+| `DSLPStExc` | `MSingletonProg` | terminating, universally conjunctive | `∀s, R s r → pre s` (demonic, liberal) |
+| `DSPStExc` | `StrictProg ∧ ConjunctiveProg` | **strict conjunctive** | `R⁻¹(r) ≠ ∅ ∧ R⁻¹(r) ⊆ pre` |
+| `ASLPStExc` | `TerminatingProg ∧ DisjunctiveProg` | **terminating disjunctive** | `R⁻¹(r) = ∅ ∨ pre ∩ R⁻¹(r) ≠ ∅` |
 
-Two files, differing only in the outcome type:
+The carriers live in `SPPredicateTransformers.v`, named to match
+`WPureMonad.v`'s stacks:
 
-| File | Outcome index | Contents |
-|---|---|---|
-| `SPSpecMonads.v` | `option (A * S)` | all four monads, laws, orders, comparison targets |
-| `SPSimplerSpecMonads.v` | `A * S` (module `StSP`) | the same, for a plain stateful outcome |
+```coq
+SPPure  A     := Prop -> A -> Prop
+SPSt    S A   := (S -> Prop) -> (A * S) -> Prop          (* terminating slice *)
+SPStExc S A   := (S -> Prop) -> option (A * S) -> Prop   (* with the extra outcome *)
+```
+
+`Arguments SPSt {_}` / `Arguments SPStExc {_}` keep `S` implicit.
+
+One file per monad, in dependency order:
+
+```
+SPPredicateTransformers.v   the three carriers + Strict/Terminating/
+                            Conjunctive/Disjunctive and their Prog variants
+SPostMonad.v                the DM4all SPost monad + both Kenji developments
+ASPMonad.v                  SingletonProg,  ASPStExc
+DSLPMonad.v                 MSingletonProg, DSLPStExc
+DSPMonad.v                  DSPStExc        (needs ASP and DSLP)
+ASLPMonad.v                 ASLPStExc       (needs ASP, DSLP, and DSPMonad's
+                                              comp_cong)
+```
 
 Each monad comes with `ret`, `bind`, `Monad`, `Eq1`, `Eq1Equivalence` and
-`MonadLawsE` (all four laws). `retDSPProg`/`bindDSPProg` are the conjunction of
-the ASP and DSLP parts; `retASLPProg`/`bindASLPProg` the disjunction — see
-`dsp_split` / `aslp_split` and the `aspPart*` / `dslpPart*` projections.
+`MonadLawsE` (all four laws), plus **its own refinement order and
+monotonicity** — `ordASPStExc` / `ordASPStExcAt` / `asp_bot` / `aspMono` in
+`ASPMonad.v`, and correspondingly for the other three. The raw order
+`ordSPStExc` sits with the carriers.
+
+`retDSPStExc`/`bindDSPStExc` are the conjunction of the ASP and DSLP parts;
+`retASLPStExc`/`bindASLPStExc` the disjunction — see `dsp_split` / `aslp_split`
+and the `aspPart*` / `dslpPart*` projections.
 
 **Why DSP and ASLP need machinery the other two don't.** Reading a relation as
 an ASP is monotone in the relation and as a DSLP antitone, so those two orders
@@ -73,22 +135,26 @@ re-reads — see `dsp_recov` / `aslp_recov` and the `*_carrier` bridges. Both
 carriers are stated as healthiness conditions; `dsp_carrier` / `aslp_carrier`
 prove these equivalent to the fixed-point form the proofs use.
 
-### Shared orders and comparison targets (`Section SpecOrders`)
+### The terminating slice lives alongside each monad
 
-At the end of `SPSpecMonads.v`, all computation-monad-independent:
+The same four monads over `A * S` instead of `option (A * S)` are factored
+exactly like the option-outcome ones, each piece in the file for its monad, in a
+module of its own:
 
-- `approxKind` (`Under` / `Over`)
-- orders `ordProgSP`, `ordProgASP`, `ordProgDSLP`, `ordProgDSP`, `ordProgASLP`,
-  and the single-precondition variants `ordProgASPAt`, `ordProgDSLPAt`
-- the **two** raw targets `pp2_over` / `pp2_under` — all eight per-monad
-  instances had identical bodies, so there is one pair
-- monotonicity `aspMono` / `dslpMono` / `dspMono` / `aslpMono`, one per
-  healthiness condition
-- twelve generic characterizations `gen_*` — eight raw, four in-monad
+| file | option outcome (top level) | terminating slice |
+|---|---|---|
+| `SPPredicateTransformers.v` | `Strict`/`Terminating`/`Conjunctive`/`Disjunctive` (+`Prog`) | `Module StTrans` |
+| `SPostMonad.v` | `KenjiProgSP` | `Module StKenji` |
+| `ASPMonad.v` | `ASPStExc` | `Module StASP` |
+| `DSLPMonad.v` | `DSLPStExc` | `Module StDSLP` |
+| `DSPMonad.v` | `DSPStExc` | `Module StDSP` |
+| `ASLPMonad.v` | `ASLPStExc` | `Module StASLP` |
 
-The `gen_*` theorems are stated for an **arbitrary** `w` in the relevant monad.
-Each observation file obtains its own version by `exact`, since
-`tripleASP prog Over pre post` is *definitionally* the left-hand side.
+Each module imports its predecessors (`StDSP` opens `StTrans StASP StDSLP`, and
+so on), mirroring the top-level dependency chain. Separate per-file modules are
+used rather than reassembling one combined module with `Include`, because
+`Include` copies constants — the copies are convertible but display and unify
+against the originals, which is a latent source of confusion.
 
 ### In-monad characterizations
 
@@ -97,91 +163,321 @@ work with the global order and no side condition:
 
 | | `Over` | `Under` |
 |---|---|---|
-| ASP | `ordProgASP obs (tASPover …)` — global | `ordProgASPAt pre (tASPunder …) obs` — needs `∃s, pre s` |
-| DSLP | `ordProgDSLPAt pre obs (tDSLPover …)` — needs `∃s, ¬pre s` | `ordProgDSLP (tDSLPunder …) obs` — global |
+| ASP | `ordASPStExc obs (pp2asp_over …)` — global | `ordASPStExcAt pre (pp2asp_under …) obs` — needs `∃s, pre s` |
+| DSLP | `ordDSLPStExcAt pre obs (pp2dslp_over …)` — needs `∃s, ¬pre s` | `ordDSLPStExc (pp2dslp_under …) obs` — global |
 | DSP / ASLP | none | none |
 
 `Over` always compares `obs ⊑ target`, `Under` always `target ⊑ obs`. The two
-side conditions are forced by the healthiness conditions themselves
-(`asp_bot`: every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at
-`⊤`) and are not removable. DSP and ASLP have no in-monad target in either
-direction, because their orders are not relation inclusion at all.
+side conditions are forced by the healthiness conditions themselves (`asp_bot`:
+every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at `⊤`) and are
+not removable. DSP and ASLP have no in-monad target in either direction, because
+their orders are not relation inclusion at all.
 
-## 3. Observations
+## 4. The WP specification monads
+
+`BaseSpecMonads/WPureMonad.v` holds exactly three developments plus their
+orders:
+
+```coq
+WPureT A   := (A -> Prop) -> Prop                    (* raw; used by Arrows/WPArr.v *)
+wpure_mono f := forall p q, (p ⊆ q) -> f p -> f q
+WPure  A   := { f : WPureT A | wpure_mono f }        (* the monad *)
+
+WSt    S   := stateT S WPure                          (* W^St     *)
+WStExc S   := stateT S (optionT WPure)                (* W^StExc  *)
+```
+
+`WSt S A = S -> (A * S -> Prop) -> Prop`: every outcome is a normal return, so
+there is no `MonadExc`. `WStExc S A = S -> (option (A * S) -> Prop) -> Prop`:
+the extra outcome is the raised exception, and it carries `MonadExc`.
+
+`ret`, `bind`, `Eq1` (pointwise iff) and `MonadLawsE` are proved directly for
+`WPure`; both stacks get their laws from the `Eq1`-generic `optionT` / `stateT`
+instances in `ComputationMonads/StDivITree.v`.
+`Coercion runWPure : WPure >-> Funclass` keeps application (`w post`) working
+through the subset type.
+
+Monotonicity is not decoration: `monotonicity_is_needed` shows the
+`PrePost -| WPure` adjunctions are **false** without it. Because the carrier is
+a subset type, each effect observation carries a monotonicity lemma
+(`obsAWP_mono` and friends), and downstream proofs apply those rather than
+`destruct`ing through the transformer.
+
+All three WP orders live in `WPureMonad.v`, each next to the type it orders —
+matching the SP side:
+
+| order | on | direction |
+|---|---|---|
+| `WP_le` (+ `WP_le_PreOrder`) | `WPure` | **reverse**: `forall k, w2 k -> w1 k` (DM4all; a weaker precondition is lower) |
+| `ordWSt` | `WSt S` | forward: `forall s post, w1 s post -> w2 s post` |
+| `ordWStExc` | `WStExc S` | forward |
+
+The direction mismatch is deliberate and visible in one file. The DM4all
+adjunctions are stated against the reverse `WP_le`; the triple characterisations
+in `EffectObservations/` use the forward stack orders. They are opposite
+conventions, not a lifting of one another — lifting `WP_le` through the
+transformers would give `forall s, m2 s ⊆ m1 s`.
+
+**`Arrows/WPArr.v` deliberately stays on `WPureT`**, the unrestricted type: its
+`ArrowEq` is Leibniz equality on functions into the carrier, which a subset type
+cannot support without proof irrelevance, and its arrow laws hold definitionally
+only for the raw type.
+
+## 5. Observations
 
 An observation maps a computation monad into the spec monads. Everything
 downstream — monad-morphism theorems, triples, the taxonomy — follows from
 `outcomes_bind` and `outcomes_ret`, whose case count tracks the effect layers.
 
-| File | Source | Target | Divergence visible in specs? |
-|---|---|---|---|
-| `Observation.v` | `prog` | old-style transformers | — (deterministic) |
-| `NonDetObservation.v` | `ndprog` | old-style transformers | n/a (exception reading) |
-| `NonDetItObservation.v` | `nditprog` | old-style transformers | no |
-| `SPNonDetItObservations.v` | `nditprog` | `SPSpecMonads` | **no** — reads the terminating slice |
-| `SPNonDetObservations.v` | `nddprog` | `SPSpecMonads` | **yes** — `None` is an ordinary outcome |
-| `SPNonDetDivObservations.v` | `nddprog` | `SPSimplerSpecMonads` | **no** — reads the terminating slice |
-| `WPNonDetItObservations.v` | `nditprog` | `ProgWP` | WP side: `obsDWP`/`obsAWP`/`obsDWLP`/`obsAWLP` |
+Each file defines its observations, proves each is a **monad morphism**
+(`obs*_ret` / `obs*_bind`), gives the `getProg*_obs*` readings, and builds the
+triples over them together with their refinement (`*spec`) forms and `*DefEq`
+equivalences. Comparisons between observations are *not* here — see §6.
 
-The three "New" files are the current design. Note the deliberate contrast in
-the last column:
+### WP side — `EffectObservations/WP/`
 
-- `SPNonDetItObservations.v` reads
+| File | Source | Target | Observations | Module |
+|---|---|---|---|---|
+| `StDivITree_WStExc.v` | `stdivitree` | `WStExc` | all four | — |
+| `StExcNonDet_WStExc.v` | `stexcnd` | `WStExc` | `obsDWP`, `obsAWP` only | — |
+| `StDivExcNonDet_WStExc.v` | `stdivexcnd` | `WStExc` | all four | — |
+| `StDivNonDet_WSt.v` | `stdivndNE` | `WSt` | all four | `TermSliceObsWP` |
+
+The four readings are `obsDWP` (demonic total), `obsDWLP` (demonic liberal),
+`obsAWP` (angelic total), `obsAWLP` (angelic liberal). `StExcNonDet_WStExc.v`
+has no liberal readings because its monad has no divergence — they are not even
+definable there. `StDivITree_WStExc.v` is the deterministic case and is the only
+built file with `obsWPCollapse` / `obsWLPCollapse`, the angelic–demonic
+collapse.
+
+`StDivNonDet_WSt.v` targets `WSt`, whose postconditions range over `A * S`, so
+divergence is visible to the *observation* but not to the *postcondition*: the
+total/liberal axis is carried entirely by which observation you pick. Its source
+is the non-empty fragment `stdivndNE`, which is what makes the observations
+healthy.
+
+### SP side — `EffectObservations/SP/`
+
+| File | Source | Target | Divergence visible in specs? | Module |
+|---|---|---|---|---|
+| `StDivExcNonDet_SPStExc.v` | `stdivexcnd` | `SPStExc` | **no** — reads the terminating slice | — |
+| `StDivNonDet_SPStExc.v` | `stdivnd` | `SPStExc` | **yes** — `None` is an ordinary outcome | `FullOutcomeObs` |
+| `StDivNonDet_SPSt.v` | `stdivnd` | `SPSt` | **no** — reads the terminating slice | `TermSliceObs` |
+
+Note the deliberate contrast in the fourth column:
+
+- `StDivExcNonDet_SPStExc.v` reads
   `unOptionT (unOptionT (runStateT m s)) (Some r)`; the outer `Some` discards
   the divergent outcome, so its transformers see exceptions but **not**
   divergence.
-- `SPNonDetObservations.v` keeps `None` in the outcome type, so
-  `getProgASP (obsASP m) pre None` asserts *"some `pre`-state may diverge"* and
-  `getProgDSLP (obsDSLP m) pre None` *"every state that may diverge satisfies
+- `StDivNonDet_SPStExc.v` keeps `None` in the outcome type, so
+  `getASPStExc (obsASP m) pre None` asserts *"some `pre`-state may diverge"* and
+  `getDSLPStExc (obsDSLP m) pre None` *"every state that may diverge satisfies
   `pre`"*.
-- `SPNonDetDivObservations.v` observes the same monad into the `A * S`-indexed
-  spec monads, so divergence is projected away again: `divergeD` satisfies every
+- `StDivNonDet_SPSt.v` observes the same monad into the `A * S`-indexed spec
+  monads, so divergence is projected away again: `divergeD` satisfies every
   `Over` triple vacuously.
 
-`SPNonDetObservations.v` imports only `NonDetDivProg` and `SPSpecMonads` — no
-sibling observation file. That is the intended shape for any new observation.
+The two modules exist because `StDivNonDet_SPStExc.v` and `StDivNonDet_SPSt.v`
+observe the same computation monad into differently-indexed targets, so their
+`obsASP` and friends would otherwise clash.
 
-Each New file provides `obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`, proofs that
-each is a **monad morphism** (`obs*_ret` / `obs*_bind`), the `getProg*_obs*`
-readings, the contrapositive pairs, `triple*` with their refinement forms and
-`*DefEq` equivalences, and the `cc_*` / `ii_*` / `ci_*` taxonomy.
+`StDivNonDet_SPStExc.v` imports only its computation monad and the SP monads —
+no sibling observation file. That is the intended shape for a new observation.
 
-## 4. Supporting specification types
+## 6. Comparing observations — `Taxonomy_*.v`
 
-| File | Type |
+Three files, one per source monad / target indexing, holding everything that
+compares observations against one another rather than defining them: the
+inclusions, the contrapositive pairs, and the resulting taxonomy of triples.
+
+| File | Contents |
 |---|---|
-| `WP.v`, `WPFacts.v` | `PureWP = (A -> Prop) -> Prop`, `ProgWP` — backward transformers |
-| `WPred.v`, `WPredFacts.v` | `WPred`, `ProgWPred` |
-| `Pred.v`, `PredFacts.v` | `Pred A B = A -> B -> Prop`, the relational arrow |
-| `SPost.v`, `SPostFacts.v` | SP *arrows* `PureASPostArr` / `PureDSLPostArr` over `SPRecord` |
-| `PrePost.v`, `RelPrePost.v`, `WPArr.v` (+ `*Facts.v`) | Hoare pairs, validators, reader-WP Kleisli arrow |
-| `Galois.v` | Galois connections among `Pred`, `PrePost`, `WPArr`, `RelPrePost` |
+| `Taxonomy_StDivExcNonDet_StExc.v` | WP: inclusions (Thm 3.7), contrapositive transformers (Thm 3.8), `TaxonomyWPTransformers` (upper half of Figure 5). SP: `ContrapositiveTransformers`, `TaxonomySPTransformers`. Then `GaloisConnection`, joining the two, and `Module WithdrawExample`. |
+| `Taxonomy_StDivNonDet_StExc.v` | `Module TaxonomyFullOutcome` — the contrapositive pairs, the `DSP_conjunction` / `ASLP_disjunction` decompositions, the four orderings, and the `cc_*` / `ii_*` triple taxonomy. |
+| `Taxonomy_StDivNonDet_St.v` | `Module TaxonomyStDivNonDetWSt` (WP side) and `Module TaxonomyStDivNonDetSPSt` (SP side), each with its observation comparisons and triple taxonomy. |
 
-`ProgFacts.v` provides the generic `optionT` / `stateT` monad-law instances the
-other `*Facts.v` files chain through.
+`Section GaloisConnection` in the first file is the crossover: `dwlp_slice` and
+`awp_slice` show that `obsDWLP` and `obsAWP` applied to a postcondition are the
+two readings of the same terminating slice that `obsASP` / `obsDSLP` use, so
+`dwlp_asp` and `awp_dslp` identify a WP triple with an SP triple — the triples
+differ only in the order of the `s` and `r` quantifiers.
+
+Where a taxonomy file holds both halves, the SP-side `Require Import`s are
+placed *after* the WP sections rather than in the preamble, so the SP base-monad
+modules cannot shadow names the WP proofs above resolve against.
+
+## 7. The DM4all specification monads and their adjunctions
+
+Five standalone base specification monads, faithful ports of the ones in
+*Dijkstra Monads For All* (ICFP 2019), `theories/sprop/SpecificationMonads.v`.
+Each is unary (`Type -> Type`), each has `Monad` + `MonadLawsE`, and every proof
+is **axiom-free** — DM4all needs `Ssig_eq`, `sprop_ext` and funext for the same
+results, which we avoid by taking `Eq1` to be pointwise iff rather than equality.
+
+| file | module | carrier | DM4all name |
+|---|---|---|---|
+| `BaseSpecMonads/PredMonad.v` | `PredM` | `Pred A = A -> Prop` | `PredOM` |
+| `BaseSpecMonads/PrePostMonad.v` | `PPM` | `PrePost A = Prop * (A -> Prop)` | `PPSpecMonad` |
+| `BaseSpecMonads/SPostMonad.v` | `SPM` | `SPost A = { f : forall p, A -> Over p \| sp_mono f }` | `ForwardPredTransformer` |
+| `BaseSpecMonads/WPureMonad.v` | — | `WPure A = { f : (A -> Prop) -> Prop \| wpure_mono f }` | `WPure` |
+| `BaseSpecMonads/RelPrePostMonad.v` | `RPPM` | `RelPrePost X = { r : forall p, (X -> Assuming p) -> Assuming p \| rpp_mono r }` | `MRSpec` |
+
+Two subtypes carry the weight. `Over p` (props that *imply* `p`) is what makes
+`SPost`'s `bind_bind` typecheck; `Assuming p` (props closed under *assuming*
+`p`, i.e. `q <-> (p -> q)`) is its dual and is exactly what `RelPrePost`'s
+`bind_ret_l` needs — `ab_close` discharges the leading `p ->`.
+
+`BaseSpecMonads/BaseGaloisConnections.v` defines the orders (`Pred_le`,
+`PP_le`, `SP_le`, `MR_le`, each with its `PreOrder` instance; `WP_le` comes from
+`WPureMonad.v`) and establishes DM4all's `Section Adjunctions` results:
+
+| theorem | statement |
+|---|---|
+| `pred_pp_adjunction` | `PP_le (pred2pp post) pp <-> Pred_le post (pp2pred pp)` |
+| `wp_pp_under_adjunction` | `PP_le pp (wp2pp_under w) <-> WP_le (pp2wp_under pp) w` |
+| `wp_mr_adjunction` | `WP_le w (mr2wp r) <-> MR_le (wp2mr w) r` |
+| `sp_pp_adjunction` | `PP_le (sp2pp sp) pp <-> SP_le sp (pp2sp pp)` |
+| `sp_mr_adjunction` | `MR_le (sp2mr sp) mr <-> SP_le sp (mr2sp mr)` |
+
+plus the unit/counit round trips, each obtained by instantiating an adjunction
+at reflexivity (`pp2sp_sp2pp_loop` / `sp2pp_pp2sp_loop` are DM4all's).
+
+`WP_le` and `MR_le` are *reversed* — a weaker demand is lower.
+
+Four of the five right/left adjoints are formulas. `pp2sp` is not: the obvious
+candidate `pp2sp0 pp = fun p a => p /\ (pre pp -> post pp a)` is only a lax
+inverse, so the real right adjoint is the impredicative **intersection** of every
+`SPost` dominating the pair (`pp2spBase`), available because `Prop` is
+impredicative. `pp2sp01` places it below `pp2sp0`.
+
+Note that `pp2sp` mentions only `PPM.post pp`, never `PPM.pre pp`. The
+intersection collapses to `post` itself, so `SP_le sp (pp2sp pp)` says exactly
+`app sp True ⊆ post` — the *over*-approximate direction, independent of the
+precondition. The under-approximate reading `post ⊆ app sp pre` is not an
+instance of the global order at all; it is the order **scoped to one
+precondition**, which is why the SP triples use `ordASPStExcAt` rather than
+`ordASPStExc` in that direction.
+
+The file does *not* `Import PPM`: `PPM` binds `pre` and `post`, which would
+capture the binders of the SP embeddings, so `PPM.pre` / `PPM.post` are written
+throughout.
+
+### `NewGaloisConnections.v` — PrePost against the SP monads
+
+Builds on `BaseGaloisConnections.v` with the second `PrePost -| WPure`
+adjunction (`wp_pp_over_adjunction`, over the *over* pair
+`wp2pp_over`/`pp2wp_over`) and then, in `Section SPPrePostEmbeddings`:
+
+- `approxKind` (`Under` / `Over`)
+- the four in-monad targets `pp2asp_over` / `pp2asp_under` / `pp2dslp_under` /
+  `pp2dslp_over`, and the plain (non-healthy) pair `pp2_over` / `pp2_under`
+  that the `triple*spec` forms compare against
+- the `_at` collapse lemmas `tASPunder_at` / `tDSLPover_at`
+- the four in-monad characterizations `gen_asp_over` / `gen_asp_under` /
+  `gen_dslp_under` / `gen_dslp_over`
+
+`Module StSP` repeats the whole section for the terminating slice, where the
+targets keep the `tASPover` / `tASPunder` / `tDSLPunder` / `tDSLPover` naming.
+The `gen_*` theorems are stated for an **arbitrary** `w` in the relevant monad;
+each observation file obtains its own version by `exact`, since e.g.
+`tripleASP m Over pre post` is *definitionally* the left-hand side.
+
+### Relation to `Arrows/GaloisArr.v`
+
+`GaloisArr.v` ports the same DM4all connections to this development's **binary
+arrows** (`Pred A B`, `PrePost A B`, `WPArr A B`, `RelPrePost A B`), where two
+of the five break: SP↔MR fails outright, and SP↔PP holds only with the
+transformer restricted to the image of `asp` (`SingletonSPost`). Passing to the
+unary monads removes both obstructions — the binary failures are artifacts of
+the extra input index, not of the specifications.
+
+The obstruction is in the precondition slot, not the state. `SPStExc S A =
+(S -> Prop) -> option (A * S) -> Prop` has one `S -> Prop` *shared* across
+states, and `(S -> Prop) -> X` does not curry to `S -> Prop -> X`. A shared
+`S -> Prop` couples the initial states and makes the order strictly coarser than
+pointwise.
+
+## 8. Arrows vs monads: file split
+
+Each specification family has **two independent presentations**, in separate
+files, with no import edge in either direction:
+
+| family | monad (unary carrier) | arrow (binary carrier) |
+|---|---|---|
+| `Pred` | `BaseSpecMonads/PredMonad.v` — `Pred A = A -> Prop` | `Arrows/PredArr.v` — `Pred A B = A -> B -> Prop` |
+| `PrePost` | `BaseSpecMonads/PrePostMonad.v` — `PrePost A = Prop * (A -> Prop)` | `Arrows/PrePostArr.v` |
+| `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — `PureASPostArr`, `PureDSLPostArr` |
+| `RelPrePost` | `BaseSpecMonads/RelPrePostMonad.v` — over `Assuming p` | `Arrows/RelPrePostArr.v` |
+| `WPure` / `WP` | `BaseSpecMonads/WPureMonad.v` | `Arrows/WPArr.v` |
+
+The monad files define their carriers **in terms of the result type alone**
+(`Pred A = A -> Prop`), never as a binary arrow with the input fixed. None of
+them imports an arrow file; none of the arrow files imports a monad file.
+
+The `*Arr.v` files still carry the *arrow's own* monad view — `Monad (Pred A)`
+for a fixed input `A`, and in `SPostArr.v` the generic `ArrowApply -> Monad`
+construction (`Section ArrowMonad`). Those live on the binary carrier, so they
+stay with the arrow rather than in a monad file.
+`OldSP/OldSPObservations.v` depends on the `Pred` one.
+
+`PredMonad.v` also carries `WPred` and the stack
+`ProgWPred S := stateT S (optionT WPred)`. `WPred` stays a definition in its own
+right rather than an alias for `PredM.Pred`, even though the carriers are equal
+and `bind` is identical: making it an alias would put two `Eq1` instances on one
+type constructor (pointwise iff for `PredM`, Leibniz `eq` for the stack), and
+each is load-bearing for its own laws.
 
 **`PrePost` is strictly bigger than every SP monad.** `snd` composed with any SP
 reading is a monad morphism, but it forgets the precondition and no injective
 map exists (proved for the pure case). What does hold is a Galois connection
 with each SP monad; for ASP it is order-preserving and for DSLP order-reversing.
 
----
+## 9. Example programs
 
-## 5. Directory layout
+`ExampleProgramDefs.v` holds the program definitions and nothing else:
 
-    Taxonomy/
-      ├── (computation monads, spec monads, observations — see above)
-      ├── OldSP/          the earlier reading-based SP presentation
-      └── deprecated/     older iterations, excluded from the build
+| program | monad | notes |
+|---|---|---|
+| `progA`, `progB`, `progRet`, `progEx` | `stdivexcnd` | `progB` has a divergent branch |
+| `example_state` | `stdivexcnd (nat*nat*nat)` | O'Hearn, *Incorrectness Logic*, Example 3.1 |
+| `progloom`, `progloom_harder` | `stdivexcnd` | the withdrawal session |
+| `progA_stexcnd` | `stexcnd` | `progA` read in the divergence-free monad |
+| `progA_stdivitree` | `stdivitree` | the deterministic variant |
 
-### `OldSP/`
+plus the shared `preEq0` / `postEq0`. It is a leaf so that observation files and
+example blocks can both use the programs without a cycle.
 
-`OldSPObservations.v` (2920 lines) and `OldIncorrectnessRewritingRules.v` (250)
-hold the earlier presentation of the SP side, superseded by `SPSpecMonads.v` +
-`SPNonDetItObservations.v` but **not** redundant. It is the only place with:
+Three programs share the shape of `progA` in three different monads, so the two
+transposed ones carry a monad suffix; `ExampleProgramDefs.v` imports more than
+one nondeterminism monad, so `progA_stexcnd` writes `StExcNonDet.orP`
+explicitly.
+
+**The worked examples live with the observation they exercise** — the WP
+examples for `stdivexcnd` at the end of `WP/StDivExcNonDet_WStExc.v`, the
+ASP/DSP ones at the end of `SP/StDivExcNonDet_SPStExc.v`, and so on. A triple
+means something different for each observation, so there is no single file where
+they all belong.
+
+The one exception is `Module WithdrawExample`, at the bottom of
+`Taxonomy_StDivExcNonDet_StExc.v`: it states `tripleWP obsAWP` and
+`tripleASP … Under` over the *same* program with the *same* postcondition,
+contrasting angelic *coverage* (∀ input, ∃ output) with O'Hearn-style bug
+*presence* (∀ asserted output, ∃ input). It is a comparison, so it sits with the
+other comparisons.
+
+`InCorrectnessPrinciples.v` states O'Hearn's rewriting rules over the
+`tripleASP` triples of `SP/StDivExcNonDet_SPStExc.v`.
+
+## 10. `OldSP/`
+
+`OldSPObservations.v` (2844 lines) and `OldIncorrectnessRewritingRules.v` hold
+the earlier reading-based presentation of the SP side, superseded by
+`BaseSpecMonads/` + `EffectObservations/SP/` but **not** redundant. It is the
+only place with:
 
 - the **additive / multiplicative** SP monads — `AdditiveSP`,
-  `MultiplicativeSP`, `PureSP`/`PureSPM`, `ProgSP`/`ProgSPM`, the product monad
+  `MultiplicativeSP`, `SPPure`/`PureSPM`, `SPStExc`/`ProgSPM`, the product monad
   `ProgSPB`, with their `Monad` / `Eq1` / `MonadLawsE` instances
 - the **reading-based** presentation — `obsSP`, `spASP` / `spDSLP` / `spDSP` /
   `spASLP`, `readSP` / `readSPM` / `readJoin` / `readMeet`, `ofSet` / `ofCoSet`
@@ -193,125 +489,74 @@ hold the earlier presentation of the SP side, superseded by `SPSpecMonads.v` +
   `tripleJoin` / `tripleMeet`, and the `ProgSPObs` / `SPredObs` modules
 
 The no-go theorems matter beyond history: they are the machine-checked reason
-`DSPProgSP` / `ASLPProgSP` are built by *recovering* relations rather than by a
+`DSPStExc` / `ASLPStExc` are built by *recovering* relations rather than by a
 forward pass, and nothing in the current files records that argument.
 
-## 6. Build status
+`OldSP/` keeps its own vocabulary (`SPredT`, `ordSP`) and is not part of the
+naming scheme in §12.
 
-`_CoqProject` builds **clean from scratch**, and every `.v` file in this
-directory (including `OldSP/`) is listed in it. Nothing is excluded.
+`OldSP/Observation.v` and `OldSP/NonDetObservation.v` are **not** in
+`_CoqProject`. They are the older observation style, kept for reference; the
+directory's only `Admitted` is in `Observation.v`.
 
-### Why the example programs are split across three files
+## 11. Build status
 
-The example material was originally one file, which could not compile: the
-old-style theorems (stated over `tripleSP` / `obsASP`) and the new-style ones
-(over `tripleASP` / `tripleDSP`) used **the same ten names** — `progA_all`,
-`progA_42`, `progA_43`, `progB_42`, `progB_not_None`, `progRet_asp_inc`,
-`progRet_dsp_inc`, `example_incorrect_1`, `example_incorrect_2`,
-`example_incorrect_unprovable`. They are now in separate files:
+`_CoqProject` lists 66 files and builds **clean from scratch**, with **no
+`Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
+classical reasoning enters on the multiplicative/demonic side
+(`Classical_Prop`), and several files also import `PropExtensionality` /
+`FunctionalExtensionality`. Run `Print Assumptions` on a specific result if you
+need its exact footprint.
 
-| File | Contents |
-|---|---|
-| `ExampleProgramDefs.v` | just the programs — `progA`, `progB`, `progRet`, `progEx`, `example_state` — plus `preEq0` / `postEq0`, which both presentations use |
-| `ExamplePrograms.v` | the new-style (`tripleASP` / `tripleDSP`) and WP examples |
-| `OldSP/OldExamplePrograms.v` | the old-style (`tripleSP` / `obsASP`) examples, the `OHearnExample` module, and the transported `m_*` worked examples |
+Not in the build, deliberately:
 
-`ExampleProgramDefs.v` is a leaf so that the observation files and the example
-files can both use the programs without a cycle: `SPNonDetItObservations.v` and
-`OldSP/OldSPObservations.v` state example lemmas about them, while the example
-files prove triples using the observations those files define.
+- `deprecated/` — earlier iterations. Ignore when grepping for symbol
+  references.
+- `OldSP/Observation.v`, `OldSP/NonDetObservation.v` — see §10.
 
-Two further blocks were relocated for the same reason:
+`Makefile` is gitignored; regenerate with
+`coq_makefile -f _CoqProject -o Makefile`. A stale `.vo` still satisfies a
+`Require`, which has masked a broken build during past reorganisations — if
+`_CoqProject` changes, rebuild from clean. There are a few `.v~` editor backups
+under `OldSP/` and `BaseSpecMonads/`; the build ignores them.
 
-- the transported `m_*` forms of O'Hearn's rules moved from
-  `OldSP/OldSPObservations.v` into `OldSP/OldIncorrectnessRewritingRules.v`,
-  since they `apply` the rules that file defines
-- the worked examples `m_progA_under_42` / `m_progB_over_42` moved into
-  `OldSP/OldExamplePrograms.v`, next to the `progA_42` / `progB_ASP_42` they
-  discharge with
+## 12. Naming conventions
 
-### One name clash remains, handled by qualification
+**Instances** are named after the type they are an instance for, with the number
+of underscores marking the layer:
 
-`ExamplePrograms.v` keeps two old-style theorems (`progloom_triple_asp`,
-`progloom_triple_asp_harder`) because they sit inside `Section
-WithdrawExample`, whose other theorems are WP. That file therefore imports both
-presentations, and `Over` / `Under` / `obsASP` are ambiguous — the old
-`approximationKind` and the new `approxKind` both declare `Over` and `Under`.
-The two old-style statements are written qualified
-(`OldSPObservations.tripleSP`, `OldSPObservations.obsASP`,
-`OldSPObservations.Under`); everything else resolves to the new definitions.
+| | pattern | examples |
+|---|---|---|
+| base monad | `Class_Type` (one underscore) | `Monad_WPure`, `MonadLawsE_WPure`, `Monad_Pred` |
+| transformer stack | `Class__Type` (two underscores) | `Monad__WStExc`, `MonadState__WSt`, `Monad__ASPStExc`, `Eq1__DSPStExc`, `MonadLawsE__ASLPStExc`, `Monad__stdivnd` |
 
-## 7. Stale build artifacts — safe to delete
+The law instance is always `MonadLawsE` (matching the ITree class), never
+`MonadLaws`. Slice variants inside `Module St*` reuse the identical names; the
+module qualifies them (`StASP.MonadLawsE__ASPSt`).
 
-`.vo` / `.vok` / `.vos` / `.glob` files whose `.v` source no longer exists:
+**Type names match their carriers** — `SPSt` for the terminating slice,
+`SPStExc` for the exception outcome:
 
-    DijkstraCategory.*   Scratch{Adq,All,Arr,Awp,Bind,CE,Cmp,GC2,M,PT,Pick,Ret,Triple}.*
-    Scratch_NDItCheck.glob
+| | exception outcome | terminating slice (in `Module St*`) |
+|---|---|---|
+| type | `ASPStExc` | `ASPSt` |
+| projection | `getASPStExc` | `getASPSt` |
+| unit / bind | `retASPStExc` / `bindASPStExc` | `retASPSt` / `bindASPSt` |
+| order | `ordASPStExc`, `ordASPStExcAt` | `ordASPSt`, `ordASPStAt` |
 
-None are in `_CoqProject`, so nothing rebuilds them — but a stale `.vo` still
-satisfies a `Require`, which is what masked a broken build during the
-reorganisation. There are also `.v~` backups in `OldSP/`.
+and likewise for `DSLP`, `DSP`, `ASLP`. The raw order is `ordSPStExc` /
+`ordSPSt`; the WP side matches, with `ordWStExc` / `ordWSt`.
 
-### `deprecated/`
+The `Module St*` wrappers are still needed: the healthiness conditions
+(`StrictProg`, `TerminatingProg`, …) and the `NewGaloisConnections.v` embeddings
+deliberately carry parallel names in both variants, so the module is what tells
+them apart.
 
-Seven earlier iterations (`Observation.v`, `NonDetObservation.v`,
-`NonDetItObservation.v`, `SPost.v`, `SPostArr.v`, `SPostFacts.v`,
-`SPostFacts_arrowlaws.v`), excluded from `_CoqProject`. Ignore when grepping for
-symbol references. This copy of `NonDetItObservation.v` is older than the
-material in `OldSP/`.
+## 13. Known duplication
 
-### Superseded but still built
-
-- **`NonDetObservation.v`** — nothing imports it. Superseded by
-  `SPNonDetObservations.v`, which covers the same carrier with the four spec
-  monads and full monad-morphism proofs. What it still uniquely has is the WP
-  side (`obsDWP` / `obsAWP`).
-
-- **`Observation.v`** — nothing imports it, but *not* superseded: there is no
-  new-style observation file for the deterministic `prog`, and this is the only
-  place with `obsWPCollapse` / `obsWLPCollapse`. It also holds the directory's
-  single `Admitted` (line 575).
-
-### Known duplication
-
-`SPSpecMonads.v` and `SPSimplerSpecMonads.v` are near-copies differing only in
-the outcome type, `bind`, and the four `comp_*` lemmas — everything else
+The option-outcome and terminating-slice developments are near-copies differing
+only in the outcome type, `bind`, and the four `comp_*` lemmas — everything else
 transfers by re-indexing. Parameterising one development over an abstract
 outcome functor plus a Kleisli `step` (with the three `comp_*` laws as
-hypotheses) would share the bridges, carriers and targets and reduce each new
-outcome type to one instance.
-
-`SPNonDetItObservations.v` also still defines `pp2asp_over'` / `pp2dslp_under'`,
-which duplicate `tASPover` / `tDSLPunder` in `SPSpecMonads.v`.
-
----
-
-## Dependency graph (current files)
-
-```
-Prog ─────► ProgFacts ──► (generic optionT / stateT laws, reused everywhere)
-NonDetProg ──► NonDetItProg
-           └─► NonDetDivProg
-
-SPSpecMonads  (standalone: four SP monads, laws, orders, pp2 targets)
-     │  └──► SPSimplerSpecMonads        (same over A * S)
-     │
-     ├──► SPNonDetObservations          (nddprog,  divergence visible)
-     ├──► SPNonDetDivObservations       (nddprog,  terminating slice) [via SPSimplerSpecMonads]
-     └──► SPNonDetItObservations        (nditprog, terminating slice)
-                └──► IncorrectnessRewritingRules
-
-ExampleProgramDefs   (leaf: the programs + preEq0/postEq0)
-     ├──► SPNonDetItObservations
-     ├──► OldSP/OldSPObservations
-     ├──► ExamplePrograms                (new-style + WP examples)
-     └──► OldSP/OldExamplePrograms       (old-style examples)
-
-WPNonDetItObservations  (nditprog → ProgWP; the WP half of the old file)
-     └──► OldSP/OldSPObservations
-                └──► OldSP/OldIncorrectnessRewritingRules
-                          └──► OldSP/OldExamplePrograms
-
-WP / WPred / Pred / SPost / PrePost / RelPrePost / WPArr ──► Galois
-Observation, NonDetObservation                        (older observation style)
-```
+hypotheses) would share the bridges, carriers and targets, and reduce each new
+outcome type to one instance. `ASLPMonad.v` is the worst case at 1303 lines.
