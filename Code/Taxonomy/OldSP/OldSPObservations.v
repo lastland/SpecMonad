@@ -43,11 +43,11 @@ Module OriginalTripleSP.
 
     #[program] Definition obsDSP {A} (m : stdivexcnd S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (obsASP m) pre r /\ sp_pt (obsDSLP m) pre r.
+    spost (obsASP m) pre r /\ spost (obsDSLP m) pre r.
 
     #[program] Definition obsASLP {A} (m : stdivexcnd S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    sp_pt (obsASP m) pre r \/ sp_pt (obsDSLP m) pre r.
+    spost (obsASP m) pre r \/ spost (obsDSLP m) pre r.
 
     Inductive approximationKind := | Correct | Incorrect.
 
@@ -55,7 +55,7 @@ Module OriginalTripleSP.
     transformer [(unit * S -> Prop) -> option (A * S) -> Prop]:
     - a plain predicate transformer is the identity;
     - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
-      [sp_pt] extracted;
+      [spost] extracted;
     - a plain relation [PredArr (unit * S) (option (A * S))] is lifted
       angelically via [asp]. *)
     Class AsSPObs {S A : Type} (T : Type) :=
@@ -67,11 +67,11 @@ Module OriginalTripleSP.
 
     #[global] Instance AsSPObs_ASP {S A} :
       @AsSPObs S A (ASPostArr S A) :=
-      fun d => sp_pt (proj1_sig d).
+      fun d => spost (proj1_sig d).
     
     #[global] Instance AsSPObs_DSLP {S A} :
       @AsSPObs S A (DSLPostArr S A) :=
-      fun d => sp_pt (proj1_sig d).
+      fun d => spost (proj1_sig d).
     
     #[global] Instance AsSPObs_Pred {S A} :
       @AsSPObs S A (PredArr (unit * S) (option (A * S))) :=
@@ -173,7 +173,7 @@ Section NonDetItObservationSP.
       end.
 
   (** The four strongest-postcondition transformers are *readings* of the
-      single reachability relation [obsRel] — no [ASPostArr]/[SPRecord]
+      single reachability relation [obsRel] — no [ASPostArr]/[RelSPPair]
       wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
       [SPostArr.v], as are [spDSP]/[spASLP] (their meet/join). *)
   Definition obsASP {A} (m : stdivexcnd S A)

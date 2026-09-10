@@ -24,7 +24,7 @@
     is what lets a precondition be replaced by an equivalent one.
 
     Wrapped in a module: [Taxonomy/SPost.v] uses the name [SPost] for the
-    strongest-postcondition ARROWS over [SPRecord], and [SPSpecMonads.v] binds
+    strongest-postcondition ARROWS over [RelSPPair], and [SPSpecMonads.v] binds
     [SPPure] to the unrestricted [Prop -> A -> Prop]. *)
 
 From Coq Require Import Morphisms RelationClasses.

@@ -76,7 +76,7 @@ Section NDObservationSP.
     fun s0 r => unOptionT (runStateT m s0) r.
 
   (** The four SP transformers are readings of the reachability relation
-      [obsRel] (no [ASPostArr]/[SPRecord]): [asp]/[dslp]/[spDSP]/[spASLP]
+      [obsRel] (no [ASPostArr]/[RelSPPair]): [asp]/[dslp]/[spDSP]/[spASLP]
       from [SPostArr.v]. *)
   Definition obsASP {A} (m : stexcnd S A)
     : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
