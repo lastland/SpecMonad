@@ -40,7 +40,7 @@ From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StDivITree.
 
 (* ================================================================= *)
 (** ** [PredArr]: definition and arrow instances                         *)

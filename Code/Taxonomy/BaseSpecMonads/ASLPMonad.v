@@ -1400,10 +1400,10 @@ Arguments ordASLPStExc {_} {_}.
     onto [DSLPSP], and this pointwise lift inherits that collapse.
 
     Laws come from the generic [readerT] instances in
-    [ComputationMonads/StDivITree.v] over [Monad_ASLPSP]. *)
+    [ComputationMonads/TransformerLaws.v] over [Monad_ASLPSP]. *)
 
 From ExtLib Require Import ReaderMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section RdASLPMonad.
   Variable R : Type.

@@ -701,11 +701,11 @@ Arguments ordASPStExcAt {_} {_}.
 
     The [Monad] is ExtLib's [Monad_readerT] over [Monad_ASPSP], and the laws
     come from the generic [readerT] instances in
-    [ComputationMonads/StDivITree.v] — the same route [WPureMonad.v] uses for
+    [ComputationMonads/TransformerLaws.v] — the same route [WPureMonad.v] uses for
     its own stacks. *)
 
 From ExtLib Require Import ReaderMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section RdASPMonad.
   Variable R : Type.

@@ -1,5 +1,5 @@
 From ExtLib Require Import Monad OptionMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet.
 
 (** * Nondeterministic, possibly divergent computations, without state
 
@@ -176,11 +176,11 @@ Arguments mayDivergeNE {_}.
     transported along [getNE].
 
     [divnd = optionT SetM] gets its own laws from the generic [optionT]
-    instances in [StDivITree.v], applied to [SetM]'s in [StExcNonDet.v]. *)
+    instances in [TransformerLaws.v], applied to [SetM]'s in [StExcNonDet.v]. *)
 
 From Coq Require Import Morphisms.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section DivNonDetLaws.
 

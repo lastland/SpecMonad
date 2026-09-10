@@ -795,10 +795,10 @@ Arguments ordDSLPStExcAt {_} {_}.
     [R -> A -> Prop], read demonically.
 
     Laws come from the generic [readerT] instances in
-    [ComputationMonads/StDivITree.v] over [Monad_DSLPSP]. *)
+    [ComputationMonads/TransformerLaws.v] over [Monad_DSLPSP]. *)
 
 From ExtLib Require Import ReaderMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section RdDSLPMonad.
   Variable R : Type.

@@ -1560,10 +1560,10 @@ Arguments ordDSPStExc {_} {_}.
     shared [R -> Prop] precondition.
 
     Laws come from the generic [readerT] instances in
-    [ComputationMonads/StDivITree.v] over [Monad_DSPSP]. *)
+    [ComputationMonads/TransformerLaws.v] over [Monad_DSPSP]. *)
 
 From ExtLib Require Import ReaderMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section RdDSPMonad.
   Variable R : Type.

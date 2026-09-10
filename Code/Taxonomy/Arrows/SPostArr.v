@@ -459,7 +459,7 @@ From ExtLib Require Import Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** ** Utilities                                                       *)

@@ -200,7 +200,7 @@ Definition ordWStExc {S A} (m1 m2 : WStExc S A) : Prop :=
 (** Both chain through the generic [optionT] / [stateT] instances, which are
     [Eq1]-generic, so [Eq1_WPure] (pointwise iff) serves throughout. *)
 
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section WStLaws.
   Variable S : Type.

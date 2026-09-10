@@ -19,7 +19,7 @@
 
 From ITree Require Import ITree Events.State Events.Exception Events.Nondeterminism Props.Leaf Props.Infinite.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet.
 
 (* ================================================================= *)
 (** ** The [stdivexcnd] monad                                           *)
