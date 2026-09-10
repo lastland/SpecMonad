@@ -25,8 +25,9 @@ A second separation runs alongside it: **defining** an observation and
 
 ```
 Taxonomy/
-  ComputationMonads/     StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet,
-                         DivNonDet
+  ComputationMonads/     TransformerLaws            -- generic optionT/stateT/readerT laws
+                         StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet,
+                         DivNonDet, RdDivNonDet
   BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
                          RelPrePostMonad             -- the five DM4all monads
                          SPPredicateTransformers     -- SP carriers + healthiness
@@ -38,7 +39,8 @@ Taxonomy/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
                          StDivExcNonDet_WStExc, StDivNonDet_WSt
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
-                         StDivNonDet_SPSt, DivNonDet_SPPure
+                         StDivNonDet_SPSt, DivNonDet_SPPure,
+                         RdDivNonDet_RdSPPure
       (root)             Taxonomy_StDivExcNonDet_StExc,
                          Taxonomy_StDivNonDet_StExc, Taxonomy_StDivNonDet_St
   OldSP/                 the earlier reading-based SP presentation
@@ -61,6 +63,7 @@ on.
 | `stdivnd S A` | `stateT S (optionT SetM) A` | `ComputationMonads/StDivNonDet.v` | state, nondeterminism, **divergence** |
 | `stdivexcnd S A` | `stateT S (optionT (optionT SetM)) A` | `ComputationMonads/StDivExcNonDet.v` | state, nondeterminism, exceptions **and** divergence |
 | `divnd A` | `optionT SetM A` | `ComputationMonads/DivNonDet.v` | nondeterminism, **divergence** (no state) |
+| `rddivnd R A` | `readerT R divnd A` | `ComputationMonads/RdDivNonDet.v` | environment, nondeterminism, **divergence** |
 
 `stexcnd` and `stdivnd` share a carrier and differ only in the *reading* of the
 distinguished outcome `None`: an exception in the first, divergence in the
@@ -82,10 +85,32 @@ by `eq_refl` — standing to `StDivNonDet.v` as `SPPure` does to `SPSt` /
 `divndNE`, and additionally the pointwise `outcomes_bind` /
 `diverge_absorbing` / `mayDiverge_bind`, which are axiom-free.
 
+`rddivnd` puts a read-only environment on that base instead of a state. The two
+have the same shape but differ in the outcome:
+
+```coq
+stdivnd R A  =  R -> option (A * R) -> Prop     (* state: the outcome carries R *)
+rddivnd R A  =  R -> option  A      -> Prop     (* reader: it does not          *)
+```
+
+so `RdDivNonDet.v` offers `MonadReader` (`ask`, `local`) where `StDivNonDet.v`
+offers `MonadState` (`get`, `put`), and `nonEmpty_localD` is the extra closure
+lemma the non-empty fragment needs.
+
 Only `stdivexcnd` can distinguish the two effects, via its second `optionT`.
 
-`StDivITree.v` additionally provides the `Eq1`-generic `optionT` / `stateT`
-monad-law instances that every other stack chains through.
+`TransformerLaws.v` holds the `Eq1`-generic `optionT` / `stateT` / `readerT`
+monad-law instances that every stack in the development chains through — the
+computation monads, `WPureMonad.v`'s `WSt` / `WStExc`, `PredMonad.v`'s
+`ProgWPred`, and the `*Rd` specification monads. Each section is parametric in
+the base monad (`Monad` / `Eq1` / `Eq1Equivalence` / `MonadLawsE` taken as a
+`Context`) and names no concrete monad, so `BaseSpecMonads/` can depend on it
+without depending on any computation monad — which is what keeps the
+organising principle at the top of this file literally true.
+
+The `readerT` instances are simpler than the `stateT` ones: the environment is
+threaded but never returned, so no pairing has to be destructed in the law
+proofs.
 
 ## 3. The SP specification monads
 
@@ -192,6 +217,37 @@ rather than rebuilt — none of the relation-recovery machinery is needed.
 What disappears is exactly what makes DSP interesting: a precondition that is a
 *set* of states, so that `R⁻¹(r) ⊆ pre` carries more information than
 `R⁻¹(r) ∩ pre ≠ ∅`. With one `Prop` in the precondition slot the two coincide.
+
+### The reader-indexed variants
+
+Each SP monad file also defines `readerT R` over its pure variant, next to the
+pure one:
+
+```coq
+ASPRd R A := readerT R ASPSP  A      (* ASPMonad.v,  Section RdASPMonad  *)
+DSLPRd R A := readerT R DSLPSP A     (* DSLPMonad.v, Section RdDSLPMonad *)
+DSPRd R A := readerT R DSPSP  A      (* DSPMonad.v,  Section RdDSPMonad  *)
+ASLPRd R A := readerT R ASLPSP A     (* ASLPMonad.v, Section RdASLPMonad *)
+```
+
+with `get*Rd w r`, `Monad__*Rd`, `Eq1__*Rd`, `MonadLawsE__*Rd` (from the
+generic `readerT` instances) and the orders `ord*Rd` / `ord*RdAt`.
+
+The precondition slot stays a bare `Prop`, so this is the **pointwise** lift:
+one `Prop` per environment, environments specified independently. Since every
+fibre is additive, an `ASPRd R A` is exactly a relation `R -> A -> Prop`
+(`getASPRd_singleton`).
+
+Two consequences worth keeping straight. First, `ASPRd` coincides with what you
+would get by defining a coupled carrier `(R -> Prop) -> A -> Prop` and cutting
+it down by the ASP condition (strict + disjunctive): both are the relation
+`R -> A -> Prop`, and their binds agree. Second, that coincidence **fails** for
+DSP and ASLP: `DSPRd` inherits the pure collapse (`DSPSP = ASPSP`, above),
+whereas strict + conjunctive on the coupled carrier does not collapse — the
+transformer `fun pre _ => forall r, pre r` is strict and conjunctive but not
+singleton, and it has no counterpart in `readerT R ASPSP`. So the pointwise
+lift keeps ASP and DSLP faithfully but erases the DSP/ASLP distinction; only a
+shared `R -> Prop` precondition retains it.
 
 ### In-monad characterizations
 
@@ -301,6 +357,7 @@ healthy.
 | `StDivNonDet_SPStExc.v` | `stdivnd` | `SPStExc` | **yes** — `None` is an ordinary outcome | `FullOutcomeObs` |
 | `StDivNonDet_SPSt.v` | `stdivnd` | `SPSt` | **no** — reads the terminating slice | `TermSliceObs` |
 | `DivNonDet_SPPure.v` | `divnd` | `SPPure` | **no** — reads the terminating slice | `PureObs` |
+| `RdDivNonDet_RdSPPure.v` | `rddivnd` | `ASPRd` / `DSLPRd` / `DSPRd` / `ASLPRd` | **no** — reads the terminating slice | `RdPureObs` |
 
 Note the deliberate contrast in the fourth column:
 
@@ -322,6 +379,19 @@ observe the same computation monad into differently-indexed targets, so their
 
 `StDivNonDet_SPStExc.v` imports only its computation monad and the SP monads —
 no sibling observation file. That is the intended shape for a new observation.
+
+`RdDivNonDet_RdSPPure.v` threads the reader through the observation rather than
+absorbing it: the target is the *same* transformer applied to the specification
+side, `readerT R divnd A --> ASPRd R A = readerT R ASPSP A`, so each of its
+laws is the corresponding `PureObs` law read at one environment. The four
+targets `ASPRd` / `DSLPRd` / `DSPRd` / `ASLPRd` are defined in the SP monad
+files themselves (§3). Its triples take `pre : R -> Prop` and are read
+pointwise in the environment.
+
+There is a genuinely different reading it does **not** cover: letting the
+precondition range over *sets* of environments, `(R -> Prop) -> A -> Prop`.
+That couples the environments the way a shared `S -> Prop` couples initial
+states (§7), and is not any existing carrier, so it would need a new one.
 
 `DivNonDet_SPPure.v` is the state-free case of `StDivNonDet_SPSt.v`: stripping
 `S` collapses every `S -> Prop` precondition to a single `Prop`, the
@@ -561,7 +631,7 @@ directory's only `Admitted` is in `Observation.v`.
 
 ## 11. Build status
 
-`_CoqProject` lists 68 files and builds **clean from scratch**, with **no
+`_CoqProject` lists 71 files and builds **clean from scratch**, with **no
 `Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
 classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /
