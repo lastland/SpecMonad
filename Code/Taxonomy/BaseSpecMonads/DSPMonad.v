@@ -1547,3 +1547,51 @@ Section DSPOrders.
 End DSPOrders.
 
 Arguments ordDSPStExc {_} {_}.
+
+(* ================================================================= *)
+(** ** The reader-indexed variant                                    *)
+(* ================================================================= *)
+
+(** [DSPRd R A = readerT R DSPSP A]: one [DSPSP] per environment.  The
+    precondition slot stays a bare [Prop], so environments are specified
+    INDEPENDENTLY — the pointwise lift, not a shared [R -> Prop].  Note that [DSPSP] already collapses onto [ASPSP]
+    (see [strict_conj_iff_singleton] above), so this pointwise lift inherits
+    that collapse: it does NOT recover the DSP/ASP distinction, which needs a
+    shared [R -> Prop] precondition.
+
+    Laws come from the generic [readerT] instances in
+    [ComputationMonads/StDivITree.v] over [Monad_DSPSP]. *)
+
+From ExtLib Require Import ReaderMonad.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+
+Section RdDSPMonad.
+  Variable R : Type.
+
+  Definition DSPRd (A : Type) : Type := readerT R DSPSP A.
+
+  Definition getDSPRd {A} (w : DSPRd A) (r : R) : SPPure A :=
+    getDSP (runReaderT w r).
+
+  #[global] Instance Monad__DSPRd : Monad DSPRd :=
+    @Monad_readerT R DSPSP Monad_DSPSP.
+
+  #[global] Instance Eq1__DSPRd : Eq1 DSPRd :=
+    Eq1_readerT R DSPSP.
+
+  #[global] Instance Eq1Equivalence__DSPRd
+    : @Eq1Equivalence DSPRd _ Eq1__DSPRd :=
+    Eq1Equivalence_readerT R DSPSP.
+
+  #[global] Instance MonadLawsE__DSPRd
+    : @MonadLawsE DSPRd Eq1__DSPRd Monad__DSPRd :=
+    MonadLawsE_readerT R DSPSP.
+
+  Definition ordDSPRd {A} (m1 m2 : DSPRd A) : Prop :=
+    forall r p a, getDSPRd m1 r p a -> getDSPRd m2 r p a.
+  Definition ordDSPRdAt {A} (pre : R -> Prop) (m1 m2 : DSPRd A) : Prop :=
+    forall r a, getDSPRd m1 r (pre r) a -> getDSPRd m2 r (pre r) a.
+
+End RdDSPMonad.
+
+Arguments getDSPRd {_} {_}.

@@ -1389,3 +1389,49 @@ Section ASLPOrders.
 End ASLPOrders.
 
 Arguments ordASLPStExc {_} {_}.
+
+(* ================================================================= *)
+(** ** The reader-indexed variant                                    *)
+(* ================================================================= *)
+
+(** [ASLPRd R A = readerT R ASLPSP A]: one [ASLPSP] per environment.  The
+    precondition slot stays a bare [Prop], so environments are specified
+    INDEPENDENTLY — the pointwise lift, not a shared [R -> Prop].  Dually to [DSPRd], [ASLPSP] already collapses
+    onto [DSLPSP], and this pointwise lift inherits that collapse.
+
+    Laws come from the generic [readerT] instances in
+    [ComputationMonads/StDivITree.v] over [Monad_ASLPSP]. *)
+
+From ExtLib Require Import ReaderMonad.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+
+Section RdASLPMonad.
+  Variable R : Type.
+
+  Definition ASLPRd (A : Type) : Type := readerT R ASLPSP A.
+
+  Definition getASLPRd {A} (w : ASLPRd A) (r : R) : SPPure A :=
+    getASLP (runReaderT w r).
+
+  #[global] Instance Monad__ASLPRd : Monad ASLPRd :=
+    @Monad_readerT R ASLPSP Monad_ASLPSP.
+
+  #[global] Instance Eq1__ASLPRd : Eq1 ASLPRd :=
+    Eq1_readerT R ASLPSP.
+
+  #[global] Instance Eq1Equivalence__ASLPRd
+    : @Eq1Equivalence ASLPRd _ Eq1__ASLPRd :=
+    Eq1Equivalence_readerT R ASLPSP.
+
+  #[global] Instance MonadLawsE__ASLPRd
+    : @MonadLawsE ASLPRd Eq1__ASLPRd Monad__ASLPRd :=
+    MonadLawsE_readerT R ASLPSP.
+
+  Definition ordASLPRd {A} (m1 m2 : ASLPRd A) : Prop :=
+    forall r p a, getASLPRd m1 r p a -> getASLPRd m2 r p a.
+  Definition ordASLPRdAt {A} (pre : R -> Prop) (m1 m2 : ASLPRd A) : Prop :=
+    forall r a, getASLPRd m1 r (pre r) a -> getASLPRd m2 r (pre r) a.
+
+End RdASLPMonad.
+
+Arguments getASLPRd {_} {_}.

@@ -784,3 +784,49 @@ End DSLPOrders.
 
 Arguments ordDSLPStExc {_} {_}.
 Arguments ordDSLPStExcAt {_} {_}.
+
+(* ================================================================= *)
+(** ** The reader-indexed variant                                    *)
+(* ================================================================= *)
+
+(** [DSLPRd R A = readerT R DSLPSP A]: one [DSLPSP] per environment.  The
+    precondition slot stays a bare [Prop], so environments are specified
+    INDEPENDENTLY — the pointwise lift, not a shared [R -> Prop].  Every fibre is [MSingleton], so a [DSLPRd R A] is exactly a relation
+    [R -> A -> Prop], read demonically.
+
+    Laws come from the generic [readerT] instances in
+    [ComputationMonads/StDivITree.v] over [Monad_DSLPSP]. *)
+
+From ExtLib Require Import ReaderMonad.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+
+Section RdDSLPMonad.
+  Variable R : Type.
+
+  Definition DSLPRd (A : Type) : Type := readerT R DSLPSP A.
+
+  Definition getDSLPRd {A} (w : DSLPRd A) (r : R) : SPPure A :=
+    getDSLP (runReaderT w r).
+
+  #[global] Instance Monad__DSLPRd : Monad DSLPRd :=
+    @Monad_readerT R DSLPSP Monad_DSLPSP.
+
+  #[global] Instance Eq1__DSLPRd : Eq1 DSLPRd :=
+    Eq1_readerT R DSLPSP.
+
+  #[global] Instance Eq1Equivalence__DSLPRd
+    : @Eq1Equivalence DSLPRd _ Eq1__DSLPRd :=
+    Eq1Equivalence_readerT R DSLPSP.
+
+  #[global] Instance MonadLawsE__DSLPRd
+    : @MonadLawsE DSLPRd Eq1__DSLPRd Monad__DSLPRd :=
+    MonadLawsE_readerT R DSLPSP.
+
+  Definition ordDSLPRd {A} (m1 m2 : DSLPRd A) : Prop :=
+    forall r p a, getDSLPRd m1 r p a -> getDSLPRd m2 r p a.
+  Definition ordDSLPRdAt {A} (pre : R -> Prop) (m1 m2 : DSLPRd A) : Prop :=
+    forall r a, getDSLPRd m1 r (pre r) a -> getDSLPRd m2 r (pre r) a.
+
+End RdDSLPMonad.
+
+Arguments getDSLPRd {_} {_}.

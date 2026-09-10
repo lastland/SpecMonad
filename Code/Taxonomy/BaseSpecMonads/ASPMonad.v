@@ -688,3 +688,58 @@ End ASPOrders.
 
 Arguments ordASPStExc {_} {_}.
 Arguments ordASPStExcAt {_} {_}.
+
+(* ================================================================= *)
+(** ** The reader-indexed variant                                    *)
+(* ================================================================= *)
+
+(** [ASPRd R A = readerT R ASPSP A]: one [ASPSP] per environment.  The
+    precondition slot stays a bare [Prop], so environments are specified
+    INDEPENDENTLY — this is the pointwise lift, not a shared [R -> Prop].
+    Since every fibre is [Singleton], an [ASPRd R A] is exactly a relation
+    [R -> A -> Prop]; [getASPRd_singleton] is that statement.
+
+    The [Monad] is ExtLib's [Monad_readerT] over [Monad_ASPSP], and the laws
+    come from the generic [readerT] instances in
+    [ComputationMonads/StDivITree.v] — the same route [WPureMonad.v] uses for
+    its own stacks. *)
+
+From ExtLib Require Import ReaderMonad.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+
+Section RdASPMonad.
+  Variable R : Type.
+
+  Definition ASPRd (A : Type) : Type := readerT R ASPSP A.
+
+  Definition getASPRd {A} (w : ASPRd A) (r : R) : SPPure A :=
+    getASP (runReaderT w r).
+
+  Lemma getASPRd_singleton {A} (w : ASPRd A) (r : R) (p : Prop) (a : A) :
+    getASPRd w r p a <-> (p /\ getASPRd w r True a).
+  Proof. exact (getASP_singleton (runReaderT w r) p a). Qed.
+
+  #[global] Instance Monad__ASPRd : Monad ASPRd :=
+    @Monad_readerT R ASPSP Monad_ASPSP.
+
+  #[global] Instance Eq1__ASPRd : Eq1 ASPRd :=
+    Eq1_readerT R ASPSP.
+
+  #[global] Instance Eq1Equivalence__ASPRd
+    : @Eq1Equivalence ASPRd _ Eq1__ASPRd :=
+    Eq1Equivalence_readerT R ASPSP.
+
+  #[global] Instance MonadLawsE__ASPRd
+    : @MonadLawsE ASPRd Eq1__ASPRd Monad__ASPRd :=
+    MonadLawsE_readerT R ASPSP.
+
+  (** The precondition may vary with the environment; the order is read
+      pointwise, matching the pointwise lift. *)
+  Definition ordASPRd {A} (m1 m2 : ASPRd A) : Prop :=
+    forall r p a, getASPRd m1 r p a -> getASPRd m2 r p a.
+  Definition ordASPRdAt {A} (pre : R -> Prop) (m1 m2 : ASPRd A) : Prop :=
+    forall r a, getASPRd m1 r (pre r) a -> getASPRd m2 r (pre r) a.
+
+End RdASPMonad.
+
+Arguments getASPRd {_} {_}.
