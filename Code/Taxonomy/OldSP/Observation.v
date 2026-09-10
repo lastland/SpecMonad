@@ -303,7 +303,7 @@ Section ObservationSP.
     fun s r => eutt eq (unOptionT (runStateT m s)) (ret r).
 
   (** The four SP transformers are readings of the reachability relation
-      [obsRel] (no [ASPostArr]/[SPRecord]): [asp]/[dslp]/[spDSP]/[spASLP]
+      [obsRel] (no [ASPostArr]/[RelSPPair]): [asp]/[dslp]/[spDSP]/[spASLP]
       from [SPostArr.v]. *)
   Definition obsASP {A} (m : stdivitree S A)
     : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
