@@ -23,9 +23,9 @@
     witness that makes [bind_bind] go through left-to-right, and monotonicity
     is what lets a precondition be replaced by an equivalent one.
 
-    Wrapped in a module: [Taxonomy/SPost.v] uses the name [SPost] for the
-    strongest-postcondition ARROWS over [RelSPPair], and [SPSpecMonads.v] binds
-    [SPPure] to the unrestricted [Prop -> A -> Prop]. *)
+    Wrapped in [SPM] to distinguish this unary presentation from the binary
+    arrows in [Arrows/SPostArr.v] and [Arrows/RelSPPairArr.v].
+    [SPPredicateTransformers.v] defines the unrestricted [SPPure] carrier. *)
 
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.

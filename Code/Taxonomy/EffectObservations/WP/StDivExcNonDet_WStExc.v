@@ -12,7 +12,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
 Import MonadNotation.
@@ -634,4 +634,3 @@ Proof.
   specialize (Hwp (Some (Some (tt, s))) eq_refl).
   unfold postEq0 in Hwp. injection Hwp as Hs. exact Hs.
 Qed.
-

@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development rules
 
+- Use **well-formed** / **well-formedness** for the properties constraining SP transformers.
 - Always look up ITree and ExtLib libraries first before defining something new, to avoid reinventing the wheel.
 - Prefer `#[program] Definition` over `refine` for subset types; keep tactics for proof obligations only. This lets Coq insert `proj1_sig` coercions automatically (so you don't write `proj1_sig` everywhere) and generate proof obligations (so you don't explicitly use the `exist` constructor).
 - Coq typeclass resolution can cause infinite loops; if you see unusually long compile time, do not wait — try to figure out if there is a typeclass resolution issue. For a project of this size, compilation time should NOT be very long.
@@ -43,14 +44,14 @@ The `Code/Taxonomy/` directory is the core of the project. All monads share the 
 | `SetM` = `A -> Prop` | `ndprog` | `NonDetProg.v` | Nondeterministic computation |
 | `optionT SetM` (double optionT) | `nditprog` | `NonDetItProg.v` | Nondeterminism + divergence |
 
-`SPost.v` defines strongest postcondition *arrows* (`PureASPostArr`, `PureDSLPostArr`) using `RelSPPair` over `Pred` relations. Composed types: `ASPostArr S A = stateArrT S (optionArrT PureASPostArr) unit A`. `Pred.v` adds the complementary monad view (`fun B => Pred A B` is a monad for each fixed `A`) plus `optionPred` instances and composed spec-type aliases.
+`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPPairArr.v` retains the coupled presentation. See `Code/Taxonomy/README.md` for their well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify the module when both presentations are in scope: they intentionally share carrier names.
 
 **Observation functions** bridge computation monads to specification types (both WP and SP):
 - `Observation.v`: maps `prog` to 4 SP variants (`obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`) and 4 WP variants (`obsAWP` / `obsDWP` / `obsAWLP` / `obsDWLP`), with `obsWPCollapse` / `obsWLPCollapse` showing angelic-demonic collapse under determinism
 - `NonDetObservation.v`: maps `ndprog` to `ASPostArr` (SP) and `ProgWP` (demonic/angelic WP)
 - `NonDetItObservation.v`: maps `nditprog` to `ASPostArr` (SP) and `ProgWP` (4 WP variants)
 
-**Facts files** (`*Facts.v`) prove laws. `ProgFacts.v` provides generic `optionT`/`stateT` monad law instances. `SPostFacts.v` proves `ArrowLaws` for the SP arrows.
+`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws; the corresponding `*Coherence.v` module proves the additional application-coherence laws.
 
 `WPArr.v` defines the reader-WP Kleisli arrow `WPArr A B := A -> PureWP B`; laws in `WPArrFacts.v` hold definitionally (all `reflexivity`). `RelPrePost.v` defines `RelPrePost A B := (A -> Prop) -> (A -> B -> Prop) -> Prop` — a "validator" of Hoare specs that embeds `WPArr` injectively. `Galois.v` establishes Galois connections (via Dijkstra refinement order) among `Pred`, `PrePost`, `WPArr`, and `RelPrePost`.
 

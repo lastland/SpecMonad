@@ -24,7 +24,7 @@ Version info can be found in [this opam file](Code/coq-spec-monad.opam).
     coq_makefile -f _CoqProject -o Makefile
     make
 
-`Makefile` is gitignored, so it has to be regenerated. The 71 files listed in
+`Makefile` is gitignored, so it has to be regenerated. The files listed in
 `_CoqProject` build clean, with no `Admitted`.
 
 # The current status
@@ -40,10 +40,16 @@ What is formalised:
 
 - **Four strongest-postcondition specification monads** — angelic SP, demonic
   liberal SP, demonic SP, angelic liberal SP — each carved out of the raw
-  transformer type `(S -> Prop) -> Outcome -> Prop` by a healthiness condition,
+  transformer type `(S -> Prop) -> Outcome -> Prop` by a well-formedness condition,
   because the raw type is *not* a monad. Each comes with `Monad`, `Eq1` and all
   four monad laws, in both the exception-outcome and terminating-slice
   indexings.
+
+- **Property-only ASP and DSLP arrows**, with lawful option/state stacks,
+  full application coherence, and operation-preserving equivalence to the
+  coupled relation/transformer presentation. See
+  [`SPostArr.v`](Code/Taxonomy/Arrows/SPostArr.v) and the checked
+  [examples](Code/Taxonomy/Arrows/Examples/SPostArrExamples.v).
 
 - **The weakest-precondition side**, `WPure` and its `stateT`/`optionT` stacks,
   with the carrier restricted to *monotone* transformers — `monotonicity_is_needed`

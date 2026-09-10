@@ -36,7 +36,7 @@
 From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Program.Tactics.
 
 From Incorrectness.Classes Require Import Galois.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr PredArr PrePostArr WPArr RelPrePostArr.
+From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr PredArr PrePostArr WPArr RelPrePostArr.
 
 (* ================================================================= *)
 (** ** Local subtypes                                                  *)

@@ -13,7 +13,7 @@ From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -77,7 +77,7 @@ Section NDObservationSP.
 
   (** The four SP transformers are readings of the reachability relation
       [obsRel] (no [ASPostArr]/[RelSPPair]): [asp]/[dslp]/[spDSP]/[spASLP]
-      from [SPostArr.v]. *)
+      from [RelSPPairArr.v]. *)
   Definition obsASP {A} (m : stexcnd S A)
     : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
   Definition obsDSLP {A} (m : stexcnd S A)
@@ -272,4 +272,3 @@ Proof.
   eapply ex_intro. split; [reflexivity|]. cbn.
   right. reflexivity.
 Qed.
-
