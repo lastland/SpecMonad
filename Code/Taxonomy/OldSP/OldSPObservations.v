@@ -5,7 +5,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
@@ -175,7 +175,7 @@ Section NonDetItObservationSP.
   (** The four strongest-postcondition transformers are *readings* of the
       single reachability relation [obsRel] — no [ASPostArr]/[RelSPPair]
       wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
-      [SPostArr.v], as are [spDSP]/[spASLP] (their meet/join). *)
+      [RelSPPairArr.v], as are [spDSP]/[spASLP] (their meet/join). *)
   Definition obsASP {A} (m : stdivexcnd S A)
     : PredArr (S -> Prop) (option (A * S)) := asp (obsRel m). 
   Definition obsDSLP {A} (m : stdivexcnd S A)
@@ -1736,7 +1736,7 @@ Qed.
     the precondition must be a *predicate* [S -> Prop] (this is what the
     old, commented-out [ProgSPObs] got wrong: it universally quantified the
     initial state, so [Under] degenerated — cf. [progSP_under_not_point]).
-    The extension along [S] is exactly the [asp] / [dslp] pair of [SPostArr.v]
+    The extension along [S] is exactly the [asp] / [dslp] pair of [RelSPPairArr.v]
     applied to [runSP], giving back the four readings verbatim. *)
 Definition spASP {S A} (M : SPStExc S A) : (S -> Prop) -> option (A * S) -> Prop :=
   asp (runSP M).
@@ -2709,7 +2709,7 @@ Qed.
     observation must carry BOTH the additive and the multiplicative
     element, and the two differ only in how the pair is read (meet vs
     join).  This is forced: [dsp = asp /\ dslp] and [aslp = asp \/ dslp]
-    ([SPostArr.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
+    ([RelSPPairArr.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
     of the two extremes, and neither is an extreme itself.
 
     Note this breaks the [stateT S (optionT base)] shape used elsewhere:

@@ -18,7 +18,7 @@ From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Paco Require Import paco.
 From Hammer Require Import Tactics.
 From ITree Require Import ITree Eq Props.Infinite.
@@ -304,7 +304,7 @@ Section ObservationSP.
 
   (** The four SP transformers are readings of the reachability relation
       [obsRel] (no [ASPostArr]/[RelSPPair]): [asp]/[dslp]/[spDSP]/[spASLP]
-      from [SPostArr.v]. *)
+      from [RelSPPairArr.v]. *)
   Definition obsASP {A} (m : stdivitree S A)
     : (S -> Prop) -> option (A * S) -> Prop := asp (obsRel m).
   Definition obsDSLP {A} (m : stdivitree S A)

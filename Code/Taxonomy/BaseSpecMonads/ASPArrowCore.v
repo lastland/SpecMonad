@@ -15,7 +15,7 @@ From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr SPArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPArr.
 (* ================================================================= *)
 (** ** [ASPArr]                                                      *)
 (* ================================================================= *)

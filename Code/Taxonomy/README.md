@@ -30,11 +30,16 @@ Taxonomy/
                          DivNonDet, RdDivNonDet
   BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
                          RelPrePostMonad             -- the five DM4all monads
-                         SPPredicateTransformers     -- SP carriers + healthiness
+                         SPPredicateTransformers     -- SP carriers + well-formedness
                          ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
                          BaseGaloisConnections, NewGaloisConnections
-  Arrows/                PredArr, PrePostArr, RelPrePostArr, SPostArr, WPArr,
-                         GaloisArr                   -- binary carriers
+  Arrows/                PredArr, PrePostArr, RelPrePostArr, WPArr, GaloisArr
+                         PredicateTransformerProperties -- SP well-formedness properties
+                         SPostArr, RelSPPairArr       -- property-only / coupled SP arrows
+                         SPostArrEquiv               -- equivalence and transformer lifts
+                         SPostArrCoherence, RelSPPairArrCoherence
+                         OptionLoop                  -- obstruction to option feedback
+    Examples/            SPostArrExamples             -- checked clients
   EffectObservations/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
                          StDivExcNonDet_WStExc, StDivNonDet_WSt
@@ -76,7 +81,7 @@ file and type names now carry that distinction, which used to live only in
 comments.
 
 `StDivNonDet.v` also carries `stdivndNE`, the non-empty fragment, which the
-`WSt` observations need for healthiness.
+`WSt` observations need for well-formedness.
 
 `divnd` is the state-free base of that stack — `stdivnd S A = stateT S divnd A`
 by `eq_refl` — standing to `StDivNonDet.v` as `SPPure` does to `SPSt` /
@@ -122,10 +127,10 @@ proofs.
 > so import only one unqualified.
 
 Predicate transformers `(S -> Prop) -> Outcome -> Prop`, carved into four
-monads by four healthiness conditions. **The bare transformer type is not a
+monads by four well-formedness conditions. **The bare transformer type is not a
 monad**; only these subsets are.
 
-| Monad | Carrier condition | Equivalent healthiness class | Reading of a relation `R` |
+| Monad | Carrier condition | Equivalent well-formedness properties | Reading of a relation `R` |
 |---|---|---|---|
 | `ASPStExc` | `SingletonProg` | strict, universally disjunctive | `∃s ∈ pre, R s r` (angelic) |
 | `DSLPStExc` | `MSingletonProg` | terminating, universally conjunctive | `∀s, R s r → pre s` (demonic, liberal) |
@@ -173,7 +178,7 @@ an ASP is monotone in the relation and as a DSLP antitone, so those two orders
 be a forward pass over the precondition. It instead **recovers** each argument's
 relation by probing at two constant preconditions, composes the relations, and
 re-reads — see `dsp_recov` / `aslp_recov` and the `*_carrier` bridges. Both
-carriers are stated as healthiness conditions; `dsp_carrier` / `aslp_carrier`
+carriers are stated as well-formedness conditions; `dsp_carrier` / `aslp_carrier`
 prove these equivalent to the fixed-point form the proofs use.
 
 **Ordered bind is a separate requirement.**
@@ -280,7 +285,7 @@ work with the global order and no side condition:
 | DSP / ASLP | none | none |
 
 `Over` always compares `obs ⊑ target`, `Under` always `target ⊑ obs`. The two
-side conditions are forced by the healthiness conditions themselves (`asp_bot`:
+side conditions are forced by the well-formedness conditions themselves (`asp_bot`:
 every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at `⊤`) and are
 not removable. DSP and ASLP have no in-monad target in either direction, because
 their orders are not relation inclusion at all.
@@ -366,7 +371,7 @@ collapse.
 divergence is visible to the *observation* but not to the *postcondition*: the
 total/liberal axis is carried entirely by which observation you pick. Its source
 is the non-empty fragment `stdivndNE`, which is what makes the observations
-healthy.
+well-formed.
 
 ### SP side — `EffectObservations/SP/`
 
@@ -509,7 +514,7 @@ adjunction (`wp_pp_over_adjunction`, over the *over* pair
 
 - `approxKind` (`Under` / `Over`)
 - the four in-monad targets `pp2asp_over` / `pp2asp_under` / `pp2dslp_under` /
-  `pp2dslp_over`, and the plain (non-healthy) pair `pp2_over` / `pp2_under`
+  `pp2dslp_over`, and the unrestricted pair `pp2_over` / `pp2_under`
   that the `triple*spec` forms compare against
 - the `_at` collapse lemmas `tASPunder_at` / `tDSLPover_at`
 - the four in-monad characterizations `gen_asp_over` / `gen_asp_under` /
@@ -549,26 +554,90 @@ pointwise.
 
 ## 8. Arrows vs monads: file split
 
-Each specification family has **two independent presentations**, in separate
-files, with no import edge in either direction:
+Each specification family has separate **unary monad and binary arrow
+presentations**:
 
 | family | monad (unary carrier) | arrow (binary carrier) |
 |---|---|---|
 | `Pred` | `BaseSpecMonads/PredMonad.v` — `Pred A = A -> Prop` | `Arrows/PredArr.v` — `Pred A B = A -> B -> Prop` |
 | `PrePost` | `BaseSpecMonads/PrePostMonad.v` — `PrePost A = Prop * (A -> Prop)` | `Arrows/PrePostArr.v` |
-| `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — `PureASPostArr`, `PureDSLPostArr` |
+| `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — property-only `PureASPostArr`, `PureDSLPostArr`; `Arrows/RelSPPairArr.v` — coupled variants |
 | `RelPrePost` | `BaseSpecMonads/RelPrePostMonad.v` — over `Assuming p` | `Arrows/RelPrePostArr.v` |
 | `WPure` / `WP` | `BaseSpecMonads/WPureMonad.v` | `Arrows/WPArr.v` |
 
 The monad files define their carriers **in terms of the result type alone**
-(`Pred A = A -> Prop`), never as a binary arrow with the input fixed. None of
-them imports an arrow file; none of the arrow files imports a monad file.
+(`Pred A = A -> Prop`), rather than fixing the input of a binary arrow.
+Arrow files can reuse their raw carriers and properties: `WPArr.v` uses
+`WPureT`, and `PredicateTransformerProperties.v` relates its binary properties
+to the pure/state properties from `BaseSpecMonads/SPPredicateTransformers.v`.
 
-The `*Arr.v` files still carry the *arrow's own* monad view — `Monad (Pred A)`
-for a fixed input `A`, and in `SPostArr.v` the generic `ArrowApply -> Monad`
-construction (`Section ArrowMonad`). Those live on the binary carrier, so they
-stay with the arrow rather than in a monad file.
-`OldSP/OldSPObservations.v` depends on the `Pred` one.
+General arrow infrastructure lives in `Code/Classes/`. `ArrowMonad.v` defines
+the generic return/bind operations for `arr I`; `ArrowMorphism.v` proves
+operation-preserving maps and their option/state lifts. `RelArrowCoherence.v`
+proves application coherence for arrows with faithful relational presentations.
+SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
+
+`PredArr.v` also carries `Monad (PredArr A)` for a fixed input `A`, and
+`OldSP/OldSPObservations.v` depends on that view. `RelSPPairArr.v` proves monad
+laws for its direct relational monads. These concrete proofs are distinct from
+the generic operations in `ArrowMonad.v`.
+
+### Property-only SP arrows
+
+`Arrows/PredicateTransformerProperties.v` defines `StrictArr`,
+`TerminatingArr`, `ConjunctiveArr`, and `DisjunctiveArr` for
+`(A -> Prop) -> B -> Prop`, following Back and von Wright's *Refinement
+Calculus*, §16.1. Conjunctivity and disjunctivity preserve arbitrary **nonempty**
+families. Strictness supplies empty-join preservation; termination supplies
+empty-meet preservation. Here, termination means **top preservation**, with
+its operational interpretation determined by the direction of the transformer.
+
+`Arrows/SPostArr.v` bundles only a transformer and these well-formedness proofs:
+
+```coq
+PureASPostArr A B :=
+  { w : (A -> Prop) -> B -> Prop | StrictArr w /\ DisjunctiveArr w }.
+PureDSLPostArr A B :=
+  { w : (A -> Prop) -> B -> Prop | TerminatingArr w /\ ConjunctiveArr w }.
+```
+
+The accessors are `getASP` and `getDSLP`. Composition forwards the precondition:
+`comp f g P = g (f P)`. Application also works directly on transformers:
+
+```text
+appASP  P b = exists f, getASP  f (fun a => P (f,a)) b
+appDSLP P b = forall f, getDSLP f (fun a => P (f,a)) b
+```
+
+Both carriers satisfy `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`.
+The existing option/state transformers lift these laws, including to
+`stateArrT S (optionArrT PureASPostArr)` and its DSLP counterpart. This stack
+has input `A * S` and output `option (B * S)`: `None` propagates without a final
+state. `ASPostArr S B` and `DSLPostArr S B` fix the arrow input to `unit`.
+
+`SPostArrCoherence.v` proves the three additional standard application
+equations for pure, option, state, and state-over-option arrows. It uses
+`Classes/RelArrowCoherence.v`, whose relational proof premises are derived from the
+transformers. The corresponding coupled proofs live in
+`RelSPPairArrCoherence.v`. The shared `ArrowApplyLaws` class itself contains
+the static application law.
+
+`SPostArrEquiv.v` provides `asp_to_coupled` / `asp_from_coupled` and their DSLP
+counterparts, with both round trips and preservation of all five operations.
+The `option_*`, `state_*`, and `state_option_*` conversions lift this equivalence
+through the transformers. `morphism_app` explicitly converts the arrow stored
+in the application's input. The two presentations share short carrier names;
+qualify `SPostArr` or `RelSPPairArr` when using both.
+
+The normal-form proofs use functional and propositional extensionality, and
+bundled equality additionally uses proof irrelevance. Their assumption audits
+require no excluded middle. Checked clients live in
+`Arrows/Examples/SPostArrExamples.v`.
+
+`Arrows/OptionLoop.v` proves that `optionPred` cannot satisfy unrestricted
+`ArrowLoop` left tightening: empty feedback makes failure propagation conflict
+with the empty relation. `SPostArrEquiv.v` transports this obstruction to both
+property-only option SP arrows.
 
 `PredMonad.v` also carries `WPred` and the stack
 `ProgWPred S := stateT S (optionT WPred)`. `WPred` stays a definition in its own
@@ -650,7 +719,7 @@ directory's only `Admitted` is in `Observation.v`.
 
 ## 11. Build status
 
-`_CoqProject` lists 90 files and builds **clean from scratch**, with **no
+The files listed in `_CoqProject` build **clean from scratch**, with **no
 `Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
 classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /
@@ -701,7 +770,7 @@ The state-free variants follow the same rule with `SP` in place of `SPSt` —
 `ordDSLPSP` / `ordDSLPSPAt` — and, being at top level rather than in a `Module
 St*`, they need no qualification.
 
-The `Module St*` wrappers are still needed: the healthiness conditions
+The `Module St*` wrappers are still needed: the well-formedness conditions
 (`StrictProg`, `TerminatingProg`, …) and the `NewGaloisConnections.v` embeddings
 deliberately carry parallel names in both variants, so the module is what tells
 them apart.

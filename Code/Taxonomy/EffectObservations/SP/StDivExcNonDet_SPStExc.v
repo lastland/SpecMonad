@@ -12,7 +12,7 @@ From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 Require Import Coq.Logic.PropExtensionality.
@@ -761,4 +761,3 @@ Proof.
   unfold postEq0 in Hpost. subst r.
   intros s Hr. cbn in Hr. unfold preEq0. sauto.
 Qed.
-

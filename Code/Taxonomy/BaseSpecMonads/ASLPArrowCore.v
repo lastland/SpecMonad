@@ -32,7 +32,7 @@ From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr SPArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr SPArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure ASPArrowCore DSLPArrowCore.
 
 (** Representability: [w] is the ASLP of some relation. *)

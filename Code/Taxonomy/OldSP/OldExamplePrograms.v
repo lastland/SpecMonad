@@ -13,10 +13,10 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
-From Incorrectness.Taxonomy Require Import OldSPObservations OldIncorrectnessRewritingRules.
+From Incorrectness.Taxonomy.OldSP Require Import OldSPObservations OldIncorrectnessRewritingRules.
 
 Import MonadNotation.
 Open Scope monad_scope.

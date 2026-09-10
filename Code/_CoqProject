@@ -23,6 +23,7 @@ Taxonomy/ComputationMonads/StDivITree.v
 Taxonomy/ComputationMonads/StExcNonDet.v
 Taxonomy/ComputationMonads/StDivExcNonDet.v
 Classes/Arrow.v
+Classes/ArrowMonad.v
 Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
 Classes/OptionArrowT/ArrowChoiceLaws.v
@@ -32,6 +33,8 @@ Classes/StateArrowT/Core.v
 Classes/StateArrowT/ArrowChoiceLaws.v
 Classes/StateArrowT/ArrowApplyLaws.v
 Classes/StateArrowT.v
+Classes/ArrowMorphism.v
+Classes/RelArrowCoherence.v
 Classes/Galois.v
 Classes/OrderedMonad.v
 Taxonomy/BaseSpecMonads/PredMonad.v
@@ -39,9 +42,17 @@ Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
 Taxonomy/BaseSpecMonads/WPureMonad.v
 Taxonomy/BaseSpecMonads/RelPrePostMonad.v
+Taxonomy/BaseSpecMonads/SPPredicateTransformers.v
 Taxonomy/Arrows/PredArr.v
 Taxonomy/Arrows/SPArr.v
+Taxonomy/Arrows/RelSPPairArr.v
+Taxonomy/Arrows/PredicateTransformerProperties.v
 Taxonomy/Arrows/SPostArr.v
+Taxonomy/Arrows/RelSPPairArrCoherence.v
+Taxonomy/Arrows/SPostArrCoherence.v
+Taxonomy/Arrows/OptionLoop.v
+Taxonomy/Arrows/SPostArrEquiv.v
+Taxonomy/Arrows/Examples/SPostArrExamples.v
 Taxonomy/Arrows/PrePostArr.v
 Taxonomy/Arrows/WPArr.v
 Taxonomy/Arrows/RelPrePostArr.v
@@ -66,7 +77,6 @@ Taxonomy/EffectObservations/WP/StExcNonDet_WStExc.v
 Taxonomy/ComputationMonads/StDivNonDet.v
 Taxonomy/ComputationMonads/DivNonDet.v
 Taxonomy/ComputationMonads/RdDivNonDet.v
-Taxonomy/BaseSpecMonads/SPPredicateTransformers.v
 Taxonomy/BaseSpecMonads/SPStBindComparisons.v
 Taxonomy/BaseSpecMonads/OldMonads/ASPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/DSLPMonad.v

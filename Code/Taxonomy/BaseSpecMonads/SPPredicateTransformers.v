@@ -110,7 +110,7 @@ Section StTransOrders.
 
   (** Preserving NON-EMPTY meets already implies monotonicity: index the meet
       by [bool] over the pair {P, Q} and use [P = P /\ Q] when [P <= Q].  The
-      empty meet — i.e. strictness — plays no part. *)
+      empty meet — i.e. termination — plays no part. *)
   Theorem conjunctive_implies_monotone {A} (w : SPSt A) :
     ConjunctiveProg S w ->
     forall (P Q : S -> Prop) r, (forall s, P s -> Q s) -> w P r -> w Q r.
@@ -161,7 +161,7 @@ Section SPOrders.
 
   (** Preserving NON-EMPTY meets already implies monotonicity: index the meet
       by [bool] over the pair {P, Q} and use [P = P /\ Q] when [P <= Q].  The
-      empty meet — i.e. strictness — plays no part. *)
+      empty meet — i.e. termination — plays no part. *)
   Theorem conjunctive_implies_monotone {A} (w : SPStExc A) :
     ConjunctiveProg S w ->
     forall (P Q : S -> Prop) r, (forall s, P s -> Q s) -> w P r -> w Q r.

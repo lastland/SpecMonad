@@ -16,7 +16,7 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Classes Require Import ArrowMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPArrowCore.
 
 (* ================================================================= *)

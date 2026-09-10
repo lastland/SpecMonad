@@ -38,7 +38,8 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr.
+From Incorrectness.Classes Require Import ArrowMonad.
 
 (* ================================================================= *)
 (** ** The carrier and its two stacks                                *)
