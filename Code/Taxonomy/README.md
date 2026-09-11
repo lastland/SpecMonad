@@ -36,6 +36,7 @@ Taxonomy/
   Arrows/                PredArr, PrePostArr, RelPrePostArr, WPArr, GaloisArr
                          PredicateTransformerProperties -- SP well-formedness properties
                          SPostArr, RelSPPairArr       -- property-only / coupled SP arrows
+                         SPostArrMonad               -- monad dictionaries and SP readings
                          SPostArrEquiv               -- equivalence and transformer lifts
                          SPostArrCoherence, RelSPPairArrCoherence
                          OptionLoop                  -- obstruction to option feedback
@@ -46,6 +47,9 @@ Taxonomy/
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
                          StDivNonDet_SPSt, DivNonDet_SPPure,
                          RdDivNonDet_RdSPPure
+                         SPostArrObservation         -- shared ASP/DSLP outcome adapter
+                         StDivITree_SPostArr, StExcNonDet_SPostArr,
+                         StDivNonDet_SPostArr, StDivExcNonDet_SPostArr
       (root)             Taxonomy_StDivExcNonDet_StExc,
                          Taxonomy_StDivNonDet_StExc, Taxonomy_StDivNonDet_St
   OldSP/                 the earlier reading-based SP presentation
@@ -428,6 +432,43 @@ demonic-liberal readings, and `tripleDSP_is_tripleASP` /
 is a single "input", so `R⁻¹(a) ⊆ pre` and `R⁻¹(a) ∩ pre ≠ ∅` say the same
 thing whenever `R⁻¹(a)` is inhabited. See §3 for the carrier-level reason.
 
+### Arrow-derived ASP/DSLP observations
+
+The four `EffectObservations/SP/*_SPostArr.v` files observe computations into
+the property-only stacks from `Arrows/SPostArr.v`. `Arrows/SPostArrMonad.v`
+supplies named `Monad_Arrow` dictionaries for `ASPostArr S` and `DSLPostArr S`;
+their laws follow from `MonadLawsE_Arrow`. Effects are stacked as arrows before fixing
+the input to `unit`; `runASP` and `runDSLP` then expose the familiar shape
+`(S -> Prop) -> option (A * S) -> Prop`.
+
+Each computation module supplies one `outcomes` relation with `outcomes_ret`
+and `outcomes_bind`. The shared `SPostArrObservation.v` adapter packages those
+equations in `OutcomeKernel` and defines both readings:
+
+```text
+runASP  (obsASP  K m) pre r  <->  exists s, pre s /\ kern K m s r
+runDSLP (obsDSLP K m) pre r  <->  forall s, kern K m s r -> pre s
+```
+
+`obsDSLP` is `asp_to_dslp` applied to `obsASP`. The conversion preserves the
+recovered relation and the monad operations, so the DSLP return/bind proofs
+reuse the ASP proofs. Both observations preserve the exact arrow-derived
+return and bind. `tripleASP` and `tripleDSL` provide the `Over`/`Under`
+judgments, and their `*DefEq` theorems relate these to comparisons against the
+raw `pp2_over`/`pp2_under` transformers.
+
+| Observation file | Source | Relation observed at `r : option (A * S)` | Meaning of `r = None` |
+|---|---|---|---|
+| `StDivITree_SPostArr.v` | `stdivitree` | `eutt eq (unOptionT (runStateT m s)) (Ret r)` | Terminating exception |
+| `StExcNonDet_SPostArr.v` | `stexcnd` | `unOptionT (runStateT m s) r` | Exception |
+| `StDivNonDet_SPostArr.v` | `stdivnd` | `unOptionT (runStateT m s) r` | Divergence |
+| `StDivExcNonDet_SPostArr.v` | `stdivexcnd` | `unOptionT (unOptionT (runStateT m s)) (Some r)` | Terminating exception |
+
+The last relation discards the outer divergence outcome; the `stdivnd`
+observation keeps divergence visible, like `FullOutcomeObs`. Worked examples
+check exception propagation, divergence visibility, nondeterministic writes,
+and the ASP/DSLP distinction for many-to-one deterministic programs.
+
 ## 6. Comparing observations — `Taxonomy_*.v`
 
 Three files, one per source monad / target indexing, holding everything that
@@ -576,8 +617,13 @@ the generic return/bind operations for `arr I` and proves their monad laws;
 `ArrowApplyFacts.v` supplies the shared algebraic application and arrow
 extensionality lemmas used by the monad and option-transformer proofs.
 `ArrowMorphism.v` proves operation-preserving maps and their option/state lifts.
-`RelArrowCoherence.v`
-proves application coherence for arrows with faithful relational presentations.
+`RelArrowCoherence.v` proves application coherence for arrows with faithful
+relational presentations. Its `rel_state_option_pure` and
+`rel_state_option_bind` theorems also normalize the actual arrow-derived
+return and bind of a state-over-option stack at any fixed input type `I`.
+Bind keeps the input, threads the intermediate state, and propagates `None`.
+These generic proofs are axiom-free; the SP monads instantiate them with
+`ASP_rel_presentation` and `DSLP_rel_presentation`.
 SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
 
 `PredArr.v`, `PrePostArr.v`, `RelPrePostArr.v`, and `RelSPPairArr.v` expose named

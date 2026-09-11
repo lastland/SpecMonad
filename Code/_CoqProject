@@ -50,6 +50,7 @@ Taxonomy/Arrows/SPArr.v
 Taxonomy/Arrows/RelSPPairArr.v
 Taxonomy/Arrows/PredicateTransformerProperties.v
 Taxonomy/Arrows/SPostArr.v
+Taxonomy/Arrows/SPostArrMonad.v
 Taxonomy/Arrows/RelSPPairArrCoherence.v
 Taxonomy/Arrows/SPostArrCoherence.v
 Taxonomy/Arrows/OptionLoop.v
@@ -101,6 +102,11 @@ Taxonomy/EffectObservations/SP/StDivExcNonDet_SPStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_WStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_SPStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivNonDet_SPSt.v
+Taxonomy/EffectObservations/SP/SPostArrObservation.v
+Taxonomy/EffectObservations/SP/StDivITree_SPostArr.v
+Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v
+Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.v
+Taxonomy/EffectObservations/SP/StDivExcNonDet_SPostArr.v
 Taxonomy/InCorrectnessPrinciples.v
 Taxonomy/OldSP/OldSPObservations.v
 Taxonomy/OldSP/OldIncorrectnessRewritingRules.v
