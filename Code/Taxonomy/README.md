@@ -156,9 +156,9 @@ ASLPMonad.v                 ASLPStExc       (needs ASP, DSLP, and DSPMonad's
 
 Each monad comes with `ret`, `bind`, `Monad`, `Eq1`, `Eq1Equivalence` and
 `MonadLawsE` (all four laws), plus **its own refinement order and
-monotonicity** — `ordASPStExc` / `ordASPStExcAt` / `asp_bot` / `aspMono` in
-`ASPMonad.v`, and correspondingly for the other three. The raw order
-`ordSPStExc` sits with the carriers.
+monotonicity in the precondition** — `ordASPStExc` / `ordASPStExcAt` /
+`asp_bot` / `aspMono` in `ASPMonad.v`, and correspondingly for the other three.
+The raw order `ordSPStExc` sits with the carriers.
 
 `retDSPStExc`/`bindDSPStExc` are the conjunction of the ASP and DSLP parts;
 `retASLPStExc`/`bindASLPStExc` the disjunction — see `dsp_split` / `aslp_split`
@@ -173,6 +173,18 @@ relation by probing at two constant preconditions, composes the relations, and
 re-reads — see `dsp_recov` / `aslp_recov` and the `*_carrier` bridges. Both
 carriers are stated as well-formedness conditions; `dsp_carrier` / `aslp_carrier`
 prove these equivalent to the fixed-point form the proofs use.
+
+**Ordered bind is a separate requirement.**
+[`SPBindOrderCounterexample.v`](BaseSpecMonads/SPBindOrderCounterexample.v)
+proves that the state-only `StDSP.DSPSt` and `StASLP.ASLPSt` binds do not
+preserve their global pointwise implication orders, even with the same
+continuation on both sides. The Boolean-state example uses the existing
+directly defined binds: one command returns only from `false`, another preserves
+both states, and their common continuation resets the state to `false`. The
+resulting nonmonotonicity blocks an `OrderedMonad` instance using these binds
+and orders together, as required by the standard Dijkstra bind construction.
+Their `MonadLawsE` instances and `dspMono` / `aslpMono` precondition-monotonicity
+lemmas remain valid; the counterexample does not depend on arrow-derived bind.
 
 ### The terminating slice lives alongside each monad
 
