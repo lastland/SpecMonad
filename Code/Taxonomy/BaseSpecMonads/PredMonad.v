@@ -165,7 +165,6 @@ End PredStExc.
 From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
 From ITree Require Import Basics.Monad.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 
