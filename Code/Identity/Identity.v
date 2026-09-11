@@ -18,7 +18,7 @@ Definition example_3_1 (x y z : nat) : nat :=
     if negb (Nat.even y) then 42 else z
   else z.
 
-From Hammer Require Import Hammer Tactics.
+From Hammer Require Import Tactics.
 
 Example example_3_1_test1 :
   forall x y, exists z,

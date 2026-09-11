@@ -1,7 +1,7 @@
 
 From Coq Require Import Nat Bool.
 From ExtLib Require Import Monad MonadState MonadExc MonadLaws.
-From Hammer Require Import Hammer Tactics.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import Common.Notations Common.Classes.
 
 Set Implicit Arguments.

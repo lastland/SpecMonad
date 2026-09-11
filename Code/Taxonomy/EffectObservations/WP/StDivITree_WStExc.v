@@ -19,8 +19,6 @@ From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
-From Paco Require Import paco.
-From Hammer Require Import Tactics.
 From ITree Require Import ITree Eq Props.Infinite.
 From ITree.Extra Require Import Dijkstra.PureITreeBasics.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
