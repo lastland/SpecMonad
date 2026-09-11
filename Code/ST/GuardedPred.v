@@ -1,9 +1,8 @@
-From Coq Require Import RelationClasses.
-From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
-From Hammer Require Import Hammer Tactics.
+From ExtLib Require Import Monad MonadState.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import Common Common.Guarded.
 
-From Coq Require Import Nat Lia PeanoNat.
+From Coq Require Import Lia PeanoNat.
 Opaque "<=?".
 
 Set Implicit Arguments.

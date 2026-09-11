@@ -33,7 +33,7 @@
        adjunction.  Two variants are proven to fail by counterexample
     (Section "Obstruction" below). *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Program.Tactics.
+From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses.
 
 From Incorrectness.Classes Require Import Galois.
 From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr PredArr PrePostArr WPArr RelPrePostArr.

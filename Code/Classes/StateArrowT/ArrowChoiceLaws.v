@@ -1,4 +1,4 @@
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality Morphisms.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Classes.StateArrowT Require Import Core.
 

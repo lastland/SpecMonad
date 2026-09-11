@@ -11,7 +11,7 @@
     equations (GHC 9.12.2), with Leibniz equality, for both property-only
     carriers and their option, state, and state-over-option transformers. *)
 
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
 From Incorrectness.Classes Require RelArrowCoherence.
 

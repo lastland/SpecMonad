@@ -2,16 +2,12 @@
 
     Stated over the [tripleASP] triples of [SP/StDivExcNonDet_SPStExc]. *)
 
-From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Hammer Require Import Tactics.
+From ExtLib Require Import MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
-From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivExcNonDet.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import NewGaloisConnections.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import StDivExcNonDet_SPStExc.
 
 Import MonadNotation.

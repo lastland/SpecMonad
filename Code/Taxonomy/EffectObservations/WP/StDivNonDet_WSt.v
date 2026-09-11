@@ -36,7 +36,7 @@
     Everything is wrapped in a module so the names do not clash with the
     [stdivexcnd] observations of [WP/StDivExcNonDet_WStExc.v]. *)
 
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.

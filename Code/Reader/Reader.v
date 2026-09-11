@@ -1,7 +1,7 @@
-From ExtLib Require Import Monad MonadReader ReaderMonad MonadLaws.
+From ExtLib Require Import Monad MonadReader ReaderMonad.
 From Hammer Require Import Tactics.
 
-From Coq Require Import Nat Lia PeanoNat.
+From Coq Require Import Lia PeanoNat.
 Opaque "<=?".
 
 Set Implicit Arguments.

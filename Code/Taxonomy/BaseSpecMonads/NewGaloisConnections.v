@@ -1,7 +1,5 @@
-From Coq Require Import Morphisms RelationClasses Classical_Prop.
-From ExtLib Require Import Monad.
-From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad.
+From Coq Require Import Classical_Prop.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import PrePostMonad WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections.
 

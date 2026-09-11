@@ -5,14 +5,11 @@
     between the four observations live in
     [Taxonomy_StDivExcNonDet_StExc.v]. *)
 
-From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivExcNonDet.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
 Import MonadNotation.

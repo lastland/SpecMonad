@@ -19,8 +19,7 @@
     GaloisArr connections relating [PrePostArr] to [PredArr] and [WPArr] are
     collected in [Taxonomy/GaloisArr.v]. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
+From Coq Require Import RelationClasses.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
 
@@ -152,10 +151,6 @@ End PrePostMonad.
     [PrePost_eq] helper to bridge pointwise iff to structural
     equality via funext + propext. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
-From ExtLib Require Import Monad.
-From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
 From Hammer Require Import Tactics.
 
 

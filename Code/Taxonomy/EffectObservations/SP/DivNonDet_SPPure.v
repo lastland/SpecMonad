@@ -1,6 +1,6 @@
-From ExtLib Require Import Monad OptionMonad.
+From ExtLib Require Import OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet DivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import DivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
 Require Import Coq.Logic.Classical_Prop.

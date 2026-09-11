@@ -1,8 +1,8 @@
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import NewGaloisConnections.
 Require Import Coq.Logic.Classical_Prop.
 
 Import MonadNotation.

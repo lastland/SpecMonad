@@ -24,7 +24,7 @@
 
     Both unfold to [Pure(A/DSL)PostArr (unit * S) (option (A * S))]. *)
 
-From Coq Require Import Program.Tactics Classical_Prop.
+From Coq Require Import Classical_Prop.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr.
 From Incorrectness.Classes Require Export ArrowMonad.
@@ -450,13 +450,9 @@ End ComposedTypes.
     Demonic laws ([PureDSLPostArr], [optionDSLPArr]) follow the same
     structure, using [IsDSLP] and raw universals. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality ProofIrrelevance Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** ** Utilities                                                       *)
