@@ -7,7 +7,7 @@
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
-  PredArr PrePostArr RelPrePostArr RelSPPairArr SPostArr.
+  PredArr PrePostArr RelPrePostArr RelSPPairArr SPostArr SPostArrMonad.
 
 (** The concrete bundle must reuse the generic dictionary itself. *)
 Example coupled_asp_reuses_arrow (I : Type) :
@@ -150,3 +150,25 @@ Definition coupled_state_option_dslp_monad_laws (S : Type) :
       (@Arrow_optionArrT _ RelSPPairArr.Arrow_PureDSLPostArr
         RelSPPairArr.ArrowChoice_PureDSLPostArr))
       (RelSPPairArr.ArrowApply_stateOptDSLP S) bool) := _.
+
+(** The named monad dictionaries of [SPostArrMonad] alias the same
+    property-only stacks.  Typeclass resolution does not see through the
+    aliases, so the generic law instance is named explicitly, at
+    arbitrary state. *)
+Definition spostarr_asp_monad_laws (S : Type) :
+  @MonadLawsE (SPostArr.ASPostArr S)
+    (@Eq1_Arrow _ (SPostArr.ArrowEq_stateOptASP S) unit)
+    (Monad_ASPostArr S) :=
+  @MonadLawsE_Arrow (stateArrT S SPostArr.optionASPArr)
+    (SPostArr.Arrow_stateOptASP S) (SPostArr.ArrowApply_stateOptASP S)
+    (SPostArr.ArrowEq_stateOptASP S) (SPostArr.ArrowLaws_stateOptASP S)
+    (SPostArr.ArrowApplyLaws_stateOptASP S) unit.
+
+Definition spostarr_dslp_monad_laws (S : Type) :
+  @MonadLawsE (SPostArr.DSLPostArr S)
+    (@Eq1_Arrow _ (SPostArr.ArrowEq_stateOptDSLP S) unit)
+    (Monad_DSLPostArr S) :=
+  @MonadLawsE_Arrow (stateArrT S SPostArr.optionDSLPArr)
+    (SPostArr.Arrow_stateOptDSLP S) (SPostArr.ArrowApply_stateOptDSLP S)
+    (SPostArr.ArrowEq_stateOptDSLP S) (SPostArr.ArrowLaws_stateOptDSLP S)
+    (SPostArr.ArrowApplyLaws_stateOptDSLP S) unit.
