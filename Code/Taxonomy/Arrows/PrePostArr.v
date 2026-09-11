@@ -22,7 +22,7 @@
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes Require Import Arrow ArrowMonad.
 
 (* ================================================================= *)
 (** ** Type definition                                                *)
@@ -112,7 +112,7 @@ Instance ArrowApply_PrePost : ArrowApply PrePostArr := {
 }.
 
 (* ================================================================= *)
-(** ** Monad instance (second argument, [A] fixed)                    *)
+(** ** Arrow-derived monad (second argument, [A] fixed)               *)
 (* ================================================================= *)
 
 Section PrePostMonad.
@@ -127,17 +127,13 @@ Section PrePostMonad.
     ( fun a => fst m a /\ (forall b, snd m a b -> fst (k b) a)
     , fun a c => exists b, snd m a b /\ snd (k b) a c ).
 
-  #[global]
-  Instance Monad_PrePost : Monad (PrePostArr A) := {
-    ret := @retPrePost ;
-    bind := @bindPrePost
-  }.
+  (** Typeclass resolution uses [Monad_Arrow]; this is a named alias. *)
+  Definition Monad_PrePost : Monad (PrePostArr A) :=
+    @Monad_Arrow PrePostArr Arrow_PrePost ArrowApply_PrePost A.
 
   #[global]
   Instance Eq1_PrePost : Eq1 (PrePostArr A) :=
-    fun B m1 m2 =>
-      (forall a,   fst m1 a   <-> fst m2 a) /\
-      (forall a b, snd m1 a b <-> snd m2 a b).
+    @Eq1_Arrow PrePostArr ArrowEq_PrePost A.
 
 End PrePostMonad.
 
@@ -408,50 +404,59 @@ Section PrePostMonad.
 
   Context {A : Type}.
 
-  #[global]
-  Instance Eq1Equivalence_PrePost
-    : @Eq1Equivalence (PrePostArr A) _ Eq1_PrePost.
-  Proof.
-    intros B; constructor.
-    - intros m. unfold eq1, Eq1_PrePost. split; intros; reflexivity.
-    - intros m1 m2 H. unfold eq1, Eq1_PrePost in *.
-      destruct H as [HP HR]. split; intros; symmetry; auto.
-    - intros m1 m2 m3 H1 H2. unfold eq1, Eq1_PrePost in *.
-      destruct H1 as [HP1 HR1]. destruct H2 as [HP2 HR2].
-      split; intros; etransitivity; eauto.
-  Qed.
+  (** The generic instances provide these laws during typeclass resolution. *)
+  Definition Eq1Equivalence_PrePost
+    : @Eq1Equivalence (PrePostArr A) Monad_PrePost Eq1_PrePost :=
+    @Eq1Equivalence_Arrow PrePostArr Arrow_PrePost ArrowApply_PrePost
+      ArrowEq_PrePost A.
 
-  #[global]
-  Instance MonadLawsE_PrePost
-    : @MonadLawsE (PrePostArr A) Eq1_PrePost _.
+  Definition MonadLawsE_PrePost
+    : @MonadLawsE (PrePostArr A) Eq1_PrePost Monad_PrePost :=
+    @MonadLawsE_Arrow PrePostArr Arrow_PrePost ArrowApply_PrePost ArrowEq_PrePost
+      ArrowLaws_PrePost ArrowApplyLaws_PrePost A.
+
+  Lemma retPrePost_eq_ret_arrow {B} (b : B) :
+    @arrow_eq PrePostArr ArrowEq_PrePost A B
+      (retPrePost b) (@ret_arrow PrePostArr Arrow_PrePost A B b).
+  Proof. split; reflexivity. Qed.
+
+  Lemma bindPrePost_eq_bind_arrow {B C}
+    (m : PrePostArr A B) (k : B -> PrePostArr A C) :
+    @arrow_eq PrePostArr ArrowEq_PrePost A C
+      (bindPrePost m k)
+      (@bind_arrow PrePostArr Arrow_PrePost ArrowApply_PrePost A B C m k).
   Proof.
-    constructor.
-    - (* bind_ret_l *)
-      intros B C f x. unfold eq1, Eq1_PrePost.
-      cbn. unfold bindPrePost, retPrePost. cbn.
-      split; sauto limit: 200.
-    - (* bind_ret_r *)
-      intros B m. unfold eq1, Eq1_PrePost.
-      cbn. unfold bindPrePost, retPrePost. cbn.
-      split; sauto limit: 200.
-    - (* bind_bind *)
-      intros B C D m f g. unfold eq1, Eq1_PrePost.
-      cbn. unfold bindPrePost. cbn.
-      split; sauto limit: 200.
-    - (* Proper_bind *)
-      intros B C m1 m2 Hm k1 k2 Hk.
-      unfold eq1, Eq1_PrePost in *.
-      destruct Hm as [HmP HmR].
-      cbn. unfold bindPrePost. cbn.
-      split.
-      + intros a. split; intros [HP HRf]; split;
-          [apply HmP | | apply HmP |]; try exact HP; intros b HR;
-          [assert (snd m1 a b) by (apply HmR; exact HR) |
-           assert (snd m2 a b) by (apply HmR; exact HR)];
-          destruct (Hk b) as [HkP _]; apply HkP; sauto limit: 200.
-      + intros a c. split; intros [b [HR HRf]]; exists b; split;
-          [apply HmR | destruct (Hk b) as [_ HkR]; apply HkR |
-           apply HmR | destruct (Hk b) as [_ HkR]; apply HkR]; eauto.
+    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
+    setoid_rewrite (@first_pure PrePostArr Arrow_PrePost ArrowEq_PrePost
+      ArrowLaws_PrePost).
+    repeat setoid_rewrite (@pure_comp PrePostArr Arrow_PrePost ArrowEq_PrePost
+      ArrowLaws_PrePost).
+    split; cbn.
+    - intros a. split.
+      + intros [HP Hk]. split.
+        * split; [exact I|]. intros p <-. cbn.
+          split; [exact HP|]. intros _ _. exact I.
+        * intros p [p0 [Hp0 [p1 [Hm Hp]]]].
+          subst p0. destruct p1 as [b a']. cbn [swap] in Hp. subst p.
+          cbn in Hm. destruct Hm as [Hm Ha]. subst a'.
+          split; [exact I|]. intros p2 <-. exact (Hk b Hm).
+      + intros [[_ HP] Hk]. split.
+        * exact (proj1 (HP (a, a) eq_refl)).
+        * intros b Hm.
+          assert (Hpre : True /\ forall p : PrePostArr A C * A,
+            (k b, a) = p -> fst (fst p) (snd p)).
+          { apply (Hk (b, a)). exists (a, a). split; [reflexivity|].
+            exists (b, a). cbn [swap]. auto. }
+          exact (proj2 Hpre (k b, a) eq_refl).
+    - intros a c. split.
+      + intros [b [Hm Hk]]. exists (b, a). split.
+        * exists (a, a). split; [reflexivity|].
+          exists (b, a). cbn [swap]. auto.
+        * exists (k b, a). cbn. auto.
+      + intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
+        subst p0. destruct p1 as [b a']. cbn [swap] in Hp. subst p.
+        cbn in Hm, Hp2. destruct Hm as [Hm Ha]. subst a' p2.
+        exists b. exact (conj Hm Hk).
   Qed.
 
 End PrePostMonad.

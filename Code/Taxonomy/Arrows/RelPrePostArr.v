@@ -29,7 +29,7 @@
 From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes Require Import Arrow ArrowMonad.
 
 (* ================================================================= *)
 (** ** Type definition and projection                                 *)
@@ -121,7 +121,7 @@ Instance ArrowApply_RelPrePost : ArrowApply RelPrePostArr := {
 }.
 
 (* ================================================================= *)
-(** ** Monad instance (in [B] for fixed [A])                          *)
+(** ** Arrow-derived monad (in [B] for fixed [A])                     *)
 (* ================================================================= *)
 
 Section RelPrePostMonad.
@@ -137,16 +137,13 @@ Section RelPrePostMonad.
       forall a, P a ->
         project_wp r a (fun b => project_wp (k b) a (R_AC a)).
 
-  #[global]
-  Instance Monad_RelPrePost : Monad (RelPrePostArr A) := {
-    ret := @retRelPrePost ;
-    bind := @bindRelPrePost
-  }.
+  (** Typeclass resolution uses [Monad_Arrow]; this is a named alias. *)
+  Definition Monad_RelPrePost : Monad (RelPrePostArr A) :=
+    @Monad_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost A.
 
   #[global]
   Instance Eq1_RelPrePost : Eq1 (RelPrePostArr A) :=
-    fun B r1 r2 =>
-      forall a Q, project_wp r1 a Q <-> project_wp r2 a Q.
+    @Eq1_Arrow RelPrePostArr ArrowEq_RelPrePost A.
 
 End RelPrePostMonad.
 
@@ -535,15 +532,11 @@ Section RelPrePostMonadLaws.
 
   Context {A : Type}.
 
-  #[global]
-  Instance Eq1Equivalence_RelPrePost
-    : @Eq1Equivalence (RelPrePostArr A) _ Eq1_RelPrePost.
-  Proof.
-    intros B; constructor.
-    - intros r a Q. reflexivity.
-    - intros r1 r2 H a Q. symmetry. apply H.
-    - intros r1 r2 r3 H12 H23 a Q. etransitivity; [apply H12 | apply H23].
-  Qed.
+  (** The generic instances provide these laws during typeclass resolution. *)
+  Definition Eq1Equivalence_RelPrePost
+    : @Eq1Equivalence (RelPrePostArr A) Monad_RelPrePost Eq1_RelPrePost :=
+    @Eq1Equivalence_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost
+      ArrowEq_RelPrePost A.
 
   Lemma project_wp_ret {B} (b : B) (a : A) (Q : B -> Prop) :
     project_wp (retRelPrePost b) a Q <-> Q b.
@@ -582,28 +575,34 @@ Section RelPrePostMonadLaws.
       + intros c. tauto.
   Qed.
 
-  #[global]
-  Instance MonadLawsE_RelPrePost
-    : @MonadLawsE (RelPrePostArr A) Eq1_RelPrePost _.
+  Definition MonadLawsE_RelPrePost
+    : @MonadLawsE (RelPrePostArr A) Eq1_RelPrePost Monad_RelPrePost :=
+    @MonadLawsE_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost
+      ArrowEq_RelPrePost ArrowLaws_RelPrePost ArrowApplyLaws_RelPrePost A.
+
+  Lemma retRelPrePost_eq_ret_arrow {B} (b : B) :
+    @arrow_eq RelPrePostArr ArrowEq_RelPrePost A B
+      (retRelPrePost b) (@ret_arrow RelPrePostArr Arrow_RelPrePost A B b).
+  Proof. intros a Q. reflexivity. Qed.
+
+  Lemma bindRelPrePost_eq_bind_arrow {B C}
+    (r : RelPrePostArr A B) (k : B -> RelPrePostArr A C) :
+    @arrow_eq RelPrePostArr ArrowEq_RelPrePost A C
+      (bindRelPrePost r k)
+      (@bind_arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost A B C r k).
   Proof.
-    constructor.
-    - (* bind_ret_l *)
-      intros B C f x.
-      intros a Q. cbn. rewrite project_wp_bind, project_wp_ret. reflexivity.
-    - (* bind_ret_r *)
-      intros B m. intros a Q. cbn. rewrite project_wp_bind.
-      setoid_rewrite project_wp_ret. reflexivity.
-    - (* bind_bind *)
-      intros B C D m f g.
-      intros a Q. cbn. rewrite !project_wp_bind.
-      setoid_rewrite project_wp_bind. reflexivity.
-    - (* Proper_bind *)
-      intros B C m1 m2 Hm k1 k2 Hk a Q. cbn.
-      rewrite !project_wp_bind.
-      unfold eq1, Eq1_RelPrePost in Hm.
-      rewrite (Hm a).
-      apply project_wp_Proper. intros b.
-      apply Hk.
+    intros a Q. rewrite project_wp_bind.
+    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
+    rewrite !project_wp_arr_comp, project_wp_arr_pure.
+    rewrite project_wp_arr_comp, project_wp_arr_first.
+    cbn [fst snd]. apply project_wp_Proper. intros b.
+    rewrite project_wp_arr_comp, project_wp_arr_pure.
+    cbn [swap].
+    rewrite project_wp_arr_comp, project_wp_arr_first, project_wp_arr_pure.
+    cbn [fst snd].
+    rewrite project_wp_arr_pure. cbn [swap].
+    rewrite project_wp_arr_comp, project_wp_arr_pure, project_wp_arr_app.
+    reflexivity.
   Qed.
 
 End RelPrePostMonadLaws.
