@@ -1064,9 +1064,13 @@ Qed.
 (** ** Monad from ArrowApply (general construction)                   *)
 (* ================================================================= *)
 
-(** [Classes/ArrowMonad] supplies the generic arrow-monad operations and laws.
-    The concrete [MonadLawsE] proofs below concern the direct relational
-    monads defined here. *)
+(** [Classes/ArrowMonad] supplies the operations and laws through generic
+    instances.  The concrete dictionary names below are ordinary aliases;
+    only [Eq1] is registered here to select the arrow equality.  The compact
+    relational helpers agree with the generic operations under that equality. *)
+
+Create HintDb sp_arrow_bind.
+#[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id : sp_arrow_bind.
 
 Section PureASPostArrMonad.
 
@@ -1074,15 +1078,17 @@ Section PureASPostArrMonad.
 
   #[global]
   Instance Eq1_PureASPostArr : Eq1 (PureASPostArr I) :=
-    fun _ => eq.
+    @Eq1_Arrow PureASPostArr ArrowEq_PureASPostArr I.
 
-  #[global]
-  Instance Eq1Equivalence_PureASPostArr
-    : @Eq1Equivalence (PureASPostArr I) _ Eq1_PureASPostArr.
-  Proof. constructor; typeclasses eauto. Qed.
+  Definition Monad_PureASPostArr : Monad (PureASPostArr I) :=
+    @Monad_Arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr I.
 
-  (** Define a direct monad on [PureASPostArr I] using relational
-      composition, then show it equals [Monad_Arrow]. *)
+  Definition Eq1Equivalence_PureASPostArr
+    : @Eq1Equivalence (PureASPostArr I) Monad_PureASPostArr Eq1_PureASPostArr :=
+    @Eq1Equivalence_Arrow PureASPostArr Arrow_PureASPostArr
+      ArrowApply_PureASPostArr ArrowEq_PureASPostArr I.
+
+  (** Compact relational descriptions of return and bind. *)
 
   Definition ret_ASP {A} (a : A) : PureASPostArr I A :=
     mkASP (fun _ a' => a = a').
@@ -1096,51 +1102,38 @@ Section PureASPostArrMonad.
              rel (proj1_sig m) i b /\
              rel (proj1_sig (k b)) i c).
 
-  Instance Monad_PureASPostArr : Monad (PureASPostArr I) := {
-    ret := @ret_ASP ;
-    bind := @bind_ASP
-  }.
+  Lemma ret_ASP_eq_ret_arrow {A} (a : A) :
+    @arrow_eq PureASPostArr ArrowEq_PureASPostArr I A
+      (ret_ASP a) (@ret_arrow PureASPostArr Arrow_PureASPostArr I A a).
+  Proof. apply ASP_rel_ext; intros i b. reflexivity. Qed.
 
-  #[global]
-  Instance MonadLawsE_PureASPostArr
-    : @MonadLawsE (PureASPostArr I) Eq1_PureASPostArr
-                   Monad_PureASPostArr.
+  Lemma bind_ASP_eq_bind_arrow {A B}
+    (m : PureASPostArr I A) (k : A -> PureASPostArr I B) :
+    @arrow_eq PureASPostArr ArrowEq_PureASPostArr I B
+      (bind_ASP m k)
+      (@bind_arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
+        I A B m k).
   Proof.
-    constructor; unfold eq1, Eq1_PureASPostArr.
-    - (* bind_ret_l *)
-      intros A B k x.
-      apply PureASPostArr_eq; intros pre b. cbn.
-      split.
-      + intros [i [Hpre [b0 [Heq Hrel]]]]. subst b0.
-        apply (proj2_sig (k x)). exists i. auto.
-      + intros Hkx.
-        apply (proj2_sig (k x)) in Hkx. destruct Hkx as [i [Hpre Hrel]].
-        exists i. split; [exact Hpre|]. exists x. auto.
-    - (* bind_ret_r *)
-      intros A m.
-      apply PureASPostArr_eq; intros pre b. cbn.
-      split.
-      + intros [i [Hpre [b0 [Hrel Heq]]]]. subst b0.
-        apply (proj2_sig m). exists i. auto.
-      + intros Hm.
-        apply (proj2_sig m) in Hm. destruct Hm as [i [Hpre Hrel]].
-        exists i. split; [exact Hpre|]. exists b. auto.
-    - (* bind_bind *)
-      intros A B C m f g.
-      apply PureASPostArr_eq; intros pre c. cbn.
-      split.
-      + intros [i [Hpre [b0 [[a [Hm Hfa]] Hgb]]]].
-        exists i. split; [exact Hpre|]. exists a. split; [exact Hm|].
-        exists b0. auto.
-      + intros [i [Hpre [a [Hm [b0 [Hfa Hgb]]]]]].
-        exists i. split; [exact Hpre|]. exists b0. split.
-        * exists a. auto.
-        * exact Hgb.
-    - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg. subst.
-      assert (f = g) as -> by (apply functional_extensionality; exact Hfg).
-      reflexivity.
+    autounfold with sp_arrow_bind.
+    rewrite (@first_pure PureASPostArr Arrow_PureASPostArr
+      ArrowEq_PureASPostArr ArrowLaws_PureASPostArr).
+    repeat rewrite (@pure_comp PureASPostArr Arrow_PureASPostArr
+      ArrowEq_PureASPostArr ArrowLaws_PureASPostArr).
+    apply ASP_rel_ext; intros i c. cbn. split.
+    - intros [b [Hm Hk]]. exists (b, i). split.
+      + exists (i, i). split; [reflexivity |].
+        exists (b, i). cbn [swap]. auto.
+      + exists (k b, i). cbn. auto.
+    - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
+      subst p0. destruct p1 as [b i']. cbn [swap] in Hp. subst p.
+      cbn in Hm, Hp2. destruct Hm as [Hm Hi]. subst i' p2.
+      exists b. exact (conj Hm Hk).
   Qed.
+
+  Definition MonadLawsE_PureASPostArr
+    : @MonadLawsE (PureASPostArr I) Eq1_PureASPostArr Monad_PureASPostArr :=
+    @MonadLawsE_Arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
+      ArrowEq_PureASPostArr ArrowLaws_PureASPostArr ArrowApplyLaws_PureASPostArr I.
 
 End PureASPostArrMonad.
 
@@ -1150,12 +1143,17 @@ Section PureDSLPostArrMonad.
 
   #[global]
   Instance Eq1_PureDSLPostArr : Eq1 (PureDSLPostArr I) :=
-    fun _ => eq.
+    @Eq1_Arrow PureDSLPostArr ArrowEq_PureDSLPostArr I.
 
-  #[global]
-  Instance Eq1Equivalence_PureDSLPostArr
-    : @Eq1Equivalence (PureDSLPostArr I) _ Eq1_PureDSLPostArr.
-  Proof. constructor; typeclasses eauto. Qed.
+  Definition Monad_PureDSLPostArr : Monad (PureDSLPostArr I) :=
+    @Monad_Arrow PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr I.
+
+  Definition Eq1Equivalence_PureDSLPostArr
+    : @Eq1Equivalence (PureDSLPostArr I) Monad_PureDSLPostArr Eq1_PureDSLPostArr :=
+    @Eq1Equivalence_Arrow PureDSLPostArr Arrow_PureDSLPostArr
+      ArrowApply_PureDSLPostArr ArrowEq_PureDSLPostArr I.
+
+  (** Compact relational descriptions of return and bind. *)
 
   Definition ret_DSLP {A} (a : A) : PureDSLPostArr I A :=
     mkDSLP (fun _ a' => a = a').
@@ -1169,50 +1167,42 @@ Section PureDSLPostArrMonad.
              rel (proj1_sig m) i b /\
              rel (proj1_sig (k b)) i c).
 
-  Instance Monad_PureDSLPostArr : Monad (PureDSLPostArr I) := {
-    ret := @ret_DSLP ;
-    bind := @bind_DSLP
-  }.
+  Lemma ret_DSLP_eq_ret_arrow {A} (a : A) :
+    @arrow_eq PureDSLPostArr ArrowEq_PureDSLPostArr I A
+      (ret_DSLP a) (@ret_arrow PureDSLPostArr Arrow_PureDSLPostArr I A a).
+  Proof. apply DSLP_rel_ext; intros i b. reflexivity. Qed.
+
+  Lemma bind_DSLP_eq_bind_arrow {A B}
+    (m : PureDSLPostArr I A) (k : A -> PureDSLPostArr I B) :
+    @arrow_eq PureDSLPostArr ArrowEq_PureDSLPostArr I B
+      (bind_DSLP m k)
+      (@bind_arrow PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+        I A B m k).
+  Proof.
+    autounfold with sp_arrow_bind.
+    rewrite (@first_pure PureDSLPostArr Arrow_PureDSLPostArr
+      ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr).
+    repeat rewrite (@pure_comp PureDSLPostArr Arrow_PureDSLPostArr
+      ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr).
+    apply DSLP_rel_ext; intros i c. cbn. split.
+    - intros [b [Hm Hk]]. exists (b, i). split.
+      + exists (i, i). split; [reflexivity |].
+        exists (b, i). cbn [swap]. auto.
+      + exists (k b, i). cbn. auto.
+    - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
+      subst p0. destruct p1 as [b i']. cbn [swap] in Hp. subst p.
+      cbn in Hm, Hp2. destruct Hm as [Hm Hi]. subst i' p2.
+      exists b. exact (conj Hm Hk).
+  Qed.
 
   Lemma proj_mkDSLP {J B} (R : PredArr J B) pre b :
     spost (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
   Proof. reflexivity. Qed.
 
-  #[global]
-  Instance MonadLawsE_PureDSLPostArr
-    : @MonadLawsE (PureDSLPostArr I) Eq1_PureDSLPostArr
-                   Monad_PureDSLPostArr.
-  Proof.
-    constructor; unfold eq1, Eq1_PureDSLPostArr.
-    - (* bind_ret_l *)
-      intros A B k x.
-      apply PureDSLPostArr_eq; intros pre b. cbn.
-      split.
-      + intros H. apply (proj2_sig (k x)). intros a Hra.
-        exact (H a (ex_intro _ x (conj eq_refl Hra))).
-      + intros Hkx i [b0 [Heq Hrel]]. subst b0.
-        apply (proj2_sig (k x)) in Hkx. exact (Hkx i Hrel).
-    - (* bind_ret_r *)
-      intros A m.
-      apply PureDSLPostArr_eq; intros pre b. cbn.
-      split.
-      + intros H. apply (proj2_sig m). intros a Hra.
-        exact (H a (ex_intro _ b (conj Hra eq_refl))).
-      + intros Hm i [b0 [Hrel Heq]]. subst b0.
-        apply (proj2_sig m) in Hm. exact (Hm i Hrel).
-    - (* bind_bind *)
-      intros A B C m f g.
-      apply PureDSLPostArr_eq; intros pre c. cbn.
-      split; intros H i Hex; apply H.
-      + destruct Hex as [a [Hm [b0 [Hfa Hgb]]]].
-        exists b0. split; [exists a; auto | exact Hgb].
-      + destruct Hex as [b0 [[a [Hm Hfa]] Hgb]].
-        exists a. split; [exact Hm | exists b0; auto].
-    - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg. subst.
-      assert (f = g) as -> by (apply functional_extensionality; exact Hfg).
-      reflexivity.
-  Qed.
+  Definition MonadLawsE_PureDSLPostArr
+    : @MonadLawsE (PureDSLPostArr I) Eq1_PureDSLPostArr Monad_PureDSLPostArr :=
+    @MonadLawsE_Arrow PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+      ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr ArrowApplyLaws_PureDSLPostArr I.
 
 End PureDSLPostArrMonad.
 
@@ -1220,12 +1210,11 @@ End PureDSLPostArrMonad.
 (** ** [optionT] and composed types: monad instances for free         *)
 (* ================================================================= *)
 
-(** [optionArrT arr I] is definitionally [optionT (arr I)], so the generic
-    [MonadLawsE_optionT] and [MonadLawsE_stateT] from [TransformerLaws]
-    extend [Monad_PureASPostArr] and [Monad_PureDSLPostArr] to
+(** The generic [MonadLawsE_optionT] and [MonadLawsE_stateT] instances from
+    [TransformerLaws] extend the arrow-derived monads to
     [optionT (PureASPostArr I)] / [optionT (PureDSLPostArr I)] and their
-    state stacks; typeclass resolution finds these instances automatically
-    when they are needed. *)
+    state stacks.  Generic instances handle typeclass resolution; the
+    concrete dictionary aliases above expose those same operations and laws. *)
 
 (* ================================================================= *)
 (** ** Arrow laws for composed types: [ASPostArr] and [DSPostArr]      *)

@@ -39,7 +39,7 @@
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StDivITree.
 
 (* ================================================================= *)
@@ -121,8 +121,9 @@ Instance ArrowLoop_Pred : ArrowLoop PredArr := {
         ret b    := fun _ b' => b = b'
         bind m k := fun a  c => exists b, m a b /\ k b a c
 
-    The monad laws hold under pointwise logical equivalence
-    ([Eq1_Pred]), with no extensionality axioms required. *)
+    [Monad_Pred] uses the generic arrow-derived operations.  The compact
+    helpers below agree with them under pointwise logical equivalence
+    ([Eq1_Pred]); the agreement lemmas and inherited laws appear below. *)
 
 Section PredMonad.
   Context {A : Type}.
@@ -134,15 +135,13 @@ Section PredMonad.
     (m : PredArr A B) (k : B -> PredArr A C) : PredArr A C :=
     fun a c => exists b, m a b /\ k b a c.
 
-  #[global]
-  Instance Monad_Pred : Monad (PredArr A) := {
-    ret := @retPred ;
-    bind := @bindPred
-  }.
+  (** Typeclass resolution uses [Monad_Arrow]; this is a named alias. *)
+  Definition Monad_Pred : Monad (PredArr A) :=
+    @Monad_Arrow PredArr Arrow_Pred ArrowApply_Pred A.
 
   #[global]
   Instance Eq1_Pred : Eq1 (PredArr A) :=
-    fun B m1 m2 => forall a b, m1 a b <-> m2 a b.
+    @Eq1_Arrow PredArr ArrowEq_Pred A.
 
 End PredMonad.
 
@@ -414,11 +413,17 @@ Proof.
       cbn. split; [split; reflexivity | exact Heq].
   - (* app_precompose *)
     intros [f a] c.
-    rewrite arr_second_Pred. cbn. split.
+    unfold arr_second. cbn. unfold swap. split.
     + intros [[h a'] [[Hh Ha] Hout]]. cbn in *. subst h a'.
       destruct Hout as [b [Hg Hf]].
-      exists (f, b). cbn. auto.
-    + intros [[f' b] [[Hg Hf] Hout]]. cbn in *. subst f'.
+      exists (f, b). split; [|exact Hf].
+      exists (a, f). split; [reflexivity|].
+      exists (b, f). cbn. auto.
+    + intros [[f' b] [[p [Hp [q [Hg Hq]]]] Hf]].
+      destruct p as [a' f''], q as [b' f''']; cbn in *.
+      injection Hp as Ha Hf0. subst a' f''.
+      destruct Hg as [Hg Hff]. subst f'''.
+      injection Hq as Hf0 Hb. subst f' b'.
       exists ((fun a c => exists b, g a b /\ f b c), a).
       cbn. split; [split; reflexivity | exists b; auto].
   - (* app_postcompose *)
@@ -499,35 +504,38 @@ Qed.
 (** ** [PredArr A] monad laws                                            *)
 (* ================================================================= *)
 
-#[global]
-Instance Eq1Equivalence_Pred {A}
-  : @Eq1Equivalence (PredArr A) _ Eq1_Pred.
-Proof.
-  constructor; repeat intro; unfold eq1, Eq1_Pred in *.
-  - reflexivity.
-  - symmetry. apply H.
-  - etransitivity; [apply H | apply H0].
-Qed.
+(** The generic instances provide these laws during typeclass resolution. *)
+Definition Eq1Equivalence_Pred {A}
+  : @Eq1Equivalence (PredArr A) Monad_Pred Eq1_Pred :=
+  @Eq1Equivalence_Arrow PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred A.
 
-#[global]
-Instance MonadLawsE_Pred {A} : @MonadLawsE (PredArr A) Eq1_Pred _.
+Definition MonadLawsE_Pred {A}
+  : @MonadLawsE (PredArr A) Eq1_Pred Monad_Pred :=
+  @MonadLawsE_Arrow PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred
+    ArrowLaws_Pred ArrowApplyLaws_Pred A.
+
+Lemma retPred_eq_ret_arrow {A B} (b : B) :
+  @arrow_eq PredArr ArrowEq_Pred A B
+    (retPred b) (@ret_arrow PredArr Arrow_Pred A B b).
+Proof. intros a b'. reflexivity. Qed.
+
+Lemma bindPred_eq_bind_arrow {A B C}
+  (m : PredArr A B) (k : B -> PredArr A C) :
+  @arrow_eq PredArr ArrowEq_Pred A C
+    (bindPred m k) (@bind_arrow PredArr Arrow_Pred ArrowApply_Pred A B C m k).
 Proof.
-  constructor.
-  - (* bind_ret_l *)
-    intros B C f x a c.
-    cbn. unfold bindPred, retPred. sauto limit: 200.
-  - (* bind_ret_r *)
-    intros B x a b.
-    cbn. unfold bindPred, retPred. sauto limit: 200.
-  - (* bind_bind *)
-    intros B C D x f g a d.
-    cbn. unfold bindPred. sauto limit: 200.
-  - (* Proper_bind *)
-    intros B C m1 m2 Hm k1 k2 Hk a c.
-    cbn. unfold bindPred.
-    unfold eq1, Eq1_Pred in Hm.
-    split; intros [b [Hm1 Hk1]]; exists b; split;
-      [apply Hm | apply (Hk b a c) | apply Hm | apply (Hk b a c)]; assumption.
+  unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
+  setoid_rewrite (@first_pure PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+  repeat setoid_rewrite (@pure_comp PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+  intros a c. cbn. unfold bindPred. split.
+  - intros [b [Hm Hk]]. exists (b, a). split.
+    + exists (a, a). split; [reflexivity|].
+      exists (b, a). cbn [swap]. auto.
+    + exists (k b, a). cbn. auto.
+  - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
+    subst p0. destruct p1 as [b a']. cbn [swap] in Hp. subst p.
+    cbn in Hm, Hp2. destruct Hm as [Hm Ha]. subst a' p2.
+    exists b. exact (conj Hm Hk).
 Qed.
 
 (* ================================================================= *)

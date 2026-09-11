@@ -580,10 +580,10 @@ extensionality lemmas used by the monad and option-transformer proofs.
 proves application coherence for arrows with faithful relational presentations.
 SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
 
-`PredArr.v` also carries `Monad (PredArr A)` for a fixed input `A`, and
-`OldSP/OldSPObservations.v` depends on that view. `RelSPPairArr.v` proves monad
-laws for its direct relational monads. These concrete proofs are distinct from
-the generic law instance for `Monad_Arrow` in `ArrowMonad.v`.
+`PredArr.v`, `PrePostArr.v`, `RelPrePostArr.v`, and `RelSPPairArr.v` expose named
+monad dictionaries for their fixed-input arrows. These names are ordinary
+`Definition` aliases of `Monad_Arrow`; the named equivalence and monad-law
+proofs likewise alias `Eq1Equivalence_Arrow` and `MonadLawsE_Arrow`.
 
 ### Arrow-derived monad laws
 
@@ -610,6 +610,23 @@ does not compete with concrete monads' `Eq1` instances. The global
 dictionaries. The generic proof has no logical axioms and needs no inhabitant
 of `I`; concrete instances retain the assumptions of their own law proofs.
 
+The five concrete monad bundles (Pred, PrePost, RelPrePost, coupled ASP, and
+coupled DSLP) register only their chosen `Eq1` aliases. Generic instances handle
+`Monad`, `Eq1Equivalence`, and `MonadLawsE` resolution, avoiding duplicate
+registrations for the same dictionaries. For example:
+
+```coq
+Definition Monad_PureASPostArr (I : Type) : Monad (PureASPostArr I) :=
+  @Monad_Arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr I.
+```
+
+The compact return/bind helpers retain their original formulas. Agreement
+lemmas such as `bindPred_eq_bind_arrow`, `bindPrePost_eq_bind_arrow`,
+`bindRelPrePost_eq_bind_arrow`, `bind_ASP_eq_bind_arrow`, and
+`bind_DSLP_eq_bind_arrow` relate them to the selected generic operations under
+the arrow equality. The corresponding `*_eq_ret_arrow` lemmas cover return.
+These are proved equivalences, rather than definitional reductions of bind.
+
 The option and state arrow transformers preserve the full law contract, so
 the same monad-law proof applies at each layer:
 
@@ -632,6 +649,9 @@ law but violates monad right identity. The stronger application contract
 rejects it. `Arrows/Examples/ArrowMonadExamples.v` checks the exact derived
 monad dictionary for pointwise arrow equalities and both SP presentations,
 including base, option, state, and state-over-option arrows with a non-unit input.
+It also checks that all five concrete monad names are definitionally the
+generic dictionary and that their canonical equalities support automatic law
+resolution.
 
 ### Property-only SP arrows
 
