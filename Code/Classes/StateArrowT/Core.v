@@ -3,7 +3,7 @@
     [stateArrT S arr A B := arr (A * S) (B * S)] threads state
     through an arrow by transforming both input and output. *)
 
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality Morphisms.
 From Incorrectness.Classes Require Import Arrow.
 
 (* ================================================================= *)

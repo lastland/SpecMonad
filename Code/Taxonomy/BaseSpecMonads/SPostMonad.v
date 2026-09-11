@@ -27,8 +27,6 @@
     arrows in [Arrows/SPostArr.v] and [Arrows/RelSPPairArr.v].
     [SPPredicateTransformers.v] defines the unrestricted [SPPure] carrier. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 

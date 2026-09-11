@@ -4,8 +4,6 @@
     arrow and application laws make these operations a monad up to the
     arrow's own equivalence relation. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
 

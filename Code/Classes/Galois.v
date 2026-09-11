@@ -9,7 +9,7 @@
     [HealthyRelPrePost], [MonotoneSPost]) whose orders are lifted from
     the global refinement orders on the raw types. *)
 
-From Coq Require Import Relation_Definitions RelationClasses Morphisms.
+From Coq Require Import Relation_Definitions Morphisms.
 
 Class Galois
     (F G : Type -> Type -> Type)

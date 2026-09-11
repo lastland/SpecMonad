@@ -1,5 +1,4 @@
-From ExtLib Require Import Monad MonadLaws.
-From Hammer Require Import Tactics.
+From ExtLib Require Import Monad.
 From Incorrectness Require Import Common.PurePrePostStandard.
 
 Set Implicit Arguments.

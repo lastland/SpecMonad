@@ -1,6 +1,5 @@
-From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
-From Hammer Require Import Hammer Tactics.
-From Incorrectness Require Import Common.Notations.
+From ExtLib Require Import Monad.
+From Hammer Require Import Tactics.
 From Coq Require Import RelationClasses Relation_Definitions.
 
 Import MonadNotation.

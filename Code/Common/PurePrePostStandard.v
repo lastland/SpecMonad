@@ -2,8 +2,8 @@
   of PrePosts in the standard way and pp2p (P,Q) = fun r -> Q r.*)
 
 From Coq Require Import RelationClasses.
-From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
-From Hammer Require Import Hammer Tactics.
+From ExtLib Require Import Monad.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import Common.Notations.
 
 Set Implicit Arguments.

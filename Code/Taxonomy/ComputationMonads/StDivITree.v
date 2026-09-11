@@ -55,9 +55,7 @@ End StDivITree.
     [eutt eq], provided by [Eq1_ITree]; it lifts through [optionT] and
     [stateT] via those generic instances. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ITree Require Import ITree Basics.Monad Core.ITreeMonad.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ITree Require Import Basics.Monad Core.ITreeMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 (* ================================================================= *)

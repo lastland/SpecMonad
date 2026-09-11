@@ -16,7 +16,7 @@
     SP interpretation, [TerminatingArr] means top preservation; it is not
     itself a claim about program termination. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Setoid.
+From Coq Require Import FunctionalExtensionality PropExtensionality.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 
 (** Well-formedness properties for arbitrary input and output types. *)

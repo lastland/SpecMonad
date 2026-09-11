@@ -27,8 +27,6 @@
     Wrapped in a module: [Taxonomy/RelPrePost.v] binds [RelPrePost] to the
     BINARY arrow [(A -> Prop) -> (A -> B -> Prop) -> Prop]. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 
 Module RPPM.

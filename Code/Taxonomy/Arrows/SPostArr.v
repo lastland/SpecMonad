@@ -4,8 +4,7 @@
     All operations act directly on transformers.  Canonical normal forms are
     derived below for reasoning; no relation is stored in either carrier. *)
 
-From Coq Require Import Program.Tactics FunctionalExtensionality
-  PropExtensionality ProofIrrelevance Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality PropExtensionality.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Classes Require Export ArrowMonad.

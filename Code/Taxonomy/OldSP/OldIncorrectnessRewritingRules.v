@@ -3,9 +3,7 @@
     Extracted from the original [NonDetItObservation.v]; the triples and
     observations it reasons about live in [OldSPObservations.v]. *)
 
-From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Hammer Require Import Tactics.
+From ExtLib Require Import StateMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
