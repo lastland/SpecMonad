@@ -106,7 +106,13 @@ Class ArrowLaws (arr : Type -> Type -> Type)
             @arrow_eq arr Heq X Z) (@arr_comp arr Harr X Y Z) ;
   first_proper :: forall (X Y Z : Type),
     Proper (@arrow_eq arr Heq X Y ==>
-            @arrow_eq arr Heq (X*Z)%type (Y*Z)%type) (@arr_first arr Harr X Y Z)
+            @arrow_eq arr Heq (X*Z)%type (Y*Z)%type) (@arr_first arr Harr X Y Z) ;
+  first_natural : forall {A B C D} (f : arr A B) (g : C -> D),
+    arrow_eq
+      (arr_comp (arr_first f)
+        (arr_pure (fun '(b, c) => (b, g c))))
+      (arr_comp (arr_pure (fun '(a, c) => (a, g c)))
+        (arr_first f))
 }.
 
 (* ================================================================= *)
@@ -167,41 +173,38 @@ Class ArrowApply (arr : Type -> Type -> Type) `{Arrow arr} := {
   arr_app : forall {A B}, arr (arr A B * A)%type B
 }.
 
-(** Hughes' [ArrowApply] laws, in the two forms every instance here
-    supports: [app_pair] (feeding [app] the pairing arrow is the
-    identity) and [app_post] (postcomposition passes through [app]).
-    [app_law] is a consequence of them, kept because clients use it
-    directly.
-
-    Hughes' remaining law, [first (arr (g >>>)) >>> app = second g >>> app],
-    is NOT a field: proving it for [optionArrT] would need [arr_app]
-    related to [arr_left] of its (varying) arrow argument, since that
-    transformer's composition wraps the continuation in [arr_left], and
-    no arrow law connects the two.  It is also not needed for the monad
-    ([MonadLawsE_Arrow], [SPostArr.v]).
-
-    [app_ext] is not one of Hughes' laws -- it says [arr_app] sees its
-    arrow argument only up to [arrow_eq], which is what makes [bind] of
-    the induced monad respect [Eq1] in its continuation.  It holds in
-    every instance here because [arrow_eq] is always extensional. *)
+(** The full application contract includes Hughes' pairing,
+    precomposition, and postcomposition laws, static application, and
+    extensionality of dynamically selected arrow/argument pairs. *)
 Class ArrowApplyLaws (arr : Type -> Type -> Type)
   `{ArrowApply arr} `{ArrowEq arr} := {
   app_law : forall {A B} (f : arr A B),
     arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f ;
-  app_pair : forall {A B},
-    arrow_eq (arr_comp (@arr_first _ _ A (arr B (A * B)%type) B
-                          (arr_pure (fun x : A => arr_pure (fun y : B => (x, y)))))
-                       arr_app)
-             (@arr_id _ _ (A * B)%type) ;
-  app_post : forall {A B C} (h : arr B C),
-    arrow_eq (arr_comp (@arr_first _ _ (arr A B) (arr A C) A
-                          (arr_pure (fun f : arr A B => arr_comp f h)))
-                       arr_app)
-             (arr_comp arr_app h) ;
-  app_ext : forall {X A B} (u v : X -> arr A B) (t : X -> A),
-    (forall x, arrow_eq (u x) (v x)) ->
-    arrow_eq (arr_comp (arr_pure (fun x => (u x, t x))) arr_app)
-             (arr_comp (arr_pure (fun x => (v x, t x))) arr_app)
+  (** Standard application coherence: pairing, precomposition, and
+      postcomposition also hold for dynamically selected arrows. *)
+  app_unit : forall (A B : Type),
+    arrow_eq
+      (arr_comp
+        (arr_first (arr_pure (fun x : A => arr_pure (fun y : B => (x, y)))))
+        arr_app)
+      (@arr_id arr _ (A * B)) ;
+  app_precompose : forall {A B C} (g : arr A B),
+    arrow_eq
+      (arr_comp (arr_first (arr_pure (fun f : arr B C => arr_comp g f)))
+        arr_app)
+      (arr_comp (arr_second g) arr_app) ;
+  app_postcompose : forall {A B C} (h : arr B C),
+    arrow_eq
+      (arr_comp (arr_first (arr_pure (fun f : arr A B => arr_comp f h)))
+        arr_app)
+      (arr_comp arr_app h) ;
+  (** Application respects the arrow equality inside ordinary input
+      values.  This supplies continuation congruence for derived bind. *)
+  app_ext : forall {X A B} (u v : X -> arr A B * A),
+    (forall x, arrow_eq (fst (u x)) (fst (v x)) /\
+               snd (u x) = snd (v x)) ->
+    arrow_eq (arr_comp (arr_pure u) arr_app)
+             (arr_comp (arr_pure v) arr_app)
 }.
 
 (* ================================================================= *)
@@ -264,7 +267,20 @@ Section ArrowApplyDerived.
   Context {arr : Type -> Type -> Type}
           `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
           `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
-          `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
+           `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
+
+  (** Compatibility names for the previous application contract. *)
+  Lemma app_pair {A B} :
+    arrow_eq (arr_comp
+      (arr_first (arr_pure (fun x : A => arr_pure (fun y : B => (x, y)))))
+      arr_app) (@arr_id arr HA (A * B)).
+  Proof. apply app_unit. Qed.
+
+  Lemma app_post {A B C} (h : arr B C) :
+    arrow_eq (arr_comp
+      (arr_first (arr_pure (fun f : arr A B => arr_comp f h))) arr_app)
+      (arr_comp arr_app h).
+  Proof. apply app_postcompose. Qed.
 
   Lemma arr_pure_ext {A B} (f g : A -> B) :
     (forall x, f x = g x) -> arrow_eq (arr_pure f) (arr_pure g).
@@ -318,6 +334,6 @@ Section ArrowApplyDerived.
     (forall x, arrow_eq (u x) (v x)) ->
     arrow_eq (arr_comp (arr_pure (fun x => (u x, t x))) arr_app)
              (arr_comp (arr_pure (fun x => (v x, t x))) arr_app).
-  Proof. apply app_ext. Qed.
+  Proof. intro H. apply app_ext. intro x. split; [apply H | reflexivity]. Qed.
 
 End ArrowApplyDerived.

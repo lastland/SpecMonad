@@ -31,13 +31,13 @@ Definition DSP (A : Type) : Type := DSPArr unit A.
 
 #[global] Instance Monad_DSP : Monad DSP := Monad_Arrow DSPArr unit.
 
-#[global] Instance Eq1_DSP : Eq1 DSP := @Eq1_Arrow DSPArr ArrowEq_DSPArr.
+#[global] Instance Eq1_DSP : Eq1 DSP := @Eq1_Arrow DSPArr ArrowEq_DSPArr unit.
 
 Definition Eq1Equivalence_DSP : @Eq1Equivalence DSP _ Eq1_DSP :=
-  @Eq1Equivalence_Arrow DSPArr _ _ ArrowEq_DSPArr.
+  @Eq1Equivalence_Arrow DSPArr _ _ ArrowEq_DSPArr unit.
 
 Definition MonadLawsE_DSP : @MonadLawsE DSP Eq1_DSP Monad_DSP :=
-  @MonadLawsE_Arrow DSPArr _ _ ArrowEq_DSPArr _ _.
+  @MonadLawsE_Arrow DSPArr _ _ ArrowEq_DSPArr _ _ unit.
 
 (* ================================================================= *)
 (** ** The state and exception stacks                                *)
@@ -109,18 +109,18 @@ Definition DSPStExc (S A : Type) : Type := DSPStExcArr S unit A.
 #[global] Instance Monad_DSPStExc S : Monad (DSPStExc S) := Monad_Arrow _ unit.
 
 #[global] Instance Eq1_DSPSt S : Eq1 (DSPSt S) :=
-  @Eq1_Arrow (DSPStArr S) (ArrowEq_DSPStArr S).
+  @Eq1_Arrow (DSPStArr S) (ArrowEq_DSPStArr S) unit.
 #[global] Instance Eq1_DSPStExc S : Eq1 (DSPStExc S) :=
-  @Eq1_Arrow (DSPStExcArr S) (ArrowEq_DSPStExcArr S).
+  @Eq1_Arrow (DSPStExcArr S) (ArrowEq_DSPStExcArr S) unit.
 
 Definition MonadLawsE_DSPSt S
   : @MonadLawsE (DSPSt S) (Eq1_DSPSt S) (Monad_DSPSt S) :=
   @MonadLawsE_Arrow (DSPStArr S) _ (ArrowApply_DSPStArr S) (ArrowEq_DSPStArr S)
-    (ArrowLaws_DSPStArr S) (ArrowApplyLaws_DSPStArr S).
+    (ArrowLaws_DSPStArr S) (ArrowApplyLaws_DSPStArr S) unit.
 Definition MonadLawsE_DSPStExc S
   : @MonadLawsE (DSPStExc S) (Eq1_DSPStExc S) (Monad_DSPStExc S) :=
   @MonadLawsE_Arrow (DSPStExcArr S) _ (ArrowApply_DSPStExcArr S)
-    (ArrowEq_DSPStExcArr S) (ArrowLaws_DSPStExcArr S) (ArrowApplyLaws_DSPStExcArr S).
+    (ArrowEq_DSPStExcArr S) (ArrowLaws_DSPStExcArr S) (ArrowApplyLaws_DSPStExcArr S) unit.
 
 (* ================================================================= *)
 (** ** [bind] is composition of the denoted relations                *)

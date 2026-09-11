@@ -257,6 +257,17 @@ Proof.
   - intros f f' Hf g g' Hg P c. asp_simpl.
     transitivity (g (f' P) c); [ apply getASPArr_ext_iff; intro; apply Hf | apply Hg ].
   - intros f f' Hf P bc. asp_simpl. apply Hf.
+  - (* first_natural *)
+    intros P [b d]. asp_simpl. cbn. split.
+    + intros [[b0 c] [Hf Heq]]. injection Heq as Hb Hd. subst b0 d.
+      apply getASPArr_join in Hf. destruct Hf as [a [HP Hr]].
+      apply getASPArr_join. exists a. split; [|exact Hr].
+      exists (a, c). auto.
+    + intro H. apply getASPArr_join in H.
+      destruct H as [a [[[a0 c] [HP Heq]] Hr]].
+      injection Heq as Ha Hd. subst a0 d.
+      exists (b, c). split; [|reflexivity].
+      apply getASPArr_join. exists a. auto.
 Qed.
 
 #[global] Instance ArrowChoiceLaws_ASPArr : ArrowChoiceLaws ASPArr.
@@ -367,7 +378,26 @@ Proof.
     + intros [[x y] [Hp Hq]]. subst q.
       exists (pureASP (fun y' : B => (x, y'))), y. cbn [fst snd].
       split; [ exists x; auto |]. rewrite get_pure. exists y. auto.
-  - (* app_post *)
+  - (* app_precompose *)
+    intros A B C g. asp_intro. intros P c. asp_simpl.
+    unfold arr_second, swap.
+    cbn [arr_comp arr_pure arr_first Arrow_ASPArr].
+    repeat rewrite ?get_comp, ?get_pure, ?get_first. cbv beta.
+    cbn [fst snd]. split.
+    + intros [k [a [[f [HP Hk]] Hcomp]]]. subst k.
+      rewrite get_comp in Hcomp. apply getASPArr_join in Hcomp.
+      destruct Hcomp as [b [Hg Hf]]. exists f, b. split; [|exact Hf].
+      exists (b, f). cbn. split; [|reflexivity].
+      eapply getASPArr_mono; [|exact Hg]. intros a' ->.
+      exists (f, a). auto.
+    + intros [f [b [[p [Hg Heq]] Hf]]]. destruct p as [b0 f0]. cbn in Heq, Hg.
+      injection Heq as Hf0 Hb. subst f0 b0.
+      apply getASPArr_join in Hg.
+      destruct Hg as [a [[p [HP Heq]] Hg]]. destruct p as [f0 a0]. cbn in Heq.
+      injection Heq as Ha Hf0. subst a0 f0.
+      exists (compASP g f), a. split; [exists f; auto |].
+      rewrite get_comp. apply getASPArr_join. exists b. auto.
+  - (* app_postcompose *)
     intros A B C h. asp_intro. intros P c. asp_simpl. split.
     + intros [f [a [[f0 [Hp Heq]] Hf]]]. cbn [fst snd] in Hp, Heq. subst f.
       rewrite get_comp in Hf.
@@ -379,9 +409,15 @@ Proof.
       split; [ exists f; auto |].
       rewrite get_comp. apply getASPArr_join. exists b. auto.
   - (* app_ext *)
-    intros X A B u v t Huv. asp_intro. intros P b. asp_simpl. split.
-    + intros [f [a [[x [Hp Heq]] Hf]]]. injection Heq as <- <-.
-      exists (v x), (t x). split; [ exists x; auto | apply Huv, Hf ].
-    + intros [f [a [[x [Hp Heq]] Hf]]]. injection Heq as <- <-.
-      exists (u x), (t x). split; [ exists x; auto | apply Huv, Hf ].
+    intros X A B u v Huv. asp_intro. intros P b. asp_simpl. split.
+    + intros [f [a [[x [Hp Heq]] Hf]]].
+      specialize (Huv x). destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
+      cbn in Huv. destruct Huv as [Hfg Ha]. subst av.
+      injection Heq as <- <-. exists fv, au.
+      split; [exists x; auto | apply Hfg; exact Hf].
+    + intros [f [a [[x [Hp Heq]] Hf]]].
+      specialize (Huv x). destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
+      cbn in Huv. destruct Huv as [Hfg Ha]. subst av.
+      injection Heq as <- <-. exists fu, au.
+      split; [exists x; auto | apply Hfg; exact Hf].
 Qed.

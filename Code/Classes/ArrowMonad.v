@@ -1,13 +1,13 @@
-(** * Monad operations from higher-order arrow application.
+(** * A lawful monad from higher-order arrow application.
 
-    For a fixed input [I], [arr I] supports return and bind.  This module
-    defines the operations and retains the generic monad laws at input
-    [unit] from the four-field [ArrowApplyLaws] contract. *)
+    For every fixed input [I], [arr I] supports return and bind.  The
+    arrow and application laws make these operations a monad up to the
+    arrow's own equivalence relation. *)
 
+From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Coq Require Import Morphisms RelationClasses.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
 
 Section ArrowMonad.
   Variable arr : Type -> Type -> Type.
@@ -27,141 +27,230 @@ Section ArrowMonad.
   }.
 End ArrowMonad.
 
-(** ** The arrow monad at input [unit] satisfies [MonadLawsE]
+(** The equality dictionary is explicit so that importing this module
+    does not compete with concrete monads' chosen [Eq1] instances. *)
+Definition Eq1_Arrow {arr : Type -> Type -> Type} (HE : ArrowEq arr)
+  (I : Type) : Eq1 (arr I) :=
+  fun A => @arrow_eq arr HE I A.
 
-    At [I = unit] the fanout collapses: the input is [tt], so there is
-    nothing to thread.  These are the generic unit-input laws previously
-    defined in [SPostArr], now shared without a concrete-carrier dependency. *)
+#[global] Instance Eq1Equivalence_Arrow
+  {arr : Type -> Type -> Type} {HA : Arrow arr}
+  {HAA : @ArrowApply arr HA} {HE : ArrowEq arr} (I : Type) :
+  @Eq1Equivalence (arr I) (@Monad_Arrow arr HA HAA I)
+    (@Eq1_Arrow arr HE I) :=
+  fun A => @arrow_eq_equiv arr HE I A.
 
 Section ArrowMonadLaws.
-  Variable arr : Type -> Type -> Type.
-  Context `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
-          `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
-          `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
+  Context {arr : Type -> Type -> Type}
+    `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
+    `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
+    `{HAL : @ArrowApplyLaws arr HA HAA HE}.
 
-  Definition Eq1_Arrow : Eq1 (arr unit) := fun A => @arrow_eq arr HE unit A.
+  Local Notation "f >>> g" := (@arr_comp arr HA _ _ _ f g)
+    (at level 50, left associativity).
+  Local Notation pure := (@arr_pure arr HA _ _).
+  Local Notation first := (@arr_first arr HA _ _ _).
+  Local Notation app := (@arr_app arr HA HAA _ _).
+  Local Notation eqA := (@arrow_eq arr HE _ _).
+  Local Notation cassoc := (@comp_assoc arr HA HE HL).
+  Local Notation cidl := (@comp_id_l arr HA HE HL).
+  Local Notation cidr := (@comp_id_r arr HA HE HL).
+  Local Notation pcomp := (@pure_comp arr HA HE HL).
+  Local Notation cprop := (@comp_proper arr HA HE HL).
+  Local Notation fprop := (@first_proper arr HA HE HL).
+  Local Notation fpure := (@first_pure arr HA HE HL).
+  Local Notation ffst := (@first_fst arr HA HE HL).
+  Local Notation fnat := (@first_natural arr HA HE HL).
+  Local Notation alaw := (@app_law arr HA HAA HE HAL).
+  Local Notation aext := (@app_ext arr HA HAA HE HAL).
+  Local Notation arrow_ext := (@ArrowApplyFacts.arrow_ext arr HA HAA HE HL HAL).
+  Local Notation pure_ext := (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL).
 
-  Definition Eq1Equivalence_Arrow
-    : @Eq1Equivalence (arr unit) (Monad_Arrow arr unit) Eq1_Arrow :=
-    fun A => arrow_eq_equiv unit A.
+  Create HintDb arrow_monad_fanout.
+  #[local] Hint Unfold arr_fanout arr_split : arrow_monad_fanout.
 
-  Local Lemma second_id {A C} :
-    arrow_eq (@arr_second arr HA A A C arr_id) arr_id.
+  (** A constant companion commutes with [first], by naturality and
+      projection.  This is the step that preserves a fixed monad input. *)
+  Local Lemma first_constant {A B C} (f : arr A B) (c : C) :
+    eqA (pure (fun a => (a, c)) >>> first f)
+        (f >>> pure (fun b => (b, c))).
+  Proof.
+    assert (Hhead :
+      eqA (pure (fun a : A => (a, tt)) >>> pure (fun '(a, _) => (a, c)))
+          (pure (fun a : A => (a, c)))).
+    { etransitivity. { apply pcomp. } reflexivity. }
+    assert (Htail :
+      eqA (pure (fun p : B * unit => let '(b, _) := p in (b, c)))
+          (pure (@fst B unit) >>> pure (fun b => (b, c)))).
+    { symmetry. etransitivity. { apply pcomp. }
+      apply pure_ext. intros [b []]. reflexivity. }
+    etransitivity. { apply cprop. 2: reflexivity. symmetry. exact Hhead. }
+    etransitivity. { apply cassoc. }
+    etransitivity. { apply cprop. 1: reflexivity. symmetry. apply fnat. }
+    etransitivity.
+    { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity. exact Htail. }
+    etransitivity.
+    { apply cprop. 1: reflexivity. symmetry. apply cassoc. }
+    etransitivity.
+    { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply ffst. }
+    etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+    apply cidl.
+  Qed.
+
+  Local Lemma second_id {A B} :
+    eqA (@arr_second arr HA A A B (@arr_id arr HA A))
+        (@arr_id arr HA (B * A)).
   Proof.
     unfold arr_second, arr_id.
     etransitivity.
-    { apply comp_proper; [ reflexivity |].
-      apply comp_proper; [ apply first_pure | reflexivity ]. }
-    etransitivity; [ apply comp_proper; [ reflexivity | apply pure_comp ] |].
-    etransitivity; [ apply pure_comp |].
-    apply arr_pure_ext. intros [c a]. reflexivity.
+    { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply fpure. }
+    etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
+    etransitivity. { apply pcomp. }
+    apply pure_ext. intros [b a]. reflexivity.
   Qed.
 
-  Local Lemma fanout_id {A B} (m : arr A B) :
-    arrow_eq (arr_fanout m arr_id)
-             (arr_comp (arr_pure (fun a : A => (a, a))) (arr_first m)).
+  Local Lemma fanout_id {A B} (f : arr A B) :
+    eqA (@arr_fanout arr HA _ _ _ f (@arr_id arr HA A))
+        (pure (fun a => (a, a)) >>> first f).
   Proof.
-    unfold arr_fanout, arr_split.
-    apply comp_proper; [ reflexivity |].
-    etransitivity; [ apply comp_proper; [ reflexivity | apply second_id ] |].
-    apply comp_id_r.
+    autounfold with arrow_monad_fanout.
+    apply cprop. 1: reflexivity.
+    etransitivity. { apply cprop. 1: reflexivity. apply second_id. }
+    apply cidr.
   Qed.
 
-  Lemma bind_arrow_unit {A B} (m : arr unit A) (k : A -> arr unit B) :
-    arrow_eq (bind_arrow arr unit m k)
-             (arr_comp m (arr_comp (arr_pure (fun a => (k a, tt))) arr_app)).
+  Local Lemma fanout_id_at {I A} (m : arr I A) (i : I) :
+    eqA (pure (fun _ : unit => i) >>>
+          @arr_fanout arr HA _ _ _ m (@arr_id arr HA I))
+        ((pure (fun _ : unit => i) >>> m) >>> pure (fun a => (a, i))).
+  Proof.
+    assert (Hhead :
+      eqA (pure (fun _ : unit => i) >>> pure (fun j => (j, j)))
+          (pure (fun _ : unit => i) >>> pure (fun j => (j, i)))).
+    { etransitivity. { apply pcomp. }
+      symmetry. etransitivity. { apply pcomp. } reflexivity. }
+    etransitivity. { apply cprop. 1: reflexivity. apply fanout_id. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. exact Hhead. }
+    etransitivity. { apply cassoc. }
+    etransitivity. { apply cprop. 1: reflexivity. apply first_constant. }
+    symmetry. apply cassoc.
+  Qed.
+
+  (** At a fixed input, bind is ordinary arrow composition followed by
+      application of the selected continuation at that same input. *)
+  Local Lemma bind_arrow_at {I A B} (m : arr I A)
+    (k : A -> arr I B) (i : I) :
+    eqA (pure (fun _ : unit => i) >>> @bind_arrow arr HA HAA I A B m k)
+        ((pure (fun _ : unit => i) >>> m) >>>
+          (pure (fun a => (k a, i)) >>> app)).
   Proof.
     unfold bind_arrow.
-    etransitivity; [ apply comp_proper; [ apply fanout_id | reflexivity ] |].
-    etransitivity; [ symmetry; apply comp_assoc |].
-    symmetry.
-    etransitivity; [ symmetry; apply comp_assoc |].
-    symmetry.
-    apply comp_proper; [| reflexivity ].
-    etransitivity.
-    { apply comp_proper; [ reflexivity |].
-      apply (arr_pure_ext _ (fun p : A * unit => (k (fst p), tt))).
-      intros [a []]. reflexivity. }
-    etransitivity.
-    { apply comp_proper; [ reflexivity |]. symmetry.
-      apply (pure_comp (@fst A unit) (fun a => (k a, tt))). }
-    etransitivity; [ symmetry; apply comp_assoc |].
-    apply comp_proper; [| reflexivity ].
-    etransitivity; [ apply comp_assoc |].
-    etransitivity; [ apply comp_proper; [ reflexivity | apply first_fst ] |].
-    etransitivity; [ symmetry; apply comp_assoc |].
-    etransitivity; [ apply comp_proper; [ apply pure_comp | reflexivity ] |].
-    etransitivity.
-    { apply comp_proper; [| reflexivity ].
-      apply (arr_pure_ext _ (fun x : unit => x)). intros []. reflexivity. }
-    apply comp_id_l.
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply fanout_id_at. }
+    etransitivity. { apply cassoc. }
+    apply cprop. 1: reflexivity.
+    etransitivity. { symmetry. apply cassoc. }
+    apply cprop. 2: reflexivity.
+    etransitivity. { apply pcomp. } reflexivity.
   Qed.
 
-  Local Lemma ret_app_id {A} :
-    arrow_eq (arr_comp (arr_pure (fun a : A => (ret_arrow arr unit a, tt))) arr_app)
-             arr_id.
+  Local Lemma app_constant {X A B} (f : arr A B) (a : A) :
+    eqA (pure (fun _ : X => (f, a)) >>> app)
+        (pure (fun _ : X => a) >>> f).
   Proof.
+    symmetry.
+    etransitivity. { apply cprop. 1: reflexivity. symmetry. apply alaw. }
+    etransitivity. { symmetry. apply cassoc. }
+    apply cprop. 2: reflexivity.
+    etransitivity. { apply pcomp. } reflexivity.
+  Qed.
+
+  (** Compatibility with the former unit-input development. *)
+  Lemma bind_arrow_unit {A B} (m : arr unit A) (k : A -> arr unit B) :
+    eqA (@bind_arrow arr HA HAA unit A B m k)
+      (m >>> (pure (fun a => (k a, tt)) >>> app)).
+  Proof.
+    apply arrow_ext. intros [].
+    etransitivity. { apply bind_arrow_at. }
+    apply cassoc.
+  Qed.
+
+  Local Lemma app_at_constant {I A B} (k : A -> arr I B) (i : I) (a : A) :
+    eqA (pure (fun _ : unit => a) >>>
+          (pure (fun a => (k a, i)) >>> app))
+        (pure (fun _ : unit => i) >>> k a).
+  Proof.
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+    exact (app_constant (k a) i).
+  Qed.
+
+  Local Lemma app_at_ret {I A} (i : I) :
+    eqA (pure (fun a : A => (@ret_arrow arr HA I A a, i)) >>> app)
+        (@arr_id arr HA A).
+  Proof.
+    apply arrow_ext. intro a.
+    etransitivity. { apply app_at_constant. }
     unfold ret_arrow.
-    etransitivity.
-    { apply (app_ext_at
-               (fun a : A => arr_pure (fun _ : unit => a))
-               (fun a : A => arr_comp (arr_pure (fun v : unit => (a, v)))
-                                      (arr_pure (@fst A unit)))
-               (fun _ => tt)).
-      intro a. symmetry.
-      etransitivity; [ apply pure_comp |].
-      apply arr_pure_ext. intros []. reflexivity. }
-    etransitivity; [ apply app_post_at |].
-    etransitivity.
-    { apply comp_proper; [| reflexivity ].
-      apply (app_pair_at (fun a : A => a) (fun _ : A => tt)). }
-    etransitivity; [ apply pure_comp |].
-    unfold arr_id. apply arr_pure_ext. intro a. reflexivity.
+    etransitivity. { apply pcomp. }
+    symmetry. apply cidr.
   Qed.
 
-  Definition MonadLawsE_Arrow
-    : @MonadLawsE (arr unit) Eq1_Arrow (Monad_Arrow arr unit).
+  #[global] Instance MonadLawsE_Arrow (I : Type) :
+    @MonadLawsE (arr I) (@Eq1_Arrow arr HE I) (@Monad_Arrow arr HA HAA I).
   Proof.
-    constructor; unfold eq1, Eq1_Arrow; cbn [ret bind Monad_Arrow].
-    - intros A B k x.
-      etransitivity; [ apply bind_arrow_unit |].
+    constructor.
+    - (* Left identity. *)
+      intros A B k a.
+      change (eqA (@bind_arrow arr HA HAA I A B (@ret_arrow arr HA I A a) k)
+        (k a)).
+      apply arrow_ext. intro i.
+      etransitivity. { apply bind_arrow_at. }
       unfold ret_arrow.
-      etransitivity; [ symmetry; apply comp_assoc |].
-      etransitivity; [ apply comp_proper; [ apply pure_comp | reflexivity ] |].
-      etransitivity.
-      { apply comp_proper; [| reflexivity ].
-        apply (arr_pure_ext _ (fun u : unit => (k x, u))). intros []. reflexivity. }
-      apply app_law.
-    - intros A m.
-      etransitivity; [ apply bind_arrow_unit |].
-      etransitivity; [ apply comp_proper; [ reflexivity | apply ret_app_id ] |].
-      apply comp_id_r.
-    - intros A B C m f g.
-      etransitivity; [ apply bind_arrow_unit |].
-      etransitivity;
-        [ apply comp_proper; [ apply bind_arrow_unit | reflexivity ] |].
-      etransitivity; [ apply comp_assoc |].
+      etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+      exact (app_at_constant k i a).
+    - (* Right identity. *)
+      intros A m.
+      change (eqA (@bind_arrow arr HA HAA I A A m (@ret_arrow arr HA I A)) m).
+      apply arrow_ext. intro i.
+      etransitivity. { apply bind_arrow_at. }
+      etransitivity. { apply cprop. 1: reflexivity. apply app_at_ret. }
+      apply cidr.
+    - (* Associativity.  Fixing the continuation's input exposes the
+         same three-arrow composition on both sides. *)
+      intros A B C m k l.
+      change (eqA
+        (@bind_arrow arr HA HAA I B C (@bind_arrow arr HA HAA I A B m k) l)
+        (@bind_arrow arr HA HAA I A C m
+          (fun a => @bind_arrow arr HA HAA I B C (k a) l))).
+      apply arrow_ext. intro i.
+      etransitivity. { apply bind_arrow_at. }
+      etransitivity. { apply cprop. 2: reflexivity. apply bind_arrow_at. }
+      etransitivity. { apply cassoc. }
       symmetry.
-      etransitivity; [ apply bind_arrow_unit |].
-      apply comp_proper; [ reflexivity |].
-      etransitivity.
-      { apply (@app_ext_at arr HA HAA HE HAAL A unit C
-                 (fun a : A => bind_arrow arr unit (f a) g)
-                 (fun a : A => arr_comp (f a)
-                                 (arr_comp (arr_pure (fun b : B => (g b, tt))) arr_app))
-                 (fun _ : A => tt)).
-        intro a. apply bind_arrow_unit. }
-      apply (@app_post_at arr HA HAA HE HL HAAL A unit B C f (fun _ : A => tt)
-               (arr_comp (arr_pure (fun b : B => (g b, tt))) arr_app)).
-    - intros A B m1 m2 Hm k1 k2 Hk.
-      etransitivity; [ apply bind_arrow_unit |].
+      etransitivity. { apply bind_arrow_at. }
+      apply cprop. 1: reflexivity.
+      apply arrow_ext. intro a.
+      etransitivity. { apply app_at_constant. }
+      etransitivity. { apply bind_arrow_at. }
       symmetry.
-      etransitivity; [ apply bind_arrow_unit |].
-      symmetry.
-      apply comp_proper; [ exact Hm |].
-      apply app_ext_at. intro a. apply Hk.
+      etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity. apply app_at_constant.
+    - (* Bind respects both the computation and pointwise continuation
+         equivalence, including arrow values stored inside pure inputs. *)
+      intros A B m n Hmn k l Hkl.
+      change (eqA (@bind_arrow arr HA HAA I A B m k)
+        (@bind_arrow arr HA HAA I A B n l)).
+      unfold bind_arrow. apply cprop.
+      + autounfold with arrow_monad_fanout.
+        apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity.
+        apply fprop. exact Hmn.
+      + apply aext. intros [a i]. split.
+        * apply Hkl.
+        * reflexivity.
   Qed.
 End ArrowMonadLaws.
-
-Arguments Eq1_Arrow {_} {_} {_}.
-Arguments MonadLawsE_Arrow {_} {_} {_} {_} {_} {_}.

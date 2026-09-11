@@ -84,13 +84,16 @@ Local Definition increment_then_double : ASPostArr nat unit :=
   @arr_comp (stateArrT nat optionASPArr) (Arrow_stateOptASP nat) _ _ _
     increment checked_double.
 
+Create HintDb sp_state_example_ops.
+#[local] Hint Unfold increment checked_double : sp_state_example_ops.
+
 Example state_roundtrip_threads_updates (r : option (unit * nat)) :
   getASP (state_option_asp_from_coupled
     (state_option_asp_to_coupled increment_then_double)) (eq (tt, 3)) r
   <-> r = Some (tt, 8).
 Proof.
   rewrite state_option_asp_from_to. unfold increment_then_double.
-  rewrite stateOptASP_comp_spec. unfold increment, checked_double.
+  rewrite stateOptASP_comp_spec. autounfold with sp_state_example_ops.
   rewrite !pureASP_spec. split.
   - intros [[[[u s] [_ H]] _]|[[u s] [[[u0 s0] [Hp Hs]] Hr]]]; [discriminate |].
     inversion Hp; subst. inversion Hs; subst. now symmetry.
@@ -101,7 +104,7 @@ Example state_updated_guard_fails (r : option (unit * nat)) :
   getASP increment_then_double (eq (tt, 2)) r <-> r = None.
 Proof.
   unfold increment_then_double. rewrite stateOptASP_comp_spec.
-  unfold increment, checked_double. rewrite !pureASP_spec. split.
+  autounfold with sp_state_example_ops. rewrite !pureASP_spec. split.
   - intros [[_ Hr]|[[u s] [[[u0 s0] [Hp Hs]] Hr]]]; [exact Hr |].
     inversion Hp; subst. inversion Hs; subst. now symmetry.
   - intros ->. right. exists (tt, 3). split; [exists (tt, 2); auto | reflexivity].

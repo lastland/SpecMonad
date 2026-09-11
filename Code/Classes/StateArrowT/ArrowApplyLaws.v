@@ -16,132 +16,207 @@ Section StateArrowTApplyLaws.
 
   Local Notation cassoc := (@comp_assoc arr HA HE HL).
   Local Notation cidl   := (@comp_id_l arr HA HE HL).
-  Local Notation cidr   := (@comp_id_r arr HA HE HL).
   Local Notation pcomp  := (@pure_comp arr HA HE HL).
   Local Notation cprop  := (@comp_proper arr HA HE HL).
+  Local Notation fpure  := (@first_pure arr HA HE HL).
+  Local Notation fcomp  := (@first_comp arr HA HE HL).
+  Local Notation fprop  := (@first_proper arr HA HE HL).
   Local Notation alaw   := (@app_law arr HA HAA HE HAAL).
+  Local Notation aunit  := (@app_unit arr HA HAA HE HAAL).
+  Local Notation apre  := (@app_precompose arr HA HAA HE HAAL).
+  Local Notation apost := (@app_postcompose arr HA HAA HE HAAL).
+  Local Notation aext  := (@app_ext arr HA HAA HE HAAL).
 
-  (** Base-arrow shorthands: every goal below is an equality of BASE
-      arrows once the [stateArrT] operations are unfolded. *)
   Local Notation "f >>> g" := (@arr_comp arr HA _ _ _ f g)
-    (at level 41, right associativity).
-  Local Notation pur := (@arr_pure arr HA _ _).
-  Local Notation app0 := (@arr_app arr HA HAA _ _).
-  Local Notation "f == g" := (@arrow_eq arr HE _ _ f g) (at level 70).
+    (at level 50, left associativity).
+  Local Notation pure := (@arr_pure arr HA _ _).
+  Local Notation first := (@arr_first arr HA _ _ _).
+  Local Notation app := (@arr_app arr HA HAA _ _).
+  Local Notation eqA := (@arrow_eq arr HE _ _).
+  Local Notation spure :=
+    (@arr_pure (stateArrT S arr) (@Arrow_stateArrT S arr HA) _ _).
+  Local Notation sfirst :=
+    (@arr_first (stateArrT S arr) (@Arrow_stateArrT S arr HA) _ _ _).
+  Local Notation ssecond :=
+    (@arr_second (stateArrT S arr) (@Arrow_stateArrT S arr HA) _ _ _).
+  Local Notation sapp :=
+    (@arr_app (stateArrT S arr) (@Arrow_stateArrT S arr HA)
+      (@ArrowApply_stateArrT S arr HA HAA) _ _).
+  Local Notation sfpure :=
+    (@first_pure (stateArrT S arr) (@Arrow_stateArrT S arr HA)
+      (@ArrowEq_stateArrT S arr HE) (@ArrowLaws_stateArrT S arr HA HE HL)).
 
-  Local Lemma pure_ext {A B} (f g : A -> B) :
-    (forall x, f x = g x) -> pur f == pur g.
-  Proof. apply arr_pure_ext. Qed.
-
-  (** *** The two shapes a [stateArrT] law presents                    *)
-
-  (** [T.pure (fun x => (u x, t x)) >>> T.app]: one [app] after one pure. *)
-  Local Lemma app_state_pure {X A B}
-    (u : X -> stateArrT S arr A B) (t : X -> A) :
-    pur (fun '(x, s) => ((u x, t x), s))
-      >>> (pur (fun '((f, a), s) => (f, (a, s))) >>> app0)
-    == pur (fun p : X * S => (u (fst p), (t (fst p), snd p))) >>> app0.
+  (** Pure application follows from pairing and postcomposition.  The
+      stored pure arrow is replaced using [app_ext], not Coq equality. *)
+  Local Lemma app_pure {A B C} (f : A -> B -> C) :
+    eqA (first (pure (fun a => pure (f a))) >>> app)
+        (pure (fun '(a, b) => f a b)).
   Proof.
-    etransitivity; [ symmetry; apply cassoc |].
-    apply cprop; [| reflexivity ].
-    etransitivity; [ apply pcomp |].
-    apply pure_ext. intros [x s]. reflexivity.
+    set (pair := fun a : A => pure (fun b : B => (a, b))).
+    set (eval := fun '(a, b) => f a b).
+    assert (Hstored : forall a,
+      eqA (pure (f a)) (pair a >>> pure eval)).
+    { intro a. symmetry. etransitivity. { apply pcomp. }
+      apply arr_pure_ext. intro b. reflexivity. }
+    assert (Hinputs :
+      eqA (first (pure (fun a => pure (f a))) >>> app)
+          (first (pure (fun a => pair a >>> pure eval)) >>> app)).
+    { etransitivity.
+      { apply cprop. 2: reflexivity. apply fpure. }
+      symmetry. etransitivity.
+      { apply cprop. 2: reflexivity. apply fpure. }
+      apply aext. intros [a b]. split.
+      - symmetry. apply Hstored.
+      - reflexivity. }
+    etransitivity. { exact Hinputs. }
+    transitivity ((first (pure pair) >>> app) >>> pure eval).
+    - symmetry. etransitivity. { apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. symmetry. apply apost. }
+      etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity.
+      etransitivity. { symmetry. apply fcomp. }
+      apply fprop. apply pcomp.
+    - etransitivity.
+      { apply cprop. 2: reflexivity. apply aunit. }
+      apply cidl.
   Qed.
 
-  (** [T.first (T.pure phi) >>> T.app]: the extra component supplies the
-      argument, so again one [app] after one pure. *)
-  Local Lemma app_state_first {X A B} (phi : X -> stateArrT S arr A B) :
-    (pur (@state_shuffle_in S X A)
-       >>> (@arr_first arr HA _ _ _ (pur (fun '(x, s) => (phi x, s)))
-              >>> pur (@state_shuffle_out S (stateArrT S arr A B) A)))
-      >>> (pur (fun '((f, a), s) => (f, (a, s))) >>> app0)
-    == pur (fun p : (X * A) * S => (phi (fst (fst p)), (snd (fst p), snd p)))
-         >>> app0.
+  (** State application only reassociates the selected arrow, argument,
+      and state before invoking base application. *)
+  Local Lemma state_pure_app {X A B}
+    (u : X -> stateArrT S arr A B * A) :
+    eqA (spure u >>> sapp)
+        (pure (fun '(x, s) => let '(f, a) := u x in (f, (a, s))) >>> app).
   Proof.
-    etransitivity.
-    { apply cprop; [| reflexivity ].
-      apply cprop; [ reflexivity |].
-      apply cprop; [ apply first_pure | reflexivity ]. }
-    (* all four leading arrows are pure: fuse them *)
-    etransitivity.
-    { apply cprop; [| reflexivity ].
-      etransitivity; [ apply cprop; [ reflexivity | apply pcomp ] |].
-      apply pcomp. }
-    etransitivity; [ symmetry; apply cassoc |].
-    apply cprop; [| reflexivity ].
-    etransitivity; [ apply pcomp |].
-    apply pure_ext. intros [[x a] s]. reflexivity.
+    cbn [arr_pure arr_app Arrow_stateArrT ArrowApply_stateArrT].
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+    apply cprop. 2: reflexivity.
+    apply arr_pure_ext. intros [x s]. destruct (u x). reflexivity.
   Qed.
 
-  (** [T.second g] commutes with the [app] shuffle. *)
-  Local Lemma second_state_shuffle {X A B} (g : stateArrT S arr A B) :
-    (pur (fun '(p, s) => (@swap X A p, s))
-       >>> ((pur (@state_shuffle_in S A X)
-               >>> (@arr_first arr HA _ _ _ g >>> pur (@state_shuffle_out S B X)))
-              >>> pur (fun '(p, s) => (@swap B X p, s))))
-      >>> pur (fun '((f, a), s) => (f, (a, s)))
-    == pur (fun '((f, a), s) => (f, (a, s))) >>> @arr_second arr HA _ _ _ g.
+  Local Lemma state_first_pure_app {A B C}
+    (f : A -> stateArrT S arr B C) :
+    eqA (sfirst (spure f) >>> sapp)
+        (pure (@assoc_prod A B S) >>> (first (pure f) >>> app)).
   Proof.
-    unfold arr_second.
-    rewrite !cassoc, !pcomp.      (* fuse the pures after [first g] *)
-    rewrite <- !cassoc, !pcomp.   (* fuse the pures before it *)
-    apply cprop; [ apply cprop |].
-    - apply pure_ext. intros [[x a] s]. reflexivity.
-    - reflexivity.
-    - apply pure_ext. intros [[b s] x]. reflexivity.
+    etransitivity.
+    { apply cprop. 2: reflexivity. apply sfpure. }
+    etransitivity. { apply state_pure_app. }
+    symmetry. etransitivity.
+    { apply cprop. 1: reflexivity.
+      apply cprop. 2: reflexivity. apply fpure. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
+    apply cprop. 2: reflexivity.
+    apply arr_pure_ext. intros [[a b] s]. reflexivity.
+  Qed.
+
+  (** Moving the state beside the argument commutes with [second]. *)
+  Local Lemma state_second_assoc {A B C} (g : stateArrT S arr A B) :
+    eqA (ssecond g >>> pure (@assoc_prod C B S))
+        (pure (@assoc_prod C A S) >>> @arr_second arr HA _ _ C g).
+  Proof.
+    assert (Hhead :
+      eqA (spure (@swap C A) >>> pure (@state_shuffle_in S A C))
+          (pure (@assoc_prod C A S) >>> pure (@swap C (A * S)))).
+    { cbn [arr_pure Arrow_stateArrT].
+      etransitivity. { apply pcomp. }
+      symmetry. etransitivity. { apply pcomp. }
+      apply arr_pure_ext. intros [[c a] s]. reflexivity. }
+    assert (Htail :
+      eqA (pure (@state_shuffle_out S B C) >>>
+            (spure (@swap B C) >>> pure (@assoc_prod C B S)))
+          (pure (@swap (B * S) C))).
+    { cbn [arr_pure Arrow_stateArrT].
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply pcomp. }
+      etransitivity. { apply pcomp. }
+      apply arr_pure_ext. intros [[b s] c]. reflexivity. }
+    change (eqA
+      ((spure (@swap C A) >>>
+          ((pure (@state_shuffle_in S A C) >>>
+              (first g >>> pure (@state_shuffle_out S B C))) >>>
+            spure (@swap B C))) >>> pure (@assoc_prod C B S))
+      (pure (@assoc_prod C A S) >>>
+        (pure (@swap C (A * S)) >>>
+          (first g >>> pure (@swap (B * S) C))))).
+    etransitivity. { apply cassoc. }
+    etransitivity.
+    { apply cprop. 1: reflexivity. apply cassoc. }
+    etransitivity.
+    { apply cprop. 1: reflexivity. apply cassoc. }
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      apply cprop. 1: reflexivity. apply cassoc. }
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      apply cprop. 1: reflexivity.
+      apply cprop. 1: reflexivity. exact Htail. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity.
+    { apply cprop. 2: reflexivity. exact Hhead. }
+    apply cassoc.
   Qed.
 
   #[global]
   Instance ArrowApplyLaws_stateArrT : ArrowApplyLaws (stateArrT S arr).
   Proof.
-    constructor; intros.
-    all: unfold arr_id, arr_comp, arr_pure, arr_first, arr_app, arr_second,
-                Arrow_stateArrT, ArrowApply_stateArrT,
-                arrow_eq, ArrowEq_stateArrT;
-         fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
-              (@arr_app arr HA HAA) (@arrow_eq arr HE).
+    constructor.
     - (* app_law *)
+      intros A B f.
+      change (eqA (spure (fun a => (f, a)) >>> sapp) f).
+      etransitivity. { apply state_pure_app. }
+      transitivity (pure (fun p : A * S => (f, p)) >>> app).
+      + apply cprop. 2: reflexivity.
+        apply arr_pure_ext. intros [a s]. reflexivity.
+      + apply alaw.
+    - (* app_unit *)
+      intros A B.
+      change (eqA
+        (sfirst (spure (fun x : A => spure (fun y : B => (x, y)))) >>> sapp)
+        (spure (fun p : A * B => p))).
+      etransitivity. { apply state_first_pure_app. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply app_pure. }
+      etransitivity. { apply pcomp. }
+      unfold arr_pure, Arrow_stateArrT.
+      apply arr_pure_ext. intros [[a b] s]. reflexivity.
+    - (* app_precompose *)
+      intros A B C g.
+      change (eqA
+        (sfirst (spure (fun f : stateArrT S arr B C => g >>> f)) >>> sapp)
+        (ssecond g >>> sapp)).
+      etransitivity. { apply state_first_pure_app. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply apre. }
       etransitivity. { symmetry. apply cassoc. }
-      etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
       etransitivity.
       { apply cprop. 2: reflexivity.
-        apply pure_ext. intros (a0, s0); reflexivity. }
-      apply alaw.
-    - (* app_pair *)
-      etransitivity; [ apply app_state_first |].
-      (* the arrow built is [pur (fun '(v,s) => ((a,v),s))]: split off
-         the reassociation and use the base [app_pair_at]. *)
+        symmetry. apply state_second_assoc. }
+      apply cassoc.
+    - (* app_postcompose *)
+      intros A B C h.
+      change (eqA
+        (sfirst (spure (fun f : stateArrT S arr A B => f >>> h)) >>> sapp)
+        (sapp >>> h)).
+      etransitivity. { apply state_first_pure_app. }
       etransitivity.
-      { apply app_ext_at with
-          (v := fun p : (A * B) * S =>
-                  arr_comp (pur (fun q : B * S => (fst (fst p), q)))
-                           (pur (@unassoc_prod A B S))).
-        intro p. symmetry.
-        etransitivity; [ apply pcomp |].
-        apply pure_ext. intros [v s]. reflexivity. }
-      etransitivity; [ apply app_post_at |].
-      etransitivity.
-      { apply cprop; [| reflexivity ]. apply app_pair_at. }
-      etransitivity; [ apply pcomp |].
-      symmetry. apply pure_ext. intros [[a b] s]. reflexivity.
-    - (* app_post *)
-      etransitivity; [ apply app_state_first |].
-      etransitivity;
-        [ apply (@app_post_at arr HA HAA HE HL HAAL _ _ _ _
-                   (fun p : (stateArrT S arr A B * A) * S => fst (fst p))
-                   (fun p : (stateArrT S arr A B * A) * S => (snd (fst p), snd p))
-                   h) |].
-      apply cprop; [| reflexivity ].
-      apply cprop; [| reflexivity ].
-      apply pure_ext. intros [[f a] s]. reflexivity.
+      { apply cprop. 1: reflexivity. apply apost. }
+      symmetry. apply cassoc.
     - (* app_ext *)
-      etransitivity; [ apply app_state_pure |].
-      etransitivity.
-      { apply (@app_ext_at arr HA HAA HE HAAL (X * S)%type (A * S)%type
-                 (B * S)%type (fun p => u (fst p)) (fun p => v (fst p))
-                 (fun p : X * S => (t (fst p), snd p))).
-        intro p. apply H. }
-      symmetry. apply app_state_pure.
+      intros X A B u v Huv.
+      change (eqA (spure u >>> sapp) (spure v >>> sapp)).
+      etransitivity. { apply state_pure_app. }
+      symmetry. etransitivity. { apply state_pure_app. }
+      apply aext. intros [x s].
+      specialize (Huv x).
+      destruct (u x) as [f a], (v x) as [g b].
+      destruct Huv as [Hfg Hab]. cbn in Hfg, Hab |- *.
+      subst b. split.
+      + symmetry. exact Hfg.
+      + reflexivity.
   Qed.
 
 End StateArrowTApplyLaws.

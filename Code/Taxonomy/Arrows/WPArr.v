@@ -77,16 +77,16 @@ Instance ArrowApply_WPArr : ArrowApply WPArr := {
 
 (** * Arrow laws for [WPArr].
 
-    All of [ArrowLaws], [ArrowChoiceLaws], and [ArrowApplyLaws] hold
-    definitionally up to Coq's eta conversion — the proofs are all
-    [reflexivity] modulo destructuring of product/sum values. *)
+    The arrow laws reduce to equalities of continuations.  Functional
+    extensionality handles functions on products and sums; [app_ext]
+    additionally uses equality of the stored arrows. *)
 
 From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
 
 #[global]
-Instance ArrowLaws_WPArr : ArrowLaws WPArr.
+Instance ArrowLaws_WPArr : @ArrowLaws WPArr Arrow_WPArr ArrowEq_WPArr.
 Proof.
   constructor; intros.
   - (* comp_id_l *) reflexivity.
@@ -111,6 +111,8 @@ Proof.
   - (* first_proper *)
     intros f1 f2 Hf.
     cbv [arrow_eq ArrowEq_WPArr] in *. subst. reflexivity.
+  - (* first_natural *)
+    apply functional_extensionality; intros [a c]. reflexivity.
 Qed.
 
 #[global]
@@ -144,18 +146,22 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowApplyLaws_WPArr : ArrowApplyLaws WPArr.
+Instance ArrowApplyLaws_WPArr
+  : @ArrowApplyLaws WPArr Arrow_WPArr ArrowApply_WPArr ArrowEq_WPArr.
 Proof.
   constructor; intros.
   - (* app_law *) reflexivity.
-  - (* app_pair *)
-    apply functional_extensionality; intros [a b].
-    apply functional_extensionality; intros Q. reflexivity.
-  - (* app_post *)
-    apply functional_extensionality; intros [f a].
-    apply functional_extensionality; intros Q. reflexivity.
+  - (* app_unit *)
+    apply functional_extensionality; intros [a b]. reflexivity.
+  - (* app_precompose *)
+    apply functional_extensionality; intros [f a]. reflexivity.
+  - (* app_postcompose *)
+    apply functional_extensionality; intros [f a]. reflexivity.
   - (* app_ext *)
-    cbv [arrow_eq ArrowEq_WPArr] in *.
-    assert (Huv : u = v) by (apply functional_extensionality; exact H).
-    subst v. reflexivity.
+    apply functional_extensionality; intros x. cbn.
+    specialize (H x).
+    cbv [arrow_eq ArrowEq_WPArr] in H.
+    destruct (u x) as [f a], (v x) as [g a'].
+    cbn in H. destruct H as [Hfg Ha]. subst g a'.
+    reflexivity.
 Qed.

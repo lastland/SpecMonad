@@ -49,6 +49,16 @@ Qed.
 Lemma aslpRel_app {A B} : Pred_eq (aslpRel (@app_ASLP A B)) appRelA.
 Proof. apply aslpRel_of. intros P b. reflexivity. Qed.
 
+Lemma aslpRel_second {X Y C} (w : ASLPArr X Y) :
+  Pred_eq (aslpRel (@arr_second ASLPArr Arrow_ASLPArr X Y C w))
+    (@arr_second PredArr Arrow_Pred X Y C (aslpRel w)).
+Proof.
+  unfold arr_second.
+  cbn [arr_comp arr_pure arr_first Arrow_ASLPArr].
+  repeat first [setoid_rewrite aslpRel_comp | setoid_rewrite aslpRel_pure
+    | setoid_rewrite aslpRel_first]. reflexivity.
+Qed.
+
 
 #[local] Ltac to_rel_aslp :=
   apply aslpRel_faithful;
@@ -81,6 +91,8 @@ Proof.
       [ exact (aslpRel_faithful_conv _ _ Hw) | exact (aslpRel_faithful_conv _ _ Hv) ].
   - intros X Y Z w w' Hw. to_rel_aslp.
     apply Pred_first_cong. exact (aslpRel_faithful_conv _ _ Hw).
+  - intros A B C D f g. to_rel_aslp.
+    apply (@first_natural PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
 Qed.
 
 
@@ -103,6 +115,21 @@ Proof.
       apply aslpRel_pure in Hd. cbn in Hd. exact Hd.
     + intro Hq. exists (pure_ASLP (fun y : B => (a, y)), b).
       split; [ split; reflexivity |]. cbn. apply aslpRel_pure. exact Hq.
+  - (* app_precompose *)
+    intros A B C g. to_rel_aslp_a. setoid_rewrite aslpRel_second.
+    etransitivity; [apply Pred_comp_cong; [apply Pred_first_cong; apply aslpRel_pure | reflexivity]|].
+    intros [f a] c. unfold appRelA, arr_second, swap. cbn. split.
+    + intros [[w a'] [[Hw Ha] Hd]]. cbn in *. subst w a'.
+      apply aslpRel_comp in Hd. destruct Hd as [b [Hg Hf]].
+      exists (f, b). split; [|exact Hf].
+      exists (a, f). split; [reflexivity|]. exists (b, f). cbn. auto.
+    + intros [[f0 b] [[p [Hp [q [Hg Hq]]]] Hf]].
+      destruct p as [a' f'], q as [b' f'']. cbn in *.
+      injection Hp as Ha Hf'. subst a' f'.
+      destruct Hg as [Hg Hff]. subst f''.
+      injection Hq as Hf0 Hb. subst f0 b'.
+      exists (comp_ASLP g f, a). cbn. split; [split; reflexivity |].
+      apply aslpRel_comp. exists b. auto.
   - intros A B C h. to_rel_aslp_a.
     etransitivity; [ apply Pred_comp_cong; [ apply Pred_first_cong; apply aslpRel_pure | reflexivity ] |].
     intros [f a] c. unfold appRelA. cbn. split.
@@ -111,13 +138,15 @@ Proof.
     + intros [b [Hab Hbc]]. exists (comp_ASLP f h, a).
       split; [ split; reflexivity |]. cbn.
       apply aslpRel_comp. exists b. split; assumption.
-  - intros X A B u v t H. to_rel_aslp_a. intros x b. unfold appRelA. cbn. split.
+  - intros X A B u v H. to_rel_aslp_a. intros x b. unfold appRelA. cbn.
+    specialize (H x). destruct (u x) as [fu au], (v x) as [fv av].
+    cbn in H. destruct H as [Hfg Ha]. subst av. split.
     + intros [p [Heq Hp]]. subst p. cbn in Hp.
-      exists (v x, t x). split; [ reflexivity | cbn ].
-      exact (proj1 (aslpRel_faithful_conv _ _ (H x) (t x) b) Hp).
+      exists (fv, au). split; [reflexivity|cbn].
+      exact (proj1 (aslpRel_faithful_conv _ _ Hfg au b) Hp).
     + intros [p [Heq Hp]]. subst p. cbn in Hp.
-      exists (u x, t x). split; [ reflexivity | cbn ].
-      exact (proj2 (aslpRel_faithful_conv _ _ (H x) (t x) b) Hp).
+      exists (fu, au). split; [reflexivity|cbn].
+      exact (proj2 (aslpRel_faithful_conv _ _ Hfg au b) Hp).
 Qed.
 
 (* ----------------------------------------------------------------- *)

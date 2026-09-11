@@ -83,24 +83,24 @@ Definition ArrowEq_SPStExcArr (S : Type) : ArrowEq (SPStExcArr S) :=
   @ArrowEq_stateArrT S (optionArrT PredArr) (@ArrowEq_optionArrT PredArr ArrowEq_Pred).
 
 #[global] Instance Eq1_SPSt (S : Type) : Eq1 (SPSt S) :=
-  @Eq1_Arrow (SPStArr S) (ArrowEq_SPStArr S).
+  @Eq1_Arrow (SPStArr S) (ArrowEq_SPStArr S) unit.
 #[global] Instance Eq1_SPStExc (S : Type) : Eq1 (SPStExc S) :=
-  @Eq1_Arrow (SPStExcArr S) (ArrowEq_SPStExcArr S).
+  @Eq1_Arrow (SPStExcArr S) (ArrowEq_SPStExcArr S) unit.
 
 Definition Eq1Equivalence_SPSt (S : Type)
   : @Eq1Equivalence (SPSt S) _ (Eq1_SPSt S) :=
-  @Eq1Equivalence_Arrow (SPStArr S) _ _ (ArrowEq_SPStArr S).
+  @Eq1Equivalence_Arrow (SPStArr S) _ _ (ArrowEq_SPStArr S) unit.
 Definition Eq1Equivalence_SPStExc (S : Type)
   : @Eq1Equivalence (SPStExc S) _ (Eq1_SPStExc S) :=
-  @Eq1Equivalence_Arrow (SPStExcArr S) _ _ (ArrowEq_SPStExcArr S).
+  @Eq1Equivalence_Arrow (SPStExcArr S) _ _ (ArrowEq_SPStExcArr S) unit.
 
 (** The monad laws, for both stacks, from [ArrowApplyLaws] alone. *)
 Definition MonadLawsE_SPSt (S : Type)
   : @MonadLawsE (SPSt S) (Eq1_SPSt S) (Monad_SPSt S) :=
-  @MonadLawsE_Arrow (SPStArr S) _ _ (ArrowEq_SPStArr S) _ _.
+  @MonadLawsE_Arrow (SPStArr S) _ _ (ArrowEq_SPStArr S) _ _ unit.
 Definition MonadLawsE_SPStExc (S : Type)
   : @MonadLawsE (SPStExc S) (Eq1_SPStExc S) (Monad_SPStExc S) :=
-  @MonadLawsE_Arrow (SPStExcArr S) _ _ (ArrowEq_SPStExcArr S) _ _.
+  @MonadLawsE_Arrow (SPStExcArr S) _ _ (ArrowEq_SPStExcArr S) _ _ unit.
 
 (* ================================================================= *)
 (** ** What [ret] and [bind] are, relationally                       *)

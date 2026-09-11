@@ -13,47 +13,14 @@ From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr.
 From Incorrectness.Classes Require Export RelArrowCoherence.
 
-(** ** Faithfulness of the existing relation projections *)
-
-Lemma ASP_rel_ext {A B} (f g : PureASPostArr A B) :
-  (forall a b, rel (proj1_sig f) a b <-> rel (proj1_sig g) a b) -> f = g.
-Proof.
-  intro Hrel. apply PureASPostArr_eq. intros pre b.
-  split; intro H.
-  - apply (proj2_sig f) in H. apply (proj2_sig g).
-    destruct H as [a [Hpre Hr]]. exists a. split; [exact Hpre |].
-    apply Hrel. exact Hr.
-  - apply (proj2_sig g) in H. apply (proj2_sig f).
-    destruct H as [a [Hpre Hr]]. exists a. split; [exact Hpre |].
-    apply Hrel. exact Hr.
-Qed.
-
-Lemma DSLP_rel_ext {A B} (f g : PureDSLPostArr A B) :
-  (forall a b, rel (proj1_sig f) a b <-> rel (proj1_sig g) a b) -> f = g.
-Proof.
-  intro Hrel. apply PureDSLPostArr_eq. intros pre b.
-  split; intro H.
-  - apply (proj2_sig f) in H. apply (proj2_sig g).
-    intros a Hr. apply H. apply Hrel. exact Hr.
-  - apply (proj2_sig g) in H. apply (proj2_sig f).
-    intros a Hr. apply H. apply Hrel. exact Hr.
-Qed.
-
-Definition ASP_rel_presentation :
-  RelArrowPresentation PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr.
-Proof.
-  refine {| present_rel := fun A B f => rel (proj1_sig f);
-            present_ext := @ASP_rel_ext |}; intros; reflexivity.
-Defined.
-
-Definition DSLP_rel_presentation :
-  RelArrowPresentation PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr.
-Proof.
-  refine {| present_rel := fun A B f => rel (proj1_sig f);
-            present_ext := @DSLP_rel_ext |}; intros; reflexivity.
-Defined.
+(** Compatibility aliases retain the module-qualified API after moving
+    faithfulness and presentation witnesses into the core law module. *)
+Definition ASP_rel_ext := @RelSPPairArr.ASP_rel_ext.
+Arguments ASP_rel_ext {A B} f g _.
+Definition DSLP_rel_ext := @RelSPPairArr.DSLP_rel_ext.
+Arguments DSLP_rel_ext {A B} f g _.
+Definition ASP_rel_presentation := RelSPPairArr.ASP_rel_presentation.
+Definition DSLP_rel_presentation := RelSPPairArr.DSLP_rel_presentation.
 
 (** ** Concrete API
 

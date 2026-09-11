@@ -59,6 +59,16 @@ Qed.
 Lemma dspRel_app {A B} : Pred_eq (dspRel (@app_DSP A B)) appRel.
 Proof. apply dspRel_of. intros P b. reflexivity. Qed.
 
+Lemma dspRel_second {X Y C} (w : DSPArr X Y) :
+  Pred_eq (dspRel (@arr_second DSPArr Arrow_DSPArr X Y C w))
+    (@arr_second PredArr Arrow_Pred X Y C (dspRel w)).
+Proof.
+  unfold arr_second.
+  cbn [arr_comp arr_pure arr_first Arrow_DSPArr].
+  repeat first [setoid_rewrite dspRel_comp | setoid_rewrite dspRel_pure
+    | setoid_rewrite dspRel_first]. reflexivity.
+Qed.
+
 (* ----------------------------------------------------------------- *)
 (** *** The arrow laws, transported                                   *)
 (* ----------------------------------------------------------------- *)
@@ -115,6 +125,8 @@ Proof.
       [ exact (dspRel_faithful_conv _ _ Hw) | exact (dspRel_faithful_conv _ _ Hv) ].
   - intros X Y Z w w' Hw. to_rel.
     apply Pred_first_cong. exact (dspRel_faithful_conv _ _ Hw).
+  - intros A B C D f g. to_rel.
+    apply (@first_natural PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
 Qed.
 
 
@@ -152,7 +164,22 @@ Proof.
       apply dspRel_pure in Hd. cbn in Hd. exact Hd.
     + intro Hq. exists (pure_DSP (fun y : B => (a, y)), b).
       split; [ split; reflexivity |]. cbn. apply dspRel_pure. exact Hq.
-  - (* app_post : post-composing before applying *)
+  - (* app_precompose *)
+    intros A B C g. to_rel_a. setoid_rewrite dspRel_second.
+    etransitivity; [apply Pred_comp_cong; [apply Pred_first_cong; apply dspRel_pure | reflexivity]|].
+    intros [f a] c. unfold appRel, arr_second, swap. cbn. split.
+    + intros [[w a'] [[Hw Ha] Hd]]. cbn in *. subst w a'.
+      apply dspRel_comp in Hd. destruct Hd as [b [Hg Hf]].
+      exists (f, b). split; [|exact Hf].
+      exists (a, f). split; [reflexivity|]. exists (b, f). cbn. auto.
+    + intros [[f0 b] [[p [Hp [q [Hg Hq]]]] Hf]].
+      destruct p as [a' f'], q as [b' f'']. cbn in *.
+      injection Hp as Ha Hf'. subst a' f'.
+      destruct Hg as [Hg Hff]. subst f''.
+      injection Hq as Hf0 Hb. subst f0 b'.
+      exists (comp_DSP g f, a). cbn. split; [split; reflexivity |].
+      apply dspRel_comp. exists b. auto.
+  - (* app_postcompose : post-composing before applying *)
     intros A B C h. to_rel_a.
     etransitivity; [ apply Pred_comp_cong; [ apply Pred_first_cong; apply dspRel_pure | reflexivity ] |].
     intros [f a] c. unfold appRel. cbn. split.
@@ -162,13 +189,15 @@ Proof.
       split; [ split; reflexivity |]. cbn.
       apply dspRel_comp. exists b. split; assumption.
   - (* app_ext : [arr_app] sees only the arrow's extension *)
-    intros X A B u v t H. to_rel_a. intros x b. unfold appRel. cbn. split.
+    intros X A B u v H. to_rel_a. intros x b. unfold appRel. cbn.
+    specialize (H x). destruct (u x) as [fu au], (v x) as [fv av].
+    cbn in H. destruct H as [Hfg Ha]. subst av. split.
     + intros [p [Heq Hp]]. subst p. cbn in Hp.
-      exists (v x, t x). split; [ reflexivity | cbn ].
-      exact (proj1 (dspRel_faithful_conv _ _ (H x) (t x) b) Hp).
+      exists (fv, au). split; [reflexivity|cbn].
+      exact (proj1 (dspRel_faithful_conv _ _ Hfg au b) Hp).
     + intros [p [Heq Hp]]. subst p. cbn in Hp.
-      exists (u x, t x). split; [ reflexivity | cbn ].
-      exact (proj2 (dspRel_faithful_conv _ _ (H x) (t x) b) Hp).
+      exists (fu, au). split; [reflexivity|cbn].
+      exact (proj2 (dspRel_faithful_conv _ _ Hfg au b) Hp).
 Qed.
 
 (* ----------------------------------------------------------------- *)

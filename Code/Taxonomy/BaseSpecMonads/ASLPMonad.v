@@ -27,13 +27,13 @@ Definition ASLP (A : Type) : Type := ASLPArr unit A.
 
 #[global] Instance Monad_ASLP : Monad ASLP := Monad_Arrow ASLPArr unit.
 
-#[global] Instance Eq1_ASLP : Eq1 ASLP := @Eq1_Arrow ASLPArr ArrowEq_ASLPArr.
+#[global] Instance Eq1_ASLP : Eq1 ASLP := @Eq1_Arrow ASLPArr ArrowEq_ASLPArr unit.
 
 Definition Eq1Equivalence_ASLP : @Eq1Equivalence ASLP _ Eq1_ASLP :=
-  @Eq1Equivalence_Arrow ASLPArr _ _ ArrowEq_ASLPArr.
+  @Eq1Equivalence_Arrow ASLPArr _ _ ArrowEq_ASLPArr unit.
 
 Definition MonadLawsE_ASLP : @MonadLawsE ASLP Eq1_ASLP Monad_ASLP :=
-  @MonadLawsE_Arrow ASLPArr _ _ ArrowEq_ASLPArr _ _.
+  @MonadLawsE_Arrow ASLPArr _ _ ArrowEq_ASLPArr _ _ unit.
 
 (* ================================================================= *)
 (** ** The state and exception stacks                                *)
@@ -99,19 +99,19 @@ Definition ASLPStExc (S A : Type) : Type := ASLPStExcArr S unit A.
 #[global] Instance Monad_ASLPStExc S : Monad (ASLPStExc S) := Monad_Arrow _ unit.
 
 #[global] Instance Eq1_ASLPSt S : Eq1 (ASLPSt S) :=
-  @Eq1_Arrow (ASLPStArr S) (ArrowEq_ASLPStArr S).
+  @Eq1_Arrow (ASLPStArr S) (ArrowEq_ASLPStArr S) unit.
 #[global] Instance Eq1_ASLPStExc S : Eq1 (ASLPStExc S) :=
-  @Eq1_Arrow (ASLPStExcArr S) (ArrowEq_ASLPStExcArr S).
+  @Eq1_Arrow (ASLPStExcArr S) (ArrowEq_ASLPStExcArr S) unit.
 
 Definition MonadLawsE_ASLPSt S
   : @MonadLawsE (ASLPSt S) (Eq1_ASLPSt S) (Monad_ASLPSt S) :=
   @MonadLawsE_Arrow (ASLPStArr S) _ (ArrowApply_ASLPStArr S) (ArrowEq_ASLPStArr S)
-    (ArrowLaws_ASLPStArr S) (ArrowApplyLaws_ASLPStArr S).
+    (ArrowLaws_ASLPStArr S) (ArrowApplyLaws_ASLPStArr S) unit.
 Definition MonadLawsE_ASLPStExc S
   : @MonadLawsE (ASLPStExc S) (Eq1_ASLPStExc S) (Monad_ASLPStExc S) :=
   @MonadLawsE_Arrow (ASLPStExcArr S) _ (ArrowApply_ASLPStExcArr S)
     (ArrowEq_ASLPStExcArr S) (ArrowLaws_ASLPStExcArr S)
-    (ArrowApplyLaws_ASLPStExcArr S).
+    (ArrowApplyLaws_ASLPStExcArr S) unit.
 
 (* ================================================================= *)
 (** ** [bind] is composition of the denoted relations                *)

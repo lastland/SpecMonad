@@ -268,7 +268,7 @@ Local Ltac unfold_Pred_full :=
     just [f a b <-> g a b]. *)
 
 #[global]
-Instance ArrowLaws_Pred : ArrowLaws PredArr.
+Instance ArrowLaws_Pred : @ArrowLaws PredArr Arrow_Pred ArrowEq_Pred.
 Proof.
   constructor; intros.
   1-4: intros a b; unfold_Pred_full; sauto limit: 200.
@@ -301,6 +301,12 @@ Proof.
     intros f1 f2 Hf [a c] [b c'].
     cbv [arrow_eq ArrowEq_Pred Pred_eq] in Hf.
     unfold_Pred_full. sauto limit: 200.
+  - (* first_natural *)
+    intros [a c] [b d]; cbn. split.
+    + intros [[b' c'] [[Hf Hc] Heq]]. cbn in Heq. subst c'.
+      inversion Heq; subst. exists (a, g c). cbn. auto.
+    + intros [[a' d'] [Heq [Hf Hd]]]. inversion Heq; subst.
+      exists (b, c). cbn. auto.
 Qed.
 
 #[global]
@@ -394,32 +400,43 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowApplyLaws_Pred : ArrowApplyLaws PredArr.
+Instance ArrowApplyLaws_Pred
+  : @ArrowApplyLaws PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred.
 Proof.
   constructor; intros.
   - (* app_law *)
     intros a b; unfold_Pred_full. sauto limit: 200.
-  - (* app_pair *)
-    intros [a b0] q; unfold_Pred_full. split.
-    + intros [[g b1] [[Hg Hb] Happ]]. subst g. subst b1.
-      unfold_Pred_full. exact Happ.
-    + intros Heq. exists (arr_pure (fun y : B => (a, y)), b0).
-      unfold_Pred_full. auto.
-  - (* app_post *)
-    intros [f a] c; unfold_Pred_full. split.
-    + intros [[g a'] [[Hg Ha] Happ]]. subst g. subst a'.
-      unfold_Pred_full. exact Happ.
-    + intros [b [Hf Hh]]. exists (arr_comp f h, a).
-      unfold_Pred_full. eauto.
+  - (* app_unit *)
+    intros [a b] [a' b']; cbn. split.
+    + intros [[f b0] [[Hf Hb] Hout]]. cbn in *. subst f b0.
+      exact Hout.
+    + intros Heq. exists ((fun y p => (a, y) = p), b).
+      cbn. split; [split; reflexivity | exact Heq].
+  - (* app_precompose *)
+    intros [f a] c.
+    rewrite arr_second_Pred. cbn. split.
+    + intros [[h a'] [[Hh Ha] Hout]]. cbn in *. subst h a'.
+      destruct Hout as [b [Hg Hf]].
+      exists (f, b). cbn. auto.
+    + intros [[f' b] [[Hg Hf] Hout]]. cbn in *. subst f'.
+      exists ((fun a c => exists b, g a b /\ f b c), a).
+      cbn. split; [split; reflexivity | exists b; auto].
+  - (* app_postcompose *)
+    intros [f a] c; cbn. split.
+    + intros [[k a'] [[Hk Ha] Hout]]. cbn in *. subst k a'.
+      exact Hout.
+    + intros Hout.
+      exists ((fun a c => exists b, f a b /\ h b c), a).
+      cbn. split; [split; reflexivity | exact Hout].
   - (* app_ext *)
-    match goal with
-    | [ Hx : forall _, arrow_eq _ _ |- _ ] => rename Hx into Huv
-    end.
-    intros x b; unfold_Pred_full. split.
-    + intros [[g a] [Heq Happ]]. injection Heq as <- <-.
-      exists (v x, t x). unfold_Pred_full. split; [auto | apply Huv, Happ].
-    + intros [[g a] [Heq Happ]]. injection Heq as <- <-.
-      exists (u x, t x). unfold_Pred_full. split; [auto | apply Huv, Happ].
+    intros x b. cbn. specialize (H x).
+    destruct (u x) as [f a], (v x) as [g a']; cbn in H.
+    destruct H as [Hfg Ha]. subst a'.
+    change ((exists p, (f, a) = p /\ (let '(k, a0) := p in k a0 b)) <->
+            (exists p, (g, a) = p /\ (let '(k, a0) := p in k a0 b))).
+    split; intros [p [<- Hout]].
+    + exists (g, a). split; [reflexivity | apply Hfg; exact Hout].
+    + exists (f, a). split; [reflexivity | apply Hfg; exact Hout].
 Qed.
 
 #[global]

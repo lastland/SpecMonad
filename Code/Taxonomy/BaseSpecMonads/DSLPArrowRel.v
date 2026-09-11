@@ -224,6 +224,14 @@ Proof.
     rel_eq.
     split; intros [H Heq]; split;
       solve [ apply (proj1 (Hf' _ _)), H | apply (proj2 (Hf' _ _)), H | exact Heq ].
+  - (* first_natural *)
+    rel_eq. destruct x as [a c], y as [b d]. cbn [fst snd]. split.
+    + intros [[b0 c0] [[Hf Hc] Heq]]. cbn in Hc, Heq. subst c0.
+      injection Heq as Hb Hd. subst b0 d.
+      exists (a, g c). cbn. auto.
+    + intros [[a0 d0] [Heq [Hf Hd]]]. cbn in Heq, Hd.
+      injection Heq as Ha Hd0. subst a0 d0 d.
+      exists (b, c). cbn. auto.
 Qed.
 
 (** Sum laws: split the input and output first, so that the [match] in
@@ -302,7 +310,22 @@ Proof.
     + intro H. destruct x as [a b]. cbn in *.
       exists (pureDSLP (fun v : B => (a, v)), b). cbn.
       split; [ split; reflexivity |]. rewrite dslpRel_pure. exact H.
-  - (* app_post *)
+  - (* app_precompose *)
+    intros A B C g. unfold arr_second. rel_eq.
+    destruct x as [f a]. unfold swap. cbn [fst snd]. split.
+    + intros [[k a'] [[Hk Ha] Hcomp]]. cbn in *. subst k a'.
+      rewrite dslpRel_comp in Hcomp. destruct Hcomp as [b [Hg Hf]].
+      exists (f, b). split; [|exact Hf].
+      exists (a, f). split; [reflexivity|].
+      exists (b, f). cbn. auto.
+    + intros [[f0 b] [[p [Hp [q [Hg Hq]]]] Hf]].
+      destruct p as [a' f'], q as [b' f'']. cbn in *.
+      injection Hp as Ha Hf'. subst a' f'.
+      destruct Hg as [Hg Hff]. subst f''.
+      injection Hq as Hf0 Hb. subst f0 b'.
+      exists (compDSLP g f, a). cbn.
+      split; [split; reflexivity |]. rewrite dslpRel_comp. exists b. auto.
+  - (* app_postcompose *)
     intros A B C h. rel_eq. split.
     + intros [[k a] [[H1 H2] H3]]. cbn in *. subst k a.
       rewrite dslpRel_comp in H3. destruct x as [f a]. cbn in *. exact H3.
@@ -310,13 +333,15 @@ Proof.
       exists (compDSLP f h, a). cbn.
       split; [ split; reflexivity |]. rewrite dslpRel_comp. exact H.
   - (* app_ext *)
-    intros X A B u v t Huv. rel_eq. split.
-    + intros [[g a] [Heq H]]. injection Heq as <- <-.
-      exists (v x, t x). cbn. split; [ reflexivity |].
-      exact (proj1 (proj1 (dslpRel_eq (u x) (v x)) (Huv x) _ _) H).
-    + intros [[g a] [Heq H]]. injection Heq as <- <-.
-      exists (u x, t x). cbn. split; [ reflexivity |].
-      exact (proj2 (proj1 (dslpRel_eq (u x) (v x)) (Huv x) _ _) H).
+    intros X A B u v Huv. rel_eq.
+    specialize (Huv x). destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
+    cbn in Huv. destruct Huv as [Hfg Ha]. subst av. split.
+    + intros [p [Heq Hr]]. subst p. cbn in Hr.
+      exists (fv, au). split; [reflexivity|].
+      exact (proj1 (proj1 (dslpRel_eq fu fv) Hfg _ _) Hr).
+    + intros [p [Heq Hr]]. subst p. cbn in Hr.
+      exists (fu, au). split; [reflexivity|].
+      exact (proj2 (proj1 (dslpRel_eq fu fv) Hfg _ _) Hr).
 Qed.
 
 Local Ltac flat :=
