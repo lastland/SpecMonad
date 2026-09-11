@@ -28,16 +28,19 @@ Taxonomy/
   ComputationMonads/     TransformerLaws            -- generic optionT/stateT/readerT laws
                          StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet,
                          DivNonDet, RdDivNonDet
-  BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
+  BaseSpecMonads/        Healthiness                 -- the four conditions, shared
+                         PredMonad, PrePostMonad, SPostMonad, WPureMonad,
                          RelPrePostMonad             -- the five DM4all monads
                          SPPredicateTransformers     -- SP carriers + healthiness
                          ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
+                         SPHealthyMonads, WPHealthyMonads
                          BaseGaloisConnections, NewGaloisConnections
   Arrows/                PredArr, PrePostArr, RelPrePostArr, SPostArr, WPArr,
                          GaloisArr                   -- binary carriers
   EffectObservations/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
-                         StDivExcNonDet_WStExc, StDivNonDet_WSt
+                         StDivExcNonDet_WStExc, StDivNonDet_WSt,
+                         StDivNonDet_WPHealthy
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
                          StDivNonDet_SPSt, DivNonDet_SPPure,
                          RdDivNonDet_RdSPPure
@@ -112,7 +115,98 @@ The `readerT` instances are simpler than the `stateT` ones: the environment is
 threaded but never returned, so no pairing has to be destructed in the law
 proofs.
 
-## 3. The SP specification monads
+## 3. The four healthiness conditions, and the refinement recipe
+
+There are two base predicate transformers, differing in which slot the
+predicate argument occupies:
+
+```coq
+SPPure A = Prop -> (A -> Prop)          (* the argument is the PRECONDITION  *)
+WPureT A = (A -> Prop) -> Prop          (* the argument is the POSTCONDITION *)
+```
+
+In both cases the monads are cut out by the same four conditions, stated once
+in `Healthiness.v` for the shape they share, `PT I := (I -> Prop) -> Prop`:
+
+```coq
+Strict      w := ~ w (fun _ => False)
+Terminating w := w (fun _ => True)
+Conjunctive w := forall K, inhabited K -> forall p, w (fun i => forall k, p k i) <-> forall k, w (p k)
+Disjunctive w := forall K, inhabited K -> forall p, w (fun i => exists k, p k i) <-> exists k, w (p k)
+```
+
+and paired into `AngelicTotal` (strict ∧ disjunctive), `DemonicLiberal`
+(terminating ∧ conjunctive), `DemonicTotal` (strict ∧ conjunctive) and
+`AngelicLiberal` (terminating ∧ disjunctive). `Conjunctive_MonoPT` /
+`Disjunctive_MonoPT` mean monotonicity never has to be carried separately.
+
+`WPureT A` **is** `PT A` on the nose. `SPStExc S A` is a *family* of `PT S`,
+one per outcome, and `SPPredicateTransformers.v` proves the bridges —
+`StrictProg_pointwise`, `ASP_pairing`, … — so the `*Prog` conditions are
+literally the shared ones lifted pointwise, not merely analogous.
+
+### How far the recipe carries: WP yes, SP no
+
+| | WP (`WPHealthyMonads.v`) | SP (`SPHealthyMonads.v`) |
+|---|---|---|
+| distinct monads from four conditions | **four** | **two** |
+| `ret`/`bind` shared across them | yes, `WPure`'s | no, genuinely different |
+| the functor yields `MonadLawsE` | yes | no — per instance |
+| lifts through `stateT`/`optionT` | yes, free | no |
+
+**WP.** The four classes are pairwise incomparable on `PT A` — `wDem` is
+conjunctive but not disjunctive, `wAng` the converse, `wTop` terminating but
+not strict, `wBot` the converse (`Section Separation`). All four monads come
+from one functor `HealthyWP` applied to the four conditions, *including*
+`MonadLawsE`, because `bind` there is continuation composition and the closure
+lemmas `Strict_bindPT` … `Disjunctive_bindPT` cover every case. And they stack:
+`stateT` indexes by the initial state, `optionT` widens the outcome, neither
+touches the postcondition slot the condition constrains, so
+
+```coq
+AWStExc S A = S -> AWPure (option (A * S))
+```
+
+is healthy by construction with its laws one line from `TransformerLaws.v`
+(`Section Stacks`, all eight).
+
+**SP.** Two separate failures:
+
+1. *Only two monads.* `SPPure`'s precondition slot is a bare `Prop`, of which
+   there are two up to propositional extensionality, so `Strict` alone forces
+   `Singleton` and `Terminating` alone forces `MSingleton`. Hence
+   `DemonicTotal ⟺ AngelicTotal` and `AngelicLiberal ⟺ DemonicLiberal`
+   (`strict_conj_iff_singleton`, `term_disj_iff_msingleton`).
+
+2. *No shared `ret`/`bind`.* The angelic and demonic monads have genuinely
+   different operations, and the raw transformer type carries no monad
+   structure for them to restrict:
+
+   ```coq
+   retASP  v = fun p a => p /\ a = v      bindASP  m k = fun p b => exists a, k a (m p a) b
+   retDSLP v = fun p a => a = v -> p      bindDSLP m k = fun p b => forall a, k a (m p a) b
+   ```
+
+   So `HealthySP` takes `ret`/`bind` as parameters and shares only the
+   packaging — carrier, projections, `Monad`, `Eq1`, `Eq1Equivalence`, orders —
+   stopping short of the laws. `ASP_carrier_agrees` / `DSLP_carrier_agrees`
+   (both `eq_refl`) and the four `*_agrees` lemmas show the recipe reproduces
+   the hand-built `ASPSP` / `DSLPSP` exactly, so `ASPMonad.v` and `DSLPMonad.v`
+   remain the definitions in use and `MonadLawsE` transports rather than being
+   reproved.
+
+And the stateful SP carriers are not transformer images of `SPPure` at all:
+they take one **shared** `S -> Prop` precondition where any transformer over
+`SPPure` gives a `Prop` **per** state, and `(S -> Prop) -> X` does not curry to
+`S -> Prop -> X`. The canonical shared→pointwise map is not injective
+(`fun pre _ => forall s, pre s` and the empty transformer have the same image).
+That is why `DSPMonad.v` and `ASLPMonad.v` exist at their present size.
+
+All of it traces to variance: the postcondition slot is where the continuation
+composes, so preservation properties compose for free; the precondition slot is
+upstream of the composition, and it is exactly where the SP distinctions live.
+
+## 4. The SP specification monads
 
 Predicate transformers `(S -> Prop) -> Outcome -> Prop`, carved into four
 monads by four healthiness conditions. **The bare transformer type is not a
@@ -266,7 +360,7 @@ every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at `⊤`) and ar
 not removable. DSP and ASLP have no in-monad target in either direction, because
 their orders are not relation inclusion at all.
 
-## 4. The WP specification monads
+## 5. The WP specification monads
 
 `BaseSpecMonads/WPureMonad.v` holds exactly three developments plus their
 orders:
@@ -311,12 +405,21 @@ in `EffectObservations/` use the forward stack orders. They are opposite
 conventions, not a lifting of one another — lifting `WP_le` through the
 transformers would give `forall s, m2 s ⊆ m1 s`.
 
+### The four healthy WP monads
+
+`WPHealthyMonads.v` cuts `WPure` into `AWPure` / `DWLPure` / `DWPure` /
+`AWLPure` by the four pairings of §3, all from one functor `HealthyWP` —
+`ret`, `bind`, `Monad`, `Eq1`, `Eq1Equivalence`, `MonadLawsE`, `ordW` and
+`ordWAt` written once. `Section Separation` shows the four classes are pairwise
+incomparable, and `Section Stacks` adds the eight `stateT` / `optionT` stacks
+with inherited laws. See §3 for why this works here and not on the SP side.
+
 **`Arrows/WPArr.v` deliberately stays on `WPureT`**, the unrestricted type: its
 `ArrowEq` is Leibniz equality on functions into the carrier, which a subset type
 cannot support without proof irrelevance, and its arrow laws hold definitionally
 only for the raw type.
 
-## 5. Observations
+## 6. Observations
 
 An observation maps a computation monad into the spec monads. Everything
 downstream — monad-morphism theorems, triples, the taxonomy — follows from
@@ -342,6 +445,13 @@ has no liberal readings because its monad has no divergence — they are not eve
 definable there. `StDivITree_WStExc.v` is the deterministic case and is the only
 built file with `obsWPCollapse` / `obsWLPCollapse`, the angelic–demonic
 collapse.
+
+`StDivNonDet_WPHealthy.v` refines that file's four observations into the four
+healthy monads of §5, and shares work on the observation side too: all four
+factor as one definition `obsGen q k` with two independent parameters — `q`
+picks the quantifier, `k` picks how the divergent outcome is scored. Since each
+healthiness condition depends on only ONE axis, there are four healthiness
+proofs rather than eight.
 
 `StDivNonDet_WSt.v` targets `WSt`, whose postconditions range over `A * S`, so
 divergence is visible to the *observation* but not to the *postcondition*: the
@@ -404,7 +514,7 @@ demonic-liberal readings, and `tripleDSP_is_tripleASP` /
 is a single "input", so `R⁻¹(a) ⊆ pre` and `R⁻¹(a) ∩ pre ≠ ∅` say the same
 thing whenever `R⁻¹(a)` is inhabited. See §3 for the carrier-level reason.
 
-## 6. Comparing observations — `Taxonomy_*.v`
+## 7. Comparing observations — `Taxonomy_*.v`
 
 Three files, one per source monad / target indexing, holding everything that
 compares observations against one another rather than defining them: the
@@ -426,7 +536,7 @@ Where a taxonomy file holds both halves, the SP-side `Require Import`s are
 placed *after* the WP sections rather than in the preamble, so the SP base-monad
 modules cannot shadow names the WP proofs above resolve against.
 
-## 7. The DM4all specification monads and their adjunctions
+## 8. The DM4all specification monads and their adjunctions
 
 Five standalone base specification monads, faithful ports of the ones in
 *Dijkstra Monads For All* (ICFP 2019), `theories/sprop/SpecificationMonads.v`.
@@ -528,7 +638,7 @@ states, and `(S -> Prop) -> X` does not curry to `S -> Prop -> X`. A shared
 `S -> Prop` couples the initial states and makes the order strictly coarser than
 pointwise.
 
-## 8. Arrows vs monads: file split
+## 9. Arrows vs monads: file split
 
 Each specification family has **two independent presentations**, in separate
 files, with no import edge in either direction:
@@ -563,7 +673,7 @@ reading is a monad morphism, but it forgets the precondition and no injective
 map exists (proved for the pure case). What does hold is a Galois connection
 with each SP monad; for ASP it is order-preserving and for DSLP order-reversing.
 
-## 9. Example programs
+## 10. Example programs
 
 `ExampleProgramDefs.v` holds the program definitions and nothing else:
 
@@ -599,7 +709,7 @@ other comparisons.
 `InCorrectnessPrinciples.v` states O'Hearn's rewriting rules over the
 `tripleASP` triples of `SP/StDivExcNonDet_SPStExc.v`.
 
-## 10. `OldSP/`
+## 11. `OldSP/`
 
 `OldSPObservations.v` (2844 lines) and `OldIncorrectnessRewritingRules.v` hold
 the earlier reading-based presentation of the SP side, superseded by
@@ -629,9 +739,9 @@ naming scheme in §12.
 `_CoqProject`. They are the older observation style, kept for reference; the
 directory's only `Admitted` is in `Observation.v`.
 
-## 11. Build status
+## 12. Build status
 
-`_CoqProject` lists 71 files and builds **clean from scratch**, with **no
+`_CoqProject` lists 75 files and builds **clean from scratch**, with **no
 `Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
 classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /
@@ -650,7 +760,7 @@ Not in the build, deliberately:
 `_CoqProject` changes, rebuild from clean. There are a few `.v~` editor backups
 under `OldSP/` and `BaseSpecMonads/`; the build ignores them.
 
-## 12. Naming conventions
+## 13. Naming conventions
 
 **Instances** are named after the type they are an instance for, with the number
 of underscores marking the layer:
@@ -687,7 +797,7 @@ The `Module St*` wrappers are still needed: the healthiness conditions
 deliberately carry parallel names in both variants, so the module is what tells
 them apart.
 
-## 13. Known duplication
+## 14. Known duplication
 
 The option-outcome and terminating-slice developments are near-copies differing
 only in the outcome type, `bind`, and the four `comp_*` lemmas — everything else

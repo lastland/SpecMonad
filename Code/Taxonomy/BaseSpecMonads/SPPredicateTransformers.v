@@ -5,6 +5,8 @@ Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Setoids.Setoid.
 
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import Healthiness.
+
 Import MonadNotation.
 Open Scope monad_scope.
 
@@ -58,6 +60,104 @@ Section ProgPredicateTransformers.
 End ProgPredicateTransformers.
 
 (* ================================================================= *)
+(** ** The SP conditions ARE the shared ones, lifted pointwise        *)
+(* ================================================================= *)
+
+(** [SPStExc S A] is a family of [PT S], one per outcome, and each [*Prog]
+    condition is the corresponding condition of [Healthiness.v] holding at
+    every outcome.  These bridges make the sharing with the WP side (where
+    [WPureT A] IS [PT A]) a fact rather than an analogy.
+
+    [SPPure] is the one carrier with no bridge: its precondition slot is a bare
+    [Prop] rather than a predicate, so it is not of the form [PT I].  That is
+    also why the pure SP refinement degenerates — see [SPHealthyMonads.v]. *)
+
+Section SharedConditions.
+  Variable S : Type.
+
+  Theorem StrictProg_pointwise {A} (w : @SPStExc S A) :
+    StrictProg S w <-> forall r, Healthiness.Strict (fun pre => w pre r).
+  Proof. split; intros H r; exact (H r). Qed.
+
+  Theorem TerminatingProg_pointwise {A} (w : @SPStExc S A) :
+    TerminatingProg S w <-> forall r, Healthiness.Terminating (fun pre => w pre r).
+  Proof. split; intros H r; exact (H r). Qed.
+
+  Theorem ConjunctiveProg_pointwise {A} (w : @SPStExc S A) :
+    ConjunctiveProg S w <-> forall r, Healthiness.Conjunctive (fun pre => w pre r).
+  Proof.
+    split.
+    - intros H r K HK p. exact (H K HK p r).
+    - intros H K HK p r. exact (H r K HK p).
+  Qed.
+
+  Theorem DisjunctiveProg_pointwise {A} (w : @SPStExc S A) :
+    DisjunctiveProg S w <-> forall r, Healthiness.Disjunctive (fun pre => w pre r).
+  Proof.
+    split.
+    - intros H r K HK p. exact (H K HK p r).
+    - intros H K HK p r. exact (H r K HK p).
+  Qed.
+
+  (** Hence the SP carriers are cut out by the same four PAIRINGS the WP monads
+      use: [ASPStExc] by [AngelicTotal], [DSLPStExc] by [DemonicLiberal],
+      [DSPStExc] by [DemonicTotal], [ASLPStExc] by [AngelicLiberal]. *)
+
+  Theorem ASP_pairing {A} (w : @SPStExc S A) :
+    (StrictProg S w /\ DisjunctiveProg S w)
+    <-> forall r, Healthiness.AngelicTotal (fun pre => w pre r).
+  Proof.
+    split.
+    - intros [H1 H2] r.
+      exact (conj (proj1 (StrictProg_pointwise w) H1 r)
+                  (proj1 (DisjunctiveProg_pointwise w) H2 r)).
+    - intro H. split.
+      + apply StrictProg_pointwise. intro r. exact (proj1 (H r)).
+      + apply DisjunctiveProg_pointwise. intro r. exact (proj2 (H r)).
+  Qed.
+
+  Theorem DSLP_pairing {A} (w : @SPStExc S A) :
+    (TerminatingProg S w /\ ConjunctiveProg S w)
+    <-> forall r, Healthiness.DemonicLiberal (fun pre => w pre r).
+  Proof.
+    split.
+    - intros [H1 H2] r.
+      exact (conj (proj1 (TerminatingProg_pointwise w) H1 r)
+                  (proj1 (ConjunctiveProg_pointwise w) H2 r)).
+    - intro H. split.
+      + apply TerminatingProg_pointwise. intro r. exact (proj1 (H r)).
+      + apply ConjunctiveProg_pointwise. intro r. exact (proj2 (H r)).
+  Qed.
+
+  Theorem DSP_pairing {A} (w : @SPStExc S A) :
+    (StrictProg S w /\ ConjunctiveProg S w)
+    <-> forall r, Healthiness.DemonicTotal (fun pre => w pre r).
+  Proof.
+    split.
+    - intros [H1 H2] r.
+      exact (conj (proj1 (StrictProg_pointwise w) H1 r)
+                  (proj1 (ConjunctiveProg_pointwise w) H2 r)).
+    - intro H. split.
+      + apply StrictProg_pointwise. intro r. exact (proj1 (H r)).
+      + apply ConjunctiveProg_pointwise. intro r. exact (proj2 (H r)).
+  Qed.
+
+  Theorem ASLP_pairing {A} (w : @SPStExc S A) :
+    (TerminatingProg S w /\ DisjunctiveProg S w)
+    <-> forall r, Healthiness.AngelicLiberal (fun pre => w pre r).
+  Proof.
+    split.
+    - intros [H1 H2] r.
+      exact (conj (proj1 (TerminatingProg_pointwise w) H1 r)
+                  (proj1 (DisjunctiveProg_pointwise w) H2 r)).
+    - intro H. split.
+      + apply TerminatingProg_pointwise. intro r. exact (proj1 (H r)).
+      + apply DisjunctiveProg_pointwise. intro r. exact (proj2 (H r)).
+  Qed.
+
+End SharedConditions.
+
+(* ================================================================= *)
 (** * Terminating-slice variant (factored out of SPSimplerSpecMonads.v) *)
 (* ================================================================= *)
 
@@ -67,6 +167,8 @@ Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Setoids.Setoid.
+
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import Healthiness.
 
 Import MonadNotation.
 Open Scope monad_scope.

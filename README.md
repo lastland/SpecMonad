@@ -24,7 +24,7 @@ Version info can be found in [this opam file](Code/coq-spec-monad.opam).
     coq_makefile -f _CoqProject -o Makefile
     make
 
-`Makefile` is gitignored, so it has to be regenerated. The 71 files listed in
+`Makefile` is gitignored, so it has to be regenerated. The 75 files listed in
 `_CoqProject` build clean, with no `Admitted`.
 
 # The current status
