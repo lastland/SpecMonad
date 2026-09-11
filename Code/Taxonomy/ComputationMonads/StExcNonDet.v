@@ -76,9 +76,8 @@ End StExcNonDet.
     [MonadLawsE] via the generic [optionT] and [stateT] instances
     from [Prog]. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality PropExtensionality.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 

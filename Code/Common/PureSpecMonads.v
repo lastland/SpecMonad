@@ -1,4 +1,4 @@
-From ExtLib Require Import Monad MonadState StateMonad MonadLaws.
+From ExtLib Require Import Monad.
 From Hammer Require Import Tactics.
 From Incorrectness Require Import Common.Notations Common.Classes.
 

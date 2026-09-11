@@ -1,5 +1,5 @@
 From ExtLib Require Import Monad MonadState StateMonad MonadExc EitherMonad.
-From Coq Require Import Nat Lia PeanoNat.
+From Coq Require Import Lia PeanoNat.
 
 Open Scope monad_scope.
 Open Scope nat_scope.

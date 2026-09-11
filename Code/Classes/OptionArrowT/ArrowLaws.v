@@ -1,5 +1,4 @@
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
-From Hammer Require Import Tactics.
+From Coq Require Import FunctionalExtensionality Morphisms.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Classes.OptionArrowT Require Import Core.
 

@@ -5,20 +5,12 @@
     observations relate to one another — and to the WP observations — lives in
     [Taxonomy_StDivExcNonDet_StExc.v]. *)
 
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
-From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StDivExcNonDet.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import NewGaloisConnections.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
-Require Import Coq.Logic.PropExtensionality.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Setoids.Setoid.
 
 Import MonadNotation.
 Open Scope monad_scope.

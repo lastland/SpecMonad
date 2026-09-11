@@ -15,6 +15,7 @@
     and state-over-option arrows.  These generic proofs have no logical
     axioms and are independent of any concrete SP carrier. *)
 
+From Coq Require Import Classes.Morphisms_Prop.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 
 (** This ordinary record packages only the relation semantics needed by

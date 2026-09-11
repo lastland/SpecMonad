@@ -5,7 +5,7 @@
     same carrier cannot satisfy the check accidentally. *)
 
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
   PredArr PrePostArr RelPrePostArr RelSPPairArr SPostArr.
 

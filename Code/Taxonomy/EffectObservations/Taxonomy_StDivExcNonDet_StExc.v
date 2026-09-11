@@ -15,7 +15,7 @@
     and [obsAWP] triples with the [obsASP] and [obsDSLP] ones. *)
 
 From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.

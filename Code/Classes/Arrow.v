@@ -5,9 +5,7 @@
     instance [Pred A B := A -> B -> Prop] lives in [Taxonomy/Pred.v];
     its law instances live in [Taxonomy/PredFacts.v]. *)
 
-From Coq Require Import
-  FunctionalExtensionality PropExtensionality
-  Morphisms RelationClasses.
+From Coq Require Import Morphisms FunctionalExtensionality.
 
 (* ================================================================= *)
 (** ** Helper functions for products and sums                         *)

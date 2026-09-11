@@ -10,9 +10,8 @@
     other computation monads, [WPure]'s [WSt] / [WStExc], [PredMonad]'s
     [ProgWPred], and the [*Rd] specification monads. *)
 
-From Coq Require Import Morphisms RelationClasses.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ExtLib Require Import ReaderMonad.
 
 (* ================================================================= *)

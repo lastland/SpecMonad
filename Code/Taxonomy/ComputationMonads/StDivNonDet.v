@@ -182,10 +182,7 @@ Arguments mayDivergeNE {_} {_}.
     [stateT] and [optionT] instances in [Prog], via [SetM]'s in
     [StExcNonDet]. *)
 
-From Coq Require Import Morphisms.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivITree.
 
 Section StDivNonDet.
 

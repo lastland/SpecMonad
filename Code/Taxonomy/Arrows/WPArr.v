@@ -20,9 +20,7 @@
     monotone/Proper in its continuation, which is not enforced by
     the [WPArr] type. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
-From ITree Require Import Basics.Monad.
+From Coq Require Import RelationClasses.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
 
@@ -81,9 +79,7 @@ Instance ArrowApply_WPArr : ArrowApply WPArr := {
     extensionality handles functions on products and sums; [app_ext]
     additionally uses equality of the stored arrows. *)
 
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
-From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
+From Coq Require Import FunctionalExtensionality.
 
 #[global]
 Instance ArrowLaws_WPArr : @ArrowLaws WPArr Arrow_WPArr ArrowEq_WPArr.

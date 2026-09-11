@@ -1,5 +1,5 @@
 From Coq Require Import RelationClasses Relation_Definitions.
-From ExtLib Require Import Monad MonadLaws.
+From ExtLib Require Import Monad.
 From Hammer Require Import Tactics.
 
 Class PreT (Pre : Type) :=

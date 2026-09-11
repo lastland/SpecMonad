@@ -2,8 +2,7 @@
 
     Stated over the [tripleASP] triples of [SP/StDivExcNonDet_SPStExc]. *)
 
-From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.

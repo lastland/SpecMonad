@@ -8,9 +8,6 @@
 
     Concrete instances for [optionArrT Pred] are also given. *)
 
-From Coq Require Import
-  FunctionalExtensionality PropExtensionality
-  Morphisms RelationClasses.
 From Incorrectness.Classes Require Import Arrow.
 
 (* ================================================================= *)

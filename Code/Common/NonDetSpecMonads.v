@@ -1,5 +1,5 @@
 From Coq Require Import RelationClasses.
-From ExtLib Require Import Monad MonadLaws.
+From ExtLib Require Import Monad.
 From Hammer Require Import Tactics.
 From Incorrectness Require Import Common.Notations.
 

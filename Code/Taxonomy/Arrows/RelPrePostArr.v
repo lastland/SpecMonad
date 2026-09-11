@@ -26,7 +26,7 @@
     / [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding
     laws are proved in [Taxonomy/RelPrePostArr.v]. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
+From Coq Require Import Morphisms.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
@@ -158,10 +158,6 @@ End RelPrePostMonad.
     [ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws], [Eq1Equivalence]
     and [MonadLawsE] for [RelPrePostArr]. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
-From ExtLib Require Import Monad.
-From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
 
 
 (* ================================================================= *)

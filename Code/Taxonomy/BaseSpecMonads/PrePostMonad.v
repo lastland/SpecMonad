@@ -23,8 +23,6 @@
     [GaloisArr.v].  Write [PPM.PrePost], or [Import PPM] where the arrow is not
     in play. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 
 Module PPM.
