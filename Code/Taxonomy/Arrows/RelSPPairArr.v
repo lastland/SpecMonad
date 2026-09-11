@@ -41,13 +41,8 @@ Definition asp {A B} (R : PredArr A B) (pre : A -> Prop) : B -> Prop :=
 (* [asp] goes from predicate arrow to strongest postcondition arrow; [asp_inv] is
    the inverse. Similar to the relation described in Kenji's Ph.D. thesis, we
    can show that predicate monads and strongest postcondition monads are
-   equivalent, by showing [asp_asp_inv] and [asp_inv_asp] below.
-
-   TODO: Is the definition [asp_inv] the most general form? [dslp_inv] seems to be
-   more flexible with a [forall] on [pre].
-
-   TODO: Show that lawful arrow transformers preserve this equivalence.
- *)
+   equivalent, by showing [asp_asp_inv] and [asp_inv_asp] below.  The option and
+   state transformer stacks preserve this correspondence; see [SPostArrEquiv.v]. *)
 Definition asp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : PredArr A B :=
   fun a b => pt (fun a' => a = a') b.
 
@@ -443,7 +438,7 @@ Section ComposedTypes.
 End ComposedTypes.
 
 (* ================================================================= *)
-(** * Facts and laws (merged from SPostArrFacts.v)                          *)
+(** * Facts and laws                                                       *)
 (* ================================================================= *)
 
 (** * Arrow law proofs for angelic and demonic predicate transformer arrows.
@@ -1141,14 +1136,12 @@ End PureDSLPostArrMonad.
 (** ** [optionT] and composed types: monad instances for free         *)
 (* ================================================================= *)
 
-(** [optionArrT arr I = optionT (arr I)], so any monad [arr I]
-    lifted through [optionArrT] remains a monad via the generic
-    [MonadLawsE_optionT] from [Prog.v]. *)
-
-(** The generic [MonadLawsE_optionT] and [MonadLawsE_stateT] from
-    [Prog.v] lift these to [optionT (PureASPostArr I)] and
-    [stateT S (optionT (PureASPostArr I))] for free, since
-    [optionArrT arr I = optionT (arr I)] definitionally. *)
+(** [optionArrT arr I] is definitionally [optionT (arr I)], so the generic
+    [MonadLawsE_optionT] and [MonadLawsE_stateT] from [TransformerLaws]
+    extend [Monad_PureASPostArr] and [Monad_PureDSLPostArr] to
+    [optionT (PureASPostArr I)] / [optionT (PureDSLPostArr I)] and their
+    state stacks; typeclass resolution finds these instances automatically
+    when they are needed. *)
 
 (* ================================================================= *)
 (** ** Arrow laws for composed types: [ASPostArr] and [DSPostArr]      *)
