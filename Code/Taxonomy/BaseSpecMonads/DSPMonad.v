@@ -1,10 +1,8 @@
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Setoids.Setoid.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicateTransformers ASPMonad DSLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers ASPMonad DSLPMonad.
 
 Import MonadNotation.
 Open Scope monad_scope.

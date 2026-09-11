@@ -7,8 +7,7 @@
     The generic machinery imported from [Classes/ArrowMorphism.v] lifts
     these laws through the existing option and state transformers. *)
 
-From Coq Require Import Program.Tactics FunctionalExtensionality
-  PropExtensionality.
+From Coq Require Import FunctionalExtensionality PropExtensionality.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Classes Require Export ArrowMorphism.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr OptionLoop SPostArr.

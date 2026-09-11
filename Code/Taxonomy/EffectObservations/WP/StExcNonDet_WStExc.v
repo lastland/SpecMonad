@@ -7,13 +7,10 @@
     [obsAWP] (angelic, some outcome) map into [WStExc S A]. *)
 
 From Coq Require Import Lia.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
-From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
 Import MonadNotation.

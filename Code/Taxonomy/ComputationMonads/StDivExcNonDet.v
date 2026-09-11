@@ -155,10 +155,7 @@ End Denote.
     lift the laws through two [optionT] layers and one [stateT]
     layer with zero additional proof work. *)
 
-From Coq Require Import Morphisms RelationClasses.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivITree.
 
 Section StDivExcNonDet.
 

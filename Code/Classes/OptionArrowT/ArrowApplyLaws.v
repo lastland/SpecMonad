@@ -1,4 +1,3 @@
-From Coq Require Import Morphisms RelationClasses.
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
 From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
 

@@ -36,11 +36,11 @@
     [Eq1Equivalence], [MonadLawsE]) are proved in
     [Taxonomy/PredArr.v]. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From Coq Require Import RelationClasses.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** ** [PredArr]: definition and arrow instances                         *)
@@ -218,11 +218,7 @@ End MonadSpec.
     [ArrowApplyLaws] for [optionPred] are inherited from the generic
     transformer laws in [Classes/OptionArrowT] applied to these. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
+From Coq Require Import FunctionalExtensionality PropExtensionality.
 From Hammer Require Import Tactics.
 
 

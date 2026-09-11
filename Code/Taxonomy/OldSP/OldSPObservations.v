@@ -1,9 +1,8 @@
-From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From Coq Require Import Classical_Prop.
+From ExtLib Require Import MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet StDivExcNonDet StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StDivExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.

@@ -1,5 +1,5 @@
 From ExtLib Require Import Monad MonadReader ReaderMonad OptionMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet DivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet DivNonDet.
 
 (** * Nondeterministic, possibly divergent computations in an environment
 

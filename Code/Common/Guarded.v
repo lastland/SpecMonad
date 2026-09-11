@@ -1,4 +1,4 @@
-From ExtLib Require Import Monad MonadLaws.
+From ExtLib Require Import Monad.
 From Incorrectness Require Import Common.PurePrePostStandard.
 
 Set Implicit Arguments.

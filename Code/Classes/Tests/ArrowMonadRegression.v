@@ -1,6 +1,6 @@
 (** * Public regressions for the arrow-derived monad. *)
 
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality RelationClasses.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
 

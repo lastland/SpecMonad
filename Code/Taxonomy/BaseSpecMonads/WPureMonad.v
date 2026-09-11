@@ -16,7 +16,7 @@
     extra outcome is the raised exception, so this is the stack that carries a
     [MonadExc]. *)
 
-From Coq Require Import Morphisms RelationClasses.
+From Coq Require Import RelationClasses.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 

@@ -13,12 +13,9 @@
     defined based on the former two. Even though [stdivitree S A] is deterministic, it
     is not necessarily reversible, so we cannot collapse any of the [sp]s. *)
 
-From Coq Require Import Classical_Prop.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Incorrectness.Classes Require Import Arrow.
+From ExtLib Require Import Monad StateMonad OptionMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
 From ITree Require Import ITree Eq Props.Infinite.
 From ITree.Extra Require Import Dijkstra.PureITreeBasics.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
