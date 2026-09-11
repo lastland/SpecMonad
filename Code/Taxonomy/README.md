@@ -553,15 +553,66 @@ Arrow files can reuse their raw carriers and properties: `WPArr.v` uses
 to the pure/state properties from `BaseSpecMonads/SPPredicateTransformers.v`.
 
 General arrow infrastructure lives in `Code/Classes/`. `ArrowMonad.v` defines
-the generic return/bind operations for `arr I`; `ArrowMorphism.v` proves
-operation-preserving maps and their option/state lifts. `RelArrowCoherence.v`
+the generic return/bind operations for `arr I` and proves their monad laws;
+`ArrowApplyFacts.v` supplies the shared algebraic application and arrow
+extensionality lemmas used by the monad and option-transformer proofs.
+`ArrowMorphism.v` proves operation-preserving maps and their option/state lifts.
+`RelArrowCoherence.v`
 proves application coherence for arrows with faithful relational presentations.
 SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
 
 `PredArr.v` also carries `Monad (PredArr A)` for a fixed input `A`, and
 `OldSP/OldSPObservations.v` depends on that view. `RelSPPairArr.v` proves monad
 laws for its direct relational monads. These concrete proofs are distinct from
-the generic operations in `ArrowMonad.v`.
+the generic law instance for `Monad_Arrow` in `ArrowMonad.v`.
+
+### Arrow-derived monad laws
+
+`ArrowLaws` includes `first_natural`: applying a pure function to the carried
+component commutes with running the first arrow. `ArrowApplyLaws` includes the
+fixed-arrow `app_law`, the standard pairing/precomposition/postcomposition
+equations (`app_unit`, `app_precompose`, `app_postcompose`), and `app_ext`.
+The last field makes application respect equivalent arrows stored in its input
+values, which is needed when replacing a bind continuation pointwise.
+
+For every input type `I`, `MonadLawsE_Arrow` derives left identity, right
+identity, associativity, and `Proper_bind` from these law classes. Its target
+names the exact operations and equality:
+
+```coq
+@MonadLawsE (arr I) (@Eq1_Arrow arr HE I)
+  (@Monad_Arrow arr HA HAA I)
+```
+
+Here `HA`, `HAA`, and `HE` are the arrow, application, and equality dictionaries.
+`Eq1_Arrow` restricts `arrow_eq` to `arr I`; it is an explicit definition so it
+does not compete with concrete monads' `Eq1` instances. The global
+`Eq1Equivalence_Arrow` and `MonadLawsE_Arrow` instances resolve for these explicit
+dictionaries. The generic proof has no logical axioms and needs no inhabitant
+of `I`; concrete instances retain the assumptions of their own law proofs.
+
+The option and state arrow transformers preserve the full law contract, so
+the same monad-law proof applies at each layer:
+
+```text
+lawful base arrow
+       | optionArrT (also requires lawful ArrowChoice)
+       v
+lawful option arrow
+       | stateArrT S
+       v
+lawful state-over-option arrow
+       | fix input I; use MonadLawsE_Arrow
+       v
+lawful monad on stateArrT S (optionArrT arr) I
+```
+
+`Classes/Tests/ArrowMonadRegression.v` checks generic law resolution and a
+counterexample: a lawful arrow whose application satisfies the old fixed-arrow
+law but violates monad right identity. The stronger application contract
+rejects it. `Arrows/Examples/ArrowMonadExamples.v` checks the exact derived
+monad dictionary for pointwise arrow equalities and both SP presentations,
+including base, option, state, and state-over-option arrows with a non-unit input.
 
 ### Property-only SP arrows
 
@@ -596,12 +647,12 @@ The existing option/state transformers lift these laws, including to
 has input `A * S` and output `option (B * S)`: `None` propagates without a final
 state. `ASPostArr S B` and `DSLPostArr S B` fix the arrow input to `unit`.
 
-`SPostArrCoherence.v` proves the three additional standard application
-equations for pure, option, state, and state-over-option arrows. It uses
-`Classes/RelArrowCoherence.v`, whose relational proof premises are derived from the
-transformers. The corresponding coupled proofs live in
-`RelSPPairArrCoherence.v`. The shared `ArrowApplyLaws` class itself contains
-the static application law.
+`SPostArrCoherence.v` exposes named specializations of the three standard
+application equations for pure, option, state, and state-over-option arrows.
+These equations are also fields of `ArrowApplyLaws`. The core SP modules derive
+faithful relational presentations and use `Classes/RelArrowCoherence.v` to prove
+the base application laws. The corresponding coupled specializations live in
+`RelSPPairArrCoherence.v`; the generic transformers preserve the laws algebraically.
 
 `SPostArrEquiv.v` provides `asp_to_coupled` / `asp_from_coupled` and their DSLP
 counterparts, with both round trips and preservation of all five operations.
@@ -613,7 +664,7 @@ qualify `SPostArr` or `RelSPPairArr` when using both.
 The normal-form proofs use functional and propositional extensionality, and
 bundled equality additionally uses proof irrelevance. Their assumption audits
 require no excluded middle. Checked clients live in
-`Arrows/Examples/SPostArrExamples.v`.
+`Arrows/Examples/SPostArrExamples.v` and `Arrows/Examples/ArrowMonadExamples.v`.
 
 `Arrows/OptionLoop.v` proves that `optionPred` cannot satisfy unrestricted
 `ArrowLoop` left tightening: empty feedback makes failure propagation conflict

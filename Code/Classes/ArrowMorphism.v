@@ -124,27 +124,14 @@ Section OptionPureComposition.
   Variable HCL : @ArrowChoiceLaws arr HA HC (ArrowEq_leibniz arr).
   Local Notation pure := (@arr_pure arr HA).
   Local Notation comp := (@arr_comp arr HA).
-  Local Notation left := (@arr_left arr HA HC).
   Local Notation OA := (@Arrow_optionArrT arr HA HC).
 
   Lemma option_pure_comp_eq {A B C} (h : A -> B) (f : optionArrT arr B C) :
     @arr_comp (optionArrT arr) OA A B C
       (@arr_pure (optionArrT arr) OA A B h) f = comp (pure h) f.
   Proof.
-    change (comp (pure (fun a => Some (h a)))
-      (comp (pure to_sum) (comp (left f) (pure collapse))) = comp (pure h) f).
-    pose proof (@comp_assoc arr HA (ArrowEq_leibniz arr) HL) as Hassoc.
-    pose proof (@pure_comp arr HA (ArrowEq_leibniz arr) HL) as Hpure.
-    pose proof (@left_inl arr HA HC (ArrowEq_leibniz arr) HCL) as Hinl.
-    cbn [arrow_eq ArrowEq_leibniz] in Hassoc, Hpure, Hinl.
-    rewrite <- Hassoc, Hpure.
-    change (comp (pure (fun a => @inl B unit (h a)))
-      (comp (left f) (pure collapse)) = comp (pure h) f).
-    rewrite <- (@Hpure A B (B + unit)%type h inl), Hassoc.
-    rewrite <- (@Hassoc B (B + unit)%type (option C + unit)%type (option C)
-      (pure inl) (left f) (pure collapse)).
-    rewrite <- Hinl, Hassoc, Hpure.
-    f_equal. exact (@comp_id_r arr HA (ArrowEq_leibniz arr) HL _ _ f).
+    exact (@optionArrT_comp_pure_l arr HA HC (ArrowEq_leibniz arr)
+      HL HCL A B C h f).
   Qed.
 End OptionPureComposition.
 

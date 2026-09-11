@@ -106,7 +106,13 @@ Class ArrowLaws (arr : Type -> Type -> Type)
             @arrow_eq arr Heq X Z) (@arr_comp arr Harr X Y Z) ;
   first_proper :: forall (X Y Z : Type),
     Proper (@arrow_eq arr Heq X Y ==>
-            @arrow_eq arr Heq (X*Z)%type (Y*Z)%type) (@arr_first arr Harr X Y Z)
+            @arrow_eq arr Heq (X*Z)%type (Y*Z)%type) (@arr_first arr Harr X Y Z) ;
+  first_natural : forall {A B C D} (f : arr A B) (g : C -> D),
+    arrow_eq
+      (arr_comp (arr_first f)
+        (arr_pure (fun '(b, c) => (b, g c))))
+      (arr_comp (arr_pure (fun '(a, c) => (a, g c)))
+        (arr_first f))
 }.
 
 (* ================================================================= *)
@@ -170,7 +176,32 @@ Class ArrowApply (arr : Type -> Type -> Type) `{Arrow arr} := {
 Class ArrowApplyLaws (arr : Type -> Type -> Type)
   `{ArrowApply arr} `{ArrowEq arr} := {
   app_law : forall {A B} (f : arr A B),
-    arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f
+    arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f ;
+  (** Standard application coherence: pairing, precomposition, and
+      postcomposition also hold for dynamically selected arrows. *)
+  app_unit : forall (A B : Type),
+    arrow_eq
+      (arr_comp
+        (arr_first (arr_pure (fun x : A => arr_pure (fun y : B => (x, y)))))
+        arr_app)
+      (@arr_id arr _ (A * B)) ;
+  app_precompose : forall {A B C} (g : arr A B),
+    arrow_eq
+      (arr_comp (arr_first (arr_pure (fun f : arr B C => arr_comp g f)))
+        arr_app)
+      (arr_comp (arr_second g) arr_app) ;
+  app_postcompose : forall {A B C} (h : arr B C),
+    arrow_eq
+      (arr_comp (arr_first (arr_pure (fun f : arr A B => arr_comp f h)))
+        arr_app)
+      (arr_comp arr_app h) ;
+  (** Application respects the arrow equality inside ordinary input
+      values.  This supplies continuation congruence for derived bind. *)
+  app_ext : forall {X A B} (u v : X -> arr A B * A),
+    (forall x, arrow_eq (fst (u x)) (fst (v x)) /\
+               snd (u x) = snd (v x)) ->
+    arrow_eq (arr_comp (arr_pure u) arr_app)
+             (arr_comp (arr_pure v) arr_app)
 }.
 
 (* ================================================================= *)

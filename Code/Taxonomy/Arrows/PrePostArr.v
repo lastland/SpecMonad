@@ -168,7 +168,8 @@ From Hammer Require Import Tactics.
 (* ================================================================= *)
 
 #[global]
-Instance ArrowLaws_PrePost : ArrowLaws PrePostArr.
+Instance ArrowLaws_PrePost
+  : @ArrowLaws PrePostArr Arrow_PrePost ArrowEq_PrePost.
 Proof.
   constructor; intros.
   - (* comp_id_l *) split; cbn; sauto limit: 200.
@@ -205,9 +206,9 @@ Proof.
     + intros [[a c] d]. simpl. sauto limit: 200 unfold: assoc_prod.
     + intros [[a c] d] [b' [c' d']]. simpl. unfold assoc_prod. split.
       * intros [[[b c''] d''] [[[HRf Hcc] Hdd] Heq]]. simpl in *.
-        exists (a, (c, d)). sauto.
+        exists (a, (c, d)). sauto limit: 200.
       * intros [[a' [c'' d'']] [Heq [HRf Hcd]]]. simpl in *.
-        exists ((b', c), d). simpl. sauto.
+        exists ((b', c), d). simpl. sauto limit: 200.
   - (* comp_proper *)
     intros f1 f2 [HfP HfR] g1 g2 [HgP HgR].
     cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
@@ -218,6 +219,14 @@ Proof.
     cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
     + intros [a c]. apply HfP.
     + intros [a c] [b c']. cbn. sauto limit: 200.
+  - (* first_natural *)
+    split; cbn.
+    + intros [a c]. cbn. sauto limit: 200.
+    + intros [a c] [b d]. cbn. split.
+      * intros [[b' c'] [[Hf Hc] Heq]]. cbn in *. subst c'.
+        inversion Heq; subst. exists (a, g c). cbn. auto.
+      * intros [[a' d'] [Heq [Hf Hd]]]. cbn in *.
+        inversion Heq; subst. exists (b, c). cbn. auto.
 Qed.
 
 (* ================================================================= *)
@@ -311,9 +320,84 @@ Qed.
 (* ================================================================= *)
 
 #[global]
-Instance ArrowApplyLaws_PrePost : ArrowApplyLaws PrePostArr.
+Instance ArrowApplyLaws_PrePost
+  : @ArrowApplyLaws PrePostArr Arrow_PrePost ArrowApply_PrePost ArrowEq_PrePost.
 Proof.
-  constructor; intros. split; cbn; sauto limit: 200.
+  constructor; intros.
+  - (* app_law *) split; cbn; sauto limit: 200.
+  - (* app_unit *)
+    split; cbn.
+    + intros [a b]. cbn. sauto limit: 200.
+    + intros [a b] [a' b']. cbn. split.
+      * intros [[f b0] [[Hf Hb] Hout]]. cbn in *. subst f b0.
+        exact Hout.
+      * intros Heq.
+        exists ((fun _ => True, fun y p => (a, y) = p), b).
+        cbn. split; [split; reflexivity | exact Heq].
+  - (* app_precompose *)
+    split; cbn; unfold swap.
+    + intros [f a]. cbn.
+      transitivity (fst g a /\ forall b, snd g a b -> fst f b).
+      * split.
+        -- intros [_ Hpre].
+           apply (Hpre (@arr_comp PrePostArr Arrow_PrePost A B C g f, a)).
+           split; reflexivity.
+        -- intros Hpre. split; [exact I|].
+           intros [k a'] [Hk Ha]. cbn in *. subst k a'. exact Hpre.
+      * split.
+        -- intros [Hg Hf]. split.
+           ++ split; [exact I|]. intros [a' f'] Heq.
+              inversion Heq; subst. cbn. split; [exact Hg|].
+              intros _ _. exact I.
+           ++ intros [f' b] [[a' f''] [Hp [[b' f'''] [[Hgb Hff] Hswap]]]].
+              cbn in *. inversion Hp; subst.
+              inversion Hswap; subst. apply Hf. exact Hgb.
+        -- intros [[_ Hg] Hf]. split.
+           ++ exact (proj1 (Hg (a, f) eq_refl)).
+           ++ intros b Hgb. apply (Hf (f, b)).
+              exists (a, f). split; [reflexivity|].
+              exists (b, f). cbn. auto.
+    + intros [f a] c. cbn. split.
+      * intros [[k a'] [[Hk Ha] Hout]]. cbn in *. subst k a'.
+        destruct Hout as [b [Hg Hf]].
+        exists (f, b). split; [|exact Hf].
+        exists (a, f). split; [reflexivity|].
+        exists (b, f). cbn. auto.
+      * intros [[f' b] [[p [Hp [q [Hg Hq]]]] Hf]].
+        destruct p as [a' f''], q as [b' f''']; cbn in *.
+        injection Hp as Ha Hf0. subst a' f''.
+        destruct Hg as [Hg Hff]. subst f'''.
+        injection Hq as Hf0 Hb. subst f' b'.
+        exists (@arr_comp PrePostArr Arrow_PrePost A B C g f, a).
+        cbn. split; [split; reflexivity | exists b; auto].
+  - (* app_postcompose *)
+    split; cbn.
+    + intros [f a]. cbn. split.
+      * intros [_ Hpre].
+        apply (Hpre (@arr_comp PrePostArr Arrow_PrePost A B C f h, a)).
+        split; reflexivity.
+      * intros Hpre. split; [exact I|].
+        intros [k a'] [Hk Ha]. cbn in *. subst k a'. exact Hpre.
+    + intros [f a] c. cbn. split.
+      * intros [[k a'] [[Hk Ha] Hout]]. cbn in *. subst k a'.
+        exact Hout.
+      * intros Hout.
+        exists (@arr_comp PrePostArr Arrow_PrePost A B C f h, a).
+        cbn. split; [split; reflexivity | exact Hout].
+  - (* app_ext *)
+    split; cbn.
+    + intros x. specialize (H x).
+      destruct (u x) as [f a], (v x) as [g a']; cbn in *.
+      destruct H as [[HP HR] Ha]. subst a'.
+      split; intros [_ Hpre]; split; [exact I| |exact I|]; intros p <-.
+      * apply HP. exact (Hpre (f, a) eq_refl).
+      * apply HP. exact (Hpre (g, a) eq_refl).
+    + intros x b. specialize (H x).
+      destruct (u x) as [f a], (v x) as [g a']; cbn in *.
+      destruct H as [[HP HR] Ha]. subst a'.
+      split; intros [p [<- Hout]]; cbn in Hout.
+      * exists (g, a). split; [reflexivity|]. apply HR. exact Hout.
+      * exists (f, a). split; [reflexivity|]. apply HR. exact Hout.
 Qed.
 
 (* ================================================================= *)

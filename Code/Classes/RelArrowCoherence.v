@@ -1,7 +1,7 @@
 (** * Standard application coherence for relationally presented arrows.
 
-    Besides the fixed-arrow [app_law], the standard [Control.Arrow]
-    equations (GHC 9.12.2) require application to respect pairing,
+    The standard [Control.Arrow] equations (GHC 9.12.2), included in
+    [ArrowApplyLaws], require application to respect pairing,
     precomposition, and postcomposition:
 
     [[

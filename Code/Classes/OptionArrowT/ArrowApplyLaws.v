@@ -1,5 +1,5 @@
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
-From Incorrectness.Classes Require Import Arrow.
+From Coq Require Import Morphisms RelationClasses.
+From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
 From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
 
 (* ================================================================= *)
@@ -15,98 +15,170 @@ Section GenericOptionArrTApplyLaws.
           `{HCL : @ArrowChoiceLaws arr HA HC HE}
           `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
 
-  Local Notation cassoc := (@comp_assoc arr HA HE HL).
-  Local Notation cidl   := (@comp_id_l arr HA HE HL).
-  Local Notation cidr   := (@comp_id_r arr HA HE HL).
-  Local Notation pcomp  := (@pure_comp arr HA HE HL).
-  Local Notation cprop  := (@comp_proper arr HA HE HL).
-  Local Notation linl   := (@left_inl arr HA HC HE HCL).
   Local Notation alaw   := (@app_law arr HA HAA HE HAAL).
+  Local Notation aext   := (@app_ext arr HA HAA HE HAAL).
 
-  Local Lemma arr_pure_ext_apply {A B} (f g : A -> B) :
-    (forall x, f x = g x) ->
-    @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
+  Local Notation OA := (@Arrow_optionArrT arr HA HC).
+  Local Notation OE := (@ArrowEq_optionArrT arr HE).
+  Local Notation OL := (@ArrowLaws_optionArrT arr HA HC HE HL HCL).
+  Local Notation OApp := (@ArrowApply_optionArrT arr HA HC HAA).
+  Local Notation ocassoc := (@comp_assoc _ OA OE OL).
+  Local Notation ocidr := (@comp_id_r _ OA OE OL).
+  Local Notation ocidl := (@comp_id_l _ OA OE OL).
+  Local Notation opcomp := (@pure_comp _ OA OE OL).
+  Local Notation ocprop := (@comp_proper _ OA OE OL).
+  Local Notation ofpure := (@first_pure _ OA OE OL).
+  Local Notation offst := (@first_fst _ OA OE OL).
+  Local Notation ofnat := (@first_natural _ OA OE OL).
+
+  Local Lemma option_arr_ext {A B} (f g : optionArrT arr A B) :
+    (forall a : A, @arrow_eq _ OE _ _
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => a)) f)
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => a)) g)) ->
+    @arrow_eq _ OE _ _ f g.
   Proof.
-    intro H. replace g with f by (extensionality x; apply H).
-    reflexivity.
+    intro H. apply (@ArrowApplyFacts.arrow_ext arr HA HAA HE HL HAAL). intro a.
+    etransitivity. { symmetry. apply optionArrT_comp_pure_l. }
+    etransitivity. { apply H. }
+    apply optionArrT_comp_pure_l.
   Qed.
 
-  (** The single law: [pure (fun a => (f, a)) >>> app = f].
+  Local Lemma option_app_law {A B} (f : optionArrT arr A B) :
+    @arrow_eq _ OE _ _
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun a => (f, a)))
+        (@arr_app _ OA OApp _ _)) f.
+  Proof.
+    etransitivity. { apply optionArrT_comp_pure_l. }
+    apply alaw.
+  Qed.
 
-      After unfolding optionArrT operations:
-      [[
-        [fun a => Some (f, a)] >>> [to_sum] >>> L(base_app) >>> [collapse] = f
-      ]]
+  Local Lemma option_app_const {A B} (f : optionArrT arr A B) (a : A) :
+    @arrow_eq _ OE _ _
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => (f, a)))
+        (@arr_app _ OA OApp _ _))
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => a)) f).
+  Proof.
+    symmetry.
+    etransitivity.
+    { apply ocprop. 1: reflexivity. symmetry. apply option_app_law. }
+    etransitivity. { symmetry. apply ocassoc. }
+    apply ocprop. 2: reflexivity.
+    etransitivity. { apply opcomp. } reflexivity.
+  Qed.
 
-      Proof strategy:
-      1. Fuse [Some . pair] >>> [to_sum] via pure_comp to [inl . pair]
-      2. Split [inl . pair] = [pair] >>> [inl] (pcomp sym)
-      3. Use left_inl (sym): [inl] >>> L(app) = app >>> [inl]
-      4. Use base app_law: [pair] >>> base_app = f
-      5. Then f >>> [inl] >>> [collapse] -> f >>> [id] -> f by comp_id_r *)
+  (** Naturality and [first_fst] allow a fixed value to pass beside an
+      arbitrary effectful arrow. *)
+  Local Lemma option_first_const {A B C}
+    (f : optionArrT arr A B) (c : C) :
+    @arrow_eq _ OE _ _
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun a => (a, c)))
+        (@arr_first _ OA _ _ _ f))
+      (@arr_comp _ OA _ _ _ f (@arr_pure _ OA _ _ (fun b => (b, c)))).
+  Proof.
+    assert (Hhead : @arrow_eq _ OE _ _
+      (@arr_comp _ OA _ _ _
+        (@arr_pure _ OA _ _ (fun a : A => (a, tt)))
+        (@arr_pure _ OA _ _ (fun '(a, _) => (a, c))))
+      (@arr_pure _ OA _ _ (fun a : A => (a, c)))).
+    { etransitivity. { apply opcomp. } reflexivity. }
+    assert (Htail : @arrow_eq _ OE _ _
+      (@arr_pure _ OA _ _ (fun p : B * unit => let '(b, _) := p in (b, c)))
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (@fst B unit))
+        (@arr_pure _ OA _ _ (fun b => (b, c))))).
+    { symmetry. etransitivity. { apply opcomp. }
+      unfold arr_pure, Arrow_optionArrT.
+      apply (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAAL).
+      intros [b []]. reflexivity. }
+    etransitivity. { apply ocprop. 2: reflexivity. symmetry. exact Hhead. }
+    etransitivity. { apply ocassoc. }
+    etransitivity. { apply ocprop. 1: reflexivity. symmetry. apply ofnat. }
+    etransitivity.
+    { apply ocprop. 1: reflexivity. apply ocprop. 1: reflexivity. exact Htail. }
+    etransitivity.
+    { apply ocprop. 1: reflexivity. symmetry. apply ocassoc. }
+    etransitivity.
+    { apply ocprop. 1: reflexivity. apply ocprop. 2: reflexivity. apply offst. }
+    etransitivity. { apply ocprop. 1: reflexivity. apply ocassoc. }
+    etransitivity. { symmetry. apply ocassoc. }
+    etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
+    apply ocidl.
+  Qed.
+
+  Local Lemma option_second_const {A B C}
+    (f : optionArrT arr A B) (c : C) :
+    @arrow_eq _ OE _ _
+      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun a => (c, a)))
+        (@arr_second _ OA _ _ _ f))
+      (@arr_comp _ OA _ _ _ f (@arr_pure _ OA _ _ (fun b => (c, b)))).
+  Proof.
+    unfold arr_second.
+    etransitivity. { symmetry. apply ocassoc. }
+    etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
+    etransitivity. { symmetry. apply ocassoc. }
+    etransitivity. { apply ocprop. 2: reflexivity. apply option_first_const. }
+    etransitivity. { apply ocassoc. }
+    apply ocprop. 1: reflexivity.
+    etransitivity. { apply opcomp. } reflexivity.
+  Qed.
 
   #[global]
   Instance ArrowApplyLaws_optionArrT : ArrowApplyLaws (optionArrT arr).
   Proof.
     Local Transparent ArrowEq_optionArrT.
-    constructor; intros.
-    unfold arr_id, arr_comp, arr_pure, arr_first, arr_app,
-           Arrow_optionArrT, ArrowApply_optionArrT,
-           arrow_eq, ArrowEq_optionArrT;
-    fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
-         (@arr_left arr HA HC) (@arr_app arr HA HAA) (@arrow_eq arr HE).
-    (* Goal: [fun a => Some (f, a)] >>> [to_sum] >>> L(base_app) >>> [collapse] = f *)
-
-    (* Step 1: Fuse [Some . pair] >>> [to_sum] to [inl . pair] *)
-    etransitivity. { symmetry. apply cassoc. }
-    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-    (* [inl . pair] >>> L(app) >>> [collapse] *)
-
-    (* Step 2: [inl . pair] >>> L(app) = [pair] >>> app >>> [inl]
-       By: [inl . pair] = [pair] >>> [inl]  (pcomp sym)
-       Then [pair] >>> [inl] >>> L(app) = [pair] >>> app >>> [inl]  (linl sym) *)
-    etransitivity. { symmetry. apply cassoc. }
-    etransitivity.
-    { apply cprop. 2: reflexivity.
-      (* Need: [inl.pair] >>> L(app) = [pair] >>> app >>> [inl] *)
-      (* First: [inl.pair] = [pair] >>> [inl] *)
-      assert (Hsplit : @arrow_eq arr HE A _
-        (@arr_pure arr HA _ _ (fun a : A => @inl (optionArrT arr A B * A) unit (f, a)))
-        (@arr_comp arr HA _ _ _
-          (@arr_pure arr HA _ _ (fun a : A => (f, a)))
-          (@arr_pure arr HA _ _ (@inl (optionArrT arr A B * A) unit)))).
-      { symmetry. etransitivity. { apply pcomp. }
-        apply arr_pure_ext_apply. intro; reflexivity. }
-      etransitivity. { apply cprop. 2: reflexivity. exact Hsplit. }
-      (* ([pair] >>> [inl]) >>> L(app) *)
-      etransitivity. { apply cassoc. }
-      (* [pair] >>> ([inl] >>> L(app)) *)
-      apply cprop. 1: reflexivity.
-      (* [inl] >>> L(app) = app >>> [inl] *)
-      symmetry. apply linl. }
-    (* ([pair] >>> app) >>> [inl] >>> [collapse] *)
-
-    (* Step 3: Reassociate: ([pair] >>> (app >>> [inl])) >>> [c]
-              = (([pair] >>> app) >>> [inl]) >>> [c] *)
-    etransitivity.
-    { apply cprop. 2: reflexivity.
-      symmetry. apply cassoc. }
-    (* (([pair] >>> app) >>> [inl]) >>> [c] *)
-
-    (* Step 4: Use base app_law: [pair] >>> base_app = f *)
-    etransitivity.
-    { apply cprop. 2: reflexivity.
-      apply cprop. 2: reflexivity. apply alaw. }
-    (* (f >>> [inl]) >>> [c] *)
-
-    (* Step 5: Fuse f >>> [inl] >>> [c] to f >>> [id] = f *)
-    etransitivity. { apply cassoc. }
-    etransitivity.
-    { apply cprop. 1: reflexivity. apply pcomp. }
-    etransitivity.
-    { apply cprop. 1: reflexivity.
-      apply arr_pure_ext_apply. intro x. reflexivity. }
-    apply cidr.
+    constructor.
+    - exact (@option_app_law).
+    - (* app_unit *)
+      intros A B. apply option_arr_ext. intros [a b].
+      etransitivity. { symmetry. apply ocassoc. }
+      etransitivity.
+      { apply ocprop. 2: reflexivity.
+        apply ocprop. 1: reflexivity. apply ofpure. }
+      etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
+      etransitivity. { apply option_app_const. }
+      etransitivity. { apply opcomp. }
+      symmetry. apply ocidr.
+    - (* app_precompose *)
+      intros A B C g. apply option_arr_ext. intros [f a].
+      etransitivity. { symmetry. apply ocassoc. }
+      etransitivity.
+      { apply ocprop. 2: reflexivity.
+        apply ocprop. 1: reflexivity. apply ofpure. }
+      etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
+      etransitivity. { apply option_app_const. }
+      symmetry.
+      etransitivity. { symmetry. apply ocassoc. }
+      assert (Hpair : @arrow_eq _ OE _ _
+        (@arr_pure _ OA _ _ (fun _ : unit => (f, a)))
+        (@arr_comp _ OA _ _ _
+          (@arr_pure _ OA _ _ (fun _ : unit => a))
+          (@arr_pure _ OA _ _ (fun b => (f, b))))).
+      { symmetry. etransitivity. { apply opcomp. } reflexivity. }
+      etransitivity.
+      { apply ocprop. 2: reflexivity.
+        etransitivity. { apply ocprop. 2: reflexivity. exact Hpair. }
+        etransitivity. { apply ocassoc. }
+        apply ocprop. 1: reflexivity. apply option_second_const. }
+      etransitivity. { apply ocassoc. }
+      apply ocprop. 1: reflexivity.
+      etransitivity. { apply ocassoc. }
+      apply ocprop. 1: reflexivity. apply option_app_law.
+    - (* app_postcompose *)
+      intros A B C h. apply option_arr_ext. intros [f a].
+      etransitivity. { symmetry. apply ocassoc. }
+      etransitivity.
+      { apply ocprop. 2: reflexivity.
+        apply ocprop. 1: reflexivity. apply ofpure. }
+      etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
+      etransitivity. { apply option_app_const. }
+      symmetry.
+      etransitivity. { symmetry. apply ocassoc. }
+      etransitivity. { apply ocprop. 2: reflexivity. apply option_app_const. }
+      apply ocassoc.
+    - (* app_ext is inherited directly by the underlying application. *)
+      intros X A B u v H.
+      etransitivity. { apply optionArrT_comp_pure_l. }
+      symmetry. etransitivity. { apply optionArrT_comp_pure_l. }
+      symmetry. apply aext. exact H.
   Qed.
 
 End GenericOptionArrTApplyLaws.

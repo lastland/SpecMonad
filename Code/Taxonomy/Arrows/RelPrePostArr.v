@@ -327,7 +327,8 @@ Proof. rewrite project_wp_arr_first. reflexivity. Qed.
 (* ================================================================= *)
 
 #[global]
-Instance ArrowLaws_RelPrePost : ArrowLaws RelPrePostArr.
+Instance ArrowLaws_RelPrePost
+  : @ArrowLaws RelPrePostArr Arrow_RelPrePost ArrowEq_RelPrePost.
 Proof.
   constructor; intros.
   - (* comp_id_l: arr_comp arr_id f ≡ f *)
@@ -385,6 +386,11 @@ Proof.
     intros r1 r2 Hr p Q.
     rewrite !project_wp_arr_first.
     apply Hr.
+  - (* first_natural *)
+    intros [a c] Q.
+    rewrite !project_wp_arr_comp, project_wp_arr_first.
+    setoid_rewrite project_wp_arr_pure.
+    rewrite project_wp_arr_first. reflexivity.
 Qed.
 
 #[global]
@@ -481,14 +487,44 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowApplyLaws_RelPrePost : ArrowApplyLaws RelPrePostArr.
+Instance ArrowApplyLaws_RelPrePost
+  : @ArrowApplyLaws RelPrePostArr Arrow_RelPrePost
+      ArrowApply_RelPrePost ArrowEq_RelPrePost.
 Proof.
   constructor; intros.
-  (* app_law: arr_comp (arr_pure (fun a => (f, a))) arr_app ≡ f *)
-  intros a Q.
-  rewrite project_wp_arr_comp, project_wp_arr_pure.
-  rewrite project_wp_arr_app.
-  reflexivity.
+  - (* app_law *)
+    intros a Q.
+    rewrite project_wp_arr_comp, project_wp_arr_pure.
+    rewrite project_wp_arr_app. reflexivity.
+  - (* app_unit *)
+    intros [a b] Q.
+    rewrite project_wp_arr_comp, project_wp_arr_first, project_wp_arr_pure.
+    rewrite project_wp_arr_app. cbn [fst snd].
+    unfold arr_id. rewrite !project_wp_arr_pure. reflexivity.
+  - (* app_precompose *)
+    intros [f a] Q.
+    rewrite !project_wp_arr_comp, project_wp_arr_first, project_wp_arr_pure.
+    rewrite project_wp_arr_app. cbn [fst snd].
+    rewrite project_wp_arr_comp.
+    unfold arr_second.
+    rewrite project_wp_arr_comp, project_wp_arr_pure.
+    cbn [swap].
+    rewrite project_wp_arr_comp, project_wp_arr_first.
+    cbn [fst snd]. apply project_wp_Proper. intros b.
+    rewrite project_wp_arr_pure.
+    cbn [swap]. rewrite project_wp_arr_app. reflexivity.
+  - (* app_postcompose *)
+    intros [f a] Q.
+    rewrite !project_wp_arr_comp, project_wp_arr_first, project_wp_arr_pure.
+    rewrite !project_wp_arr_app. cbn [fst snd].
+    rewrite project_wp_arr_comp. reflexivity.
+  - (* app_ext *)
+    intros x Q.
+    rewrite !project_wp_arr_comp, !project_wp_arr_pure.
+    rewrite !project_wp_arr_app.
+    specialize (H x).
+    destruct (u x) as [r a], (v x) as [s a']; cbn in *.
+    destruct H as [Hrs Ha]. subst a'. apply Hrs.
 Qed.
 
 (* ================================================================= *)

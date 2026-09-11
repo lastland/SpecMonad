@@ -23,7 +23,9 @@ Taxonomy/ComputationMonads/StDivITree.v
 Taxonomy/ComputationMonads/StExcNonDet.v
 Taxonomy/ComputationMonads/StDivExcNonDet.v
 Classes/Arrow.v
+Classes/ArrowApplyFacts.v
 Classes/ArrowMonad.v
+Classes/Tests/ArrowMonadRegression.v
 Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
 Classes/OptionArrowT/ArrowChoiceLaws.v
@@ -51,6 +53,7 @@ Taxonomy/Arrows/SPostArrCoherence.v
 Taxonomy/Arrows/OptionLoop.v
 Taxonomy/Arrows/SPostArrEquiv.v
 Taxonomy/Arrows/Examples/SPostArrExamples.v
+Taxonomy/Arrows/Examples/ArrowMonadExamples.v
 Taxonomy/Arrows/PrePostArr.v
 Taxonomy/Arrows/WPArr.v
 Taxonomy/Arrows/RelPrePostArr.v

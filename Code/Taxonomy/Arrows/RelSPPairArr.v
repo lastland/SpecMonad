@@ -25,7 +25,7 @@
     Both unfold to [Pure(A/DSL)PostArr (unit * S) (option (A * S))]. *)
 
 From Coq Require Import Program.Tactics Classical_Prop.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr.
 From Incorrectness.Classes Require Export ArrowMonad.
 
@@ -489,6 +489,29 @@ Proof.
   f_equal. apply proof_irrelevance.
 Qed.
 
+(** Faithfulness makes the generic relational application laws available
+    here, before constructing the strengthened arrow law instances. *)
+Lemma ASP_rel_ext {A B} (f g : PureASPostArr A B) :
+  (forall a b, rel (proj1_sig f) a b <-> rel (proj1_sig g) a b) -> f = g.
+Proof.
+  intro Hrel. apply PureASPostArr_eq. intros pre b.
+  split; intro H.
+  - apply (proj2_sig f) in H. apply (proj2_sig g).
+    destruct H as [a [Hpre Hr]]. exists a. split; [exact Hpre |].
+    apply Hrel. exact Hr.
+  - apply (proj2_sig g) in H. apply (proj2_sig f).
+    destruct H as [a [Hpre Hr]]. exists a. split; [exact Hpre |].
+    apply Hrel. exact Hr.
+Qed.
+
+Definition ASP_rel_presentation :
+  RelArrowPresentation PureASPostArr Arrow_PureASPostArr
+    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr.
+Proof.
+  refine {| present_rel := fun A B f => rel (proj1_sig f);
+            present_ext := @ASP_rel_ext |}; intros; reflexivity.
+Defined.
+
 Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
   exists R : PredArr A B,
     forall pre b, spost (proj1_sig f) pre b <-> exists a, pre a /\ R a b.
@@ -586,6 +609,14 @@ Proof.
   - (* first_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
     intros; subst; reflexivity.
+  - (* first_natural *)
+    apply ASP_rel_ext; intros [a c] [b d]. cbn. split.
+    + intros [[b0 c0] [[Hf Hc] Heq]]. cbn in Heq. subst c0.
+      injection Heq as Hb Hd. subst b0 d.
+      exists (a, g c). cbn. auto.
+    + intros [[a0 d0] [Heq [Hf Hd]]].
+      injection Heq as Ha Hg. subst a0 d0 d.
+      exists (b, c). cbn. auto.
 Qed.
 
 (* ================================================================= *)
@@ -740,6 +771,25 @@ Proof.
   f_equal. apply proof_irrelevance.
 Qed.
 
+Lemma DSLP_rel_ext {A B} (f g : PureDSLPostArr A B) :
+  (forall a b, rel (proj1_sig f) a b <-> rel (proj1_sig g) a b) -> f = g.
+Proof.
+  intro Hrel. apply PureDSLPostArr_eq. intros pre b.
+  split; intro H.
+  - apply (proj2_sig f) in H. apply (proj2_sig g).
+    intros a Hr. apply H. apply Hrel. exact Hr.
+  - apply (proj2_sig g) in H. apply (proj2_sig f).
+    intros a Hr. apply H. apply Hrel. exact Hr.
+Qed.
+
+Definition DSLP_rel_presentation :
+  RelArrowPresentation PureDSLPostArr Arrow_PureDSLPostArr
+    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr.
+Proof.
+  refine {| present_rel := fun A B f => rel (proj1_sig f);
+            present_ext := @DSLP_rel_ext |}; intros; reflexivity.
+Defined.
+
 Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
   exists R : PredArr A B,
     forall pre b, spost (proj1_sig f) pre b <-> forall a, R a b -> pre a.
@@ -837,6 +887,14 @@ Proof.
   - (* first_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
     intros; subst; reflexivity.
+  - (* first_natural *)
+    apply DSLP_rel_ext; intros [a c] [b d]. cbn. split.
+    + intros [[b0 c0] [[Hf Hc] Heq]]. cbn in Heq. subst c0.
+      injection Heq as Hb Hd. subst b0 d.
+      exists (a, g c). cbn. auto.
+    + intros [[a0 d0] [Heq [Hf Hd]]].
+      injection Heq as Ha Hg. subst a0 d0 d.
+      exists (b, c). cbn. auto.
 Qed.
 
 (* ================================================================= *)
@@ -947,40 +1005,58 @@ Qed.
 #[global]
 Instance ArrowApplyLaws_PureASPostArr : ArrowApplyLaws PureASPostArr.
 Proof.
-  constructor; intros.
-  apply PureASPostArr_eq; intros pre b. cbn.
-  split.
-  - (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ rel f0 a b) → spost f pre b *)
-    intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
-    inversion Hpair; subst f0 a.
-    apply (proj2_sig f). unfold asp. exists a'. auto.
-  - (* Backward: spost f pre b → ... *)
-    intros Hfb.
-    apply (proj2_sig f) in Hfb. unfold asp in Hfb.
-    destruct Hfb as [a [Hpre Hra]].
-    exists f, a. split; [exists a; auto | exact Hra].
+  constructor.
+  - intros A B f. apply PureASPostArr_eq; intros pre b. cbn.
+    split.
+    + (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ rel f0 a b) → spost f pre b *)
+      intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
+      inversion Hpair; subst f0 a.
+      apply (proj2_sig f). unfold asp. exists a'. auto.
+    + (* Backward: spost f pre b → ... *)
+      intros Hfb.
+      apply (proj2_sig f) in Hfb. unfold asp in Hfb.
+      destruct Hfb as [a [Hpre Hra]].
+      exists f, a. split; [exists a; auto | exact Hra].
+  - exact (rel_app_unit ASP_rel_presentation).
+  - intros A B C g. exact (rel_app_precompose ASP_rel_presentation g).
+  - intros A B C h. exact (rel_app_postcompose ASP_rel_presentation h).
+  - intros X A B u v H.
+    assert (Heq : u = v).
+    { extensionality x. specialize (H x).
+      destruct (u x) as [f a], (v x) as [g b].
+      cbn in H. destruct H as [-> ->]. reflexivity. }
+    subst v. reflexivity.
 Qed.
 
 #[global]
 Instance ArrowApplyLaws_PureDSLPostArr : ArrowApplyLaws PureDSLPostArr.
 Proof.
-  constructor; intros.
-  apply PureDSLPostArr_eq; intros pre b. cbn.
-  split.
-  - (* Forward: (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) → spost (proj1_sig f) pre b *)
-    intros H. apply (proj2_sig f). intros a Hra.
-    exact (H f a Hra a eq_refl).
-  - (* Backward: spost (proj1_sig f) pre b → (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) *)
-    intros Hfb f0 a0 Hrel a' Heq.
-    injection Heq as Hfeq Haeq. subst a' f0.
-    apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
+  constructor.
+  - intros A B f. apply PureDSLPostArr_eq; intros pre b. cbn.
+    split.
+    + (* Forward: (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) → spost (proj1_sig f) pre b *)
+      intros H. apply (proj2_sig f). intros a Hra.
+      exact (H f a Hra a eq_refl).
+    + (* Backward: spost (proj1_sig f) pre b → (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) *)
+      intros Hfb f0 a0 Hrel a' Heq.
+      injection Heq as Hfeq Haeq. subst a' f0.
+      apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
+  - exact (rel_app_unit DSLP_rel_presentation).
+  - intros A B C g. exact (rel_app_precompose DSLP_rel_presentation g).
+  - intros A B C h. exact (rel_app_postcompose DSLP_rel_presentation h).
+  - intros X A B u v H.
+    assert (Heq : u = v).
+    { extensionality x. specialize (H x).
+      destruct (u x) as [f a], (v x) as [g b].
+      cbn in H. destruct H as [-> ->]. reflexivity. }
+    subst v. reflexivity.
 Qed.
 
 (* ================================================================= *)
 (** ** Monad from ArrowApply (general construction)                   *)
 (* ================================================================= *)
 
-(** [Classes/ArrowMonad] supplies the generic arrow-monad operations.
+(** [Classes/ArrowMonad] supplies the generic arrow-monad operations and laws.
     The concrete [MonadLawsE] proofs below concern the direct relational
     monads defined here. *)
 

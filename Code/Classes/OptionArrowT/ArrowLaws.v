@@ -26,6 +26,7 @@ Section GenericOptionArrTLaws.
   Local Notation fcomp    := (@first_comp arr HA HE HL).
   Local Notation ffst     := (@first_fst arr HA HE HL).
   Local Notation fassoc   := (@first_assoc arr HA HE HL).
+  Local Notation fnat     := (@first_natural arr HA HE HL).
   Local Notation lpure    := (@left_pure arr HA HC HE HCL).
   Local Notation lcomp    := (@left_comp arr HA HC HE HCL).
   Local Notation linl     := (@left_inl arr HA HC HE HCL).
@@ -49,6 +50,51 @@ Section GenericOptionArrTLaws.
     autounfold with opt_ops;
     fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
          (@arr_left arr HA HC) (@arrow_eq arr HE) (@arrow_eq_equiv arr HE).
+
+  (** Composition with a pure arrow reduces to ordinary base composition. *)
+  Lemma optionArrT_comp_pure_l {A B C} (u : A -> B)
+    (f : optionArrT arr B C) :
+    @arrow_eq arr HE _ _
+      (@arr_comp _ (@Arrow_optionArrT arr HA HC) _ _ _
+        (@arr_pure _ (@Arrow_optionArrT arr HA HC) _ _ u) f)
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ u) f).
+  Proof.
+    opt_unfold.
+    assert (Hhead : @arrow_eq arr HE _ _
+      (@arr_comp arr HA _ _ _
+        (@arr_pure arr HA _ _ (fun a => Some (u a)))
+        (@arr_pure arr HA _ _ (@to_sum B)))
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ u)
+       (@arr_pure arr HA _ _ (@inl B unit)))).
+    { etransitivity. { apply pcomp. }
+      symmetry. etransitivity. { apply pcomp. }
+      reflexivity. }
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. exact Hhead. }
+    etransitivity. { apply cassoc. }
+    apply cprop. 1: reflexivity.
+    etransitivity. { symmetry. apply cassoc. }
+    etransitivity. { apply cprop. 2: reflexivity. symmetry. apply linl. }
+    etransitivity. { apply cassoc. }
+    etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
+    apply cidr.
+  Qed.
+
+  Lemma optionArrT_comp_pure_r {A B C} (f : optionArrT arr A B)
+    (u : B -> C) :
+    @arrow_eq arr HE _ _
+      (@arr_comp _ (@Arrow_optionArrT arr HA HC) _ _ _ f
+        (@arr_pure _ (@Arrow_optionArrT arr HA HC) _ _ u))
+      (@arr_comp arr HA _ _ _ f
+        (@arr_pure arr HA _ _ (option_map u))).
+  Proof.
+    opt_unfold. apply cprop. 1: reflexivity.
+    etransitivity.
+    { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply lpure. }
+    etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
+    etransitivity. { apply pcomp. }
+    apply arr_pure_ext. intros [b|]; reflexivity.
+  Qed.
 
   #[global]
   Instance ArrowLaws_optionArrT : ArrowLaws (optionArrT arr).
@@ -914,6 +960,26 @@ Section GenericOptionArrTLaws.
       unfold Proper, respectful. intros f' g' Hfg.
       apply cprop; [| reflexivity].
       apply fprop. assumption.
+    - (* first_natural: sequence_option commutes with mapping the context. *)
+      etransitivity. { apply optionArrT_comp_pure_r. }
+      symmetry. etransitivity. { apply optionArrT_comp_pure_l. }
+      symmetry. opt_unfold.
+      assert (Hsequence : @arrow_eq arr HE _ _
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (@sequence_option B C))
+          (@arr_pure arr HA _ _
+            (option_map (fun '(b, c) => (b, g c)))))
+        (@arr_comp arr HA _ _ _
+          (@arr_pure arr HA _ _ (fun '(ob, c) => (ob, g c)))
+          (@arr_pure arr HA _ _ (@sequence_option B D)))).
+      { etransitivity. { apply pcomp. }
+        symmetry. etransitivity. { apply pcomp. }
+        apply arr_pure_ext. intros [[b|] c]; reflexivity. }
+      etransitivity. { apply cassoc. }
+      etransitivity. { apply cprop. 1: reflexivity. exact Hsequence. }
+      etransitivity. { symmetry. apply cassoc. }
+      etransitivity. { apply cprop. 2: reflexivity. apply fnat. }
+      apply cassoc.
   Qed.
 
 End GenericOptionArrTLaws.
