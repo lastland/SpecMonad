@@ -506,11 +506,15 @@ Qed.
 
 Definition ASP_rel_presentation :
   RelArrowPresentation PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr.
-Proof.
-  refine {| present_rel := fun A B f => rel (proj1_sig f);
-            present_ext := @ASP_rel_ext |}; intros; reflexivity.
-Defined.
+    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr := {|
+  present_rel := fun A B f => rel (proj1_sig f);
+  present_ext := @ASP_rel_ext;
+  present_pure := fun _ _ _ _ _ => iff_refl _;
+  present_comp := fun _ _ _ _ _ _ _ => iff_refl _;
+  present_first := fun _ _ _ _ _ _ _ _ => iff_refl _;
+  present_left := fun _ _ _ _ _ _ => iff_refl _;
+  present_app := fun _ _ _ _ _ => iff_refl _
+|}.
 
 Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
   exists R : PredArr A B,
@@ -784,11 +788,15 @@ Qed.
 
 Definition DSLP_rel_presentation :
   RelArrowPresentation PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr.
-Proof.
-  refine {| present_rel := fun A B f => rel (proj1_sig f);
-            present_ext := @DSLP_rel_ext |}; intros; reflexivity.
-Defined.
+    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr := {|
+  present_rel := fun A B f => rel (proj1_sig f);
+  present_ext := @DSLP_rel_ext;
+  present_pure := fun _ _ _ _ _ => iff_refl _;
+  present_comp := fun _ _ _ _ _ _ _ => iff_refl _;
+  present_first := fun _ _ _ _ _ _ _ _ => iff_refl _;
+  present_left := fun _ _ _ _ _ _ => iff_refl _;
+  present_app := fun _ _ _ _ _ => iff_refl _
+|}.
 
 Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
   exists R : PredArr A B,
