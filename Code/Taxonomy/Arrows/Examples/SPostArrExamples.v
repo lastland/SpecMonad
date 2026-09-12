@@ -3,7 +3,7 @@
 From Coq Require Import Lia.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
-  SPostArr SPostArrEquiv SPostArrCoherence.
+  SPostArr SPostArrEquiv.
 
 (** A many-to-one pure arrow still has an angelic witness after conversion
     to the coupled presentation and back. *)
@@ -115,12 +115,23 @@ Local Notation coupled_state_arrow :=
     (@Arrow_optionArrT CoupledSP.PureRelASPPairArr
       CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr)).
 
+(** The coupled presentation registers no per-stack dictionaries; the
+    application dictionary is the generic transformer instance applied
+    to the coupled base arrows. *)
+Local Notation coupled_state_apply :=
+  (@ArrowApply_stateArrT nat CoupledSP.optionASPArr
+     (@Arrow_optionArrT CoupledSP.PureRelASPPairArr
+       CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr)
+     (@ArrowApply_optionArrT CoupledSP.PureRelASPPairArr
+       CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr
+       CoupledSP.ArrowApply_PureRelASPPairArr)).
+
 Example state_application_conversion :
   getASP (state_option_asp_from_coupled
     (@arr_comp _ coupled_state_arrow _ _ _
       (@arr_pure _ coupled_state_arrow _ _
         (fun '(f, a) => (state_option_asp_to_coupled f, a)))
-      (@arr_app _ coupled_state_arrow (CoupledSP.ArrowApply_stateOptASP nat)
+      (@arr_app _ coupled_state_arrow coupled_state_apply
         unit unit))) (eq ((increment_then_double, tt), 3)) (Some (tt, 8)).
 Proof.
   rewrite <- (morphism_app (state_option_asp_to_coupled_morphism nat)),
@@ -136,7 +147,9 @@ Example asp_higher_order_precompose :
     (firstASP (pureASP (fun f : PureASPostArr nat nat => compASP (pureASP S) f)))
     appASP) (eq (pureASP (fun n => 2 * n), 3)) 8.
 Proof.
-  rewrite ASP_app_precompose, compASP_spec, appASP_spec.
+  rewrite (@app_precompose _ Arrow_PureASPostArr ArrowApply_PureASPostArr
+    ArrowEq_PureASPostArr ArrowApplyLaws_PureASPostArr),
+    compASP_spec, appASP_spec.
   exists (pureASP (fun n => 2 * n)). apply pureASP_spec.
   exists 4. split; [|reflexivity]. unfold arr_second. cbn.
   exists (4, pureASP (fun n => 2 * n)). split; [|reflexivity].
@@ -149,7 +162,8 @@ Example dslp_higher_order_postcompose :
     (compDSLP (firstDSLP (pureDSLP (fun f : PureDSLPostArr nat nat =>
       compDSLP f (pureDSLP (fun n => 2 * n))))) appDSLP)) (eq 3) 8.
 Proof.
-  rewrite DSLP_app_postcompose.
+  rewrite (@app_postcompose _ Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+    ArrowEq_PureDSLPostArr ArrowApplyLaws_PureDSLPostArr).
   rewrite <- (@comp_assoc _ Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr
     ArrowLaws_PureDSLPostArr).
   rewrite (@app_law _ Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
@@ -166,7 +180,10 @@ Example higher_order_captures_input :
     (fun x : bool => pureDSLP (fun y : nat => (x, y))))) appDSLP)
     (eq (true, 3)) (true, 3).
 Proof.
-  rewrite ASP_app_unit, DSLP_app_unit. split; cbn.
+  rewrite (@app_unit _ Arrow_PureASPostArr ArrowApply_PureASPostArr
+    ArrowEq_PureASPostArr ArrowApplyLaws_PureASPostArr),
+    (@app_unit _ Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+      ArrowEq_PureDSLPostArr ArrowApplyLaws_PureDSLPostArr). split; cbn.
   - exists (true, 3). auto.
   - intros p ->. reflexivity.
 Qed.
@@ -197,44 +214,4 @@ Example dslp_state_roundtrip_preserves_state :
 Proof.
   rewrite state_option_dslp_from_to, stateOptDSLP_pure_spec.
   intros a s H. inversion H. reflexivity.
-Qed.
-
-(** A second option layer also supports higher-order application and its
-    static law.  These witnesses exercise the generic dictionaries. *)
-Example nested_optionASP_apply_law {A B}
-  (f : optionArrT optionASPArr A B) :
-  @arr_comp (optionArrT optionASPArr)
-    (@Arrow_optionArrT optionASPArr Arrow_optionASPArr ArrowChoice_optionASPArr)
-    _ _ _
-    (@arr_pure (optionArrT optionASPArr)
-      (@Arrow_optionArrT optionASPArr Arrow_optionASPArr ArrowChoice_optionASPArr)
-      _ _ (fun a => (f, a)))
-    (@arr_app (optionArrT optionASPArr) _
-      (@ArrowApply_optionArrT optionASPArr Arrow_optionASPArr
-        ArrowChoice_optionASPArr ArrowApply_optionASPArr) _ _) = f.
-Proof.
-  exact (@app_law _ _ _ _
-    (@ArrowApplyLaws_optionArrT optionASPArr Arrow_optionASPArr
-      ArrowChoice_optionASPArr ArrowApply_optionASPArr ArrowEq_optionASPArr
-      ArrowLaws_optionASPArr ArrowChoiceLaws_optionASPArr ArrowApplyLaws_optionASPArr)
-    A B f).
-Qed.
-
-Example nested_optionDSLP_apply_law {A B}
-  (f : optionArrT optionDSLPArr A B) :
-  @arr_comp (optionArrT optionDSLPArr)
-    (@Arrow_optionArrT optionDSLPArr Arrow_optionDSLPArr ArrowChoice_optionDSLPArr)
-    _ _ _
-    (@arr_pure (optionArrT optionDSLPArr)
-      (@Arrow_optionArrT optionDSLPArr Arrow_optionDSLPArr ArrowChoice_optionDSLPArr)
-      _ _ (fun a => (f, a)))
-    (@arr_app (optionArrT optionDSLPArr) _
-      (@ArrowApply_optionArrT optionDSLPArr Arrow_optionDSLPArr
-        ArrowChoice_optionDSLPArr ArrowApply_optionDSLPArr) _ _) = f.
-Proof.
-  exact (@app_law _ _ _ _
-    (@ArrowApplyLaws_optionArrT optionDSLPArr Arrow_optionDSLPArr
-      ArrowChoice_optionDSLPArr ArrowApply_optionDSLPArr ArrowEq_optionDSLPArr
-      ArrowLaws_optionDSLPArr ArrowChoiceLaws_optionDSLPArr ArrowApplyLaws_optionDSLPArr)
-    A B f).
 Qed.

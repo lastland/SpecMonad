@@ -38,16 +38,18 @@ Taxonomy/
                          SPostArr, RelSPPairArr       -- property-only / coupled SP arrows
                          SPostArrMonad               -- monad dictionaries and SP readings
                          SPostArrEquiv               -- equivalence and transformer lifts
-                         SPostArrCoherence, RelSPPairArrCoherence
-                         OptionLoop                  -- obstruction to option feedback
-    Examples/            SPostArrExamples             -- checked clients
+                          OptionLoop                  -- obstruction to option feedback
+     Examples/            SPostArrExamples             -- checked clients
+     Tests/               ArrowMonadInstances          -- concrete monad dictionaries
+                          ArrowTransformerInstances    -- transformer resolution checks
   EffectObservations/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
                          StDivExcNonDet_WStExc, StDivNonDet_WSt
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
                          StDivNonDet_SPSt, DivNonDet_SPPure,
                          RdDivNonDet_RdSPPure
-                         SPostArrObservation         -- shared SP judgments
+                          SPostArrObservation         -- shared SP judgments
+                          RawStOpt_SPostArr           -- shared single-option outcome laws
                          StDivITree_SPostArr, StExcNonDet_SPostArr,
                          StDivNonDet_SPostArr, StDivExcNonDet_SPostArr
       (root)             Taxonomy_StDivExcNonDet_StExc,
@@ -314,7 +316,7 @@ the extra outcome is the raised exception, and it carries `MonadExc`.
 
 `ret`, `bind`, `Eq1` (pointwise iff) and `MonadLawsE` are proved directly for
 `WPure`; both stacks get their laws from the `Eq1`-generic `optionT` / `stateT`
-instances in `ComputationMonads/StDivITree.v`.
+instances in `ComputationMonads/TransformerLaws.v`.
 `Coercion runWPure : WPure >-> Funclass` keeps application (`w post`) working
 through the subset type.
 
@@ -350,10 +352,10 @@ An observation maps a computation monad into the spec monads. Everything
 downstream — monad-morphism theorems, triples, the taxonomy — follows from
 `outcomes_bind` and `outcomes_ret`, whose case count tracks the effect layers.
 
-Each file defines its observations, proves each is a **monad morphism**
-(`obs*_ret` / `obs*_bind`), gives the `getProg*_obs*` readings, and builds the
-triples over them together with their refinement (`*spec`) forms and `*DefEq`
-equivalences. Comparisons between observations are *not* here — see §6.
+Observation modules expose their readings and morphism laws
+(`obs*_ret` / `obs*_bind`). Triples and their refinement characterizations
+use either the base-monad judgments or the shared arrow judgments described
+below. Comparisons between observations live in §6.
 
 ### WP side — `EffectObservations/WP/`
 
@@ -453,11 +455,14 @@ recovered relation and the monad operations, so the DSLP return/bind proofs
 reuse the ASP proofs. Each file proves its ASP return/bind laws using the
 generic arrow normalization and local lemmas about the raw computation.
 Both observations preserve the exact arrow-derived return and bind.
+`RawStOpt_SPostArr.v` shares the raw return/bind outcome laws for
+`stateT S (optionT SetM)`, which both single-option observations use.
 
 `SPostArrObservation.v` supplies `tripleASP` and `tripleDSL` over an observed
 specification. Each effect file specializes those judgments to programs via
-its `obsASP`/`obsDSLP`. The `*DefEq` theorems relate the `Over`/`Under`
-judgments to comparisons against the raw `pp2_over`/`pp2_under` transformers.
+its `obsASP`/`obsDSLP`. The shared `*DefEq` theorems relate the `Over`/`Under`
+judgments to comparisons against the raw `pp2_over`/`pp2_under` transformers;
+apply them directly to an observed specification.
 
 | Observation file | Source | Relation observed at `r : option (A * S)` | Meaning of `r = None` |
 |---|---|---|---|
@@ -610,9 +615,9 @@ presentations**:
 
 The monad files define their carriers **in terms of the result type alone**
 (`Pred A = A -> Prop`), rather than fixing the input of a binary arrow.
-Arrow files can reuse their raw carriers and properties: `WPArr.v` uses
-`WPureT`, and `PredicateTransformerProperties.v` relates its binary properties
-to the pure/state properties from `BaseSpecMonads/SPPredicateTransformers.v`.
+`WPArr.v` reuses the raw carrier `WPureT`.
+`PredicateTransformerProperties.v` defines the binary SP well-formedness
+properties independently of the base-monad development.
 
 General arrow infrastructure lives in `Code/Classes/`. `ArrowMonad.v` defines
 the generic return/bind operations for `arr I` and proves their monad laws;
@@ -627,11 +632,6 @@ Bind keeps the input, threads the intermediate state, and propagates `None`.
 These generic proofs are axiom-free; the SP monads instantiate them with
 `ASP_rel_presentation` and `DSLP_rel_presentation`.
 SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
-
-`PredArr.v`, `PrePostArr.v`, `RelPrePostArr.v`, and `RelSPPairArr.v` expose named
-monad dictionaries for their fixed-input arrows. These names are ordinary
-`Definition` aliases of `Monad_Arrow`; the named equivalence and monad-law
-proofs likewise alias `Eq1Equivalence_Arrow` and `MonadLawsE_Arrow`.
 
 ### Arrow-derived monad laws
 
@@ -658,22 +658,12 @@ does not compete with concrete monads' `Eq1` instances. The global
 dictionaries. The generic proof has no logical axioms and needs no inhabitant
 of `I`; concrete instances retain the assumptions of their own law proofs.
 
-The five concrete monad bundles (Pred, PrePost, RelPrePost, coupled ASP, and
-coupled DSLP) register only their chosen `Eq1` aliases. Generic instances handle
-`Monad`, `Eq1Equivalence`, and `MonadLawsE` resolution, avoiding duplicate
-registrations for the same dictionaries. For example:
-
-```coq
-Definition Monad_PureRelASPPairArr (I : Type) : Monad (PureRelASPPairArr I) :=
-  @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr I.
-```
-
-The compact return/bind helpers retain their original formulas. Agreement
-lemmas such as `bindPred_eq_bind_arrow`, `bindPrePost_eq_bind_arrow`,
-`bindRelPrePost_eq_bind_arrow`, `bind_ASP_eq_bind_arrow`, and
-`bind_DSLP_eq_bind_arrow` relate them to the selected generic operations under
-the arrow equality. The corresponding `*_eq_ret_arrow` lemmas cover return.
-These are proved equivalences, rather than definitional reductions of bind.
+The concrete arrows register their chosen `Eq1` aliases. Generic instances
+provide `Monad`, `Eq1Equivalence`, and `MonadLawsE`. Test-only named dictionary
+aliases and compact return/bind agreement proofs live in `Arrows/Tests/`.
+Production modules retain the compact Pred and RelPrePost operations used by
+their mathematical consumers, and `SPostArrMonad.v` retains the two named
+stack dictionaries used by effect observations.
 
 The option and state arrow transformers preserve the full law contract, so
 the same monad-law proof applies at each layer:
@@ -694,12 +684,24 @@ lawful monad on stateArrT S (optionArrT arr) I
 `Classes/Tests/ArrowMonadRegression.v` checks generic law resolution and a
 counterexample: a lawful arrow whose application satisfies the old fixed-arrow
 law but violates monad right identity. The stronger application contract
-rejects it. `Arrows/Examples/ArrowMonadExamples.v` checks the exact derived
-monad dictionary for pointwise arrow equalities and both SP presentations,
-including base, option, state, and state-over-option arrows with a non-unit input.
-It also checks that all five concrete monad names are definitionally the
-generic dictionary and that their canonical equalities support automatic law
-resolution.
+rejects it. `Arrows/Tests/ArrowMonadInstances.v` collects the concrete monad,
+`Eq1Equivalence`, and `MonadLawsE` dictionaries of the specification arrows
+together with their compact relational `ret`/`bind` descriptions and agreement
+facts. It checks the exact derived monad dictionary for pointwise arrow
+equalities and both SP presentations, including base, option, state, and
+state-over-option arrows with a non-unit input. It also checks that all five
+concrete monad names are definitionally the generic dictionary and that their
+canonical equalities support automatic law resolution.
+`Arrows/Tests/ArrowTransformerInstances.v` holds the transformer-stack
+resolution checks: the `optionPred` laws, the monad-view `progPredM` /
+`nditPredM` stacks, the coupled option and state-over-option dictionaries
+(registered nowhere, resolved through the generic transformers), and the
+double-option application-law witnesses.
+Both test modules are in `_CoqProject`, so the normal build checks them.
+They register no helper instances. Explicit generic applications check
+specialization; `:= _` checks automatic resolution. The two named SP-stack
+law witnesses use explicit applications because inference does not see through
+those aliases.
 
 ### Property-only SP arrows
 
@@ -734,17 +736,16 @@ The existing option/state transformers lift these laws, including to
 has input `A * S` and output `option (B * S)`: `None` propagates without a final
 state. `ASPostArr S B` and `DSLPostArr S B` fix the arrow input to `unit`.
 
-`SPostArrCoherence.v` exposes named specializations of the three standard
-application equations for pure, option, state, and state-over-option arrows.
-These equations are also fields of `ArrowApplyLaws`. The core SP modules derive
-faithful relational presentations and use `Classes/RelArrowCoherence.v` to prove
-the base application laws. The corresponding coupled specializations live in
-`RelSPPairArrCoherence.v`; the generic transformers preserve the laws algebraically.
+The core SP modules use faithful relational presentations from
+`Classes/RelArrowCoherence.v` to prove the base application laws.
+The generic transformers preserve these laws algebraically; their concrete
+equations are projections of `ArrowApplyLaws`.
 
 `SPostArrEquiv.v` provides `asp_to_coupled` / `asp_from_coupled` and their DSLP
 counterparts, with both round trips and preservation of all five operations.
-The `option_*`, `state_*`, and `state_option_*` conversions lift this equivalence
-through the transformers. `morphism_app` explicitly converts the arrow stored
+The `option_*` and `state_option_*` conversions lift this equivalence
+through the transformers. State-only lifts use `state_arrow_map` and
+`state_arrow_morphism` directly. `morphism_app` explicitly converts the arrow stored
 in the application's input. The coupled carriers are `PureRelASPPairArr` and
 `PureRelDSLPPairArr`; the property-only carriers are `PureASPostArr` and
 `PureDSLPostArr`. Qualify `SPostArr` or `RelSPPairArr` for shared names such as
@@ -753,7 +754,8 @@ in the application's input. The coupled carriers are `PureRelASPPairArr` and
 The normal-form proofs use functional and propositional extensionality, and
 bundled equality additionally uses proof irrelevance. Their assumption audits
 require no excluded middle. Checked clients live in
-`Arrows/Examples/SPostArrExamples.v` and `Arrows/Examples/ArrowMonadExamples.v`.
+`Arrows/Examples/SPostArrExamples.v`; monad and transformer instantiation
+checks live in `Arrows/Tests/`.
 
 `Arrows/OptionLoop.v` proves that `optionPred` cannot satisfy unrestricted
 `ArrowLoop` left tightening: empty feedback makes failure propagation conflict
@@ -910,4 +912,4 @@ only in the outcome type, `bind`, and the four `comp_*` lemmas — everything el
 transfers by re-indexing. Parameterising one development over an abstract
 outcome functor plus a Kleisli `step` (with the three `comp_*` laws as
 hypotheses) would share the bridges, carriers and targets, and reduce each new
-outcome type to one instance. `ASLPMonad.v` is the worst case at 1303 lines.
+outcome type to one instance.

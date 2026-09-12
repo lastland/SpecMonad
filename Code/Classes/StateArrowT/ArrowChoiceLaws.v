@@ -499,52 +499,6 @@ Section StateArrowTChoiceLaws.
       { etransitivity. { apply pcomp. }
         pure_ext. }
 
-      (* RHS head: spd_s >>> sd' *)
-      assert (H_rhs_head :
-        @arrow_eq arr HE _ _
-          (@arr_comp arr HA _ _ _
-            (@arr_pure arr HA _ _
-              (fun p : (((A+C)*D)*S)%type => let '(x, s0) := p in (sum_prod_dist x, s0)))
-            (@arr_pure arr HA _ _ (@sum_distribute (A*D) (C*D) S)))
-          (@arr_pure arr HA _ _
-            (fun x : (((A+C)*D)*S)%type =>
-              match x with
-              | ((inl a, d), s0) => ((inl ((a, d), s0)) : ((A*D)*S + (C*D)*S)%type)
-              | ((inr c, d), s0) => ((inr ((c, d), s0)) : ((A*D)*S + (C*D)*S)%type)
-              end))).
-      { transitivity
-          (@arr_comp arr HA _ _ _
-            (@arr_pure arr HA _ _
-              (fun p : (((A+C)*D)*S)%type => (sum_prod_dist (fst p), snd p)))
-            (@arr_pure arr HA _ _ (@sum_distribute (A*D) (C*D) S))).
-        { apply cprop. 2: reflexivity. apply arr_pure_ext'.
-          intros ((ac, d), s0); reflexivity. }
-        etransitivity. { apply pcomp. }
-        pure_ext. }
-
-      (* RHS expand + fuse: rhs_head >>> sbm(si', id) *)
-      assert (H_rhs_fused_head :
-        @arrow_eq arr HE _ _
-          (@arr_comp arr HA _ _ _
-            (@arr_pure arr HA _ _
-              (fun x : (((A+C)*D)*S)%type =>
-                match x with
-                | ((inl a, d), s0) => ((inl ((a, d), s0)) : ((A*D)*S + (C*D)*S)%type)
-                | ((inr c, d), s0) => ((inr ((c, d), s0)) : ((A*D)*S + (C*D)*S)%type)
-                end))
-            (@arr_pure arr HA _ _
-              (fun x : ((A*D)*S + (C*D)*S)%type =>
-                @sum_bimap ((A*D)*S) ((C*D)*S) ((A*S)*D) ((C*D)*S)
-                  (@state_shuffle_in S A D) (fun c0 : (C*D)*S => c0) x)))
-          (@arr_pure arr HA _ _
-            (fun x : (((A+C)*D)*S)%type =>
-              match x with
-              | ((inl a, d), s0) => (inl ((a, s0), d) : ((A*S*D)+((C*D)*S))%type)
-              | ((inr c, d), s0) => (inr ((c, d), s0) : ((A*S*D)+((C*D)*S))%type)
-              end))).
-      { etransitivity. { apply pcomp. }
-        pure_ext. }
-
       (* === Assemble LHS === *)
       (* Expand F(sd >>> Lf >>> su) using only fcomp (no fpure) *)
       etransitivity.

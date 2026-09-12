@@ -51,12 +51,9 @@ Taxonomy/Arrows/RelSPPairArr.v
 Taxonomy/Arrows/PredicateTransformerProperties.v
 Taxonomy/Arrows/SPostArr.v
 Taxonomy/Arrows/SPostArrMonad.v
-Taxonomy/Arrows/RelSPPairArrCoherence.v
-Taxonomy/Arrows/SPostArrCoherence.v
 Taxonomy/Arrows/OptionLoop.v
 Taxonomy/Arrows/SPostArrEquiv.v
 Taxonomy/Arrows/Examples/SPostArrExamples.v
-Taxonomy/Arrows/Examples/ArrowMonadExamples.v
 Taxonomy/Arrows/PrePostArr.v
 Taxonomy/Arrows/WPArr.v
 Taxonomy/Arrows/RelPrePostArr.v
@@ -74,6 +71,8 @@ Taxonomy/BaseSpecMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/ASLPArrowCore.v
 Taxonomy/BaseSpecMonads/ASLPArrowRel.v
 Taxonomy/BaseSpecMonads/ASLPMonad.v
+Taxonomy/Arrows/Tests/ArrowMonadInstances.v
+Taxonomy/Arrows/Tests/ArrowTransformerInstances.v
 Taxonomy/BaseSpecMonads/BaseGaloisConnections.v
 Taxonomy/BaseSpecMonads/NewGaloisConnections.v
 Taxonomy/EffectObservations/WP/StDivITree_WStExc.v
@@ -103,6 +102,7 @@ Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_WStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_SPStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivNonDet_SPSt.v
 Taxonomy/EffectObservations/SP/SPostArrObservation.v
+Taxonomy/EffectObservations/SP/RawStOpt_SPostArr.v
 Taxonomy/EffectObservations/SP/StDivITree_SPostArr.v
 Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.v

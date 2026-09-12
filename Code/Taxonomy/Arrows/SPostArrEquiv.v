@@ -216,11 +216,12 @@ Proof.
     CoupledSP.ArrowLaws_PureRelDSLPPairArr).
 Qed.
 
-(** ** Public option, state, and state-over-option equivalences
+(** ** Public option and state-over-option equivalences
 
     Each [_morphism] theorem exposes all five laws through
     [morphism_pure], [morphism_comp], [morphism_first], [morphism_left],
-    and [morphism_app], in either conversion direction. *)
+    and [morphism_app], in either conversion direction.  State-only lifts
+    are obtained directly with [state_arrow_map] and [state_arrow_morphism]. *)
 
 Definition option_asp_to_coupled {A B} (f : PropertySP.optionASPArr A B) :
   CoupledSP.optionASPArr A B := option_arrow_map (@asp_to_coupled) A B f.
@@ -230,19 +231,6 @@ Definition option_dslp_to_coupled {A B} (f : PropertySP.optionDSLPArr A B) :
   CoupledSP.optionDSLPArr A B := option_arrow_map (@dslp_to_coupled) A B f.
 Definition option_dslp_from_coupled {A B} (f : CoupledSP.optionDSLPArr A B) :
   PropertySP.optionDSLPArr A B := option_arrow_map (@dslp_from_coupled) A B f.
-
-Definition state_asp_to_coupled {S A B}
-  (f : stateArrT S PropertySP.PureASPostArr A B) :
-  stateArrT S CoupledSP.PureRelASPPairArr A B := state_arrow_map S (@asp_to_coupled) A B f.
-Definition state_asp_from_coupled {S A B}
-  (f : stateArrT S CoupledSP.PureRelASPPairArr A B) :
-  stateArrT S PropertySP.PureASPostArr A B := state_arrow_map S (@asp_from_coupled) A B f.
-Definition state_dslp_to_coupled {S A B}
-  (f : stateArrT S PropertySP.PureDSLPostArr A B) :
-  stateArrT S CoupledSP.PureRelDSLPPairArr A B := state_arrow_map S (@dslp_to_coupled) A B f.
-Definition state_dslp_from_coupled {S A B}
-  (f : stateArrT S CoupledSP.PureRelDSLPPairArr A B) :
-  stateArrT S PropertySP.PureDSLPostArr A B := state_arrow_map S (@dslp_from_coupled) A B f.
 
 Definition state_option_asp_to_coupled {S A B}
   (f : stateArrT S PropertySP.optionASPArr A B) :
@@ -289,34 +277,6 @@ Proof.
     (@dslp_to_from) A B f).
 Qed.
 
-Theorem state_asp_from_to {S A B} (f : stateArrT S PropertySP.PureASPostArr A B) :
-  state_asp_from_coupled (state_asp_to_coupled f) = f.
-Proof.
-  exact (state_arrow_map_roundtrip S (@asp_to_coupled) (@asp_from_coupled)
-    (@asp_from_to) A B f).
-Qed.
-
-Theorem state_asp_to_from {S A B} (f : stateArrT S CoupledSP.PureRelASPPairArr A B) :
-  state_asp_to_coupled (state_asp_from_coupled f) = f.
-Proof.
-  exact (state_arrow_map_roundtrip S (@asp_from_coupled) (@asp_to_coupled)
-    (@asp_to_from) A B f).
-Qed.
-
-Theorem state_dslp_from_to {S A B} (f : stateArrT S PropertySP.PureDSLPostArr A B) :
-  state_dslp_from_coupled (state_dslp_to_coupled f) = f.
-Proof.
-  exact (state_arrow_map_roundtrip S (@dslp_to_coupled) (@dslp_from_coupled)
-    (@dslp_from_to) A B f).
-Qed.
-
-Theorem state_dslp_to_from {S A B} (f : stateArrT S CoupledSP.PureRelDSLPPairArr A B) :
-  state_dslp_to_coupled (state_dslp_from_coupled f) = f.
-Proof.
-  exact (state_arrow_map_roundtrip S (@dslp_from_coupled) (@dslp_to_coupled)
-    (@dslp_to_from) A B f).
-Qed.
-
 Theorem state_option_asp_from_to {S A B}
   (f : stateArrT S PropertySP.optionASPArr A B) :
   state_option_asp_from_coupled (state_option_asp_to_coupled f) = f.
@@ -349,12 +309,6 @@ Proof.
     (@option_dslp_to_from) A B f).
 Qed.
 
-Local Notation PA := PropertySP.Arrow_PureASPostArr.
-Local Notation PAC := PropertySP.ArrowChoice_PureASPostArr.
-Local Notation PAA := PropertySP.ArrowApply_PureASPostArr.
-Local Notation PD := PropertySP.Arrow_PureDSLPostArr.
-Local Notation PDC := PropertySP.ArrowChoice_PureDSLPostArr.
-Local Notation PDA := PropertySP.ArrowApply_PureDSLPostArr.
 Local Notation COA := (@Arrow_optionArrT CoupledSP.PureRelASPPairArr CA CAC).
 Local Notation COAC := (@ArrowChoice_optionArrT CoupledSP.PureRelASPPairArr CA CAC).
 Local Notation COAA := (@ArrowApply_optionArrT CoupledSP.PureRelASPPairArr CA CAC CAA).
@@ -394,58 +348,6 @@ Theorem option_dslp_from_coupled_morphism :
 Proof.
   exact (option_arrow_morphism (@dslp_from_coupled) dslp_from_coupled_morphism
     PropertySP.ArrowLaws_PureDSLPostArr PropertySP.ArrowChoiceLaws_PureDSLPostArr).
-Qed.
-
-Theorem state_asp_to_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S PropertySP.PureASPostArr PA)
-    (@ArrowChoice_stateArrT S PropertySP.PureASPostArr PA PAC)
-    (@ArrowApply_stateArrT S PropertySP.PureASPostArr PA PAA)
-    (@Arrow_stateArrT S CoupledSP.PureRelASPPairArr CA)
-    (@ArrowChoice_stateArrT S CoupledSP.PureRelASPPairArr CA CAC)
-    (@ArrowApply_stateArrT S CoupledSP.PureRelASPPairArr CA CAA)
-    (@state_asp_to_coupled S).
-Proof.
-  exact (state_arrow_morphism (@asp_to_coupled) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelASPPairArr S).
-Qed.
-
-Theorem state_asp_from_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S CoupledSP.PureRelASPPairArr CA)
-    (@ArrowChoice_stateArrT S CoupledSP.PureRelASPPairArr CA CAC)
-    (@ArrowApply_stateArrT S CoupledSP.PureRelASPPairArr CA CAA)
-    (@Arrow_stateArrT S PropertySP.PureASPostArr PA)
-    (@ArrowChoice_stateArrT S PropertySP.PureASPostArr PA PAC)
-    (@ArrowApply_stateArrT S PropertySP.PureASPostArr PA PAA)
-    (@state_asp_from_coupled S).
-Proof.
-  exact (state_arrow_morphism (@asp_from_coupled) asp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureASPostArr S).
-Qed.
-
-Theorem state_dslp_to_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S PropertySP.PureDSLPostArr PD)
-    (@ArrowChoice_stateArrT S PropertySP.PureDSLPostArr PD PDC)
-    (@ArrowApply_stateArrT S PropertySP.PureDSLPostArr PD PDA)
-    (@Arrow_stateArrT S CoupledSP.PureRelDSLPPairArr CD)
-    (@ArrowChoice_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDC)
-    (@ArrowApply_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDA)
-    (@state_dslp_to_coupled S).
-Proof.
-  exact (state_arrow_morphism (@dslp_to_coupled) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelDSLPPairArr S).
-Qed.
-
-Theorem state_dslp_from_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S CoupledSP.PureRelDSLPPairArr CD)
-    (@ArrowChoice_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDC)
-    (@ArrowApply_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDA)
-    (@Arrow_stateArrT S PropertySP.PureDSLPostArr PD)
-    (@ArrowChoice_stateArrT S PropertySP.PureDSLPostArr PD PDC)
-    (@ArrowApply_stateArrT S PropertySP.PureDSLPostArr PD PDA)
-    (@state_dslp_from_coupled S).
-Proof.
-  exact (state_arrow_morphism (@dslp_from_coupled) dslp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureDSLPostArr S).
 Qed.
 
 Theorem state_option_asp_to_coupled_morphism (S : Type) :

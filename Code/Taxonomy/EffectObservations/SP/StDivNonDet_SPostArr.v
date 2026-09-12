@@ -6,8 +6,10 @@
     observations [obsASP]/[obsDSLP] read the FULL outcome payload
     [unOptionT (runStateT m s)] into the arrow-derived specification monads of
     [SPostArrMonad] — divergence is an ordinary outcome, visible to both
-    readings — and both are monad morphisms; examples use the shared triple
-    judgments of [SPostArrObservation]. *)
+    readings — and both are monad morphisms; the raw outcome normalization is
+    shared with [StExcNonDet_SPostArr] in [RawStOpt_SPostArr], which applies
+    to this module's [retD]/[bindD] definitionally.  Examples use the shared
+    triple judgments of [SPostArrObservation]. *)
 
 From Coq Require Import Morphisms_Prop.
 From ExtLib Require Import StateMonad OptionMonad.
@@ -15,6 +17,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
+From Incorrectness.Taxonomy.EffectObservations.SP Require Import RawStOpt_SPostArr.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
 
 Import MonadNotation.
@@ -27,27 +30,10 @@ Open Scope monad_scope.
 Section Obs.
   Variable S : Type.
 
-  (** One step of the raw outcome payload: [ret], and [bind] with divergence
-      [None] absorbing — exactly the propagation rule divergence needs. *)
-  Lemma outcomes_ret {A} (a : A) (s : S) (r : option (A * S)) :
-    unOptionT (runStateT (retD S a) s) r <-> r = Some (a, s).
-  Proof. split; intro H; exact H. Qed.
-
-  Lemma outcomes_bind {A B} (m : stdivnd S A) (k : A -> stdivnd S B)
-      (s : S) (r : option (B * S)) :
-    unOptionT (runStateT (bindD S m k) s) r <->
-    exists oa, unOptionT (runStateT m s) oa /\
-      match oa with
-      | Some (a, s') => unOptionT (runStateT (k a) s') r
-      | None => r = None
-      end.
-  Proof.
-    unfold bindD. cbn. split.
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-  Qed.
+  (** The raw outcome lemmas live in [RawStOpt_SPostArr]: [stdivnd S] IS
+      [stateT S (optionT SetM)] and [StDivNonDet] resolves to the
+      dictionaries stated there, so they apply to [retD]/[bindD] by
+      definitional conversion. *)
 
   Definition obsASP {A} (m : stdivnd S A) : ASPostArr S A :=
     relASP (fun us r => unOptionT (runStateT m (snd us)) r).
@@ -83,7 +69,8 @@ Section Obs.
     obsASP (retD S a) = @ret _ (Monad_ASPostArr S) A a.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
-    rewrite ASP_rel_ret, ASP_rel_obsASP, outcomes_ret.
+    rewrite ASP_rel_ret, ASP_rel_obsASP,
+      (RawStOpt_SPostArr.outcomes_ret S a s r).
     split; intro H; symmetry; exact H.
   Qed.
 
@@ -92,7 +79,8 @@ Section Obs.
     @bind _ (Monad_ASPostArr S) A B (obsASP m) (fun a => obsASP (k a)).
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
-    rewrite ASP_rel_bind, ASP_rel_obsASP, outcomes_bind.
+    rewrite ASP_rel_bind, ASP_rel_obsASP,
+      (RawStOpt_SPostArr.outcomes_bind S m k s r).
     apply ex_iff_morphism. intros [[a t]|];
       rewrite !ASP_rel_obsASP; reflexivity.
   Qed.
@@ -118,34 +106,11 @@ Section Obs.
       (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     SPostArrObservation.tripleASP (obsASP m) kind pre post.
 
-  Definition tripleASPspec {A} (m : stdivnd S A) (kind : approxKind)
-      (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
-    SPostArrObservation.tripleASPspec (obsASP m) kind pre post.
-
-  Theorem tripleASPDefEq {A} (m : stdivnd S A) kind pre post :
-    tripleASP m kind pre post <-> tripleASPspec m kind pre post.
-  Proof.
-    exact (SPostArrObservation.tripleASPDefEq (obsASP m) kind pre post).
-  Qed.
-
   Definition tripleDSL {A} (m : stdivnd S A) (kind : approxKind)
       (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
-
-  Definition tripleDSLspec {A} (m : stdivnd S A) (kind : approxKind)
-      (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
-    SPostArrObservation.tripleDSLspec (obsDSLP m) kind pre post.
-
-  Theorem tripleDSLDefEq {A} (m : stdivnd S A) kind pre post :
-    tripleDSL m kind pre post <-> tripleDSLspec m kind pre post.
-  Proof.
-    exact (SPostArrObservation.tripleDSLDefEq (obsDSLP m) kind pre post).
-  Qed.
-
 End Obs.
 
-Arguments outcomes_ret {S A} a s r.
-Arguments outcomes_bind {S A B} m k s r.
 Arguments obsASP {S A} m.
 Arguments obsDSLP {S A} m.
 Arguments ASP_rel_obsASP {S A} m s r.
@@ -156,11 +121,7 @@ Arguments obsASP_bind {S A B} m k.
 Arguments obsDSLP_ret {S A} a.
 Arguments obsDSLP_bind {S A B} m k.
 Arguments tripleASP {S A} m kind pre post.
-Arguments tripleASPspec {S A} m kind pre post.
-Arguments tripleASPDefEq {S A} m kind pre post.
 Arguments tripleDSL {S A} m kind pre post.
-Arguments tripleDSLspec {S A} m kind pre post.
-Arguments tripleDSLDefEq {S A} m kind pre post.
 
 (* ================================================================= *)
 (** ** Divergence is visible to both readings                         *)

@@ -30,6 +30,8 @@ relevant to the task. These describe the current source contracts and build
 boundaries. `Taxonomy/deprecated/` is excluded from `_CoqProject`; omit it from
 normal symbol searches.
 
+Concrete arrow instantiation checks live in `Taxonomy/Arrows/Tests/`.
+
 ## Agent skills
 
 ### Issue tracker
@@ -48,6 +50,9 @@ See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
 
 Multi-context: the root map links to contexts for active Coq directories.
 See [docs/agents/domain.md](docs/agents/domain.md).
+
+`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Classes/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
+
 
 ## CI
 

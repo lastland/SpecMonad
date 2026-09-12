@@ -11,12 +11,8 @@ layout and the naming conventions.
 
 # Dependencies
 
-- coq-ext-lib
-- coq-hammer
-- coq-itree
-- coq-itree-extra
-
-Version info can be found in [this opam file](Code/coq-spec-monad.opam).
+The packages and their version constraints are listed in the
+[opam manifest](Code/coq-spec-monad.opam).
 
 # Build
 

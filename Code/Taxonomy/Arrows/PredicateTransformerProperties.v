@@ -17,7 +17,6 @@
     itself a claim about program termination. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 
 (** Well-formedness properties for arbitrary input and output types. *)
 Section ArrowPredicateTransformers.
@@ -104,63 +103,3 @@ Section ArrowPredicateTransformers.
     - intros H [i|]; [exact (H i) | exact (HT b)].
   Qed.
 End ArrowPredicateTransformers.
-
-(** The existing pure, state, and state/exception properties specialize the
-    binary properties.  Pure transformers use the sole input [tt]. *)
-Section WellFormedSpecializations.
-  Lemma StrictArr_pure {A} (w : SPPure A) :
-    StrictArr (fun P : unit -> Prop => w (P tt)) <-> Strict w.
-  Proof. reflexivity. Qed.
-
-  Lemma TerminatingArr_pure {A} (w : SPPure A) :
-    TerminatingArr (fun P : unit -> Prop => w (P tt)) <-> Terminating w.
-  Proof. reflexivity. Qed.
-
-  Lemma ConjunctiveArr_pure {A} (w : SPPure A) :
-    ConjunctiveArr (fun P : unit -> Prop => w (P tt)) <-> Conjunctive w.
-  Proof.
-    split.
-    - intros H I i0 p a. exact (H I (inhabits i0) (fun i _ => p i) a).
-    - intros H I [i0] p a. exact (H I i0 (fun i => p i tt) a).
-  Qed.
-
-  Lemma DisjunctiveArr_pure {A} (w : SPPure A) :
-    DisjunctiveArr (fun P : unit -> Prop => w (P tt)) <-> Disjunctive w.
-  Proof.
-    split.
-    - intros H I i0 p a. exact (H I (inhabits i0) (fun i _ => p i) a).
-    - intros H I [i0] p a. exact (H I i0 (fun i => p i tt) a).
-  Qed.
-
-  Lemma StrictArr_state {S A} (w : @SPSt S A) :
-    StrictArr w <-> StTrans.StrictProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma TerminatingArr_state {S A} (w : @SPSt S A) :
-    TerminatingArr w <-> StTrans.TerminatingProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma ConjunctiveArr_state {S A} (w : @SPSt S A) :
-    ConjunctiveArr w <-> StTrans.ConjunctiveProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma DisjunctiveArr_state {S A} (w : @SPSt S A) :
-    DisjunctiveArr w <-> StTrans.DisjunctiveProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma StrictArr_state_option {S A} (w : @SPStExc S A) :
-    StrictArr w <-> StrictProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma TerminatingArr_state_option {S A} (w : @SPStExc S A) :
-    TerminatingArr w <-> TerminatingProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma ConjunctiveArr_state_option {S A} (w : @SPStExc S A) :
-    ConjunctiveArr w <-> ConjunctiveProg S w.
-  Proof. reflexivity. Qed.
-
-  Lemma DisjunctiveArr_state_option {S A} (w : @SPStExc S A) :
-    DisjunctiveArr w <-> DisjunctiveProg S w.
-  Proof. reflexivity. Qed.
-End WellFormedSpecializations.
