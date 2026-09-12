@@ -40,10 +40,6 @@ Section Ops.
     - intros ->. exists (Some None). split; reflexivity.
   Qed.
 
-  Lemma outcomes_spinP {A} (s : S) (r : option (A * S)) :
-    unOptionT (unOptionT (runStateT (spinP S) s)) (Some r) <-> False.
-  Proof. cbn. split; [discriminate | intro F; destruct F]. Qed.
-
   Lemma outcomes_pickP {A} (s : S) (r : option (A * S)) :
     unOptionT (unOptionT (runStateT pickP s)) (Some r) <-> exists a, r = Some (a, s).
   Proof.
@@ -51,12 +47,6 @@ Section Ops.
     - intros [a H]. exists a. congruence.
     - intros [a H]. exists a. congruence.
   Qed.
-
-  Lemma outcomes_orP {A} (m1 m2 : stdivexcnd S A) (s : S) (r : option (A * S)) :
-    unOptionT (unOptionT (runStateT (orP S m1 m2) s)) (Some r) <->
-    unOptionT (unOptionT (runStateT m1 s)) (Some r) \/
-    unOptionT (unOptionT (runStateT m2 s)) (Some r).
-  Proof. split; intro H; [exact H | exact H]. Qed.
 
 End Ops.
 
@@ -140,22 +130,8 @@ Section Obs.
   Definition tripleASP {A} (m : stdivexcnd S A) kind pre post : Prop :=
     SPostArrObservation.tripleASP (obsASP m) kind pre post.
 
-  Definition tripleASPspec {A} (m : stdivexcnd S A) kind pre post : Prop :=
-    SPostArrObservation.tripleASPspec (obsASP m) kind pre post.
-
-  Theorem tripleASPDefEq {A} (m : stdivexcnd S A) kind pre post :
-    tripleASP m kind pre post <-> tripleASPspec m kind pre post.
-  Proof. apply SPostArrObservation.tripleASPDefEq. Qed.
-
   Definition tripleDSL {A} (m : stdivexcnd S A) kind pre post : Prop :=
     SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
-
-  Definition tripleDSLspec {A} (m : stdivexcnd S A) kind pre post : Prop :=
-    SPostArrObservation.tripleDSLspec (obsDSLP m) kind pre post.
-
-  Theorem tripleDSLDefEq {A} (m : stdivexcnd S A) kind pre post :
-    tripleDSL m kind pre post <-> tripleDSLspec m kind pre post.
-  Proof. apply SPostArrObservation.tripleDSLDefEq. Qed.
 
 End Obs.
 

@@ -28,13 +28,14 @@
         [nditPredM S A = stateT S (optionT (optionT (PredArr unit))) A]
 
     The monad view inherits [MonadLawsE] automatically via the generic
-    [MonadLawsE_optionT] and [MonadLawsE_stateT] instances in
-    [Taxonomy/Prog.v].
+    [MonadLawsE_optionT] and [MonadLawsE_stateT] instances; the checks
+    live in [Tests/ArrowMonadInstances.v] and
+    [Tests/ArrowTransformerInstances.v].
 
-    This file holds only the definitions and instances.  Their laws
-    ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws], [ArrowLoopLaws],
-    [Eq1Equivalence], [MonadLawsE]) are proved in
-    [Taxonomy/PredArr.v]. *)
+    This file holds only the definitions, instances, and arrow laws
+    ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
+    [ArrowLoopLaws]); the monad dictionaries and their law-resolution
+    checks are collected in [Tests/ArrowMonadInstances.v]. *)
 
 From Coq Require Import RelationClasses.
 From ExtLib Require Import StateMonad OptionMonad.
@@ -121,9 +122,12 @@ Instance ArrowLoop_Pred : ArrowLoop PredArr := {
         ret b    := fun _ b' => b = b'
         bind m k := fun a  c => exists b, m a b /\ k b a c
 
-    [Monad_Pred] uses the generic arrow-derived operations.  The compact
-    helpers below agree with them under pointwise logical equivalence
-    ([Eq1_Pred]); the agreement lemmas and inherited laws appear below. *)
+    Typeclass resolution derives the monad from the arrow via
+    [Monad_Arrow]; the compact helpers below are the operational
+    reading used by the [OldSP] observations.  They agree with the
+    generic operations under pointwise logical equivalence ([Eq1_Pred]);
+    the agreement lemmas and named monad/law dictionaries are collected
+    in [Tests/ArrowMonadInstances.v]. *)
 
 Section PredMonad.
   Context {A : Type}.
@@ -134,10 +138,6 @@ Section PredMonad.
   Definition bindPred {B C}
     (m : PredArr A B) (k : B -> PredArr A C) : PredArr A C :=
     fun a c => exists b, m a b /\ k b a c.
-
-  (** Typeclass resolution uses [Monad_Arrow]; this is a named alias. *)
-  Definition Monad_Pred : Monad (PredArr A) :=
-    @Monad_Arrow PredArr Arrow_Pred ArrowApply_Pred A.
 
   #[global]
   Instance Eq1_Pred : Eq1 (PredArr A) :=
@@ -495,69 +495,3 @@ Proof.
       inversion Heq2; subst.
       split; [eexists; exact Hf | reflexivity].
 Qed.
-
-(* ================================================================= *)
-(** ** [PredArr A] monad laws                                            *)
-(* ================================================================= *)
-
-(** The generic instances provide these laws during typeclass resolution. *)
-Definition Eq1Equivalence_Pred {A}
-  : @Eq1Equivalence (PredArr A) Monad_Pred Eq1_Pred :=
-  @Eq1Equivalence_Arrow PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred A.
-
-Definition MonadLawsE_Pred {A}
-  : @MonadLawsE (PredArr A) Eq1_Pred Monad_Pred :=
-  @MonadLawsE_Arrow PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred
-    ArrowLaws_Pred ArrowApplyLaws_Pred A.
-
-Lemma retPred_eq_ret_arrow {A B} (b : B) :
-  @arrow_eq PredArr ArrowEq_Pred A B
-    (retPred b) (@ret_arrow PredArr Arrow_Pred A B b).
-Proof. intros a b'. reflexivity. Qed.
-
-Lemma bindPred_eq_bind_arrow {A B C}
-  (m : PredArr A B) (k : B -> PredArr A C) :
-  @arrow_eq PredArr ArrowEq_Pred A C
-    (bindPred m k) (@bind_arrow PredArr Arrow_Pred ArrowApply_Pred A B C m k).
-Proof.
-  unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-  setoid_rewrite (@first_pure PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
-  repeat setoid_rewrite (@pure_comp PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
-  intros a c. cbn. unfold bindPred. split.
-  - intros [b [Hm Hk]]. exists (b, a). split.
-    + exists (a, a). split; [reflexivity|].
-      exists (b, a). cbn [swap]. auto.
-    + exists (k b, a). cbn. auto.
-  - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
-    subst p0. destruct p1 as [b a']. cbn [swap] in Hp. subst p.
-    cbn in Hm, Hp2. destruct Hm as [Hm Ha]. subst a' p2.
-    exists b. exact (conj Hm Hk).
-Qed.
-
-(* ================================================================= *)
-(** ** [optionPred] law instances via generic [optionArrT] laws       *)
-(* ================================================================= *)
-
-(** Because [PredArr] already has [ArrowLaws], [ArrowChoiceLaws], and
-    [ArrowApplyLaws] instances, [optionPred = optionArrT PredArr]
-    inherits the transformer laws from [Classes/OptionArrowT] without
-    any custom proof.  These definitions are sanity checks that
-    confirm typeclass resolution succeeds. *)
-
-Definition ArrowLaws_optionPred : ArrowLaws optionPred := _.
-Definition ArrowChoiceLaws_optionPred : ArrowChoiceLaws optionPred := _.
-Definition ArrowApplyLaws_optionPred : ArrowApplyLaws optionPred := _.
-
-(* ================================================================= *)
-(** ** Monad-view spec type sanity checks                             *)
-(* ================================================================= *)
-
-(** Sanity check: confirm [MonadLawsE] resolves through the
-    transformer stack down to [MonadLawsE_Pred]. *)
-Definition MonadLawsE__progPredM (S : Type)
-  : @MonadLawsE (progPredM S) _ _ :=
-  MonadLawsE_stateT S (optionT (PredArr unit)).
-
-Definition MonadLawsE__nditPredM (S : Type)
-  : @MonadLawsE (nditPredM S) _ _ :=
-  MonadLawsE_stateT S (optionT (optionT (PredArr unit))).

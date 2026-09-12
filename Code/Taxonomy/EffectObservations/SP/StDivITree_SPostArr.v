@@ -97,22 +97,8 @@ Section Obs.
   Definition tripleASP {A} (m : stdivitree S A) kind pre post : Prop :=
     SPostArrObservation.tripleASP (obsASP m) kind pre post.
 
-  Definition tripleASPspec {A} (m : stdivitree S A) kind pre post : Prop :=
-    SPostArrObservation.tripleASPspec (obsASP m) kind pre post.
-
-  Theorem tripleASPDefEq {A} (m : stdivitree S A) kind pre post :
-    tripleASP m kind pre post <-> tripleASPspec m kind pre post.
-  Proof. apply SPostArrObservation.tripleASPDefEq. Qed.
-
   Definition tripleDSL {A} (m : stdivitree S A) kind pre post : Prop :=
     SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
-
-  Definition tripleDSLspec {A} (m : stdivitree S A) kind pre post : Prop :=
-    SPostArrObservation.tripleDSLspec (obsDSLP m) kind pre post.
-
-  Theorem tripleDSLDefEq {A} (m : stdivitree S A) kind pre post :
-    tripleDSL m kind pre post <-> tripleDSLspec m kind pre post.
-  Proof. apply SPostArrObservation.tripleDSLDefEq. Qed.
 
 End Obs.
 

@@ -56,11 +56,8 @@ Qed.
 Lemma DSLP_rel_relDSLP {A B} (R : A -> B -> Prop) a b :
   DSLP_rel (relDSLP R) a b <-> R a b.
 Proof.
-  unfold DSLP_rel. split.
-  - intro H. apply H.
-    apply (proj2 (getDSLP_relDSLP R (fun a0 => R a0 b) b)).
-    intros a' HR'. exact HR'.
-  - intros HR Q HQ. exact (proj1 (getDSLP_relDSLP R Q b) HQ a HR).
+  apply (DSLP_rel_of_representation _ R).
+  exact (getDSLP_relDSLP R).
 Qed.
 
 (** ** Angelic-to-demonic conversion *)
@@ -81,7 +78,7 @@ Proof. exact (DSLP_rel_relDSLP (ASP_rel w) a b). Qed.
      These are plain definitions, not global instances, so that they do not
      compete with other monads' [Monad] instances.  The corresponding
      [Eq1]/[MonadLawsE] dictionaries are [Eq1_Arrow]/[MonadLawsE_Arrow]
-     at these stacks; [Examples/ArrowMonadExamples.v] checks the selected
+     at these stacks; [Tests/ArrowMonadInstances.v] checks the selected
      monad dictionaries against those laws. *)
 
 Definition Monad_ASPostArr (S : Type) : Monad (ASPostArr S) :=
@@ -169,30 +166,32 @@ Lemma runASP_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B)
     | None => r = None
     end.
 Proof.
-  rewrite runASP_rel.
-  split.
-  - intros [s [Hpre Hb]]. apply (proj1 (ASP_rel_bind m k s r)) in Hb.
+  rewrite runASP_rel. split.
+  - intros [s [Hs Hb]]. rewrite ASP_rel_bind in Hb.
     destruct Hb as [om [Hm Hk]]. exists s, om.
-    split; [exact Hpre | split; [exact Hm | exact Hk]].
+    split; [exact Hs | split; [exact Hm | exact Hk]].
   - intros [s [om [Hs [Hm Hk]]]]. exists s. split; [exact Hs |].
     apply (proj2 (ASP_rel_bind m k s r)).
     exists om. split; [exact Hm | exact Hk].
 Qed.
 
-(** ** The conversion preserves [ret] and [bind] *)
+(** ** The conversion preserves [ret] and [bind]
+
+     Both proofs go through the relational extensionality of the DSLP
+     carrier and the relational readings of the arrow-derived [ret] and
+     [bind]; the angelic-to-demonic dictionary transports each side by
+     [DSLP_rel_asp_to_dslp]. *)
 
 Lemma asp_to_dslp_ret {S A} (a : A) :
   asp_to_dslp (@ret _ (Monad_ASPostArr S) A a) =
   @ret _ (Monad_DSLPostArr S) A a.
 Proof.
-  apply PureDSLPostArr_eq. intros Q r.
-  change (getDSLP (asp_to_dslp (@ret _ (Monad_ASPostArr S) A a)) Q r <->
-    getDSLP (@arr_pure (stateArrT S optionDSLPArr) (Arrow_stateOptDSLP S)
-      unit A (fun _ => a)) Q r).
-  rewrite asp_to_dslp_spec, stateOptDSLP_pure_spec.
-  split.
-  - intros H [] s Hr. apply H. apply (proj2 (ASP_rel_ret a tt s r)). exact Hr.
-  - intros H [[] s] Hr. apply H. apply (proj1 (ASP_rel_ret a tt s r)). exact Hr.
+  apply DSLP_rel_ext. intros [[] s] r.
+  rewrite (DSLP_rel_asp_to_dslp (@ret _ (Monad_ASPostArr S) A a) (tt, s) r).
+  rewrite ASP_rel_ret. symmetry.
+  apply (@rel_state_option_pure PureDSLPostArr Arrow_PureDSLPostArr
+    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr DSLP_rel_presentation
+    S unit A (fun _ => a) tt s r).
 Qed.
 
 Lemma asp_to_dslp_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B) :
@@ -200,27 +199,18 @@ Lemma asp_to_dslp_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B) :
   @bind _ (Monad_DSLPostArr S) A B (asp_to_dslp m)
     (fun a => asp_to_dslp (k a)).
 Proof.
-  apply PureDSLPostArr_eq. intros Q r.
-  assert (Hiff : forall p,
-    ASP_rel (@bind _ (Monad_ASPostArr S) A B m k) p r <->
-    DSLP_rel (@bind _ (Monad_DSLPostArr S) A B (asp_to_dslp m)
-      (fun a => asp_to_dslp (k a))) p r).
-  { intros [[] s]. rewrite ASP_rel_bind, DSLP_rel_bind.
-    split.
-    - intros [om [Hm Hk]]. exists om. split.
-      + apply (proj2 (DSLP_rel_asp_to_dslp m (tt, s) om)). exact Hm.
-      + destruct om as [[a t]|].
-        * apply (proj2 (DSLP_rel_asp_to_dslp (k a) (tt, t) r)). exact Hk.
-        * exact Hk.
-    - intros [om [Hm Hk]]. exists om. split.
-      + apply (proj1 (DSLP_rel_asp_to_dslp m (tt, s) om)). exact Hm.
-      + destruct om as [[a t]|].
-        * apply (proj1 (DSLP_rel_asp_to_dslp (k a) (tt, t) r)). exact Hk.
-        * exact Hk. }
-  rewrite asp_to_dslp_spec, (DSLP_normal_form
-    (@bind _ (Monad_DSLPostArr S) A B (asp_to_dslp m)
-      (fun a => asp_to_dslp (k a))) Q r).
-  split; intros H p Hrel.
-  - apply H. apply (proj2 (Hiff p)). exact Hrel.
-  - apply H. apply (proj1 (Hiff p)). exact Hrel.
+  apply DSLP_rel_ext. intros [[] s] r.
+  rewrite (DSLP_rel_asp_to_dslp (@bind _ (Monad_ASPostArr S) A B m k) (tt, s) r).
+  rewrite ASP_rel_bind, DSLP_rel_bind.
+  split.
+  - intros [om [Hm Hk]]. exists om. split.
+    + exact (proj2 (DSLP_rel_asp_to_dslp m (tt, s) om) Hm).
+    + destruct om as [[a t]|].
+      * exact (proj2 (DSLP_rel_asp_to_dslp (k a) (tt, t) r) Hk).
+      * exact Hk.
+  - intros [om [Hm Hk]]. exists om. split.
+    + exact (proj1 (DSLP_rel_asp_to_dslp m (tt, s) om) Hm).
+    + destruct om as [[a t]|].
+      * exact (proj1 (DSLP_rel_asp_to_dslp (k a) (tt, t) r) Hk).
+      * exact Hk.
 Qed.

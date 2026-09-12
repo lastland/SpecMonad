@@ -1061,12 +1061,10 @@ Qed.
 (* ================================================================= *)
 
 (** [Classes/ArrowMonad] supplies the operations and laws through generic
-    instances.  The concrete dictionary names below are ordinary aliases;
-    only [Eq1] is registered here to select the arrow equality.  The compact
-    relational helpers agree with the generic operations under that equality. *)
-
-Create HintDb sp_arrow_bind.
-#[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id : sp_arrow_bind.
+    instances.  Only [Eq1] is registered here, to select the arrow
+    equality; the concrete monad/law dictionaries, the compact
+    relational [ret]/[bind] descriptions, and their agreement facts are
+    collected in [Tests/ArrowMonadInstances.v]. *)
 
 Section PureRelASPPairArrMonad.
 
@@ -1075,61 +1073,6 @@ Section PureRelASPPairArrMonad.
   #[global]
   Instance Eq1_PureRelASPPairArr : Eq1 (PureRelASPPairArr I) :=
     @Eq1_Arrow PureRelASPPairArr ArrowEq_PureRelASPPairArr I.
-
-  Definition Monad_PureRelASPPairArr : Monad (PureRelASPPairArr I) :=
-    @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr I.
-
-  Definition Eq1Equivalence_PureRelASPPairArr
-    : @Eq1Equivalence (PureRelASPPairArr I) Monad_PureRelASPPairArr Eq1_PureRelASPPairArr :=
-    @Eq1Equivalence_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowApply_PureRelASPPairArr ArrowEq_PureRelASPPairArr I.
-
-  (** Compact relational descriptions of return and bind. *)
-
-  Definition ret_ASP {A} (a : A) : PureRelASPPairArr I A :=
-    mkASP (fun _ a' => a = a').
-
-  (** For the angelic bind, we extract the underlying relation directly
-      via [rel (proj1_sig ...)], mirroring the demonic bind. *)
-  Definition bind_ASP {A B}
-    (m : PureRelASPPairArr I A) (k : A -> PureRelASPPairArr I B)
-    : PureRelASPPairArr I B :=
-    mkASP (fun i c => exists b,
-             rel (proj1_sig m) i b /\
-             rel (proj1_sig (k b)) i c).
-
-  Lemma ret_ASP_eq_ret_arrow {A} (a : A) :
-    @arrow_eq PureRelASPPairArr ArrowEq_PureRelASPPairArr I A
-      (ret_ASP a) (@ret_arrow PureRelASPPairArr Arrow_PureRelASPPairArr I A a).
-  Proof. apply ASP_rel_ext; intros i b. reflexivity. Qed.
-
-  Lemma bind_ASP_eq_bind_arrow {A B}
-    (m : PureRelASPPairArr I A) (k : A -> PureRelASPPairArr I B) :
-    @arrow_eq PureRelASPPairArr ArrowEq_PureRelASPPairArr I B
-      (bind_ASP m k)
-      (@bind_arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr
-        I A B m k).
-  Proof.
-    autounfold with sp_arrow_bind.
-    rewrite (@first_pure PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr).
-    repeat rewrite (@pure_comp PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr).
-    apply ASP_rel_ext; intros i c. cbn. split.
-    - intros [b [Hm Hk]]. exists (b, i). split.
-      + exists (i, i). split; [reflexivity |].
-        exists (b, i). cbn [swap]. auto.
-      + exists (k b, i). cbn. auto.
-    - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
-      subst p0. destruct p1 as [b i']. cbn [swap] in Hp. subst p.
-      cbn in Hm, Hp2. destruct Hm as [Hm Hi]. subst i' p2.
-      exists b. exact (conj Hm Hk).
-  Qed.
-
-  Definition MonadLawsE_PureRelASPPairArr
-    : @MonadLawsE (PureRelASPPairArr I) Eq1_PureRelASPPairArr Monad_PureRelASPPairArr :=
-    @MonadLawsE_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr
-      ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr ArrowApplyLaws_PureRelASPPairArr I.
 
 End PureRelASPPairArrMonad.
 
@@ -1141,135 +1084,12 @@ Section PureRelDSLPPairArrMonad.
   Instance Eq1_PureRelDSLPPairArr : Eq1 (PureRelDSLPPairArr I) :=
     @Eq1_Arrow PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I.
 
-  Definition Monad_PureRelDSLPPairArr : Monad (PureRelDSLPPairArr I) :=
-    @Monad_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr I.
-
-  Definition Eq1Equivalence_PureRelDSLPPairArr
-    : @Eq1Equivalence (PureRelDSLPPairArr I) Monad_PureRelDSLPPairArr Eq1_PureRelDSLPPairArr :=
-    @Eq1Equivalence_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowApply_PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I.
-
-  (** Compact relational descriptions of return and bind. *)
-
-  Definition ret_DSLP {A} (a : A) : PureRelDSLPPairArr I A :=
-    mkDSLP (fun _ a' => a = a').
-
-  (** For the demonic bind, we extract the underlying relation directly
-      via [rel (proj1_sig ...)], avoiding classical axioms. *)
-  Definition bind_DSLP {A B}
-    (m : PureRelDSLPPairArr I A) (k : A -> PureRelDSLPPairArr I B)
-    : PureRelDSLPPairArr I B :=
-    mkDSLP (fun i c => exists b,
-             rel (proj1_sig m) i b /\
-             rel (proj1_sig (k b)) i c).
-
-  Lemma ret_DSLP_eq_ret_arrow {A} (a : A) :
-    @arrow_eq PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I A
-      (ret_DSLP a) (@ret_arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr I A a).
-  Proof. apply DSLP_rel_ext; intros i b. reflexivity. Qed.
-
-  Lemma bind_DSLP_eq_bind_arrow {A B}
-    (m : PureRelDSLPPairArr I A) (k : A -> PureRelDSLPPairArr I B) :
-    @arrow_eq PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I B
-      (bind_DSLP m k)
-      (@bind_arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr
-        I A B m k).
-  Proof.
-    autounfold with sp_arrow_bind.
-    rewrite (@first_pure PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr).
-    repeat rewrite (@pure_comp PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr).
-    apply DSLP_rel_ext; intros i c. cbn. split.
-    - intros [b [Hm Hk]]. exists (b, i). split.
-      + exists (i, i). split; [reflexivity |].
-        exists (b, i). cbn [swap]. auto.
-      + exists (k b, i). cbn. auto.
-    - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
-      subst p0. destruct p1 as [b i']. cbn [swap] in Hp. subst p.
-      cbn in Hm, Hp2. destruct Hm as [Hm Hi]. subst i' p2.
-      exists b. exact (conj Hm Hk).
-  Qed.
-
-  Lemma proj_mkDSLP {J B} (R : PredArr J B) pre b :
-    spost (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
-  Proof. reflexivity. Qed.
-
-  Definition MonadLawsE_PureRelDSLPPairArr
-    : @MonadLawsE (PureRelDSLPPairArr I) Eq1_PureRelDSLPPairArr Monad_PureRelDSLPPairArr :=
-    @MonadLawsE_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr
-      ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr ArrowApplyLaws_PureRelDSLPPairArr I.
-
 End PureRelDSLPPairArrMonad.
 
-(* ================================================================= *)
-(** ** [optionT] and composed types: monad instances for free         *)
-(* ================================================================= *)
-
 (** The generic [MonadLawsE_optionT] and [MonadLawsE_stateT] instances from
-    [TransformerLaws] extend the arrow-derived monads to
-    [optionT (PureRelASPPairArr I)] / [optionT (PureRelDSLPPairArr I)] and their
-    state stacks.  Generic instances handle typeclass resolution; the
-    concrete dictionary aliases above expose those same operations and laws. *)
-
-(* ================================================================= *)
-(** ** Arrow laws for composed types: [ASPostArr] and [DSPostArr]      *)
-(* ================================================================= *)
-
-(** All law instances below follow from the generic transformer laws
-    in [OptionArrowT] and [StateArrowT].  We declare them explicitly
-    to document which composed types carry which structure, and use
-    [typeclasses eauto] or [:= _] to show that automatic resolution
-    finds the proof. *)
-
-Section OptionArrowLaws.
-
-  (** Option-level laws: direct consequences of [ArrowLaws_optionArrT],
-      [ArrowChoiceLaws_optionArrT], and [ArrowApplyLaws_optionArrT]
-      applied to [PureRelASPPairArr] / [PureRelDSLPPairArr]. *)
-
-  Local Instance ArrowEq_optionASPArr : ArrowEq optionASPArr := _.
-  Local Instance ArrowLaws_optionASPArr : ArrowLaws optionASPArr := _.
-  Local Instance ArrowChoiceLaws_optionASPArr : ArrowChoiceLaws optionASPArr := _.
-  Local Instance ArrowApplyLaws_optionASPArr : ArrowApplyLaws optionASPArr := _.
-
-  Local Instance ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr := _.
-  Local Instance ArrowLaws_optionDSLPArr : ArrowLaws optionDSLPArr := _.
-  Local Instance ArrowChoiceLaws_optionDSLPArr : ArrowChoiceLaws optionDSLPArr := _.
-  Local Instance ArrowApplyLaws_optionDSLPArr : ArrowApplyLaws optionDSLPArr := _.
-
-End OptionArrowLaws.
-
-Section ComposedArrowLaws.
-
-  Variable S : Type.
-
-  (** Composed-type laws: [stateArrT] applied to the option types above. *)
-
-  #[global] Instance ArrowEq_stateOptASP :
-    ArrowEq (stateArrT S optionASPArr) := _.
-  #[global] Instance ArrowLaws_stateOptASP :
-    ArrowLaws (stateArrT S optionASPArr) := _.
-  #[global] Instance ArrowChoice_stateOptASP :
-    ArrowChoice (stateArrT S optionASPArr) := _.
-  #[global] Instance ArrowApply_stateOptASP :
-    ArrowApply (stateArrT S optionASPArr) := _.
-  #[global] Instance ArrowChoiceLaws_stateOptASP :
-    ArrowChoiceLaws (stateArrT S optionASPArr) := _.
-  #[global] Instance ArrowApplyLaws_stateOptASP :
-    ArrowApplyLaws (stateArrT S optionASPArr) := _.
-
-  #[global] Instance ArrowEq_stateOptDSLP :
-    ArrowEq (stateArrT S optionDSLPArr) := _.
-  #[global] Instance ArrowLaws_stateOptDSLP :
-    ArrowLaws (stateArrT S optionDSLPArr) := _.
-  #[global] Instance ArrowChoice_stateOptDSLP :
-    ArrowChoice (stateArrT S optionDSLPArr) := _.
-  #[global] Instance ArrowApply_stateOptDSLP :
-    ArrowApply (stateArrT S optionDSLPArr) := _.
-  #[global] Instance ArrowChoiceLaws_stateOptDSLP :
-    ArrowChoiceLaws (stateArrT S optionDSLPArr) := _.
-  #[global] Instance ArrowApplyLaws_stateOptDSLP :
-    ArrowApplyLaws (stateArrT S optionDSLPArr) := _.
-
-End ComposedArrowLaws.
+    [TransformerLaws] extend these arrow-derived monads to
+    [optionT (PureRelASPPairArr I)] / [optionT (PureRelDSLPPairArr I)] and
+    their state stacks.  Generic instances handle typeclass resolution;
+    no per-stack dictionaries are registered for the coupled
+    presentation.  The option-level and state-over-option resolution
+    checks live in [Tests/ArrowTransformerInstances.v]. *)

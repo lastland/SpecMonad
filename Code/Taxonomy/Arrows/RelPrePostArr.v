@@ -22,9 +22,11 @@
     with its [γ ∘ α] closure (a γ-image), and the operations cleanly
     inherit all laws from [WPArr]'s [Arrow] / [Monad].
 
-    This file holds the type definition and all [Arrow] / [ArrowChoice]
-    / [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding
-    laws are proved in [Taxonomy/RelPrePostArr.v]. *)
+    This file holds the type definition, all [Arrow] / [ArrowChoice]
+    / [ArrowApply] / [Eq1] instances, and their laws.  The
+    arrow-derived monad dictionaries are generic ([Monad_Arrow] and
+    friends) and are collected with their resolution checks in
+    [Tests/ArrowMonadInstances.v]. *)
 
 From Coq Require Import Morphisms.
 From ExtLib Require Import Monad.
@@ -137,10 +139,9 @@ Section RelPrePostMonad.
       forall a, P a ->
         project_wp r a (fun b => project_wp (k b) a (R_AC a)).
 
-  (** Typeclass resolution uses [Monad_Arrow]; this is a named alias. *)
-  Definition Monad_RelPrePost : Monad (RelPrePostArr A) :=
-    @Monad_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost A.
-
+  (** Typeclass resolution derives the monad from the arrow via
+      [Monad_Arrow]; the named dictionary lives in
+      [Tests/ArrowMonadInstances.v]. *)
   #[global]
   Instance Eq1_RelPrePost : Eq1 (RelPrePostArr A) :=
     @Eq1_Arrow RelPrePostArr ArrowEq_RelPrePost A.
@@ -528,12 +529,6 @@ Section RelPrePostMonadLaws.
 
   Context {A : Type}.
 
-  (** The generic instances provide these laws during typeclass resolution. *)
-  Definition Eq1Equivalence_RelPrePost
-    : @Eq1Equivalence (RelPrePostArr A) Monad_RelPrePost Eq1_RelPrePost :=
-    @Eq1Equivalence_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost
-      ArrowEq_RelPrePost A.
-
   Lemma project_wp_ret {B} (b : B) (a : A) (Q : B -> Prop) :
     project_wp (retRelPrePost b) a Q <-> Q b.
   Proof.
@@ -569,36 +564,6 @@ Section RelPrePostMonadLaws.
         apply project_wp_Proper. intros c. tauto.
       + reflexivity.
       + intros c. tauto.
-  Qed.
-
-  Definition MonadLawsE_RelPrePost
-    : @MonadLawsE (RelPrePostArr A) Eq1_RelPrePost Monad_RelPrePost :=
-    @MonadLawsE_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost
-      ArrowEq_RelPrePost ArrowLaws_RelPrePost ArrowApplyLaws_RelPrePost A.
-
-  Lemma retRelPrePost_eq_ret_arrow {B} (b : B) :
-    @arrow_eq RelPrePostArr ArrowEq_RelPrePost A B
-      (retRelPrePost b) (@ret_arrow RelPrePostArr Arrow_RelPrePost A B b).
-  Proof. intros a Q. reflexivity. Qed.
-
-  Lemma bindRelPrePost_eq_bind_arrow {B C}
-    (r : RelPrePostArr A B) (k : B -> RelPrePostArr A C) :
-    @arrow_eq RelPrePostArr ArrowEq_RelPrePost A C
-      (bindRelPrePost r k)
-      (@bind_arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost A B C r k).
-  Proof.
-    intros a Q. rewrite project_wp_bind.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-    rewrite !project_wp_arr_comp, project_wp_arr_pure.
-    rewrite project_wp_arr_comp, project_wp_arr_first.
-    cbn [fst snd]. apply project_wp_Proper. intros b.
-    rewrite project_wp_arr_comp, project_wp_arr_pure.
-    cbn [swap].
-    rewrite project_wp_arr_comp, project_wp_arr_first, project_wp_arr_pure.
-    cbn [fst snd].
-    rewrite project_wp_arr_pure. cbn [swap].
-    rewrite project_wp_arr_comp, project_wp_arr_pure, project_wp_arr_app.
-    reflexivity.
   Qed.
 
 End RelPrePostMonadLaws.

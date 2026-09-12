@@ -5,8 +5,10 @@
     observations [obsASP]/[obsDSLP] read the outcome payload
     [unOptionT (runStateT m s)] into the arrow-derived specification monads of
     [SPostArrMonad] — the exception is an ordinary outcome, visible to both
-    readings — and both are monad morphisms; examples use the shared triple
-    judgments of [SPostArrObservation]. *)
+    readings — and both are monad morphisms; the raw outcome normalization is
+    shared with [StDivNonDet_SPostArr] in [RawStOpt_SPostArr], which applies
+    to this module's [retP]/[bindP] definitionally.  Examples use the shared
+    triple judgments of [SPostArrObservation]. *)
 
 From Coq Require Import PeanoNat.
 From Coq Require Import Morphisms_Prop.
@@ -15,6 +17,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
+From Incorrectness.Taxonomy.EffectObservations.SP Require Import RawStOpt_SPostArr.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
@@ -28,27 +31,10 @@ Open Scope monad_scope.
 Section Obs.
   Variable S : Type.
 
-  (** One step of the raw outcome payload: [ret], and [bind] with the raised
-      exception [None] absorbing. *)
-  Lemma outcomes_ret {A} (a : A) (s : S) (r : option (A * S)) :
-    unOptionT (runStateT (retP S a) s) r <-> r = Some (a, s).
-  Proof. split; intro H; exact H. Qed.
-
-  Lemma outcomes_bind {A B} (m : stexcnd S A) (k : A -> stexcnd S B)
-      (s : S) (r : option (B * S)) :
-    unOptionT (runStateT (bindP S m k) s) r <->
-    exists oa, unOptionT (runStateT m s) oa /\
-      match oa with
-      | Some (a, s') => unOptionT (runStateT (k a) s') r
-      | None => r = None
-      end.
-  Proof.
-    unfold bindP. cbn. split.
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-  Qed.
+  (** The raw outcome lemmas live in [RawStOpt_SPostArr]: [stexcnd S] IS
+      [stateT S (optionT SetM)] and [StExcNonDet] resolves to the
+      dictionaries stated there, so they apply to [retP]/[bindP] by
+      definitional conversion. *)
 
   Definition obsASP {A} (m : stexcnd S A) : ASPostArr S A :=
     relASP (fun us r => unOptionT (runStateT m (snd us)) r).
@@ -84,7 +70,8 @@ Section Obs.
     obsASP (retP S a) = @ret _ (Monad_ASPostArr S) A a.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
-    rewrite ASP_rel_ret, ASP_rel_obsASP, outcomes_ret.
+    rewrite ASP_rel_ret, ASP_rel_obsASP,
+      (RawStOpt_SPostArr.outcomes_ret S a s r).
     split; intro H; symmetry; exact H.
   Qed.
 
@@ -93,7 +80,8 @@ Section Obs.
     @bind _ (Monad_ASPostArr S) A B (obsASP m) (fun a => obsASP (k a)).
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
-    rewrite ASP_rel_bind, ASP_rel_obsASP, outcomes_bind.
+    rewrite ASP_rel_bind, ASP_rel_obsASP,
+      (RawStOpt_SPostArr.outcomes_bind S m k s r).
     apply ex_iff_morphism. intros [[a t]|];
       rewrite !ASP_rel_obsASP; reflexivity.
   Qed.
@@ -119,34 +107,11 @@ Section Obs.
       (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     SPostArrObservation.tripleASP (obsASP m) kind pre post.
 
-  Definition tripleASPspec {A} (m : stexcnd S A) (kind : approxKind)
-      (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
-    SPostArrObservation.tripleASPspec (obsASP m) kind pre post.
-
-  Theorem tripleASPDefEq {A} (m : stexcnd S A) kind pre post :
-    tripleASP m kind pre post <-> tripleASPspec m kind pre post.
-  Proof.
-    exact (SPostArrObservation.tripleASPDefEq (obsASP m) kind pre post).
-  Qed.
-
   Definition tripleDSL {A} (m : stexcnd S A) (kind : approxKind)
       (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
     SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
-
-  Definition tripleDSLspec {A} (m : stexcnd S A) (kind : approxKind)
-      (pre : S -> Prop) (post : option (A * S) -> Prop) : Prop :=
-    SPostArrObservation.tripleDSLspec (obsDSLP m) kind pre post.
-
-  Theorem tripleDSLDefEq {A} (m : stexcnd S A) kind pre post :
-    tripleDSL m kind pre post <-> tripleDSLspec m kind pre post.
-  Proof.
-    exact (SPostArrObservation.tripleDSLDefEq (obsDSLP m) kind pre post).
-  Qed.
-
 End Obs.
 
-Arguments outcomes_ret {S A} a s r.
-Arguments outcomes_bind {S A B} m k s r.
 Arguments obsASP {S A} m.
 Arguments obsDSLP {S A} m.
 Arguments ASP_rel_obsASP {S A} m s r.
@@ -157,11 +122,7 @@ Arguments obsASP_bind {S A B} m k.
 Arguments obsDSLP_ret {S A} a.
 Arguments obsDSLP_bind {S A B} m k.
 Arguments tripleASP {S A} m kind pre post.
-Arguments tripleASPspec {S A} m kind pre post.
-Arguments tripleASPDefEq {S A} m kind pre post.
 Arguments tripleDSL {S A} m kind pre post.
-Arguments tripleDSLspec {S A} m kind pre post.
-Arguments tripleDSLDefEq {S A} m kind pre post.
 
 (* ================================================================= *)
 (** ** The exception outcome is visible to both readings              *)
@@ -295,14 +256,17 @@ Lemma getEven_outcomes (s : nat) (r : option (bool * nat)) :
   unOptionT (runStateT getEven s) r <-> r = Some (Nat.even s, s).
 Proof.
   unfold getEven.
-  rewrite (outcomes_bind (getP nat) (fun s => retP nat (Nat.even s)) s r).
+  rewrite (RawStOpt_SPostArr.outcomes_bind nat (getP nat)
+             (fun s => retP nat (Nat.even s)) s r).
   split.
   - intros [oa [Hget Hrest]].
     apply (proj1 (getP_outcomes s oa)) in Hget. subst oa.
-    apply (proj1 (outcomes_ret (Nat.even s) s r)). exact Hrest.
+    apply (proj1 (RawStOpt_SPostArr.outcomes_ret nat (Nat.even s) s r)).
+    exact Hrest.
   - intros ->. exists (Some (s, s)). split.
     + apply (proj2 (getP_outcomes s (Some (s, s)))). reflexivity.
-    + apply (proj2 (outcomes_ret (Nat.even s) s (Some (Nat.even s, s)))).
+    + apply (proj2 (RawStOpt_SPostArr.outcomes_ret nat (Nat.even s) s
+                      (Some (Nat.even s, s)))).
       reflexivity.
 Qed.
 

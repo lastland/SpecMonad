@@ -28,7 +28,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 `Code/Classes/` defines Hughes-style arrow typeclasses and generic transformer laws:
 
 - `Arrow.v`: Core typeclasses (`Arrow`, `ArrowChoice`, `ArrowApply`, `ArrowLoop`) + laws + `Pred` (relational arrow, `A -> B -> Prop`) instances.
-- `OptionArrowT/`: Generic `optionArrT arr A B := arr A (option B)` transformer. Split into `Core.v`, `ArrowLaws.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`. `OptionArrowT.v` is a thin re-export. Concrete `optionPred` instances now live in `Taxonomy/Pred.v`.
+- `OptionArrowT/`: Generic `optionArrT arr A B := arr A (option B)` transformer. Split into `Core.v`, `ArrowLaws.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`. `OptionArrowT.v` is a thin re-export. Concrete instantiation checks live in `Taxonomy/Arrows/Tests/`.
 - `StateArrowT/`: Generic `stateArrT S arr A B := arr (A*S) (B*S)` transformer. Split into `Core.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`. `StateArrowT.v` is a thin re-export.
 
 All generic law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type.
@@ -51,7 +51,7 @@ The `Code/Taxonomy/` directory is the core of the project. All monads share the 
 - `NonDetObservation.v`: maps `ndprog` to `ASPostArr` (SP) and `ProgWP` (demonic/angelic WP)
 - `NonDetItObservation.v`: maps `nditprog` to `ASPostArr` (SP) and `ProgWP` (4 WP variants)
 
-`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws; the corresponding `*Coherence.v` module proves the additional application-coherence laws.
+`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Classes/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
 
 `WPArr.v` defines the reader-WP Kleisli arrow `WPArr A B := A -> PureWP B`; laws in `WPArrFacts.v` hold definitionally (all `reflexivity`). `RelPrePost.v` defines `RelPrePost A B := (A -> Prop) -> (A -> B -> Prop) -> Prop` — a "validator" of Hoare specs that embeds `WPArr` injectively. `Galois.v` establishes Galois connections (via Dijkstra refinement order) among `Pred`, `PrePost`, `WPArr`, and `RelPrePost`.
 

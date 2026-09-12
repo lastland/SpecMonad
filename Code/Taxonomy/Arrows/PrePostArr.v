@@ -9,12 +9,13 @@
 
     This file defines the type [PrePostArr], the pointwise-iff
     equivalence [PrePost_eq], the partial-correctness Hoare order
-    [PrePost_le] (stronger pre, weaker post), and the [ArrowEq] /
-    [Arrow] / [ArrowChoice] /
-    [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding
-    laws ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
-    [Eq1Equivalence], [MonadLawsE]) are proved in
-    [Taxonomy/PrePostArr.v].
+    [PrePost_le] (stronger pre, weaker post), the [ArrowEq] /
+    [Arrow] / [ArrowChoice] / [ArrowApply] instances, the [Eq1]
+    selecting the arrow equality, and all the corresponding arrow laws
+    ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws]).  The
+    arrow-derived monad dictionaries ([Monad], [Eq1Equivalence],
+    [MonadLawsE]) are generic and are collected with their
+    resolution checks in [Tests/ArrowMonadInstances.v].
 
     GaloisArr connections relating [PrePostArr] to [PredArr] and [WPArr] are
     collected in [Taxonomy/GaloisArr.v]. *)
@@ -114,21 +115,15 @@ Instance ArrowApply_PrePost : ArrowApply PrePostArr := {
 (** ** Arrow-derived monad (second argument, [A] fixed)               *)
 (* ================================================================= *)
 
+(** For every fixed source type [A], typeclass resolution derives a
+    monad on [PrePostArr A] from the arrow via [Monad_Arrow]; no
+    compact helper is consumed by production proofs, so the monad
+    dictionaries and the compact [ret]/[bind] descriptions live in
+    [Tests/ArrowMonadInstances.v]. *)
+
 Section PrePostMonad.
 
   Context {A : Type}.
-
-  Definition retPrePost {B} (b : B) : PrePostArr A B :=
-    (fun _ => True, fun _ b' => b = b').
-
-  Definition bindPrePost {B C}
-    (m : PrePostArr A B) (k : B -> PrePostArr A C) : PrePostArr A C :=
-    ( fun a => fst m a /\ (forall b, snd m a b -> fst (k b) a)
-    , fun a c => exists b, snd m a b /\ snd (k b) a c ).
-
-  (** Typeclass resolution uses [Monad_Arrow]; this is a named alias. *)
-  Definition Monad_PrePost : Monad (PrePostArr A) :=
-    @Monad_Arrow PrePostArr Arrow_PrePost ArrowApply_PrePost A.
 
   #[global]
   Instance Eq1_PrePost : Eq1 (PrePostArr A) :=
@@ -390,68 +385,3 @@ Proof.
       * exists (g, a). split; [reflexivity|]. apply HR. exact Hout.
       * exists (f, a). split; [reflexivity|]. apply HR. exact Hout.
 Qed.
-
-(* ================================================================= *)
-(** ** Eq1 equivalence and monad laws                                 *)
-(* ================================================================= *)
-
-Section PrePostMonad.
-
-  Context {A : Type}.
-
-  (** The generic instances provide these laws during typeclass resolution. *)
-  Definition Eq1Equivalence_PrePost
-    : @Eq1Equivalence (PrePostArr A) Monad_PrePost Eq1_PrePost :=
-    @Eq1Equivalence_Arrow PrePostArr Arrow_PrePost ArrowApply_PrePost
-      ArrowEq_PrePost A.
-
-  Definition MonadLawsE_PrePost
-    : @MonadLawsE (PrePostArr A) Eq1_PrePost Monad_PrePost :=
-    @MonadLawsE_Arrow PrePostArr Arrow_PrePost ArrowApply_PrePost ArrowEq_PrePost
-      ArrowLaws_PrePost ArrowApplyLaws_PrePost A.
-
-  Lemma retPrePost_eq_ret_arrow {B} (b : B) :
-    @arrow_eq PrePostArr ArrowEq_PrePost A B
-      (retPrePost b) (@ret_arrow PrePostArr Arrow_PrePost A B b).
-  Proof. split; reflexivity. Qed.
-
-  Lemma bindPrePost_eq_bind_arrow {B C}
-    (m : PrePostArr A B) (k : B -> PrePostArr A C) :
-    @arrow_eq PrePostArr ArrowEq_PrePost A C
-      (bindPrePost m k)
-      (@bind_arrow PrePostArr Arrow_PrePost ArrowApply_PrePost A B C m k).
-  Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-    setoid_rewrite (@first_pure PrePostArr Arrow_PrePost ArrowEq_PrePost
-      ArrowLaws_PrePost).
-    repeat setoid_rewrite (@pure_comp PrePostArr Arrow_PrePost ArrowEq_PrePost
-      ArrowLaws_PrePost).
-    split; cbn.
-    - intros a. split.
-      + intros [HP Hk]. split.
-        * split; [exact I|]. intros p <-. cbn.
-          split; [exact HP|]. intros _ _. exact I.
-        * intros p [p0 [Hp0 [p1 [Hm Hp]]]].
-          subst p0. destruct p1 as [b a']. cbn [swap] in Hp. subst p.
-          cbn in Hm. destruct Hm as [Hm Ha]. subst a'.
-          split; [exact I|]. intros p2 <-. exact (Hk b Hm).
-      + intros [[_ HP] Hk]. split.
-        * exact (proj1 (HP (a, a) eq_refl)).
-        * intros b Hm.
-          assert (Hpre : True /\ forall p : PrePostArr A C * A,
-            (k b, a) = p -> fst (fst p) (snd p)).
-          { apply (Hk (b, a)). exists (a, a). split; [reflexivity|].
-            exists (b, a). cbn [swap]. auto. }
-          exact (proj2 Hpre (k b, a) eq_refl).
-    - intros a c. split.
-      + intros [b [Hm Hk]]. exists (b, a). split.
-        * exists (a, a). split; [reflexivity|].
-          exists (b, a). cbn [swap]. auto.
-        * exists (k b, a). cbn. auto.
-      + intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
-        subst p0. destruct p1 as [b a']. cbn [swap] in Hp. subst p.
-        cbn in Hm, Hp2. destruct Hm as [Hm Ha]. subst a' p2.
-        exists b. exact (conj Hm Hk).
-  Qed.
-
-End PrePostMonad.

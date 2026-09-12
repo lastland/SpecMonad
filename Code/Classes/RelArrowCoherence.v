@@ -11,10 +11,16 @@
     ]]
 
     The proofs use a faithful relational presentation of the base arrow
-    operations and establish Leibniz equality for the base, option, state,
-    and state-over-option arrows.  The state-over-option layer also
-    includes the relational evaluation of the arrow-derived monad's bind.
-    These generic proofs have no logical axioms and are independent of any
+    operations and establish Leibniz equality for the base arrow; core
+    law modules, such as the property-only and coupled SP arrows, reuse
+    these theorems as their application-coherence fields.  The option
+    and state-over-option layers below keep only the relational
+    semantics of the operations: the state-over-option layer evaluates
+    the arrow-derived monad's bind, which concrete SP stacks read off as
+    [ret] and [bind].  Application coherence for option and state
+    transformer stacks already follows generically from the
+    [ArrowApplyLaws] lifts in [OptionArrowT] and [StateArrowT].  These
+    generic proofs have no logical axioms and are independent of any
     concrete SP carrier. *)
 
 From Coq Require Import Classes.Morphisms_Prop.
@@ -151,13 +157,17 @@ Section RelationalCoherence.
     - exact Hh.
   Qed.
 
-  (** ** Option-only coherence *)
+  (** ** Option operation semantics
+
+      These facts evaluate the option transformer's operations on the
+      base relation.  They support the state-over-option layer below;
+      application coherence for the transformer itself is already the
+      generic [OptionArrowT.ArrowApplyLaws] lift. *)
 
   Local Notation OA := (@Arrow_optionArrT arr HA HC).
   Local Notation opure := (@arr_pure (optionArrT arr) OA).
   Local Notation ocomp := (@arr_comp (optionArrT arr) OA).
   Local Notation ofirst := (@arr_first (optionArrT arr) OA).
-  Local Notation osecond := (@arr_second (optionArrT arr) OA).
   Local Notation oapp :=
     (@arr_app (optionArrT arr) OA (@ArrowApply_optionArrT arr HA HC HAA)).
 
@@ -230,178 +240,17 @@ Section RelationalCoherence.
       + destruct ob; exact Heq.
   Qed.
 
-  Local Lemma rel_option_second {A B C} (f : optionArrT arr A B) (c : C) a q :
-    R (osecond f) (c, a) q <->
-    exists ob, R f a ob /\ option_map (fun b => (c, b)) ob = q.
-  Proof.
-    unfold arr_second. rewrite rel_option_pure_comp. cbn [swap].
-    rewrite rel_option_comp_pure. split.
-    - intros [obc [Hf Heq]]. apply rel_option_first in Hf.
-      destruct Hf as [ob [Hf <-]]. exists ob. split; [exact Hf |].
-      destruct ob; exact Heq.
-    - intros [ob [Hf Heq]]. exists (option_map (fun b => (b, c)) ob). split.
-      + apply rel_option_first. exists ob. auto.
-      + destruct ob; exact Heq.
-  Qed.
-
   Local Lemma rel_option_app {A B} (f : optionArrT arr A B) a ob :
     R oapp (f, a) ob <-> R f a ob.
   Proof. exact (present_app P f a ob). Qed.
 
-  Local Lemma rel_option_first_pure_app {X A B}
-    (k : X -> optionArrT arr A B) x a ob :
-    R (ocomp (ofirst (opure k)) oapp) (x, a) ob <-> R (k x) a ob.
-  Proof.
-    rewrite rel_option_comp. split.
-    - intros [q [Hk Happ]]. apply rel_option_first in Hk.
-      destruct Hk as [ofk [Hk Heq]]. apply rel_option_pure in Hk.
-      subst ofk. cbn in Heq. subst q. rewrite rel_option_app in Happ. exact Happ.
-    - intro Hk. exists (Some (k x, a)). split.
-      + apply rel_option_first. exists (Some (k x)). split.
-        * apply rel_option_pure. reflexivity.
-        * reflexivity.
-      + cbn. rewrite rel_option_app. exact Hk.
-  Qed.
+  (** ** State-over-option semantics
 
-  Lemma rel_option_app_unit (A B : Type) :
-    ocomp (ofirst (opure (fun x : A => opure (fun y : B => (x, y)))))
-      oapp = @arr_id (optionArrT arr) OA (A * B).
-  Proof.
-    apply (present_ext P). intros [a b] q.
-    rewrite rel_option_first_pure_app. unfold arr_id.
-    rewrite ! rel_option_pure. reflexivity.
-  Qed.
+      Successful composition threads the intermediate state.  A [None]
+      result propagates without inventing an output state. *)
 
-  Lemma rel_option_app_precompose {A B C} (g : optionArrT arr A B) :
-    ocomp (ofirst (opure (fun f : optionArrT arr B C => ocomp g f)))
-      oapp = ocomp (osecond g) oapp.
-  Proof.
-    apply (present_ext P). intros [f a] oc.
-    rewrite rel_option_first_pure_app, ! rel_option_comp. split.
-    - intros [ob [Hg Hf]]. exists (option_map (fun b => (f, b)) ob). split.
-      + apply rel_option_second. exists ob. auto.
-      + destruct ob as [b|]; cbn; [rewrite rel_option_app |]; exact Hf.
-    - intros [q [Hg Happ]]. apply rel_option_second in Hg.
-      destruct Hg as [ob [Hg <-]]. exists ob. split; [exact Hg |].
-      destruct ob as [b|]; cbn in Happ; [rewrite rel_option_app in Happ |]; exact Happ.
-  Qed.
-
-  Lemma rel_option_app_postcompose {A B C} (h : optionArrT arr B C) :
-    ocomp (ofirst (opure (fun f : optionArrT arr A B => ocomp f h)))
-      oapp = ocomp oapp h.
-  Proof.
-    apply (present_ext P). intros [f a] oc.
-    rewrite rel_option_first_pure_app, ! rel_option_comp.
-    setoid_rewrite rel_option_app. reflexivity.
-  Qed.
-
-  (** ** State-only coherence *)
-
-  Section StateCoherence.
+  Section StateOptionCoherence.
     Variable S : Type.
-
-    Local Notation SA := (@Arrow_stateArrT S arr HA).
-    Local Notation spure := (@arr_pure (stateArrT S arr) SA).
-    Local Notation scomp := (@arr_comp (stateArrT S arr) SA).
-    Local Notation sfirst := (@arr_first (stateArrT S arr) SA).
-    Local Notation ssecond := (@arr_second (stateArrT S arr) SA).
-    Local Notation sapp :=
-      (@arr_app (stateArrT S arr) SA (@ArrowApply_stateArrT S arr HA HAA)).
-
-    Local Lemma rel_state_pure {A B} (f : A -> B) a s q :
-      R (spure f) (a, s) q <-> (f a, s) = q.
-    Proof. exact (present_pure P (fun '(a, s) => (f a, s)) (a, s) q). Qed.
-
-    Local Lemma rel_state_comp {A B C}
-      (f : stateArrT S arr A B) (g : stateArrT S arr B C) p q :
-      R (scomp f g) p q <-> exists bs, R f p bs /\ R g bs q.
-    Proof. exact (present_comp P f g p q). Qed.
-
-    Local Lemma rel_state_first {A B C} (f : stateArrT S arr A B)
-      a (c : C) s b d t :
-      R (sfirst f) ((a, c), s) ((b, d), t) <-> R f (a, s) (b, t) /\ c = d.
-    Proof.
-      change (R (comp (pure (@state_shuffle_in S A C))
-        (comp (first f) (pure (@state_shuffle_out S B C))))
-        ((a, c), s) ((b, d), t) <-> R f (a, s) (b, t) /\ c = d).
-      rewrite rel_pure_comp, rel_comp_pure. cbn [state_shuffle_in]. split.
-      - intros [[[b' t'] d'] [Hf Heq]]. cbn [state_shuffle_out] in Heq.
-        injection Heq as -> -> ->. apply (present_first P) in Hf. exact Hf.
-      - intro Hf. exists ((b, t), d). split.
-        + apply (present_first P). exact Hf.
-        + reflexivity.
-    Qed.
-
-    Local Lemma rel_state_second {A B C} (f : stateArrT S arr A B)
-      (c : C) a s d b t :
-      R (ssecond f) ((c, a), s) ((d, b), t) <-> R f (a, s) (b, t) /\ c = d.
-    Proof.
-      change (R (comp (pure (fun '(p, s) => (swap p, s)))
-        (comp (sfirst f) (pure (fun '(p, s) => (swap p, s)))))
-        ((c, a), s) ((d, b), t) <-> R f (a, s) (b, t) /\ c = d).
-      rewrite rel_pure_comp, rel_comp_pure. split.
-      - intros [[[b' d'] t'] [Hf Heq]]. cbn [swap] in Heq.
-        injection Heq as -> -> ->. apply rel_state_first in Hf. exact Hf.
-      - intro Hf. exists ((b, d), t). split; [apply rel_state_first; exact Hf | reflexivity].
-    Qed.
-
-    Local Lemma rel_state_app {A B} (f : stateArrT S arr A B) a s q :
-      R sapp ((f, a), s) q <-> R f (a, s) q.
-    Proof.
-      change (R (comp (pure (fun '((f, a), s) => (f, (a, s)))) app)
-        ((f, a), s) q <-> R f (a, s) q).
-      rewrite rel_pure_comp. apply (present_app P).
-    Qed.
-
-    Local Lemma rel_state_first_pure_app {X A B}
-      (k : X -> stateArrT S arr A B) x a s q :
-      R (scomp (sfirst (spure k)) sapp) ((x, a), s) q <-> R (k x) (a, s) q.
-    Proof.
-      rewrite rel_state_comp. split.
-      - intros [[[f a'] t] [Hk Happ]]. apply rel_state_first in Hk.
-        destruct Hk as [Hk <-]. apply rel_state_pure in Hk.
-        injection Hk as <- <-. rewrite rel_state_app in Happ. exact Happ.
-      - intro Hk. exists ((k x, a), s). split.
-        + apply rel_state_first. split; [apply rel_state_pure; reflexivity | reflexivity].
-        + rewrite rel_state_app. exact Hk.
-    Qed.
-
-    Lemma rel_state_app_unit (A B : Type) :
-      scomp (sfirst (spure (fun x : A => spure (fun y : B => (x, y)))))
-        sapp = @arr_id (stateArrT S arr) SA (A * B).
-    Proof.
-      apply (present_ext P). intros [[a b] s] q.
-      rewrite rel_state_first_pure_app. unfold arr_id.
-      rewrite ! rel_state_pure. reflexivity.
-    Qed.
-
-    Lemma rel_state_app_precompose {A B C} (g : stateArrT S arr A B) :
-      scomp (sfirst (spure (fun f : stateArrT S arr B C => scomp g f)))
-        sapp = scomp (ssecond g) sapp.
-    Proof.
-      apply (present_ext P). intros [[f a] s] q.
-      rewrite rel_state_first_pure_app, ! rel_state_comp. split.
-      - intros [[b t] [Hg Hf]]. exists ((f, b), t). split.
-        + apply rel_state_second. auto.
-        + rewrite rel_state_app. exact Hf.
-      - intros [[[f' b] t] [Hg Hf]]. apply rel_state_second in Hg.
-        destruct Hg as [Hg <-]. exists (b, t). split; [exact Hg |].
-        rewrite rel_state_app in Hf. exact Hf.
-    Qed.
-
-    Lemma rel_state_app_postcompose {A B C} (h : stateArrT S arr B C) :
-      scomp (sfirst (spure (fun f : stateArrT S arr A B => scomp f h)))
-        sapp = scomp sapp h.
-    Proof.
-      apply (present_ext P). intros [[f a] s] q.
-      rewrite rel_state_first_pure_app, ! rel_state_comp.
-      setoid_rewrite rel_state_app. reflexivity.
-    Qed.
-
-    (** ** State-over-option coherence
-
-        Successful composition threads the intermediate state.  A [None]
-        result propagates without inventing an output state. *)
 
     Local Notation SOA := (@Arrow_stateArrT S (optionArrT arr) OA).
     Local Notation sopure := (@arr_pure (stateArrT S (optionArrT arr)) SOA).
@@ -475,60 +324,6 @@ Section RelationalCoherence.
       rewrite rel_option_pure_comp. apply rel_option_app.
     Qed.
 
-    Local Lemma rel_state_option_first_pure_app {X A B}
-      (k : X -> stateArrT S (optionArrT arr) A B) x a s q :
-      R (socomp (sofirst (sopure k)) soapp) ((x, a), s) q <-> R (k x) (a, s) q.
-    Proof.
-      rewrite rel_state_option_comp. split.
-      - intros [qfa [Hk Happ]]. apply rel_state_option_first in Hk.
-        destruct Hk as [ofks [Hk Heq]]. apply rel_state_option_pure in Hk.
-        subst ofks. cbn in Heq. subst qfa.
-        rewrite rel_state_option_app in Happ. exact Happ.
-      - intro Hk. exists (Some ((k x, a), s)). split.
-        + apply rel_state_option_first. exists (Some (k x, s)). split.
-          * apply rel_state_option_pure. reflexivity.
-          * reflexivity.
-        + cbn. rewrite rel_state_option_app. exact Hk.
-    Qed.
-
-    Lemma rel_state_option_app_unit (A B : Type) :
-      socomp (sofirst (sopure (fun x : A => sopure (fun y : B => (x, y)))))
-        soapp = @arr_id (stateArrT S (optionArrT arr)) SOA (A * B).
-    Proof.
-      apply (present_ext P). intros [[a b] s] q.
-      rewrite rel_state_option_first_pure_app. unfold arr_id.
-      rewrite ! rel_state_option_pure. reflexivity.
-    Qed.
-
-    Lemma rel_state_option_app_precompose {A B C}
-      (g : stateArrT S (optionArrT arr) A B) :
-      socomp (sofirst (sopure
-        (fun f : stateArrT S (optionArrT arr) B C => socomp g f)))
-        soapp = socomp (sosecond g) soapp.
-    Proof.
-      apply (present_ext P). intros [[f a] s] q.
-      rewrite rel_state_option_first_pure_app, ! rel_state_option_comp. split.
-      - intros [obs [Hg Hf]].
-        exists (option_map (fun '(b, t) => ((f, b), t)) obs). split.
-        + apply rel_state_option_second. exists obs. auto.
-        + destruct obs as [[b t]|]; cbn; [rewrite rel_state_option_app |]; exact Hf.
-      - intros [qfb [Hg Happ]]. apply rel_state_option_second in Hg.
-        destruct Hg as [obs [Hg <-]]. exists obs. split; [exact Hg |].
-        destruct obs as [[b t]|]; cbn in Happ;
-          [rewrite rel_state_option_app in Happ |]; exact Happ.
-    Qed.
-
-    Lemma rel_state_option_app_postcompose {A B C}
-      (h : stateArrT S (optionArrT arr) B C) :
-      socomp (sofirst (sopure
-        (fun f : stateArrT S (optionArrT arr) A B => socomp f h)))
-        soapp = socomp soapp h.
-    Proof.
-      apply (present_ext P). intros [[f a] s] q.
-      rewrite rel_state_option_first_pure_app, ! rel_state_option_comp.
-      setoid_rewrite rel_state_option_app. reflexivity.
-    Qed.
-
     Local Lemma rel_state_option_fanout_id {I A}
         (m : stateArrT S (optionArrT arr) I A) (i : I) (s : S) ox :
       R (@arr_fanout (stateArrT S (optionArrT arr)) SOA I A I m
@@ -574,49 +369,16 @@ Section RelationalCoherence.
 
     Local Lemma rel_state_option_kapp {I A B}
         (k : A -> stateArrT S (optionArrT arr) I B) (a : A) (i : I) (t : S) r :
-      R (@arr_comp (stateArrT S (optionArrT arr)) SOA (A * I)%type
-           ((stateArrT S (optionArrT arr) I B * I)%type) B
-           (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-              ((stateArrT S (optionArrT arr) I B * I)%type)
-              (fun '(a, i) => (k a, i)))
-           (@arr_app (stateArrT S (optionArrT arr)) SOA
-              (@ArrowApply_stateArrT S (optionArrT arr) OA
-                 (@ArrowApply_optionArrT arr HA HC HAA)) I B)) ((a, i), t) r <->
+      R (socomp (sopure (fun '(a, i) => (k a, i))) soapp) ((a, i), t) r <->
       R (k a) (i, t) r.
     Proof.
-      split.
-      - intro H.
-        destruct (proj1 (rel_state_option_comp
-                            (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                               ((stateArrT S (optionArrT arr) I B * I)%type)
-                               (fun '(a, i) => (k a, i)))
-                            (@arr_app (stateArrT S (optionArrT arr)) SOA
-                               (@ArrowApply_stateArrT S (optionArrT arr) OA
-                                  (@ArrowApply_optionArrT arr HA HC HAA)) I B)
-                            ((a, i), t) r) H)
-          as [op [Hop Hrest]].
-        rewrite rel_state_option_pure in Hop. subst op.
-        change (R (@arr_app (stateArrT S (optionArrT arr)) SOA
-                    (@ArrowApply_stateArrT S (optionArrT arr) OA
-                       (@ArrowApply_optionArrT arr HA HC HAA)) I B)
-                  ((k a, i), t) r) in Hrest.
-        rewrite rel_state_option_app in Hrest. exact Hrest.
-      - intro Hk.
-        apply (proj2 (rel_state_option_comp
-                        (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                           ((stateArrT S (optionArrT arr) I B * I)%type)
-                           (fun '(a, i) => (k a, i)))
-                        (@arr_app (stateArrT S (optionArrT arr)) SOA
-                           (@ArrowApply_stateArrT S (optionArrT arr) OA
-                              (@ArrowApply_optionArrT arr HA HC HAA)) I B)
-                        ((a, i), t) r)).
-        exists (Some ((k a, i), t)). split.
+      rewrite rel_state_option_comp. split.
+      - intros [o [Hk Happ]].
+        rewrite rel_state_option_pure in Hk. subst o.
+        exact (proj1 (rel_state_option_app (k a) i t r) Happ).
+      - intro Hk. exists (Some ((k a, i), t)). split.
         + rewrite rel_state_option_pure. reflexivity.
-        + change (R (@arr_app (stateArrT S (optionArrT arr)) SOA
-                      (@ArrowApply_stateArrT S (optionArrT arr) OA
-                         (@ArrowApply_optionArrT arr HA HC HAA)) I B)
-                    ((k a, i), t) r).
-          rewrite rel_state_option_app. exact Hk.
+        + exact (proj2 (rel_state_option_app (k a) i t r) Hk).
     Qed.
 
     Theorem rel_state_option_bind {I A B : Type}
@@ -631,69 +393,27 @@ Section RelationalCoherence.
         | None => r = None
         end.
     Proof.
-      split.
-      - intro Hb.
-        destruct (proj1 (rel_state_option_comp
-                            (@arr_fanout (stateArrT S (optionArrT arr)) SOA I A I m
-                               (@arr_id (stateArrT S (optionArrT arr)) SOA I))
-                            (@arr_comp (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                               ((stateArrT S (optionArrT arr) I B * I)%type) B
-                               (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                                  ((stateArrT S (optionArrT arr) I B * I)%type)
-                                  (fun '(a, i) => (k a, i)))
-                               (@arr_app (stateArrT S (optionArrT arr)) SOA
-                                  (@ArrowApply_stateArrT S (optionArrT arr) OA
-                                     (@ArrowApply_optionArrT arr HA HC HAA)) I B))
-                            (i, s) r) Hb)
-          as [ofo [Hfan Hrest]].
+      unfold bind_arrow. rewrite rel_state_option_comp. split.
+      - intros [ofa [Hfan Hk]].
         rewrite rel_state_option_fanout_id in Hfan.
-        destruct Hfan as [om [Hm Hox]].
+        destruct Hfan as [om [Hm Hofa]].
         destruct om as [[a t]|].
         + exists (Some (a, t)). split; [exact Hm|].
-          cbn [option_map] in Hox. subst ofo.
-          change (R (@arr_comp (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                        ((stateArrT S (optionArrT arr) I B * I)%type) B
-                        (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                           ((stateArrT S (optionArrT arr) I B * I)%type)
-                           (fun '(a, i) => (k a, i)))
-                        (@arr_app (stateArrT S (optionArrT arr)) SOA
-                           (@ArrowApply_stateArrT S (optionArrT arr) OA
-                              (@ArrowApply_optionArrT arr HA HC HAA)) I B))
-                    ((a, i), t) r) in Hrest.
-          exact (proj1 (rel_state_option_kapp k a i t r) Hrest).
+          subst ofa. cbn [option_map] in Hk.
+          exact (proj1 (rel_state_option_kapp k a i t r) Hk).
         + exists None. split; [exact Hm|].
-          cbn [option_map] in Hox. subst ofo.
-          change (r = None). symmetry. exact Hrest.
-      - intros [om [Hm Hrest]].
-        apply (proj2 (rel_state_option_comp
-                        (@arr_fanout (stateArrT S (optionArrT arr)) SOA I A I m
-                           (@arr_id (stateArrT S (optionArrT arr)) SOA I))
-                        (@arr_comp (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                           ((stateArrT S (optionArrT arr) I B * I)%type) B
-                           (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                              ((stateArrT S (optionArrT arr) I B * I)%type)
-                              (fun '(a, i) => (k a, i)))
-                           (@arr_app (stateArrT S (optionArrT arr)) SOA
-                              (@ArrowApply_stateArrT S (optionArrT arr) OA
-                                 (@ArrowApply_optionArrT arr HA HC HAA)) I B))
-                        (i, s) r)).
+          subst ofa. cbn [option_map] in Hk.
+          symmetry. exact Hk.
+      - intros [om [Hm Hk]].
         exists (option_map (fun '(a, t) => ((a, i), t)) om). split.
-        + rewrite rel_state_option_fanout_id. exists om.
-          split; [exact Hm | reflexivity].
+        + rewrite rel_state_option_fanout_id.
+          exists om. split; [exact Hm | reflexivity].
         + destruct om as [[a t]|].
-          * change (R (@arr_comp (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                          ((stateArrT S (optionArrT arr) I B * I)%type) B
-                          (@arr_pure (stateArrT S (optionArrT arr)) SOA (A * I)%type
-                             ((stateArrT S (optionArrT arr) I B * I)%type)
-                             (fun '(a, i) => (k a, i)))
-                          (@arr_app (stateArrT S (optionArrT arr)) SOA
-                             (@ArrowApply_stateArrT S (optionArrT arr) OA
-                                (@ArrowApply_optionArrT arr HA HC HAA)) I B))
-                      ((a, i), t) r).
-            exact (proj2 (rel_state_option_kapp k a i t r) Hrest).
-          * change (None = r). symmetry. exact Hrest.
+          * cbn [option_map].
+            exact (proj2 (rel_state_option_kapp k a i t r) Hk).
+          * cbn [option_map]. symmetry. exact Hk.
     Qed.
 
-  End StateCoherence.
+  End StateOptionCoherence.
 
 End RelationalCoherence.
