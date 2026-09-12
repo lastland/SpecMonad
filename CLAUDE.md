@@ -23,37 +23,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Sort inference in match bodies**: A bare `forall r, ... -> post r` as the body of a `match` against `mkOptionT` / `mkRelSPPair` has its sort inferred as `Type`, not `Prop`, breaking `optionT PureWP` / `Pred` unification with a confusing universe error. Wrap in a connective (`/\`, `\/`, `exists`) or add a `(_ : Prop)` cast.
 - **Classical `itree void1` termination**: Reasoning that a deterministic ITree either converges or diverges requires `eutt_reta_or_div`, `ret_not_div`, `any_infinite_proper_eutt` from `ITree.Extra.Dijkstra.PureITreeBasics` — *not* in the default `From ITree Require Import ITree Eq Props.Infinite.`. `ret_not_div` takes `A` and `E` implicit, so call it as `ret_not_div Hinf`, not `ret_not_div _ _ _ Hinf`.
 
-## Architecture: Classes/
+## Architecture
 
-`Code/Classes/` defines Hughes-style arrow typeclasses and generic transformer laws:
+Start with [CONTEXT-MAP.md](CONTEXT-MAP.md), then read the relevant directory contexts. See [Classes](Code/Classes/CONTEXT.md) for generic arrow contracts and [Taxonomy](Code/Taxonomy/CONTEXT.md) for computation/specification boundaries. The [Taxonomy README](Code/Taxonomy/README.md) gives detailed semantics and naming conventions.
 
-- `Arrow.v`: Core typeclasses (`Arrow`, `ArrowChoice`, `ArrowApply`, `ArrowLoop`) + laws + `Pred` (relational arrow, `A -> B -> Prop`) instances.
-- `OptionArrowT/`: Generic `optionArrT arr A B := arr A (option B)` transformer. Split into `Core.v`, `ArrowLaws.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`. `OptionArrowT.v` is a thin re-export. Concrete instantiation checks live in `Taxonomy/Arrows/Tests/`.
-- `StateArrowT/`: Generic `stateArrT S arr A B := arr (A*S) (B*S)` transformer. Split into `Core.v`, `ArrowChoiceLaws.v`, `ArrowApplyLaws.v`. `StateArrowT.v` is a thin re-export.
-
-All generic law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type.
-
-## Architecture: Taxonomy/
-
-The `Code/Taxonomy/` directory is the core of the project. All monads share the shape `stateT S (optionT <base>)`, varying only in the base monad:
-
-| Base monad | Composed type | File | Role |
-|---|---|---|---|
-| `itree void1` | `prog` | `Prog.v` | Deterministic computation |
-| `PureWP` = `(A -> Prop) -> Prop` | `ProgWP` | `WP.v` | Weakest precondition spec |
-| `SetM` = `A -> Prop` | `ndprog` | `NonDetProg.v` | Nondeterministic computation |
-| `optionT SetM` (double optionT) | `nditprog` | `NonDetItProg.v` | Nondeterminism + divergence |
-
-`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPPairArr.v` defines the coupled presentation (`PureRelASPPairArr`, `PureRelDSLPPairArr`). See `Code/Taxonomy/README.md` for their well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify shared names such as `ASPostArr` and `DSLPostArr` when both presentations are in scope.
-
-**Observation functions** bridge computation monads to specification types (both WP and SP):
-- `Observation.v`: maps `prog` to 4 SP variants (`obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`) and 4 WP variants (`obsAWP` / `obsDWP` / `obsAWLP` / `obsDWLP`), with `obsWPCollapse` / `obsWLPCollapse` showing angelic-demonic collapse under determinism
-- `NonDetObservation.v`: maps `ndprog` to `ASPostArr` (SP) and `ProgWP` (demonic/angelic WP)
-- `NonDetItObservation.v`: maps `nditprog` to `ASPostArr` (SP) and `ProgWP` (4 WP variants)
-
-`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Classes/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
-
-`WPArr.v` defines the reader-WP Kleisli arrow `WPArr A B := A -> PureWP B`; laws in `WPArrFacts.v` hold definitionally (all `reflexivity`). `RelPrePost.v` defines `RelPrePost A B := (A -> Prop) -> (A -> B -> Prop) -> Prop` — a "validator" of Hoare specs that embeds `WPArr` injectively. `Galois.v` establishes Galois connections (via Dijkstra refinement order) among `Pred`, `PrePost`, `WPArr`, and `RelPrePost`.
+All generic arrow-transformer law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type. Qualify shared names such as `ASPostArr` and `DSLPostArr` when the property-only and coupled presentations are both in scope.
 
 `Taxonomy/deprecated/` holds earlier iterations that are deliberately excluded from `_CoqProject`; ignore them when grepping for symbol references.
 
@@ -65,3 +39,19 @@ See `.github/workflows/SpecMonad.yml` (Coq 8.20, docker-coq-action via opam).
 
 `Makefile` is gitignored; regenerate with `coq_makefile -f _CoqProject -o Makefile` in `Code/`.
 Single file: `make Classes/StateArrowT/Core.vo`. Use `timeout 30 make ...` to catch typeclass loops.
+
+## Agent skills
+
+### Issue tracker
+
+Use GitHub issues in `lastland/SpecMonad`; external PRs are not a
+triage surface. See [docs/agents/issue-tracker.md](docs/agents/issue-tracker.md).
+
+### Triage labels
+
+Use the five default triage labels. See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
+
+### Domain docs
+
+Use the multi-context layout: start with [CONTEXT-MAP.md](CONTEXT-MAP.md), then read
+the relevant per-directory contexts. See [docs/agents/domain.md](docs/agents/domain.md).

@@ -86,8 +86,10 @@ the propagation rule divergence needs, so the monad structure is identical. The
 file and type names now carry that distinction, which used to live only in
 comments.
 
-`StDivNonDet.v` also carries `stdivndNE`, the non-empty fragment, which the
-`WSt` observations need for well-formedness.
+`StDivNonDet.v` also carries `stdivndNE`, the non-empty fragment used by the
+`WSt` observations. Non-emptiness supports `obsDWP_strict`, `obsAWLP_top`, and
+taxonomy inclusions; the observations' postcondition-monotonicity proofs do
+not use it. See [the WP context](EffectObservations/WP/CONTEXT.md).
 
 `divnd` is the state-free base of that stack — `stdivnd S A = stateT S divnd A`
 by `eq_refl` — standing to `StDivNonDet.v` as `SPPure` does to `SPSt` /
