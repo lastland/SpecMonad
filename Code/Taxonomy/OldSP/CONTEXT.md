@@ -24,7 +24,10 @@ monads. Current stateful DSP/ASLP binds recover relations.
 The AspConjugation block through SPred_under_empty_pre_fails is commented out:
 ProgSPObs, SPredObs, SPredT, ordSP, and progSP_under_not_point there are not
 exported results. Its shared-versus-independent precondition discussion does
-not supply compiled theorems. Active double-option observations omit outer
-divergence and retain exceptions. This layer imports current modules; it is
-not the foundation of the base SP layer. Read the historical README discussion,
-then the relevant active reading/no-go result and manifest-listed clients.
+not supply compiled theorems. In particular, changing a shared `S -> Prop`
+precondition to independent per-state judgments changes the quantifiers in
+Under triples; the commented example illustrates this, but does not prove it.
+Active double-option observations omit outer divergence and retain exceptions.
+This layer imports current modules; it is not the foundation of the base SP
+layer. Read the historical README discussion, then the relevant active
+reading/no-go result and manifest-listed clients.
