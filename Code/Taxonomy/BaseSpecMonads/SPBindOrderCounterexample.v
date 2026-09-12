@@ -177,11 +177,3 @@ Module SPBindOrderCounterexample.
   Qed.
 
 End SPBindOrderCounterexample.
-
-Check SPBindOrderCounterexample.dsp_counterexample.
-Check SPBindOrderCounterexample.aslp_counterexample.
-Check SPBindOrderCounterexample.dsp_bind_not_monotone.
-Check SPBindOrderCounterexample.aslp_bind_not_monotone.
-
-Print Assumptions SPBindOrderCounterexample.dsp_bind_not_monotone.
-Print Assumptions SPBindOrderCounterexample.aslp_bind_not_monotone.

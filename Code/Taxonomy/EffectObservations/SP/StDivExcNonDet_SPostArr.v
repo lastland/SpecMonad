@@ -1,20 +1,11 @@
 (** * Arrow-derived ASP/DSLP observations of [stdivexcnd].
 
-    Nondeterminism + divergence + exceptions observed into the
-    arrow-derived ASP and DSLP monads of [SPostArrMonad], via the generic
-    outcome-kernel adapter [SPostArrObservation].  The kernel is the
-    double-option outcome relation of [StDivExcNonDet]: normal returns
-    and exceptions ([r = None]) are visible, while divergence ([None] at
-    the [option (option _)] layer) is INVISIBLE to both readings — a
-    program whose every branch diverges has no outcome at all.  The
-    monad morphism laws are inherited from the adapter; this file builds
-    the kernel, re-exports the readings and laws under local aliases,
-    derives kernel-level outcome lemmas for the operations, and works the
-    [progA]/[progB]/[progRet]/[progloom] examples: divergence-blindness,
-    exception visibility, Under/Over triples, and a compute demo of
-    [obsASP_bind]. *)
+    The observations record normal returns and exceptions ([Some None]
+    in the double-option computation).  Divergence (outer [None]) is
+    invisible.  The examples exercise both predecessor readings. *)
 
 From Coq Require Import PeanoNat Lia.
+From Hammer Require Import Tactics.
 From ITree Require Import ITree Basics.Monad.
 From ExtLib Require Import StateMonad OptionMonad.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
@@ -26,16 +17,7 @@ Import MonadNotation.
 Open Scope monad_scope.
 
 (* ================================================================= *)
-(** ** The outcome kernel                                              *)
-(* ================================================================= *)
-
-Definition stdivexcndKernel (S : Type) : OutcomeKernel S (stdivexcnd S) :=
-  {| kern := fun A m s r => StDivExcNonDet.outcomes S m s r;
-     kern_ret := fun A a s r => StDivExcNonDet.outcomes_ret S a s r;
-     kern_bind := fun A B m k s r => StDivExcNonDet.outcomes_bind S m k s r |}.
-
-(* ================================================================= *)
-(** ** Kernel-level outcome lemmas for the operations                  *)
+(** ** Visible outcomes of the operations                             *)
 (* ================================================================= *)
 
 Section Ops.
@@ -43,15 +25,15 @@ Section Ops.
   Variable S : Type.
 
   Lemma outcomes_put (s0 s : S) (r : option (unit * S)) :
-    kern (stdivexcndKernel S) (putP S s0) s r <-> r = Some (tt, s0).
+    unOptionT (unOptionT (runStateT (putP S s0) s)) (Some r) <-> r = Some (tt, s0).
   Proof. split; intro H; congruence. Qed.
 
   Lemma outcomes_get (s : S) (r : option (S * S)) :
-    kern (stdivexcndKernel S) (getP S) s r <-> r = Some (s, s).
+    unOptionT (unOptionT (runStateT (getP S) s)) (Some r) <-> r = Some (s, s).
   Proof. split; intro H; congruence. Qed.
 
   Lemma outcomes_raise {A} (s : S) (r : option (A * S)) :
-    kern (stdivexcndKernel S) (raiseP S tt) s r <-> r = None.
+    unOptionT (unOptionT (runStateT (raiseP S tt) s)) (Some r) <-> r = None.
   Proof.
     cbn. split.
     - intros [a [Ha Hr]]. destruct a as [[x|]|]; congruence.
@@ -59,11 +41,11 @@ Section Ops.
   Qed.
 
   Lemma outcomes_spinP {A} (s : S) (r : option (A * S)) :
-    kern (stdivexcndKernel S) (spinP S) s r <-> False.
+    unOptionT (unOptionT (runStateT (spinP S) s)) (Some r) <-> False.
   Proof. cbn. split; [discriminate | intro F; destruct F]. Qed.
 
   Lemma outcomes_pickP {A} (s : S) (r : option (A * S)) :
-    kern (stdivexcndKernel S) pickP s r <-> exists a, r = Some (a, s).
+    unOptionT (unOptionT (runStateT pickP s)) (Some r) <-> exists a, r = Some (a, s).
   Proof.
     cbn. split.
     - intros [a H]. exists a. congruence.
@@ -71,8 +53,9 @@ Section Ops.
   Qed.
 
   Lemma outcomes_orP {A} (m1 m2 : stdivexcnd S A) (s : S) (r : option (A * S)) :
-    kern (stdivexcndKernel S) (orP S m1 m2) s r
-    <-> kern (stdivexcndKernel S) m1 s r \/ kern (stdivexcndKernel S) m2 s r.
+    unOptionT (unOptionT (runStateT (orP S m1 m2) s)) (Some r) <->
+    unOptionT (unOptionT (runStateT m1 s)) (Some r) \/
+    unOptionT (unOptionT (runStateT m2 s)) (Some r).
   Proof. split; intro H; [exact H | exact H]. Qed.
 
 End Ops.
@@ -86,38 +69,93 @@ Section Obs.
   Variable S : Type.
 
   Definition obsASP {A} (m : stdivexcnd S A) : ASPostArr S A :=
-    SPostArrObservation.obsASP (stdivexcndKernel S) m.
+    relASP (fun us r => unOptionT (unOptionT (runStateT m (snd us))) (Some r)).
 
   Definition obsDSLP {A} (m : stdivexcnd S A) : DSLPostArr S A :=
-    SPostArrObservation.obsDSLP (stdivexcndKernel S) m.
+    asp_to_dslp (obsASP m).
 
   Lemma getProgASP_obsASP {A} (m : stdivexcnd S A) (pre : S -> Prop) r :
     runASP (obsASP m) pre r
-    <-> exists s, pre s /\ StDivExcNonDet.outcomes S m s r.
-  Proof. apply SPostArrObservation.runASP_obsASP. Qed.
+    <-> exists s, pre s /\ unOptionT (unOptionT (runStateT m s)) (Some r).
+  Proof.
+    rewrite runASP_rel. unfold obsASP. setoid_rewrite ASP_rel_relASP.
+    reflexivity.
+  Qed.
 
   Lemma getProgDSLP_obsDSLP {A} (m : stdivexcnd S A) (pre : S -> Prop) r :
     runDSLP (obsDSLP m) pre r
-    <-> forall s, StDivExcNonDet.outcomes S m s r -> pre s.
-  Proof. apply SPostArrObservation.runDSLP_obsDSLP. Qed.
+    <-> forall s, unOptionT (unOptionT (runStateT m s)) (Some r) -> pre s.
+  Proof.
+    rewrite runDSLP_rel. unfold obsDSLP, obsASP.
+    setoid_rewrite DSLP_rel_asp_to_dslp. setoid_rewrite ASP_rel_relASP.
+    reflexivity.
+  Qed.
 
   Theorem obsASP_ret {A} (a : A) :
     obsASP (retP S a) = @ret _ (Monad_ASPostArr S) A a.
-  Proof. apply SPostArrObservation.obsASP_ret. Qed.
+  Proof.
+    apply ASP_rel_ext. intros [[] s] r.
+    unfold obsASP. rewrite ASP_rel_relASP, ASP_rel_ret.
+    cbn. split; intro H; congruence.
+  Qed.
+
+  Local Lemma outcomes_bind {A B} (m : stdivexcnd S A)
+      (k : A -> stdivexcnd S B) s r :
+    unOptionT (unOptionT (runStateT (bindP S m k) s)) (Some r) <->
+    exists om, unOptionT (unOptionT (runStateT m s)) (Some om) /\
+      match om with
+      | Some (a, t) => unOptionT (unOptionT (runStateT (k a) t)) (Some r)
+      | None => r = None
+      end.
+  Proof.
+    cbn. split.
+    - intros [oom [Hm Hk]]. destruct oom as [om|]; [|discriminate].
+      exists om. split; [exact Hm |].
+      destruct om as [[a t]|]; [exact Hk | congruence].
+    - intros [om [Hm Hk]]. exists (Some om). split; [exact Hm |].
+      destruct om as [[a t]|]; [exact Hk | congruence].
+  Qed.
 
   Theorem obsASP_bind {A B} (m : stdivexcnd S A) (k : A -> stdivexcnd S B) :
     obsASP (bindP S m k) =
     @bind _ (Monad_ASPostArr S) A B (obsASP m) (fun a => obsASP (k a)).
-  Proof. apply SPostArrObservation.obsASP_bind. Qed.
+  Proof.
+    apply ASP_rel_ext. intros [[] s] r. rewrite ASP_rel_bind.
+    unfold obsASP. rewrite ASP_rel_relASP, outcomes_bind.
+    setoid_rewrite ASP_rel_relASP.
+    split; intros [om [Hm Hk]]; exists om; split; try exact Hm;
+      destruct om as [[a t]|]; cbv beta iota in *;
+      try rewrite ASP_rel_relASP in *; exact Hk.
+  Qed.
 
   Theorem obsDSLP_ret {A} (a : A) :
     obsDSLP (retP S a) = @ret _ (Monad_DSLPostArr S) A a.
-  Proof. apply SPostArrObservation.obsDSLP_ret. Qed.
+  Proof. unfold obsDSLP. rewrite obsASP_ret. apply asp_to_dslp_ret. Qed.
 
   Theorem obsDSLP_bind {A B} (m : stdivexcnd S A) (k : A -> stdivexcnd S B) :
     obsDSLP (bindP S m k) =
     @bind _ (Monad_DSLPostArr S) A B (obsDSLP m) (fun a => obsDSLP (k a)).
-  Proof. apply SPostArrObservation.obsDSLP_bind. Qed.
+  Proof. unfold obsDSLP. rewrite obsASP_bind. apply asp_to_dslp_bind. Qed.
+
+  Definition tripleASP {A} (m : stdivexcnd S A) kind pre post : Prop :=
+    SPostArrObservation.tripleASP (obsASP m) kind pre post.
+
+  Definition tripleASPspec {A} (m : stdivexcnd S A) kind pre post : Prop :=
+    SPostArrObservation.tripleASPspec (obsASP m) kind pre post.
+
+  Theorem tripleASPDefEq {A} (m : stdivexcnd S A) kind pre post :
+    tripleASP m kind pre post <-> tripleASPspec m kind pre post.
+  Proof. apply SPostArrObservation.tripleASPDefEq. Qed.
+
+  Definition tripleDSL {A} (m : stdivexcnd S A) kind pre post : Prop :=
+    SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
+
+  Definition tripleDSLspec {A} (m : stdivexcnd S A) kind pre post : Prop :=
+    SPostArrObservation.tripleDSLspec (obsDSLP m) kind pre post.
+
+  Theorem tripleDSLDefEq {A} (m : stdivexcnd S A) kind pre post :
+    tripleDSL m kind pre post <-> tripleDSLspec m kind pre post.
+  Proof. apply SPostArrObservation.tripleDSLDefEq. Qed.
 
 End Obs.
 
@@ -127,91 +165,35 @@ End Obs.
 
 (** [progA] reaches [(tt, 42)] and [(tt, 43)] from every state. *)
 Lemma progA_outcomes : forall s r,
-  kern (stdivexcndKernel nat) progA s r <-> r = Some (tt, 42) \/ r = Some (tt, 43).
+  unOptionT (unOptionT (runStateT progA s)) (Some r) <->
+  r = Some (tt, 42) \/ r = Some (tt, 43).
 Proof.
-  intros s r. unfold progA.
-  split.
-  - intro H.
-    apply (proj1 (kern_bind (stdivexcndKernel nat) (putP nat 42) _ s r)) in H.
-    destruct H as [oa [Hput Hmid]].
-    apply (proj1 (outcomes_put nat 42 s oa)) in Hput. rewrite Hput in Hmid.
-    cbv beta iota in Hmid.
-    apply (proj1 (kern_bind (stdivexcndKernel nat) (getP nat) _ 42 r)) in Hmid.
-    destruct Hmid as [ob [Hget Hrest]].
-    apply (proj1 (outcomes_get nat 42 ob)) in Hget. rewrite Hget in Hrest.
-    cbv beta iota in Hrest.
-    apply (proj1 (outcomes_orP nat _ _ 42 r)) in Hrest.
-    destruct Hrest as [H | H].
-    + apply (proj1 (outcomes_put nat 42 42 r)) in H. left. exact H.
-    + apply (proj1 (outcomes_put nat 43 42 r)) in H. right. exact H.
-  - intros [-> | ->].
-    + apply (proj2 (kern_bind (stdivexcndKernel nat) (putP nat 42) _ s (Some (tt, 42)))).
-      exists (Some (tt, 42)). split.
-      * apply (proj2 (outcomes_put nat 42 s (Some (tt, 42)))). reflexivity.
-      * apply (proj2 (kern_bind (stdivexcndKernel nat) (getP nat) _ 42 (Some (tt, 42)))).
-        exists (Some (42, 42)). split.
-        -- apply (proj2 (outcomes_get nat 42 (Some (42, 42)))). reflexivity.
-        -- apply (proj2 (outcomes_orP nat (putP nat 42) (putP nat 43) 42
-                          (Some (tt, 42)))). left.
-           apply (proj2 (outcomes_put nat 42 42 (Some (tt, 42)))). reflexivity.
-    + apply (proj2 (kern_bind (stdivexcndKernel nat) (putP nat 42) _ s (Some (tt, 43)))).
-      exists (Some (tt, 42)). split.
-      * apply (proj2 (outcomes_put nat 42 s (Some (tt, 42)))). reflexivity.
-      * apply (proj2 (kern_bind (stdivexcndKernel nat) (getP nat) _ 42 (Some (tt, 43)))).
-        exists (Some (42, 42)). split.
-        -- apply (proj2 (outcomes_get nat 42 (Some (42, 42)))). reflexivity.
-        -- apply (proj2 (outcomes_orP nat (putP nat 42) (putP nat 43) 42
-                          (Some (tt, 43)))). right.
-           apply (proj2 (outcomes_put nat 43 42 (Some (tt, 43)))). reflexivity.
+  intros s r. unfold progA. cbn. split; sauto limit: 200.
 Qed.
 
-(** [progB]'s spinning branch is divergence, invisible to the SP kernel —
+(** [progB]'s spinning branch is divergence, invisible to the observations —
     only the [(tt, 42)] outcome of the [put s] branch survives. *)
 Lemma progB_outcomes : forall s r,
-  kern (stdivexcndKernel nat) progB s r <-> r = Some (tt, 42).
+  unOptionT (unOptionT (runStateT progB s)) (Some r) <-> r = Some (tt, 42).
 Proof.
-  intros s r. unfold progB.
-  split.
-  - intro H.
-    apply (proj1 (kern_bind (stdivexcndKernel nat) (putP nat 42) _ s r)) in H.
-    destruct H as [oa [Hput Hmid]].
-    apply (proj1 (outcomes_put nat 42 s oa)) in Hput. rewrite Hput in Hmid.
-    cbv beta iota in Hmid.
-    apply (proj1 (kern_bind (stdivexcndKernel nat) (getP nat) _ 42 r)) in Hmid.
-    destruct Hmid as [ob [Hget Hrest]].
-    apply (proj1 (outcomes_get nat 42 ob)) in Hget. rewrite Hget in Hrest.
-    cbv beta iota in Hrest.
-    apply (proj1 (outcomes_orP nat _ _ 42 r)) in Hrest.
-    destruct Hrest as [H | H].
-    + apply (proj1 (outcomes_put nat 42 42 r)) in H. exact H.
-    + destruct (proj1 (outcomes_spinP nat 42 r) H).
-  - intros ->.
-    apply (proj2 (kern_bind (stdivexcndKernel nat) (putP nat 42) _ s (Some (tt, 42)))).
-    exists (Some (tt, 42)). split.
-    + apply (proj2 (outcomes_put nat 42 s (Some (tt, 42)))). reflexivity.
-    + apply (proj2 (kern_bind (stdivexcndKernel nat) (getP nat) _ 42 (Some (tt, 42)))).
-      exists (Some (42, 42)). split.
-      * apply (proj2 (outcomes_get nat 42 (Some (42, 42)))). reflexivity.
-      * apply (proj2 (outcomes_orP nat (putP nat 42) (spinP nat) 42
-                        (Some (tt, 42)))). left.
-        apply (proj2 (outcomes_put nat 42 42 (Some (tt, 42)))). reflexivity.
+  intros s r. unfold progB. cbn. split; sauto limit: 200.
 Qed.
 
 (** [progloom] either raises (amount above the balance) or debits by the
     picked amount. *)
 Lemma progloom_outcomes : forall s r,
-  kern (stdivexcndKernel nat) progloom s r
+  unOptionT (unOptionT (runStateT progloom s)) (Some r)
   <-> r = None \/ exists k, k <= s /\ r = Some (tt, s - k).
 Proof.
   intros s r. unfold progloom.
   split.
   - intro H.
-    apply (proj1 (kern_bind (stdivexcndKernel nat) pickP _ s r)) in H.
+    apply (proj1 (outcomes_bind nat pickP _ s r)) in H.
     destruct H as [oa [Hpick Hmid]].
     apply (proj1 (outcomes_pickP nat s oa)) in Hpick.
     destruct Hpick as [a ->].
     cbv beta iota in Hmid.
-    apply (proj1 (kern_bind (stdivexcndKernel nat) (getP nat) _ s r)) in Hmid.
+    apply (proj1 (outcomes_bind nat (getP nat) _ s r)) in Hmid.
     destruct Hmid as [ob [Hget Hrest]].
     apply (proj1 (outcomes_get nat s ob)) in Hget. rewrite Hget in Hrest.
     cbv beta iota in Hrest.
@@ -221,22 +203,22 @@ Proof.
       apply (proj1 (outcomes_put nat (s - a) s r)) in Hrest.
       right. exists a. split; [exact E | exact Hrest].
   - intros [-> | [k [Hk ->]]].
-    + apply (proj2 (kern_bind (stdivexcndKernel nat) pickP _ s None)).
+    + apply (proj2 (outcomes_bind nat pickP _ s None)).
       exists (Some (S s, s)). split.
       * apply (proj2 (outcomes_pickP nat s (Some (S s, s)))). exists (S s).
         reflexivity.
-      * apply (proj2 (kern_bind (stdivexcndKernel nat) (getP nat) _ s None)).
+      * apply (proj2 (outcomes_bind nat (getP nat) _ s None)).
         exists (Some (s, s)). split.
         -- apply (proj2 (outcomes_get nat s (Some (s, s)))). reflexivity.
         -- replace (Nat.ltb s (S s)) with true
              by (symmetry; apply Nat.ltb_lt; lia).
            cbv beta iota.
            apply (proj2 (outcomes_raise nat s None)). reflexivity.
-    + apply (proj2 (kern_bind (stdivexcndKernel nat) pickP _ s (Some (tt, s - k)))).
+    + apply (proj2 (outcomes_bind nat pickP _ s (Some (tt, s - k)))).
       exists (Some (k, s)). split.
       * apply (proj2 (outcomes_pickP nat s (Some (k, s)))). exists k.
         reflexivity.
-      * apply (proj2 (kern_bind (stdivexcndKernel nat) (getP nat) _ s
+      * apply (proj2 (outcomes_bind nat (getP nat) _ s
                         (Some (tt, s - k)))).
         exists (Some (s, s)). split.
         -- apply (proj2 (outcomes_get nat s (Some (s, s)))). reflexivity.
@@ -250,10 +232,10 @@ Qed.
 (** [progA] Under at [pre := {0}]: both final states are reachable from
     [0] (indeed from every state). *)
 Example progA_under :
-  tripleASP (stdivexcndKernel nat) progA Under
+  tripleASP nat progA Under
     (fun s => s = 0) (fun r => r = Some (tt, 42) \/ r = Some (tt, 43)).
 Proof.
-  intros r Hr. exists 0. split; [reflexivity |].
+  intros r Hr. apply getProgASP_obsASP. exists 0. split; [reflexivity |].
   apply progA_outcomes. exact Hr.
 Qed.
 
@@ -262,10 +244,11 @@ Qed.
     image and the strongest post lies OUTSIDE it — the opposite of the
     angelic Under triple above. *)
 Example progA_dslp_over :
-  tripleDSL (stdivexcndKernel nat) progA Over
+  tripleDSL nat progA Over
     (fun s => s = 0) (fun r => ~ (r = Some (tt, 42) \/ r = Some (tt, 43))).
 Proof.
   intros r Hall Hr.
+  rewrite getProgDSLP_obsDSLP in Hall.
   destruct Hr as [H42 | H43].
   - specialize (Hall 1 (proj2 (progA_outcomes 1 _) (or_introl H42))).
     discriminate.
@@ -276,20 +259,20 @@ Qed.
 (** [progB] Under demonstrates divergence-blindness: the postcondition
     holds exactly, even though one branch diverges. *)
 Example progB_under :
-  tripleASP (stdivexcndKernel nat) progB Under
+  tripleASP nat progB Under
     (fun _ => True) (fun r => r = Some (tt, 42)).
 Proof.
-  intros r ->. exists 0. split; [exact I |].
+  intros r ->. apply getProgASP_obsASP. exists 0. split; [exact I |].
   apply progB_outcomes. reflexivity.
 Qed.
 
 (** [progRet] Under at the classic [preEq0]/[postEq0] pair. *)
 Example progRet_under :
-  tripleASP (stdivexcndKernel nat) progRet Under preEq0 postEq0.
+  tripleASP nat progRet Under preEq0 postEq0.
 Proof.
   intros r Hr. unfold postEq0 in Hr. subst r.
+  apply getProgASP_obsASP.
   exists 0. split; [reflexivity |].
-  apply (proj2 (kern_ret (stdivexcndKernel nat) tt 0 (Some (tt, 0)))).
   reflexivity.
 Qed.
 
@@ -315,11 +298,6 @@ Example obsASP_bind_compute :
 Proof.
   rewrite obsASP_bind, runASP_bind.
   exists 0, (Some (tt, 0)). split; [reflexivity | split].
-  - apply (proj2 (ASP_rel_obsASP (stdivexcndKernel nat) (retP nat tt)
-                     (tt, 0) (Some (tt, 0)))).
-    apply (proj2 (kern_ret (stdivexcndKernel nat) tt 0 (Some (tt, 0)))).
-    reflexivity.
-  - rewrite (ASP_rel_obsASP (stdivexcndKernel nat) (putP nat 42) (tt, 0)
-                (Some (tt, 42))).
-    apply (proj2 (outcomes_put nat 42 0 (Some (tt, 42)))). reflexivity.
+  - rewrite obsASP_ret, ASP_rel_ret. reflexivity.
+  - unfold obsASP. rewrite ASP_rel_relASP. reflexivity.
 Qed.
