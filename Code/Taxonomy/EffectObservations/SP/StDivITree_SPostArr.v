@@ -1,19 +1,8 @@
 (** * Arrow-derived ASP/DSLP observations of [stdivitree].
 
-    Deterministic programs observed into the arrow-derived ASP and DSLP
-    monads of [SPostArrMonad], via the generic outcome-kernel adapter
-    [SPostArrObservation].  Exceptions ([None] outcomes) are visible to
-    both readings; itree divergence is invisible — a diverging branch
-    simply has no outcome.  The monad morphism laws are inherited from
-    the adapter, so this file only builds the kernel, re-exports the
-    readings and laws under local aliases, and works the examples:
-    exact readings of [progA_stdivitree]; the ASP/DSLP separation at a
-    singleton precondition (determinism does NOT collapse the two
-    readings — the angelic one quantifies over SOME predecessor, the
-    demonic one over EVERY predecessor); a many-to-one overwrite whose
-    demonic Over post lies outside its image; an unreachable outcome,
-    where the angelic reading is False and the demonic one True; and a
-    compute demo of [obsASP_bind]. *)
+    The observations record terminating returns, including exceptions
+    ([None]); divergence has no visible outcome.  The examples distinguish
+    angelic and demonic predecessor readings even for deterministic programs. *)
 
 From ITree Require Import ITree Basics.Monad Eq.
 From ExtLib Require Import StateMonad OptionMonad.
@@ -26,15 +15,6 @@ Import MonadNotation.
 Open Scope monad_scope.
 
 (* ================================================================= *)
-(** ** The outcome kernel                                              *)
-(* ================================================================= *)
-
-Definition stdivitreeKernel (S : Type) : OutcomeKernel S (stdivitree S) :=
-  {| kern := fun A m s r => StDivITree.outcomes S m s r;
-     kern_ret := fun A a s r => StDivITree.outcomes_ret S a s r;
-     kern_bind := fun A B m k s r => StDivITree.outcomes_bind S m k s r |}.
-
-(* ================================================================= *)
 (** ** Observations, readings, and morphism laws                       *)
 (* ================================================================= *)
 
@@ -43,36 +23,96 @@ Section Obs.
   Variable S : Type.
 
   Definition obsASP {A} (m : stdivitree S A) : ASPostArr S A :=
-    SPostArrObservation.obsASP (stdivitreeKernel S) m.
+    relASP (fun us r => eutt eq (unOptionT (runStateT m (snd us))) (Ret r)).
 
   Definition obsDSLP {A} (m : stdivitree S A) : DSLPostArr S A :=
-    SPostArrObservation.obsDSLP (stdivitreeKernel S) m.
+    asp_to_dslp (obsASP m).
 
   Lemma getProgASP_obsASP {A} (m : stdivitree S A) (pre : S -> Prop) r :
-    runASP (obsASP m) pre r <-> exists s, pre s /\ StDivITree.outcomes S m s r.
-  Proof. apply SPostArrObservation.runASP_obsASP. Qed.
+    runASP (obsASP m) pre r <->
+    exists s, pre s /\ eutt eq (unOptionT (runStateT m s)) (Ret r).
+  Proof.
+    rewrite runASP_rel. unfold obsASP. setoid_rewrite ASP_rel_relASP.
+    reflexivity.
+  Qed.
 
   Lemma getProgDSLP_obsDSLP {A} (m : stdivitree S A) (pre : S -> Prop) r :
-    runDSLP (obsDSLP m) pre r <-> forall s, StDivITree.outcomes S m s r -> pre s.
-  Proof. apply SPostArrObservation.runDSLP_obsDSLP. Qed.
+    runDSLP (obsDSLP m) pre r <->
+    forall s, eutt eq (unOptionT (runStateT m s)) (Ret r) -> pre s.
+  Proof.
+    rewrite runDSLP_rel. unfold obsDSLP, obsASP.
+    setoid_rewrite DSLP_rel_asp_to_dslp. setoid_rewrite ASP_rel_relASP.
+    reflexivity.
+  Qed.
 
   Theorem obsASP_ret {A} (a : A) :
     obsASP (retP S a) = @ret _ (Monad_ASPostArr S) A a.
-  Proof. apply SPostArrObservation.obsASP_ret. Qed.
+  Proof.
+    apply ASP_rel_ext. intros [[] s] r.
+    unfold obsASP. rewrite ASP_rel_relASP, ASP_rel_ret. cbn.
+    split; [apply eutt_inv_Ret | intros ->; reflexivity].
+  Qed.
+
+  Local Lemma outcomes_bind {A B} (m : stdivitree S A)
+      (k : A -> stdivitree S B) s r :
+    eutt eq (unOptionT (runStateT (bindP S m k) s)) (Ret r) <->
+    exists om, eutt eq (unOptionT (runStateT m s)) (Ret om) /\
+      match om with
+      | Some (a, t) => eutt eq (unOptionT (runStateT (k a) t)) (Ret r)
+      | None => r = None
+      end.
+  Proof.
+    cbn. split.
+    - intro H. apply eutt_inv_bind_ret in H.
+      destruct H as [om [Hm Hk]]. exists om. split; [exact Hm |].
+      destruct om as [[a t]|]; [exact Hk |].
+      apply eutt_inv_Ret in Hk. symmetry. exact Hk.
+    - intros [om [Hm Hk]]. rewrite Hm.
+      etransitivity; [apply eq_sub_eutt, ITree.Eq.Eqit.bind_ret_l |].
+      destruct om as [[a t]|]; [exact Hk |].
+      subst r. reflexivity.
+  Qed.
 
   Theorem obsASP_bind {A B} (m : stdivitree S A) (k : A -> stdivitree S B) :
     obsASP (bindP S m k) =
     @bind _ (Monad_ASPostArr S) A B (obsASP m) (fun a => obsASP (k a)).
-  Proof. apply SPostArrObservation.obsASP_bind. Qed.
+  Proof.
+    apply ASP_rel_ext. intros [[] s] r. rewrite ASP_rel_bind.
+    unfold obsASP. rewrite ASP_rel_relASP, outcomes_bind.
+    setoid_rewrite ASP_rel_relASP.
+    split; intros [om [Hm Hk]]; exists om; split; try exact Hm;
+      destruct om as [[a t]|]; cbv beta iota in *;
+      try rewrite ASP_rel_relASP in *; exact Hk.
+  Qed.
 
   Theorem obsDSLP_ret {A} (a : A) :
     obsDSLP (retP S a) = @ret _ (Monad_DSLPostArr S) A a.
-  Proof. apply SPostArrObservation.obsDSLP_ret. Qed.
+  Proof. unfold obsDSLP. rewrite obsASP_ret. apply asp_to_dslp_ret. Qed.
 
   Theorem obsDSLP_bind {A B} (m : stdivitree S A) (k : A -> stdivitree S B) :
     obsDSLP (bindP S m k) =
     @bind _ (Monad_DSLPostArr S) A B (obsDSLP m) (fun a => obsDSLP (k a)).
-  Proof. apply SPostArrObservation.obsDSLP_bind. Qed.
+  Proof. unfold obsDSLP. rewrite obsASP_bind. apply asp_to_dslp_bind. Qed.
+
+  Definition tripleASP {A} (m : stdivitree S A) kind pre post : Prop :=
+    SPostArrObservation.tripleASP (obsASP m) kind pre post.
+
+  Definition tripleASPspec {A} (m : stdivitree S A) kind pre post : Prop :=
+    SPostArrObservation.tripleASPspec (obsASP m) kind pre post.
+
+  Theorem tripleASPDefEq {A} (m : stdivitree S A) kind pre post :
+    tripleASP m kind pre post <-> tripleASPspec m kind pre post.
+  Proof. apply SPostArrObservation.tripleASPDefEq. Qed.
+
+  Definition tripleDSL {A} (m : stdivitree S A) kind pre post : Prop :=
+    SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
+
+  Definition tripleDSLspec {A} (m : stdivitree S A) kind pre post : Prop :=
+    SPostArrObservation.tripleDSLspec (obsDSLP m) kind pre post.
+
+  Theorem tripleDSLDefEq {A} (m : stdivitree S A) kind pre post :
+    tripleDSL m kind pre post <-> tripleDSLspec m kind pre post.
+  Proof. apply SPostArrObservation.tripleDSLDefEq. Qed.
 
 End Obs.
 
@@ -83,7 +123,8 @@ End Obs.
 (** [progA_stdivitree] ([put 42; get; put s]) converges to [(tt, 42)] from
     every initial state, so its outcome relation is a constant function. *)
 Lemma progA_itree_outcomes : forall s r,
-  StDivITree.outcomes nat progA_stdivitree s r <-> r = Some (tt, 42).
+  eutt eq (unOptionT (runStateT progA_stdivitree s)) (Ret r) <->
+  r = Some (tt, 42).
 Proof.
   intros s r.
   assert (Hrun : eutt eq (unOptionT (runStateT progA_stdivitree s))
@@ -91,7 +132,7 @@ Proof.
   { unfold progA_stdivitree. cbn.
     repeat (setoid_rewrite bind_ret_l; cbn).
     reflexivity. }
-  unfold StDivITree.outcomes. rewrite Hrun.
+  rewrite Hrun.
   split.
   - intro H. apply eutt_inv_Ret in H. congruence.
   - intro H. rewrite H. reflexivity.
@@ -99,10 +140,10 @@ Qed.
 
 (** Under (incorrectness-style): the unique outcome is reachable. *)
 Example progA_itree_under :
-  tripleASP (stdivitreeKernel nat) progA_stdivitree Under
+  tripleASP nat progA_stdivitree Under
     (fun _ => True) (fun r => r = Some (tt, 42)).
 Proof.
-  intros r Hr. exists 0. split; [exact I |].
+  intros r Hr. apply getProgASP_obsASP. exists 0. split; [exact I |].
   apply (proj2 (progA_itree_outcomes 0 r)). exact Hr.
 Qed.
 
@@ -174,14 +215,14 @@ Definition overwrite : stdivitree nat unit :=
   bindP nat (getP nat) (fun s => putP nat 0).
 
 Lemma overwrite_outcomes : forall s r,
-  StDivITree.outcomes nat overwrite s r <-> r = Some (tt, 0).
+  eutt eq (unOptionT (runStateT overwrite s)) (Ret r) <-> r = Some (tt, 0).
 Proof.
   intros s r.
   assert (Hrun : eutt eq (unOptionT (runStateT overwrite s))
                      (Ret (Some (tt, 0)))).
   { unfold overwrite. cbn.
     setoid_rewrite bind_ret_l. cbn. reflexivity. }
-  unfold StDivITree.outcomes. rewrite Hrun.
+  rewrite Hrun.
   split.
   - intro H. apply eutt_inv_Ret in H. congruence.
   - intro H. rewrite H. reflexivity.
@@ -189,10 +230,10 @@ Qed.
 
 (** Angelic Under at [pre := {0}]: the overwrite outcome is reachable. *)
 Example overwrite_under :
-  tripleASP (stdivitreeKernel nat) overwrite Under
+  tripleASP nat overwrite Under
     (fun s => s = 0) (fun r => r = Some (tt, 0)).
 Proof.
-  intros r Hr. exists 0. split; [reflexivity |].
+  intros r Hr. apply getProgASP_obsASP. exists 0. split; [reflexivity |].
   apply (proj2 (overwrite_outcomes 0 r)). exact Hr.
 Qed.
 
@@ -201,10 +242,11 @@ Qed.
     post lies OUTSIDE it — the opposite of the angelic Under triple
     above at the same precondition. *)
 Example overwrite_dslp_over :
-  tripleDSL (stdivitreeKernel nat) overwrite Over
+  tripleDSL nat overwrite Over
     (fun s => s = 0) (fun r => r <> Some (tt, 0)).
 Proof.
   intros r Hall Hr. subst r.
+  rewrite getProgDSLP_obsDSLP in Hall.
   assert (H10 : 1 = 0)
     by exact (Hall 1 (proj2 (overwrite_outcomes 1 (Some (tt, 0)))
                             (eq_refl _))).
@@ -223,11 +265,6 @@ Example obsASP_bind_compute :
 Proof.
   rewrite obsASP_bind, runASP_bind.
   exists 0, (Some (tt, 0)). split; [reflexivity | split].
-  - apply (proj2 (ASP_rel_obsASP (stdivitreeKernel nat) (retP nat tt)
-                     (tt, 0) (Some (tt, 0)))).
-    apply (proj2 (kern_ret (stdivitreeKernel nat) tt 0 (Some (tt, 0)))).
-    reflexivity.
-  - rewrite (ASP_rel_obsASP (stdivitreeKernel nat) (putP nat 42) (tt, 0)
-                (Some (tt, 42))).
-    unfold stdivitreeKernel, StDivITree.outcomes. cbn [kern]. reflexivity.
+  - rewrite obsASP_ret, ASP_rel_ret. reflexivity.
+  - unfold obsASP. rewrite ASP_rel_relASP. reflexivity.
 Qed.

@@ -47,7 +47,7 @@ Taxonomy/
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
                          StDivNonDet_SPSt, DivNonDet_SPPure,
                          RdDivNonDet_RdSPPure
-                         SPostArrObservation         -- shared ASP/DSLP outcome adapter
+                         SPostArrObservation         -- shared SP judgments
                          StDivITree_SPostArr, StExcNonDet_SPostArr,
                          StDivNonDet_SPostArr, StDivExcNonDet_SPostArr
       (root)             Taxonomy_StDivExcNonDet_StExc,
@@ -437,25 +437,27 @@ thing whenever `R⁻¹(a)` is inhabited. See §3 for the carrier-level reason.
 The four `EffectObservations/SP/*_SPostArr.v` files observe computations into
 the property-only stacks from `Arrows/SPostArr.v`. `Arrows/SPostArrMonad.v`
 supplies named `Monad_Arrow` dictionaries for `ASPostArr S` and `DSLPostArr S`;
-their laws follow from `MonadLawsE_Arrow`. Effects are stacked as arrows before fixing
-the input to `unit`; `runASP` and `runDSLP` then expose the familiar shape
+their laws follow from `MonadLawsE_Arrow`. Effects are stacked as arrows before
+fixing the input to `unit`; `runASP` and `runDSLP` expose the familiar shape
 `(S -> Prop) -> option (A * S) -> Prop`.
 
-Each computation module supplies one `outcomes` relation with `outcomes_ret`
-and `outcomes_bind`. The shared `SPostArrObservation.v` adapter packages those
-equations in `OutcomeKernel` and defines both readings:
+Each effect file defines `obsASP` directly from the computation's representation.
+For example, the single-option nondeterministic observations use:
 
-```text
-runASP  (obsASP  K m) pre r  <->  exists s, pre s /\ kern K m s r
-runDSLP (obsDSLP K m) pre r  <->  forall s, kern K m s r -> pre s
+```coq
+relASP (fun us r => unOptionT (runStateT m (snd us)) r)
 ```
 
 `obsDSLP` is `asp_to_dslp` applied to `obsASP`. The conversion preserves the
 recovered relation and the monad operations, so the DSLP return/bind proofs
-reuse the ASP proofs. Both observations preserve the exact arrow-derived
-return and bind. `tripleASP` and `tripleDSL` provide the `Over`/`Under`
-judgments, and their `*DefEq` theorems relate these to comparisons against the
-raw `pp2_over`/`pp2_under` transformers.
+reuse the ASP proofs. Each file proves its ASP return/bind laws using the
+generic arrow normalization and local lemmas about the raw computation.
+Both observations preserve the exact arrow-derived return and bind.
+
+`SPostArrObservation.v` supplies `tripleASP` and `tripleDSL` over an observed
+specification. Each effect file specializes those judgments to programs via
+its `obsASP`/`obsDSLP`. The `*DefEq` theorems relate the `Over`/`Under`
+judgments to comparisons against the raw `pp2_over`/`pp2_under` transformers.
 
 | Observation file | Source | Relation observed at `r : option (A * S)` | Meaning of `r = None` |
 |---|---|---|---|
@@ -840,8 +842,15 @@ The files listed in `_CoqProject` build **clean from scratch**, with **no
 `Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
 classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /
-`FunctionalExtensionality`. Run `Print Assumptions` on a specific result if you
-need its exact footprint.
+`FunctionalExtensionality`.
+
+Run `make check` from `Code/` for assumption reports. The separate
+`Code/Checks/Assumptions.v` file audits the arrow-derived observations,
+representative examples, and the ordered-bind counterexamples.
+`Code/Makefile.local` adds this opt-in target to the generated makefile;
+the audit file is outside `_CoqProject`, so ordinary `make` does not run it.
+Each explicit `make check` reruns the reports and returns an error if the
+audit file fails to compile. `make clean` also removes its generated outputs.
 
 Not in the build, deliberately:
 

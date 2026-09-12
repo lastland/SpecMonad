@@ -234,38 +234,3 @@ Section StDivNonDet.
   Qed.
 
 End StDivNonDet.
-
-(* ================================================================= *)
-(** ** Outcome kernel for arrow-derived SP observations              *)
-(* ================================================================= *)
-
-Section OutcomeKernel.
-
-  Variable S : Type.
-
-  Definition outcomes {A} (m : stdivnd S A) (s : S) (r : option (A * S)) : Prop :=
-    unOptionT (runStateT m s) r.
-
-  Lemma outcomes_ret {A} (a : A) (s : S) (r : option (A * S)) :
-    outcomes (retD S a) s r <-> r = Some (a, s).
-  Proof.
-    split; intro H; exact H.
-  Qed.
-
-  Lemma outcomes_bind {A B} (m : stdivnd S A) (k : A -> stdivnd S B)
-    (s : S) (r : option (B * S)) :
-    outcomes (bindD S m k) s r <->
-    exists oa, outcomes m s oa /\
-      match oa with
-      | Some (a, s') => outcomes (k a) s' r
-      | None => r = None
-      end.
-  Proof.
-    unfold outcomes, bindD. cbn. split.
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-  Qed.
-
-End OutcomeKernel.
