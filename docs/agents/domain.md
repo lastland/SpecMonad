@@ -25,3 +25,5 @@ Update affected contexts and the global map when directory roles, terminology,
 or architectural relationships change. Coverage follows `Code/_CoqProject`,
 including parent directories. Link to detailed documentation rather than
 duplicating it, and describe the current checkout rather than another branch.
+
+Use “well-formed” and “well-formedness” for SP transformer constraints.

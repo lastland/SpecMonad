@@ -53,6 +53,8 @@ See [docs/agents/domain.md](docs/agents/domain.md).
 
 `ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Classes/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
 
+All generic arrow-transformer law proofs are purely algebraic: they derive
+from base arrow laws without inspecting the concrete arrow type.
 
 ## CI
 

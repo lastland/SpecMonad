@@ -1,51 +1,22 @@
-# OptionArrowT
+# OptionArrowT context
 
-Parent: [Classes context](../CONTEXT.md). Shared proof conventions:
-[root CLAUDE.md](../../../CLAUDE.md).
-
-## Purpose and carrier
+Parent: [Classes](../CONTEXT.md). Public re-export: [OptionArrowT.v](../OptionArrowT.v).
 
 [Core.v](Core.v) defines `optionArrT arr A B := arr A (option B)`.
-The transformer adds failure-propagating composition using base `ArrowChoice`.
-[OptionArrowT.v](../OptionArrowT.v) is the public re-export of all four modules.
+Pure injects `Some`; composition uses `to_sum`, base left, and `collapse`:
+`Some b` continues and `None` propagates. First uses `sequence_option`;
+left uses `opt_rearrange`, leaving an untouched right branch successful.
+Equality is base equality at output `option B`. Lift postcomposes a base
+arrow with `Some`. Application uses base application at result `option B`.
 
-## Established vocabulary and operations
+The Arrow/choice operations require base choice; application also requires
+base application. [ArrowLaws.v](ArrowLaws.v) and
+[ArrowChoiceLaws.v](ArrowChoiceLaws.v) use base arrow/choice laws.
+[ArrowApplyLaws.v](ArrowApplyLaws.v) proves the complete five-field contract,
+including dynamic precomposition, from base arrow/choice/application laws.
+These proofs inspect no concrete carrier; use explicit base dictionaries.
+There is no generic loop lift. `None`'s exception/divergence interpretation
+belongs to a computation or observation, not this transformer.
 
-- `Arrow_optionArrT` lifts pure results through `Some`. Composition routes
-  the first result through `to_sum`, base `arr_left`, and `collapse`:
-  `Some b` reaches the next arrow; `None` bypasses it and remains `None`.
-- `sequence_option` implements the result rearrangement for `arr_first`.
-  A failed result discards the companion value rather than returning a pair.
-- `ArrowChoice_optionArrT` uses `opt_rearrange`; an untouched right branch
-  becomes `Some (inr c)`, while a failed left branch remains `None`.
-- `ArrowEq_optionArrT` reuses base `arrow_eq` at output type `option B`.
-- `ArrowT_optionArrT` lifts a base arrow by postcomposing with `Some`.
-  This lift needs only `Arrow`; transformed composition needs `ArrowChoice`.
-- `ArrowApply_optionArrT` uses base `arr_app` with result type `option B`.
-  It requires base application as well as the choice needed for the
-  transformed arrow instance.
-
-## Law contracts and dependencies
-
-- [ArrowLaws.v](ArrowLaws.v) proves `ArrowLaws_optionArrT` from base
-  `ArrowLaws` and `ArrowChoiceLaws`, with their operations and equality.
-- [ArrowChoiceLaws.v](ArrowChoiceLaws.v) proves `ArrowChoiceLaws_optionArrT`
-  under the same base contracts; it requires no application instance.
-- [ArrowApplyLaws.v](ArrowApplyLaws.v) additionally requires base
-  `ArrowApply` and `ArrowApplyLaws`. It proves `ArrowApplyLaws_optionArrT`
-  for main's single application law, `app_law`.
-
-These modules import [Arrow.v](../Arrow.v), Coq libraries, and, in Core and
-ArrowLaws, CoqHammer. Follow the explicit `@` base-instance applications in
-the proofs rather than asking typeclass search to rediscover the base laws.
-
-## Reading and boundaries
-
-Read Core before the law files. Concrete `optionPred` and its base relation
-belong to [PredArr.v](../../Taxonomy/Arrows/PredArr.v), not this directory.
-`None` denotes failure structurally; its exception or divergence interpretation
-belongs to the concrete model. No generic loop instance is defined here.
-
+Read Core → relevant law module → [concrete tests](../../Taxonomy/Arrows/Tests/CONTEXT.md).
 For state over option, continue to [StateArrowT](../StateArrowT/CONTEXT.md).
-All four modules and the public re-export appear in
-[_CoqProject](../../_CoqProject).
