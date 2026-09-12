@@ -20,7 +20,7 @@ Local Obligation Tactic := idtac.
 (** ** Transformer-preserving conversions *)
 
 #[program] Definition asp_to_coupled {A B}
-  (f : PropertySP.PureASPostArr A B) : CoupledSP.PureASPostArr A B :=
+  (f : PropertySP.PureASPostArr A B) : CoupledSP.PureRelASPPairArr A B :=
   CoupledSP.mkRelSPPair (PropertySP.getASP f)
     (CoupledSP.asp_inv (PropertySP.getASP f)).
 Next Obligation.
@@ -28,7 +28,7 @@ Next Obligation.
 Qed.
 
 #[program] Definition dslp_to_coupled {A B}
-  (f : PropertySP.PureDSLPostArr A B) : CoupledSP.PureDSLPostArr A B :=
+  (f : PropertySP.PureDSLPostArr A B) : CoupledSP.PureRelDSLPPairArr A B :=
   CoupledSP.mkRelSPPair (PropertySP.getDSLP f)
     (CoupledSP.dslp_inv (PropertySP.getDSLP f)).
 Next Obligation.
@@ -36,7 +36,7 @@ Next Obligation.
 Qed.
 
 #[program] Definition asp_from_coupled {A B}
-  (f : CoupledSP.PureASPostArr A B) : PropertySP.PureASPostArr A B :=
+  (f : CoupledSP.PureRelASPPairArr A B) : PropertySP.PureASPostArr A B :=
   CoupledSP.spost f.
 Next Obligation.
   intros A B f. split.
@@ -49,7 +49,7 @@ Next Obligation.
 Qed.
 
 #[program] Definition dslp_from_coupled {A B}
-  (f : CoupledSP.PureDSLPostArr A B) : PropertySP.PureDSLPostArr A B :=
+  (f : CoupledSP.PureRelDSLPPairArr A B) : PropertySP.PureDSLPostArr A B :=
   CoupledSP.spost f.
 Next Obligation.
   intros A B f. split.
@@ -65,7 +65,7 @@ Lemma asp_to_coupled_semantics {A B} (f : PropertySP.PureASPostArr A B) :
   CoupledSP.spost (proj1_sig (asp_to_coupled f)) = PropertySP.getASP f.
 Proof. reflexivity. Qed.
 
-Lemma asp_from_coupled_semantics {A B} (f : CoupledSP.PureASPostArr A B) :
+Lemma asp_from_coupled_semantics {A B} (f : CoupledSP.PureRelASPPairArr A B) :
   PropertySP.getASP (asp_from_coupled f) = CoupledSP.spost (proj1_sig f).
 Proof. reflexivity. Qed.
 
@@ -73,7 +73,7 @@ Lemma dslp_to_coupled_semantics {A B} (f : PropertySP.PureDSLPostArr A B) :
   CoupledSP.spost (proj1_sig (dslp_to_coupled f)) = PropertySP.getDSLP f.
 Proof. reflexivity. Qed.
 
-Lemma dslp_from_coupled_semantics {A B} (f : CoupledSP.PureDSLPostArr A B) :
+Lemma dslp_from_coupled_semantics {A B} (f : CoupledSP.PureRelDSLPPairArr A B) :
   PropertySP.getDSLP (dslp_from_coupled f) = CoupledSP.spost (proj1_sig f).
 Proof. reflexivity. Qed.
 
@@ -81,46 +81,46 @@ Theorem asp_from_to {A B} (f : PropertySP.PureASPostArr A B) :
   asp_from_coupled (asp_to_coupled f) = f.
 Proof. apply PropertySP.PureASPostArr_eq. intros P b. reflexivity. Qed.
 
-Theorem asp_to_from {A B} (f : CoupledSP.PureASPostArr A B) :
+Theorem asp_to_from {A B} (f : CoupledSP.PureRelASPPairArr A B) :
   asp_to_coupled (asp_from_coupled f) = f.
-Proof. apply CoupledSP.PureASPostArr_eq. intros P b. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P b. reflexivity. Qed.
 
 Theorem dslp_from_to {A B} (f : PropertySP.PureDSLPostArr A B) :
   dslp_from_coupled (dslp_to_coupled f) = f.
 Proof. apply PropertySP.PureDSLPostArr_eq. intros P b. reflexivity. Qed.
 
-Theorem dslp_to_from {A B} (f : CoupledSP.PureDSLPostArr A B) :
+Theorem dslp_to_from {A B} (f : CoupledSP.PureRelDSLPPairArr A B) :
   dslp_to_coupled (dslp_from_coupled f) = f.
-Proof. apply CoupledSP.PureDSLPostArr_eq. intros P b. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. reflexivity. Qed.
 
 (** ** Base operation preservation *)
 
-Local Notation CA := CoupledSP.Arrow_PureASPostArr.
-Local Notation CD := CoupledSP.Arrow_PureDSLPostArr.
-Local Notation CAC := CoupledSP.ArrowChoice_PureASPostArr.
-Local Notation CDC := CoupledSP.ArrowChoice_PureDSLPostArr.
-Local Notation CAA := CoupledSP.ArrowApply_PureASPostArr.
-Local Notation CDA := CoupledSP.ArrowApply_PureDSLPostArr.
+Local Notation CA := CoupledSP.Arrow_PureRelASPPairArr.
+Local Notation CD := CoupledSP.Arrow_PureRelDSLPPairArr.
+Local Notation CAC := CoupledSP.ArrowChoice_PureRelASPPairArr.
+Local Notation CDC := CoupledSP.ArrowChoice_PureRelDSLPPairArr.
+Local Notation CAA := CoupledSP.ArrowApply_PureRelASPPairArr.
+Local Notation CDA := CoupledSP.ArrowApply_PureRelDSLPPairArr.
 
 Theorem asp_to_coupled_pure {A B} (h : A -> B) :
   asp_to_coupled (PropertySP.pureASP h) = @arr_pure _ CA A B h.
-Proof. apply CoupledSP.PureASPostArr_eq. intros P b. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P b. reflexivity. Qed.
 
 Theorem asp_to_coupled_comp {A B C}
   (f : PropertySP.PureASPostArr A B) (g : PropertySP.PureASPostArr B C) :
   asp_to_coupled (PropertySP.compASP f g) =
   @arr_comp _ CA A B C (asp_to_coupled f) (asp_to_coupled g).
-Proof. apply CoupledSP.PureASPostArr_eq. intros P c. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P c. reflexivity. Qed.
 
 Theorem asp_to_coupled_first {A B C} (f : PropertySP.PureASPostArr A B) :
   asp_to_coupled (@PropertySP.firstASP A B C f) =
   @arr_first _ CA A B C (asp_to_coupled f).
-Proof. apply CoupledSP.PureASPostArr_eq. intros P [b c]. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P [b c]. reflexivity. Qed.
 
 Theorem asp_to_coupled_left {A B C} (f : PropertySP.PureASPostArr A B) :
   asp_to_coupled (@PropertySP.leftASP A B C f) =
   @arr_left _ CA CAC A B C (asp_to_coupled f).
-Proof. apply CoupledSP.PureASPostArr_eq. intros P [b|c]; reflexivity. Qed.
+Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P [b|c]; reflexivity. Qed.
 
 Theorem asp_to_coupled_app {A B} :
   asp_to_coupled (@PropertySP.appASP A B) =
@@ -128,7 +128,7 @@ Theorem asp_to_coupled_app {A B} :
     (@arr_pure _ CA _ _ (fun '(f, a) => (asp_to_coupled f, a)))
     (@arr_app _ CA CAA A B).
 Proof.
-  apply CoupledSP.PureASPostArr_eq. intros P b. cbn. split.
+  apply CoupledSP.PureRelASPPairArr_eq. intros P b. cbn. split.
   - intros [f H]. apply PropertySP.ASP_normal_form in H.
     destruct H as [a [HP HR]]. exists (asp_to_coupled f), a.
     split; [exists (f, a); auto | exact HR].
@@ -139,23 +139,23 @@ Qed.
 
 Theorem dslp_to_coupled_pure {A B} (h : A -> B) :
   dslp_to_coupled (PropertySP.pureDSLP h) = @arr_pure _ CD A B h.
-Proof. apply CoupledSP.PureDSLPostArr_eq. intros P b. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. reflexivity. Qed.
 
 Theorem dslp_to_coupled_comp {A B C}
   (f : PropertySP.PureDSLPostArr A B) (g : PropertySP.PureDSLPostArr B C) :
   dslp_to_coupled (PropertySP.compDSLP f g) =
   @arr_comp _ CD A B C (dslp_to_coupled f) (dslp_to_coupled g).
-Proof. apply CoupledSP.PureDSLPostArr_eq. intros P c. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P c. reflexivity. Qed.
 
 Theorem dslp_to_coupled_first {A B C} (f : PropertySP.PureDSLPostArr A B) :
   dslp_to_coupled (@PropertySP.firstDSLP A B C f) =
   @arr_first _ CD A B C (dslp_to_coupled f).
-Proof. apply CoupledSP.PureDSLPostArr_eq. intros P [b c]. reflexivity. Qed.
+Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P [b c]. reflexivity. Qed.
 
 Theorem dslp_to_coupled_left {A B C} (f : PropertySP.PureDSLPostArr A B) :
   dslp_to_coupled (@PropertySP.leftDSLP A B C f) =
   @arr_left _ CD CDC A B C (dslp_to_coupled f).
-Proof. apply CoupledSP.PureDSLPostArr_eq. intros P [b|c]; reflexivity. Qed.
+Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P [b|c]; reflexivity. Qed.
 
 Theorem dslp_to_coupled_app {A B} :
   dslp_to_coupled (@PropertySP.appDSLP A B) =
@@ -163,7 +163,7 @@ Theorem dslp_to_coupled_app {A B} :
     (@arr_pure _ CD _ _ (fun '(f, a) => (dslp_to_coupled f, a)))
     (@arr_app _ CD CDA A B).
 Proof.
-  apply CoupledSP.PureDSLPostArr_eq. intros P b. cbn. split.
+  apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. cbn. split.
   - intros H g a HR [f a0] Heq. injection Heq as Hg Ha. subst g a0.
     apply (proj1 (PropertySP.DSLP_normal_form f _ b) (H f) a HR).
   - intros H f. apply PropertySP.DSLP_normal_form. intros a HR.
@@ -203,7 +203,7 @@ Theorem asp_from_coupled_morphism :
 Proof.
   exact (inverse_morphism (@asp_to_coupled) (@asp_from_coupled)
     (@asp_from_to) (@asp_to_from) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureASPostArr).
+    CoupledSP.ArrowLaws_PureRelASPPairArr).
 Qed.
 
 Theorem dslp_from_coupled_morphism :
@@ -213,7 +213,7 @@ Theorem dslp_from_coupled_morphism :
 Proof.
   exact (inverse_morphism (@dslp_to_coupled) (@dslp_from_coupled)
     (@dslp_from_to) (@dslp_to_from) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureDSLPostArr).
+    CoupledSP.ArrowLaws_PureRelDSLPPairArr).
 Qed.
 
 (** ** Public option, state, and state-over-option equivalences
@@ -233,15 +233,15 @@ Definition option_dslp_from_coupled {A B} (f : CoupledSP.optionDSLPArr A B) :
 
 Definition state_asp_to_coupled {S A B}
   (f : stateArrT S PropertySP.PureASPostArr A B) :
-  stateArrT S CoupledSP.PureASPostArr A B := state_arrow_map S (@asp_to_coupled) A B f.
+  stateArrT S CoupledSP.PureRelASPPairArr A B := state_arrow_map S (@asp_to_coupled) A B f.
 Definition state_asp_from_coupled {S A B}
-  (f : stateArrT S CoupledSP.PureASPostArr A B) :
+  (f : stateArrT S CoupledSP.PureRelASPPairArr A B) :
   stateArrT S PropertySP.PureASPostArr A B := state_arrow_map S (@asp_from_coupled) A B f.
 Definition state_dslp_to_coupled {S A B}
   (f : stateArrT S PropertySP.PureDSLPostArr A B) :
-  stateArrT S CoupledSP.PureDSLPostArr A B := state_arrow_map S (@dslp_to_coupled) A B f.
+  stateArrT S CoupledSP.PureRelDSLPPairArr A B := state_arrow_map S (@dslp_to_coupled) A B f.
 Definition state_dslp_from_coupled {S A B}
-  (f : stateArrT S CoupledSP.PureDSLPostArr A B) :
+  (f : stateArrT S CoupledSP.PureRelDSLPPairArr A B) :
   stateArrT S PropertySP.PureDSLPostArr A B := state_arrow_map S (@dslp_from_coupled) A B f.
 
 Definition state_option_asp_to_coupled {S A B}
@@ -296,7 +296,7 @@ Proof.
     (@asp_from_to) A B f).
 Qed.
 
-Theorem state_asp_to_from {S A B} (f : stateArrT S CoupledSP.PureASPostArr A B) :
+Theorem state_asp_to_from {S A B} (f : stateArrT S CoupledSP.PureRelASPPairArr A B) :
   state_asp_to_coupled (state_asp_from_coupled f) = f.
 Proof.
   exact (state_arrow_map_roundtrip S (@asp_from_coupled) (@asp_to_coupled)
@@ -310,7 +310,7 @@ Proof.
     (@dslp_from_to) A B f).
 Qed.
 
-Theorem state_dslp_to_from {S A B} (f : stateArrT S CoupledSP.PureDSLPostArr A B) :
+Theorem state_dslp_to_from {S A B} (f : stateArrT S CoupledSP.PureRelDSLPPairArr A B) :
   state_dslp_to_coupled (state_dslp_from_coupled f) = f.
 Proof.
   exact (state_arrow_map_roundtrip S (@dslp_from_coupled) (@dslp_to_coupled)
@@ -355,19 +355,19 @@ Local Notation PAA := PropertySP.ArrowApply_PureASPostArr.
 Local Notation PD := PropertySP.Arrow_PureDSLPostArr.
 Local Notation PDC := PropertySP.ArrowChoice_PureDSLPostArr.
 Local Notation PDA := PropertySP.ArrowApply_PureDSLPostArr.
-Local Notation COA := (@Arrow_optionArrT CoupledSP.PureASPostArr CA CAC).
-Local Notation COAC := (@ArrowChoice_optionArrT CoupledSP.PureASPostArr CA CAC).
-Local Notation COAA := (@ArrowApply_optionArrT CoupledSP.PureASPostArr CA CAC CAA).
-Local Notation COD := (@Arrow_optionArrT CoupledSP.PureDSLPostArr CD CDC).
-Local Notation CODC := (@ArrowChoice_optionArrT CoupledSP.PureDSLPostArr CD CDC).
-Local Notation CODA := (@ArrowApply_optionArrT CoupledSP.PureDSLPostArr CD CDC CDA).
+Local Notation COA := (@Arrow_optionArrT CoupledSP.PureRelASPPairArr CA CAC).
+Local Notation COAC := (@ArrowChoice_optionArrT CoupledSP.PureRelASPPairArr CA CAC).
+Local Notation COAA := (@ArrowApply_optionArrT CoupledSP.PureRelASPPairArr CA CAC CAA).
+Local Notation COD := (@Arrow_optionArrT CoupledSP.PureRelDSLPPairArr CD CDC).
+Local Notation CODC := (@ArrowChoice_optionArrT CoupledSP.PureRelDSLPPairArr CD CDC).
+Local Notation CODA := (@ArrowApply_optionArrT CoupledSP.PureRelDSLPPairArr CD CDC CDA).
 
 Theorem option_asp_to_coupled_morphism :
   ArrowMorphism PropertySP.Arrow_optionASPArr PropertySP.ArrowChoice_optionASPArr
     PropertySP.ArrowApply_optionASPArr COA COAC COAA (@option_asp_to_coupled).
 Proof.
   exact (option_arrow_morphism (@asp_to_coupled) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureASPostArr CoupledSP.ArrowChoiceLaws_PureASPostArr).
+    CoupledSP.ArrowLaws_PureRelASPPairArr CoupledSP.ArrowChoiceLaws_PureRelASPPairArr).
 Qed.
 
 Theorem option_asp_from_coupled_morphism :
@@ -384,7 +384,7 @@ Theorem option_dslp_to_coupled_morphism :
     PropertySP.ArrowApply_optionDSLPArr COD CODC CODA (@option_dslp_to_coupled).
 Proof.
   exact (option_arrow_morphism (@dslp_to_coupled) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureDSLPostArr CoupledSP.ArrowChoiceLaws_PureDSLPostArr).
+    CoupledSP.ArrowLaws_PureRelDSLPPairArr CoupledSP.ArrowChoiceLaws_PureRelDSLPPairArr).
 Qed.
 
 Theorem option_dslp_from_coupled_morphism :
@@ -400,19 +400,19 @@ Theorem state_asp_to_coupled_morphism (S : Type) :
   ArrowMorphism (@Arrow_stateArrT S PropertySP.PureASPostArr PA)
     (@ArrowChoice_stateArrT S PropertySP.PureASPostArr PA PAC)
     (@ArrowApply_stateArrT S PropertySP.PureASPostArr PA PAA)
-    (@Arrow_stateArrT S CoupledSP.PureASPostArr CA)
-    (@ArrowChoice_stateArrT S CoupledSP.PureASPostArr CA CAC)
-    (@ArrowApply_stateArrT S CoupledSP.PureASPostArr CA CAA)
+    (@Arrow_stateArrT S CoupledSP.PureRelASPPairArr CA)
+    (@ArrowChoice_stateArrT S CoupledSP.PureRelASPPairArr CA CAC)
+    (@ArrowApply_stateArrT S CoupledSP.PureRelASPPairArr CA CAA)
     (@state_asp_to_coupled S).
 Proof.
   exact (state_arrow_morphism (@asp_to_coupled) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureASPostArr S).
+    CoupledSP.ArrowLaws_PureRelASPPairArr S).
 Qed.
 
 Theorem state_asp_from_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S CoupledSP.PureASPostArr CA)
-    (@ArrowChoice_stateArrT S CoupledSP.PureASPostArr CA CAC)
-    (@ArrowApply_stateArrT S CoupledSP.PureASPostArr CA CAA)
+  ArrowMorphism (@Arrow_stateArrT S CoupledSP.PureRelASPPairArr CA)
+    (@ArrowChoice_stateArrT S CoupledSP.PureRelASPPairArr CA CAC)
+    (@ArrowApply_stateArrT S CoupledSP.PureRelASPPairArr CA CAA)
     (@Arrow_stateArrT S PropertySP.PureASPostArr PA)
     (@ArrowChoice_stateArrT S PropertySP.PureASPostArr PA PAC)
     (@ArrowApply_stateArrT S PropertySP.PureASPostArr PA PAA)
@@ -426,19 +426,19 @@ Theorem state_dslp_to_coupled_morphism (S : Type) :
   ArrowMorphism (@Arrow_stateArrT S PropertySP.PureDSLPostArr PD)
     (@ArrowChoice_stateArrT S PropertySP.PureDSLPostArr PD PDC)
     (@ArrowApply_stateArrT S PropertySP.PureDSLPostArr PD PDA)
-    (@Arrow_stateArrT S CoupledSP.PureDSLPostArr CD)
-    (@ArrowChoice_stateArrT S CoupledSP.PureDSLPostArr CD CDC)
-    (@ArrowApply_stateArrT S CoupledSP.PureDSLPostArr CD CDA)
+    (@Arrow_stateArrT S CoupledSP.PureRelDSLPPairArr CD)
+    (@ArrowChoice_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDC)
+    (@ArrowApply_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDA)
     (@state_dslp_to_coupled S).
 Proof.
   exact (state_arrow_morphism (@dslp_to_coupled) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureDSLPostArr S).
+    CoupledSP.ArrowLaws_PureRelDSLPPairArr S).
 Qed.
 
 Theorem state_dslp_from_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S CoupledSP.PureDSLPostArr CD)
-    (@ArrowChoice_stateArrT S CoupledSP.PureDSLPostArr CD CDC)
-    (@ArrowApply_stateArrT S CoupledSP.PureDSLPostArr CD CDA)
+  ArrowMorphism (@Arrow_stateArrT S CoupledSP.PureRelDSLPPairArr CD)
+    (@ArrowChoice_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDC)
+    (@ArrowApply_stateArrT S CoupledSP.PureRelDSLPPairArr CD CDA)
     (@Arrow_stateArrT S PropertySP.PureDSLPostArr PD)
     (@ArrowChoice_stateArrT S PropertySP.PureDSLPostArr PD PDC)
     (@ArrowApply_stateArrT S PropertySP.PureDSLPostArr PD PDA)
@@ -457,7 +457,7 @@ Theorem state_option_asp_to_coupled_morphism (S : Type) :
     (@state_option_asp_to_coupled S).
 Proof.
   exact (state_option_arrow_morphism (@asp_to_coupled) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureASPostArr S CoupledSP.ArrowChoiceLaws_PureASPostArr).
+    CoupledSP.ArrowLaws_PureRelASPPairArr S CoupledSP.ArrowChoiceLaws_PureRelASPPairArr).
 Qed.
 
 Theorem state_option_asp_from_coupled_morphism (S : Type) :
@@ -481,7 +481,7 @@ Theorem state_option_dslp_to_coupled_morphism (S : Type) :
     (@state_option_dslp_to_coupled S).
 Proof.
   exact (state_option_arrow_morphism (@dslp_to_coupled) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureDSLPostArr S CoupledSP.ArrowChoiceLaws_PureDSLPostArr).
+    CoupledSP.ArrowLaws_PureRelDSLPPairArr S CoupledSP.ArrowChoiceLaws_PureRelDSLPPairArr).
 Qed.
 
 Theorem state_option_dslp_from_coupled_morphism (S : Type) :

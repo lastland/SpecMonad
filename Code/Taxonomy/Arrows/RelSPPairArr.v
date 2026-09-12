@@ -5,13 +5,13 @@
     [asp R pre b = exists a, pre a /\ R a b]   (angelic / existential)
     [dslp R pre b = forall a, R a b -> pre a]  (demonic / universal)
 
-    Both [PureASPostArr] and [PureDSLPostArr] are sigma types over
+    Both [PureRelASPPairArr] and [PureRelDSLPPairArr] are sigma types over
     [RelSPPair], a record that couples a strongest-postcondition
     transformer with its underlying relation arrow.  They differ only
     in the correctness condition:
 
-    [PureASPostArr A B] requires [spost d pre b <-> asp (rel d) pre b]
-    [PureDSLPostArr A B] requires [spost d pre b <-> dslp (rel d) pre b]
+    [PureRelASPPairArr A B] requires [spost d pre b <-> asp (rel d) pre b]
+    [PureRelDSLPPairArr A B] requires [spost d pre b <-> dslp (rel d) pre b]
 
     Both use the same relational composition, so both satisfy
     the arrow laws (proved in this file).  The property-only presentation
@@ -19,10 +19,10 @@
 
     Composed types for specifications:
 
-    [ASPostArr S A = stateArrT S (optionArrT PureASPostArr) unit A]
-    [DSLPostArr S A = stateArrT S (optionArrT PureDSLPostArr) unit A]
+    [ASPostArr S A = stateArrT S (optionArrT PureRelASPPairArr) unit A]
+    [DSLPostArr S A = stateArrT S (optionArrT PureRelDSLPPairArr) unit A]
 
-    Both unfold to [Pure(A/DSL)PostArr (unit * S) (option (A * S))]. *)
+    Both unfold to [PureRel(ASP/DSLP)PairArr (unit * S) (option (A * S))]. *)
 
 From Coq Require Import Classical_Prop.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT RelArrowCoherence.
@@ -165,37 +165,37 @@ Arguments spost {A B}.
 Arguments rel {A B}.
 
 (* ================================================================= *)
-(** ** Angelic: [PureASPostArr]                                       *)
+(** ** Angelic: [PureRelASPPairArr]                                       *)
 (* ================================================================= *)
 
-(** [PureASPostArr] does not strictly need [RelSPPair] — it could remain
+(** [PureRelASPPairArr] does not strictly need [RelSPPair] — it could remain
     as [{ f | IsASP f }] with a Prop-level existential (see
     [Taxonomy/deprecated/SPostArr.v]).  Using the shared record lets us
     reuse arrow operations, equality lemmas, and monad infrastructure
     between the angelic and demonic variants. *)
-Definition PureASPostArr (A B : Type) : Type :=
+Definition PureRelASPPairArr (A B : Type) : Type :=
   { d : RelSPPair A B |
     forall pre b, spost d pre b <-> asp (rel d) pre b }.
 
 (** Smart constructor: wrap a relation with [asp]. *)
-#[program] Definition mkASP {A B} (R : PredArr A B) : PureASPostArr A B :=
+#[program] Definition mkASP {A B} (R : PredArr A B) : PureRelASPPairArr A B :=
   mkRelSPPair (asp R) R.
 Next Obligation. reflexivity. Qed.
 
-Section PureASPostArr.
+Section PureRelASPPairArr.
 
   (* -------------------------------------------------------------- *)
-  (** *** Arrow instance for [PureASPostArr]                          *)
+  (** *** Arrow instance for [PureRelASPPairArr]                          *)
   (* -------------------------------------------------------------- *)
 
   #[local]
-  #[program] Definition arr_pure_ASP {A B} (f : A -> B) : PureASPostArr A B :=
+  #[program] Definition arr_pure_ASP {A B} (f : A -> B) : PureRelASPPairArr A B :=
     mkRelSPPair (fun pre b => exists a, pre a /\ f a = b) (fun a b => f a = b).
   Next Obligation. reflexivity. Qed.
 
   #[local]
   #[program] Definition arr_comp_ASP {A B C}
-    (f : PureASPostArr A B) (g : PureASPostArr B C) : PureASPostArr A C :=
+    (f : PureRelASPPairArr A B) (g : PureRelASPPairArr B C) : PureRelASPPairArr A C :=
     mkRelSPPair (fun pre c => spost g (spost f pre) c)
                (fun a c => exists b, rel f a b /\ rel g b c).
   Next Obligation.
@@ -214,7 +214,7 @@ Section PureASPostArr.
 
   #[local]
   #[program] Definition arr_first_ASP {A B C}
-    (f : PureASPostArr A B) : PureASPostArr (A * C)%type (B * C)%type :=
+    (f : PureRelASPPairArr A B) : PureRelASPPairArr (A * C)%type (B * C)%type :=
     mkRelSPPair
       (fun pre '(b, d) => spost f (fun a => pre (a, d)) b)
       (fun '(a, d) '(b, d') => rel f a b /\ d = d').
@@ -228,7 +228,7 @@ Section PureASPostArr.
   Qed.
 
   #[global]
-  Instance Arrow_PureASPostArr : Arrow PureASPostArr := {
+  Instance Arrow_PureRelASPPairArr : Arrow PureRelASPPairArr := {
     arr_pure := @arr_pure_ASP ;
     arr_comp := @arr_comp_ASP ;
     arr_first := @arr_first_ASP
@@ -236,7 +236,7 @@ Section PureASPostArr.
 
   #[local]
   #[program] Definition arr_app_ASP {A B}
-    : PureASPostArr (PureASPostArr A B * A)%type B :=
+    : PureRelASPPairArr (PureRelASPPairArr A B * A)%type B :=
     mkRelSPPair
       (fun pre b => exists f a, pre (f, a) /\ rel (proj1_sig f) a b)
       (fun fa b => rel (proj1_sig (fst fa)) (snd fa) b).
@@ -249,12 +249,12 @@ Section PureASPostArr.
   Qed.
 
   #[global]
-  Instance ArrowApply_PureASPostArr : ArrowApply PureASPostArr := {
+  Instance ArrowApply_PureRelASPPairArr : ArrowApply PureRelASPPairArr := {
     arr_app := @arr_app_ASP
   }.
 
   (* -------------------------------------------------------------- *)
-  (** *** ArrowChoice instance for [PureASPostArr]                    *)
+  (** *** ArrowChoice instance for [PureRelASPPairArr]                    *)
   (* -------------------------------------------------------------- *)
 
   Definition left_rel {A B C} (R : PredArr A B) : PredArr (A + C) (B + C) :=
@@ -266,7 +266,7 @@ Section PureASPostArr.
 
   #[local]
   #[program] Definition arr_left_ASP {A B C}
-    (f : PureASPostArr A B) : PureASPostArr (A + C)%type (B + C)%type :=
+    (f : PureRelASPPairArr A B) : PureRelASPPairArr (A + C)%type (B + C)%type :=
     mkRelSPPair
       (fun pre y => match y with
         | inl b => spost f (fun a => pre (inl a)) b
@@ -287,39 +287,39 @@ Section PureASPostArr.
   Qed.
 
   #[global]
-  Instance ArrowChoice_PureASPostArr : ArrowChoice PureASPostArr := {
+  Instance ArrowChoice_PureRelASPPairArr : ArrowChoice PureRelASPPairArr := {
     arr_left := @arr_left_ASP
   }.
 
-End PureASPostArr.
+End PureRelASPPairArr.
 
 (* ================================================================= *)
-(** ** Demonic: [PureDSLPostArr]                                       *)
+(** ** Demonic: [PureRelDSLPPairArr]                                       *)
 (* ================================================================= *)
 
-Definition PureDSLPostArr (A B : Type) : Type :=
+Definition PureRelDSLPPairArr (A B : Type) : Type :=
   { d : RelSPPair A B |
     forall pre b, spost d pre b <-> dslp (rel d) pre b }.
 
 (** Smart constructor: wrap a relation with [dslp]. *)
-#[program] Definition mkDSLP {A B} (R : PredArr A B) : PureDSLPostArr A B :=
+#[program] Definition mkDSLP {A B} (R : PredArr A B) : PureRelDSLPPairArr A B :=
   mkRelSPPair (dslp R) R.
 Next Obligation. reflexivity. Qed.
 
-Section PureDSLPostArr.
+Section PureRelDSLPPairArr.
 
   (* -------------------------------------------------------------- *)
-  (** *** Arrow instance for [PureDSLPostArr]                          *)
+  (** *** Arrow instance for [PureRelDSLPPairArr]                          *)
   (* -------------------------------------------------------------- *)
 
   #[local]
-  #[program] Definition arr_pure_DSLP {A B} (f : A -> B) : PureDSLPostArr A B :=
+  #[program] Definition arr_pure_DSLP {A B} (f : A -> B) : PureRelDSLPPairArr A B :=
     mkRelSPPair (fun pre b => forall a, f a = b -> pre a) (fun a b => f a = b).
   Next Obligation. reflexivity. Qed.
 
   #[local]
   #[program] Definition arr_comp_DSLP {A B C}
-    (f : PureDSLPostArr A B) (g : PureDSLPostArr B C) : PureDSLPostArr A C :=
+    (f : PureRelDSLPPairArr A B) (g : PureRelDSLPPairArr B C) : PureRelDSLPPairArr A C :=
     mkRelSPPair (fun pre c => spost g (spost f pre) c)
                (fun a c => exists b, rel f a b /\ rel g b c).
   Next Obligation.
@@ -335,7 +335,7 @@ Section PureDSLPostArr.
 
   #[local]
   #[program] Definition arr_first_DSLP {A B C}
-    (f : PureDSLPostArr A B) : PureDSLPostArr (A * C)%type (B * C)%type :=
+    (f : PureRelDSLPPairArr A B) : PureRelDSLPPairArr (A * C)%type (B * C)%type :=
     mkRelSPPair
       (fun pre '(b, d) => spost f (fun a => pre (a, d)) b)
       (fun '(a, d) '(b, d') => rel f a b /\ d = d').
@@ -349,7 +349,7 @@ Section PureDSLPostArr.
   Qed.
 
   #[global]
-  Instance Arrow_PureDSLPostArr : Arrow PureDSLPostArr := {
+  Instance Arrow_PureRelDSLPPairArr : Arrow PureRelDSLPPairArr := {
     arr_pure := @arr_pure_DSLP ;
     arr_comp := @arr_comp_DSLP ;
     arr_first := @arr_first_DSLP
@@ -357,7 +357,7 @@ Section PureDSLPostArr.
 
   #[local]
   #[program] Definition arr_app_DSLP {A B}
-    : PureDSLPostArr (PureDSLPostArr A B * A)%type B :=
+    : PureRelDSLPPairArr (PureRelDSLPPairArr A B * A)%type B :=
     mkRelSPPair
       (fun pre b => forall f a, rel (proj1_sig f) a b -> pre (f, a))
       (fun '(f, a) b => rel f a b).
@@ -368,17 +368,17 @@ Section PureDSLPostArr.
   Qed.
 
   #[global]
-  Instance ArrowApply_PureDSLPostArr : ArrowApply PureDSLPostArr := {
+  Instance ArrowApply_PureRelDSLPPairArr : ArrowApply PureRelDSLPPairArr := {
     arr_app := @arr_app_DSLP
   }.
 
   (* -------------------------------------------------------------- *)
-  (** *** ArrowChoice instance for [PureDSLPostArr]                   *)
+  (** *** ArrowChoice instance for [PureRelDSLPPairArr]                   *)
   (* -------------------------------------------------------------- *)
 
   #[local]
   #[program] Definition arr_left_DSLP {A B C}
-    (f : PureDSLPostArr A B) : PureDSLPostArr (A + C)%type (B + C)%type :=
+    (f : PureRelDSLPPairArr A B) : PureRelDSLPPairArr (A + C)%type (B + C)%type :=
     mkRelSPPair
       (fun pre y => match y with
         | inl b => spost f (fun a => pre (inl a)) b
@@ -399,11 +399,11 @@ Section PureDSLPostArr.
   Qed.
 
   #[global]
-  Instance ArrowChoice_PureDSLPostArr : ArrowChoice PureDSLPostArr := {
+  Instance ArrowChoice_PureRelDSLPPairArr : ArrowChoice PureRelDSLPPairArr := {
     arr_left := @arr_left_DSLP
   }.
 
-End PureDSLPostArr.
+End PureRelDSLPPairArr.
 
 (* ================================================================= *)
 (** ** Angelic and demonic option transformers                        *)
@@ -411,11 +411,11 @@ End PureDSLPostArr.
 
 (** [optionASPArr] and [optionDSLPArr] get their [Arrow], [ArrowChoice],
     and [ArrowApply] instances from the generic transformers in
-    [OptionArrowT.v], via [ArrowChoice_PureASPostArr] and
-    [ArrowChoice_PureDSLPostArr]. *)
+    [OptionArrowT.v], via [ArrowChoice_PureRelASPPairArr] and
+    [ArrowChoice_PureRelDSLPPairArr]. *)
 
-Definition optionASPArr := optionArrT PureASPostArr.
-Definition optionDSLPArr := optionArrT PureDSLPostArr.
+Definition optionASPArr := optionArrT PureRelASPPairArr.
+Definition optionDSLPArr := optionArrT PureRelDSLPPairArr.
 
 (* ================================================================= *)
 (** ** Composed types for specifications                              *)
@@ -426,12 +426,12 @@ Section ComposedTypes.
   Variable S : Type.
 
   (** [ASPostArr S A] is the angelic strongest postcondition arrow.
-      [ASPostArr S A = PureASPostArr (unit * S) (option (A * S))] *)
+      [ASPostArr S A = PureRelASPPairArr (unit * S) (option (A * S))] *)
   Definition ASPostArr (A : Type) : Type :=
     stateArrT S optionASPArr unit A.
 
   (** [DSLPostArr S A] is the demonic strongest liberal postcondition arrow.
-      [DSLPostArr S A = PureDSLPostArr (unit * S) (option (A * S))] *)
+      [DSLPostArr S A = PureRelDSLPPairArr (unit * S) (option (A * S))] *)
   Definition DSLPostArr (A : Type) : Type :=
     stateArrT S optionDSLPArr unit A.
 
@@ -443,11 +443,11 @@ End ComposedTypes.
 
 (** * Arrow law proofs for angelic and demonic predicate transformer arrows.
 
-    Angelic laws ([PureASPostArr], [optionASPArr]) are proved by
-    [PureASPostArr_eq] and then transferring through [IsASP] to work
+    Angelic laws ([PureRelASPPairArr], [optionASPArr]) are proved by
+    [PureRelASPPairArr_eq] and then transferring through [IsASP] to work
     with raw existentials.
 
-    Demonic laws ([PureDSLPostArr], [optionDSLPArr]) follow the same
+    Demonic laws ([PureRelDSLPPairArr], [optionDSLPArr]) follow the same
     structure, using [IsDSLP] and raw universals. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms.
@@ -458,7 +458,7 @@ From Hammer Require Import Tactics.
 (** ** Utilities                                                       *)
 (* ================================================================= *)
 
-Lemma PureASPostArr_eq {A B} (f g : PureASPostArr A B) :
+Lemma PureRelASPPairArr_eq {A B} (f g : PureRelASPPairArr A B) :
   (forall pre b, spost (proj1_sig f) pre b <-> spost (proj1_sig g) pre b) -> f = g.
 Proof.
   intro Heq.
@@ -487,10 +487,10 @@ Qed.
 
 (** Faithfulness makes the generic relational application laws available
     here, before constructing the strengthened arrow law instances. *)
-Lemma ASP_rel_ext {A B} (f g : PureASPostArr A B) :
+Lemma ASP_rel_ext {A B} (f g : PureRelASPPairArr A B) :
   (forall a b, rel (proj1_sig f) a b <-> rel (proj1_sig g) a b) -> f = g.
 Proof.
-  intro Hrel. apply PureASPostArr_eq. intros pre b.
+  intro Hrel. apply PureRelASPPairArr_eq. intros pre b.
   split; intro H.
   - apply (proj2_sig f) in H. apply (proj2_sig g).
     destruct H as [a [Hpre Hr]]. exists a. split; [exact Hpre |].
@@ -501,8 +501,8 @@ Proof.
 Qed.
 
 Definition ASP_rel_presentation :
-  RelArrowPresentation PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr := {|
+  RelArrowPresentation PureRelASPPairArr Arrow_PureRelASPPairArr
+    ArrowChoice_PureRelASPPairArr ArrowApply_PureRelASPPairArr := {|
   present_rel := fun A B f => rel (proj1_sig f);
   present_ext := @ASP_rel_ext;
   present_pure := fun _ _ _ _ _ => iff_refl _;
@@ -512,7 +512,7 @@ Definition ASP_rel_presentation :
   present_app := fun _ _ _ _ _ => iff_refl _
 |}.
 
-Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
+Lemma IsASP_rewrite {A B} (f : PureRelASPPairArr A B) :
   exists R : PredArr A B,
     forall pre b, spost (proj1_sig f) pre b <-> exists a, pre a /\ R a b.
 Proof.
@@ -520,19 +520,19 @@ Proof.
   apply (proj2_sig f).
 Qed.
 
-(** [spost] of any PureASPostArr rewrites to existential form. *)
-Lemma ASP_asp {A B} (f : PureASPostArr A B) (R : PredArr A B)
+(** [spost] of any PureRelASPPairArr rewrites to existential form. *)
+Lemma ASP_asp {A B} (f : PureRelASPPairArr A B) (R : PredArr A B)
   (HR : forall pre b, spost (proj1_sig f) pre b <-> exists a, pre a /\ R a b) :
   forall P b, spost (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
 
 (* ================================================================= *)
-(** ** [ArrowLaws] for [PureASPostArr]                                 *)
+(** ** [ArrowLaws] for [PureRelASPPairArr]                                 *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowEq_PureASPostArr : ArrowEq PureASPostArr := {
-  arrow_eq := fun A B => @eq (PureASPostArr A B)
+Instance ArrowEq_PureRelASPPairArr : ArrowEq PureRelASPPairArr := {
+  arrow_eq := fun A B => @eq (PureRelASPPairArr A B)
 }.
 
 Lemma id_pred {A} (pre : A -> Prop) :
@@ -542,31 +542,31 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowLaws_PureASPostArr : ArrowLaws PureASPostArr.
+Instance ArrowLaws_PureRelASPPairArr : ArrowLaws PureRelASPPairArr.
 Proof.
   constructor; intros.
 
   - (* comp_id_l: arr_comp arr_id f = f *)
-    apply PureASPostArr_eq; intros pre b. cbn.
+    apply PureRelASPPairArr_eq; intros pre b. cbn.
     rewrite id_pred. reflexivity.
 
   - (* comp_id_r: arr_comp f arr_id = f *)
-    apply PureASPostArr_eq; intros pre b. cbn. sauto limit: 200.
+    apply PureRelASPPairArr_eq; intros pre b. cbn. sauto limit: 200.
 
   - (* comp_assoc *)
-    apply PureASPostArr_eq; intros pre d0. cbn. reflexivity.
+    apply PureRelASPPairArr_eq; intros pre d0. cbn. reflexivity.
 
   - (* pure_comp *)
-    apply PureASPostArr_eq; intros pre c. cbn. sauto limit: 200.
+    apply PureRelASPPairArr_eq; intros pre c. cbn. sauto limit: 200.
 
   - (* first_pure *)
-    apply PureASPostArr_eq; intros pre [b d]. cbn. sauto limit: 200.
+    apply PureRelASPPairArr_eq; intros pre [b d]. cbn. sauto limit: 200.
 
   - (* first_comp *)
-    apply PureASPostArr_eq; intros pre [c d]. cbn. reflexivity.
+    apply PureRelASPPairArr_eq; intros pre [c d]. cbn. reflexivity.
 
   - (* first_fst — requires IsASP for additivity *)
-    apply PureASPostArr_eq; intros pre b. cbn.
+    apply PureRelASPPairArr_eq; intros pre b. cbn.
     destruct (IsASP_rewrite f) as [R_f H_f].
     split.
     + intros [[b0 c] [Hfc Heq]]; cbn in Heq; subst.
@@ -582,7 +582,7 @@ Proof.
       * cbn. reflexivity.
 
   - (* first_assoc *)
-    apply PureASPostArr_eq; intros pre [b [c d]]. cbn.
+    apply PureRelASPPairArr_eq; intros pre [b [c d]]. cbn.
     destruct (IsASP_rewrite f) as [R_f H_f].
     split.
     + intros [[[b0 c0] d0] [Hff Hassoc]].
@@ -604,10 +604,10 @@ Proof.
       * reflexivity.
 
   - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
     intros; subst; reflexivity.
   - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
     intros; subst; reflexivity.
   - (* first_natural *)
     apply ASP_rel_ext; intros [a c] [b d]. cbn. split.
@@ -620,19 +620,19 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** [ArrowChoiceLaws] for [PureASPostArr]                           *)
+(** ** [ArrowChoiceLaws] for [PureRelASPPairArr]                           *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowChoiceLaws_PureASPostArr : ArrowChoiceLaws PureASPostArr.
+Instance ArrowChoiceLaws_PureRelASPPairArr : ArrowChoiceLaws PureRelASPPairArr.
 Proof.
   constructor; intros.
   - (* left_pure *)
-    apply PureASPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap; sauto limit: 200.
+    apply PureRelASPPairArr_eq; intros pre [b|c]; cbn; unfold sum_bimap; sauto limit: 200.
   - (* left_comp *)
-    apply PureASPostArr_eq; intros pre [c|d]; cbn; reflexivity.
+    apply PureRelASPPairArr_eq; intros pre [c|d]; cbn; reflexivity.
   - (* left_inl *)
-    apply PureASPostArr_eq; intros pre [b|c]; cbn.
+    apply PureRelASPPairArr_eq; intros pre [b|c]; cbn.
     + destruct (IsASP_rewrite f) as [Rf Hf]. split.
       * intros [b0 [Hfb Hinl]].
         injection Hinl as Hinl. subst.
@@ -643,7 +643,7 @@ Proof.
         exists b. split; [rewrite Hf; exists a; auto | reflexivity].
     + sauto limit: 200.
   - (* left_assoc *)
-    apply PureASPostArr_eq; intros pre [b | [c | d]]; cbn.
+    apply PureRelASPPairArr_eq; intros pre [b | [c | d]]; cbn.
     + (* inl b *)
       destruct (IsASP_rewrite f) as [Rf Hf]. split.
       * intros [x [Hleft Hassoc]].
@@ -677,7 +677,7 @@ Proof.
         injection Hassoc as Hassoc. subst.
         exists (inr d). cbn. auto.
     - (* left_inr *)
-      apply PureASPostArr_eq; intros pre [b|c']; cbn.
+      apply PureRelASPPairArr_eq; intros pre [b|c']; cbn.
       + (* inl b: both sides should be False *)
         destruct (IsASP_rewrite f) as [Rf Hf].
         rewrite Hf. unfold asp.
@@ -687,7 +687,7 @@ Proof.
       + (* inr c': both sides give pre c' after simplification *)
         sauto limit: 200.
     - (* left_natural *)
-      apply PureASPostArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
+      apply PureRelASPPairArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
       + destruct (IsASP_rewrite f) as [Rf Hf].
         split.
         * intros [[a'|c'] [Hex Heq]]; [| discriminate].
@@ -708,7 +708,7 @@ Proof.
           injection Heq as Heq. subst.
           exists (inr d'). split; [exact Hpre | reflexivity].
     - (* first_left_dist *)
-      apply PureASPostArr_eq; intros pre y.
+      apply PureRelASPPairArr_eq; intros pre y.
       destruct y as [[b d]|[c d]]; cbn; unfold sum_prod_dist.
       + (* inl (b, d) *)
         destruct (IsASP_rewrite f) as [Rf Hf]. split.
@@ -737,14 +737,14 @@ Proof.
           -- cbn. exact Hpre.
           -- reflexivity.
     - (* left_proper *)
-      unfold Proper, respectful, arrow_eq, ArrowEq_PureASPostArr;
+      unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
       intros; subst; reflexivity.
 Qed.
 (* ================================================================= *)
-(** ** Utilities for [PureDSLPostArr]                                   *)
+(** ** Utilities for [PureRelDSLPPairArr]                                   *)
 (* ================================================================= *)
 
-Lemma PureDSLPostArr_eq {A B} (f g : PureDSLPostArr A B) :
+Lemma PureRelDSLPPairArr_eq {A B} (f g : PureRelDSLPPairArr A B) :
   (forall pre b, spost (proj1_sig f) pre b <-> spost (proj1_sig g) pre b) -> f = g.
 Proof.
   intro Heq.
@@ -771,10 +771,10 @@ Proof.
   f_equal. apply proof_irrelevance.
 Qed.
 
-Lemma DSLP_rel_ext {A B} (f g : PureDSLPostArr A B) :
+Lemma DSLP_rel_ext {A B} (f g : PureRelDSLPPairArr A B) :
   (forall a b, rel (proj1_sig f) a b <-> rel (proj1_sig g) a b) -> f = g.
 Proof.
-  intro Hrel. apply PureDSLPostArr_eq. intros pre b.
+  intro Hrel. apply PureRelDSLPPairArr_eq. intros pre b.
   split; intro H.
   - apply (proj2_sig f) in H. apply (proj2_sig g).
     intros a Hr. apply H. apply Hrel. exact Hr.
@@ -783,8 +783,8 @@ Proof.
 Qed.
 
 Definition DSLP_rel_presentation :
-  RelArrowPresentation PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr := {|
+  RelArrowPresentation PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+    ArrowChoice_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr := {|
   present_rel := fun A B f => rel (proj1_sig f);
   present_ext := @DSLP_rel_ext;
   present_pure := fun _ _ _ _ _ => iff_refl _;
@@ -794,7 +794,7 @@ Definition DSLP_rel_presentation :
   present_app := fun _ _ _ _ _ => iff_refl _
 |}.
 
-Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
+Lemma IsDSLP_rewrite {A B} (f : PureRelDSLPPairArr A B) :
   exists R : PredArr A B,
     forall pre b, spost (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
@@ -802,18 +802,18 @@ Proof.
   apply (proj2_sig f).
 Qed.
 
-Lemma DSLP_dslp {A B} (f : PureDSLPostArr A B) (R : PredArr A B)
+Lemma DSLP_dslp {A B} (f : PureRelDSLPPairArr A B) (R : PredArr A B)
   (HR : forall pre b, spost (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
   forall P b, spost (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.
 
 (* ================================================================= *)
-(** ** [ArrowLaws] for [PureDSLPostArr]                                *)
+(** ** [ArrowLaws] for [PureRelDSLPPairArr]                                *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowEq_PureDSLPostArr : ArrowEq PureDSLPostArr := {
-  arrow_eq := fun A B => @eq (PureDSLPostArr A B)
+Instance ArrowEq_PureRelDSLPPairArr : ArrowEq PureRelDSLPPairArr := {
+  arrow_eq := fun A B => @eq (PureRelDSLPPairArr A B)
 }.
 
 Lemma id_pred_dslp {A} (pre : A -> Prop) :
@@ -823,33 +823,33 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowLaws_PureDSLPostArr : ArrowLaws PureDSLPostArr.
+Instance ArrowLaws_PureRelDSLPPairArr : ArrowLaws PureRelDSLPPairArr.
 Proof.
   constructor; intros.
 
   - (* comp_id_l: arr_comp arr_id f = f *)
-    apply PureDSLPostArr_eq; intros pre b. cbn.
+    apply PureRelDSLPPairArr_eq; intros pre b. cbn.
     rewrite id_pred_dslp. reflexivity.
 
   - (* comp_id_r *)
-    apply PureDSLPostArr_eq; intros pre b. cbn. sauto limit: 200.
+    apply PureRelDSLPPairArr_eq; intros pre b. cbn. sauto limit: 200.
 
   - (* comp_assoc *)
-    apply PureDSLPostArr_eq; intros pre d0. cbn. reflexivity.
+    apply PureRelDSLPPairArr_eq; intros pre d0. cbn. reflexivity.
 
   - (* pure_comp *)
-    apply PureDSLPostArr_eq; intros pre c. cbn. sauto limit: 200.
+    apply PureRelDSLPPairArr_eq; intros pre c. cbn. sauto limit: 200.
 
   - (* first_pure *)
-    apply PureDSLPostArr_eq; intros pre [b d]. cbn. sauto limit: 200.
+    apply PureRelDSLPPairArr_eq; intros pre [b d]. cbn. sauto limit: 200.
 
   - (* first_comp *)
-    apply PureDSLPostArr_eq; intros pre [c d]. cbn. reflexivity.
+    apply PureRelDSLPPairArr_eq; intros pre [c d]. cbn. reflexivity.
 
   - (* first_fst — requires IsDSLP for multiplicativity.
        Both sides reduce (via IsDSLP) to quantifier reordering:
        ∀c ∀a, R a b → pre(a,c) ↔ ∀a, R a b → ∀c, pre(a,c). *)
-    apply PureDSLPostArr_eq; intros pre b.
+    apply PureRelDSLPPairArr_eq; intros pre b.
     destruct (IsDSLP_rewrite f) as [R_f H_f].
     cbn. split.
     + intros H. rewrite H_f. intros a Hra p Heq.
@@ -862,7 +862,7 @@ Proof.
       exact (Hfb (a, c) eq_refl).
 
   - (* first_assoc *)
-    apply PureDSLPostArr_eq; intros pre [b [c d]].
+    apply PureRelDSLPPairArr_eq; intros pre [b [c d]].
     destruct (IsDSLP_rewrite f) as [R_f H_f].
     cbn. split.
     + intros H. rewrite H_f. intros a Hra p Hassoc.
@@ -886,10 +886,10 @@ Proof.
       exact (Hfb ((a, c), d) eq_refl).
 
   - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
     intros; subst; reflexivity.
   - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
     intros; subst; reflexivity.
   - (* first_natural *)
     apply DSLP_rel_ext; intros [a c] [b d]. cbn. split.
@@ -902,20 +902,20 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** [ArrowChoiceLaws] for [PureDSLPostArr]                          *)
+(** ** [ArrowChoiceLaws] for [PureRelDSLPPairArr]                          *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowChoiceLaws_PureDSLPostArr : ArrowChoiceLaws PureDSLPostArr.
+Instance ArrowChoiceLaws_PureRelDSLPPairArr : ArrowChoiceLaws PureRelDSLPPairArr.
 Proof.
   constructor; intros.
   - (* left_pure *)
-    apply PureDSLPostArr_eq; intros pre [b|c]; cbn; unfold sum_bimap;
+    apply PureRelDSLPPairArr_eq; intros pre [b|c]; cbn; unfold sum_bimap;
     sauto limit: 200.
   - (* left_comp *)
-    apply PureDSLPostArr_eq; intros pre [c|d]; cbn; reflexivity.
+    apply PureRelDSLPPairArr_eq; intros pre [c|d]; cbn; reflexivity.
   - (* left_inl *)
-    apply PureDSLPostArr_eq; intros pre [b|c]; cbn.
+    apply PureRelDSLPPairArr_eq; intros pre [b|c]; cbn.
     + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
       * intros H. rewrite Hf. intros a Hra a0 Hinl.
         injection Hinl as Hinl. subst.
@@ -927,7 +927,7 @@ Proof.
         rewrite Hf in Hfb. specialize (Hfb a Hra (a) eq_refl). exact Hfb.
     + split; intros _ ? H; discriminate H.
   - (* left_assoc *)
-    apply PureDSLPostArr_eq; intros pre [b | [c | d]]; cbn.
+    apply PureRelDSLPPairArr_eq; intros pre [b | [c | d]]; cbn.
     + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
       * intro H. rewrite Hf. intros a Hra x Hassoc.
         destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
@@ -953,13 +953,13 @@ Proof.
       * intros Hpre [[b'|c0]|d0] Hassoc; cbn in Hassoc; try discriminate.
         injection Hassoc as Hassoc. subst. exact (Hpre (inr d) eq_refl).
     - (* left_inr *)
-      apply PureDSLPostArr_eq; intros pre [b|c']; cbn.
+      apply PureRelDSLPPairArr_eq; intros pre [b|c']; cbn.
       + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
         * intros _ c0 Habs. discriminate.
         * intros _. rewrite Hf. intros a _ c0 Habs. discriminate.
       + split; intros H c0 Heq; injection Heq as Heq; subst; exact (H c' eq_refl).
     - (* left_natural *)
-      apply PureDSLPostArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
+      apply PureRelDSLPPairArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
       + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
         * intros H. rewrite Hf. intros a Hra [a'|c'] Heq; [| discriminate].
           injection Heq as Heq. subst.
@@ -976,7 +976,7 @@ Proof.
         * intros H [b'|c'] Heq; [discriminate |].
           injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
     - (* first_left_dist *)
-      apply PureDSLPostArr_eq; intros pre y.
+      apply PureRelDSLPPairArr_eq; intros pre y.
       destruct y as [[b d]|[c d]]; cbn; unfold sum_prod_dist.
       + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
         * intros H. rewrite Hf. intros a Hra [[a'|c'] d'] Hsd; cbn in Hsd;
@@ -997,20 +997,20 @@ Proof.
           injection Heq as Hc Hd. subst. cbn.
           exact (Hall (inr c, d) eq_refl).
     - (* left_proper *)
-      unfold Proper, respectful, arrow_eq, ArrowEq_PureDSLPostArr;
+      unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
       intros; subst; reflexivity.
 Qed.
 
 
 (* ================================================================= *)
-(** ** [ArrowApplyLaws] for [PureASPostArr] and [PureDSLPostArr]       *)
+(** ** [ArrowApplyLaws] for [PureRelASPPairArr] and [PureRelDSLPPairArr]       *)
 (* ================================================================= *)
 
 #[global]
-Instance ArrowApplyLaws_PureASPostArr : ArrowApplyLaws PureASPostArr.
+Instance ArrowApplyLaws_PureRelASPPairArr : ArrowApplyLaws PureRelASPPairArr.
 Proof.
   constructor.
-  - intros A B f. apply PureASPostArr_eq; intros pre b. cbn.
+  - intros A B f. apply PureRelASPPairArr_eq; intros pre b. cbn.
     split.
     + (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ rel f0 a b) → spost f pre b *)
       intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
@@ -1033,10 +1033,10 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowApplyLaws_PureDSLPostArr : ArrowApplyLaws PureDSLPostArr.
+Instance ArrowApplyLaws_PureRelDSLPPairArr : ArrowApplyLaws PureRelDSLPPairArr.
 Proof.
   constructor.
-  - intros A B f. apply PureDSLPostArr_eq; intros pre b. cbn.
+  - intros A B f. apply PureRelDSLPPairArr_eq; intros pre b. cbn.
     split.
     + (* Forward: (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) → spost (proj1_sig f) pre b *)
       intros H. apply (proj2_sig f). intros a Hra.
@@ -1068,53 +1068,53 @@ Qed.
 Create HintDb sp_arrow_bind.
 #[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id : sp_arrow_bind.
 
-Section PureASPostArrMonad.
+Section PureRelASPPairArrMonad.
 
   Variable I : Type.
 
   #[global]
-  Instance Eq1_PureASPostArr : Eq1 (PureASPostArr I) :=
-    @Eq1_Arrow PureASPostArr ArrowEq_PureASPostArr I.
+  Instance Eq1_PureRelASPPairArr : Eq1 (PureRelASPPairArr I) :=
+    @Eq1_Arrow PureRelASPPairArr ArrowEq_PureRelASPPairArr I.
 
-  Definition Monad_PureASPostArr : Monad (PureASPostArr I) :=
-    @Monad_Arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr I.
+  Definition Monad_PureRelASPPairArr : Monad (PureRelASPPairArr I) :=
+    @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr I.
 
-  Definition Eq1Equivalence_PureASPostArr
-    : @Eq1Equivalence (PureASPostArr I) Monad_PureASPostArr Eq1_PureASPostArr :=
-    @Eq1Equivalence_Arrow PureASPostArr Arrow_PureASPostArr
-      ArrowApply_PureASPostArr ArrowEq_PureASPostArr I.
+  Definition Eq1Equivalence_PureRelASPPairArr
+    : @Eq1Equivalence (PureRelASPPairArr I) Monad_PureRelASPPairArr Eq1_PureRelASPPairArr :=
+    @Eq1Equivalence_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowApply_PureRelASPPairArr ArrowEq_PureRelASPPairArr I.
 
   (** Compact relational descriptions of return and bind. *)
 
-  Definition ret_ASP {A} (a : A) : PureASPostArr I A :=
+  Definition ret_ASP {A} (a : A) : PureRelASPPairArr I A :=
     mkASP (fun _ a' => a = a').
 
   (** For the angelic bind, we extract the underlying relation directly
       via [rel (proj1_sig ...)], mirroring the demonic bind. *)
   Definition bind_ASP {A B}
-    (m : PureASPostArr I A) (k : A -> PureASPostArr I B)
-    : PureASPostArr I B :=
+    (m : PureRelASPPairArr I A) (k : A -> PureRelASPPairArr I B)
+    : PureRelASPPairArr I B :=
     mkASP (fun i c => exists b,
              rel (proj1_sig m) i b /\
              rel (proj1_sig (k b)) i c).
 
   Lemma ret_ASP_eq_ret_arrow {A} (a : A) :
-    @arrow_eq PureASPostArr ArrowEq_PureASPostArr I A
-      (ret_ASP a) (@ret_arrow PureASPostArr Arrow_PureASPostArr I A a).
+    @arrow_eq PureRelASPPairArr ArrowEq_PureRelASPPairArr I A
+      (ret_ASP a) (@ret_arrow PureRelASPPairArr Arrow_PureRelASPPairArr I A a).
   Proof. apply ASP_rel_ext; intros i b. reflexivity. Qed.
 
   Lemma bind_ASP_eq_bind_arrow {A B}
-    (m : PureASPostArr I A) (k : A -> PureASPostArr I B) :
-    @arrow_eq PureASPostArr ArrowEq_PureASPostArr I B
+    (m : PureRelASPPairArr I A) (k : A -> PureRelASPPairArr I B) :
+    @arrow_eq PureRelASPPairArr ArrowEq_PureRelASPPairArr I B
       (bind_ASP m k)
-      (@bind_arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
+      (@bind_arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr
         I A B m k).
   Proof.
     autounfold with sp_arrow_bind.
-    rewrite (@first_pure PureASPostArr Arrow_PureASPostArr
-      ArrowEq_PureASPostArr ArrowLaws_PureASPostArr).
-    repeat rewrite (@pure_comp PureASPostArr Arrow_PureASPostArr
-      ArrowEq_PureASPostArr ArrowLaws_PureASPostArr).
+    rewrite (@first_pure PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr).
+    repeat rewrite (@pure_comp PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr).
     apply ASP_rel_ext; intros i c. cbn. split.
     - intros [b [Hm Hk]]. exists (b, i). split.
       + exists (i, i). split; [reflexivity |].
@@ -1126,60 +1126,60 @@ Section PureASPostArrMonad.
       exists b. exact (conj Hm Hk).
   Qed.
 
-  Definition MonadLawsE_PureASPostArr
-    : @MonadLawsE (PureASPostArr I) Eq1_PureASPostArr Monad_PureASPostArr :=
-    @MonadLawsE_Arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
-      ArrowEq_PureASPostArr ArrowLaws_PureASPostArr ArrowApplyLaws_PureASPostArr I.
+  Definition MonadLawsE_PureRelASPPairArr
+    : @MonadLawsE (PureRelASPPairArr I) Eq1_PureRelASPPairArr Monad_PureRelASPPairArr :=
+    @MonadLawsE_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr
+      ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr ArrowApplyLaws_PureRelASPPairArr I.
 
-End PureASPostArrMonad.
+End PureRelASPPairArrMonad.
 
-Section PureDSLPostArrMonad.
+Section PureRelDSLPPairArrMonad.
 
   Variable I : Type.
 
   #[global]
-  Instance Eq1_PureDSLPostArr : Eq1 (PureDSLPostArr I) :=
-    @Eq1_Arrow PureDSLPostArr ArrowEq_PureDSLPostArr I.
+  Instance Eq1_PureRelDSLPPairArr : Eq1 (PureRelDSLPPairArr I) :=
+    @Eq1_Arrow PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I.
 
-  Definition Monad_PureDSLPostArr : Monad (PureDSLPostArr I) :=
-    @Monad_Arrow PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr I.
+  Definition Monad_PureRelDSLPPairArr : Monad (PureRelDSLPPairArr I) :=
+    @Monad_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr I.
 
-  Definition Eq1Equivalence_PureDSLPostArr
-    : @Eq1Equivalence (PureDSLPostArr I) Monad_PureDSLPostArr Eq1_PureDSLPostArr :=
-    @Eq1Equivalence_Arrow PureDSLPostArr Arrow_PureDSLPostArr
-      ArrowApply_PureDSLPostArr ArrowEq_PureDSLPostArr I.
+  Definition Eq1Equivalence_PureRelDSLPPairArr
+    : @Eq1Equivalence (PureRelDSLPPairArr I) Monad_PureRelDSLPPairArr Eq1_PureRelDSLPPairArr :=
+    @Eq1Equivalence_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowApply_PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I.
 
   (** Compact relational descriptions of return and bind. *)
 
-  Definition ret_DSLP {A} (a : A) : PureDSLPostArr I A :=
+  Definition ret_DSLP {A} (a : A) : PureRelDSLPPairArr I A :=
     mkDSLP (fun _ a' => a = a').
 
   (** For the demonic bind, we extract the underlying relation directly
       via [rel (proj1_sig ...)], avoiding classical axioms. *)
   Definition bind_DSLP {A B}
-    (m : PureDSLPostArr I A) (k : A -> PureDSLPostArr I B)
-    : PureDSLPostArr I B :=
+    (m : PureRelDSLPPairArr I A) (k : A -> PureRelDSLPPairArr I B)
+    : PureRelDSLPPairArr I B :=
     mkDSLP (fun i c => exists b,
              rel (proj1_sig m) i b /\
              rel (proj1_sig (k b)) i c).
 
   Lemma ret_DSLP_eq_ret_arrow {A} (a : A) :
-    @arrow_eq PureDSLPostArr ArrowEq_PureDSLPostArr I A
-      (ret_DSLP a) (@ret_arrow PureDSLPostArr Arrow_PureDSLPostArr I A a).
+    @arrow_eq PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I A
+      (ret_DSLP a) (@ret_arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr I A a).
   Proof. apply DSLP_rel_ext; intros i b. reflexivity. Qed.
 
   Lemma bind_DSLP_eq_bind_arrow {A B}
-    (m : PureDSLPostArr I A) (k : A -> PureDSLPostArr I B) :
-    @arrow_eq PureDSLPostArr ArrowEq_PureDSLPostArr I B
+    (m : PureRelDSLPPairArr I A) (k : A -> PureRelDSLPPairArr I B) :
+    @arrow_eq PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I B
       (bind_DSLP m k)
-      (@bind_arrow PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+      (@bind_arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr
         I A B m k).
   Proof.
     autounfold with sp_arrow_bind.
-    rewrite (@first_pure PureDSLPostArr Arrow_PureDSLPostArr
-      ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr).
-    repeat rewrite (@pure_comp PureDSLPostArr Arrow_PureDSLPostArr
-      ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr).
+    rewrite (@first_pure PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr).
+    repeat rewrite (@pure_comp PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr).
     apply DSLP_rel_ext; intros i c. cbn. split.
     - intros [b [Hm Hk]]. exists (b, i). split.
       + exists (i, i). split; [reflexivity |].
@@ -1195,12 +1195,12 @@ Section PureDSLPostArrMonad.
     spost (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
   Proof. reflexivity. Qed.
 
-  Definition MonadLawsE_PureDSLPostArr
-    : @MonadLawsE (PureDSLPostArr I) Eq1_PureDSLPostArr Monad_PureDSLPostArr :=
-    @MonadLawsE_Arrow PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
-      ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr ArrowApplyLaws_PureDSLPostArr I.
+  Definition MonadLawsE_PureRelDSLPPairArr
+    : @MonadLawsE (PureRelDSLPPairArr I) Eq1_PureRelDSLPPairArr Monad_PureRelDSLPPairArr :=
+    @MonadLawsE_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr ArrowApply_PureRelDSLPPairArr
+      ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr ArrowApplyLaws_PureRelDSLPPairArr I.
 
-End PureDSLPostArrMonad.
+End PureRelDSLPPairArrMonad.
 
 (* ================================================================= *)
 (** ** [optionT] and composed types: monad instances for free         *)
@@ -1208,7 +1208,7 @@ End PureDSLPostArrMonad.
 
 (** The generic [MonadLawsE_optionT] and [MonadLawsE_stateT] instances from
     [TransformerLaws] extend the arrow-derived monads to
-    [optionT (PureASPostArr I)] / [optionT (PureDSLPostArr I)] and their
+    [optionT (PureRelASPPairArr I)] / [optionT (PureRelDSLPPairArr I)] and their
     state stacks.  Generic instances handle typeclass resolution; the
     concrete dictionary aliases above expose those same operations and laws. *)
 
@@ -1226,7 +1226,7 @@ Section OptionArrowLaws.
 
   (** Option-level laws: direct consequences of [ArrowLaws_optionArrT],
       [ArrowChoiceLaws_optionArrT], and [ArrowApplyLaws_optionArrT]
-      applied to [PureASPostArr] / [PureDSLPostArr]. *)
+      applied to [PureRelASPPairArr] / [PureRelDSLPPairArr]. *)
 
   Local Instance ArrowEq_optionASPArr : ArrowEq optionASPArr := _.
   Local Instance ArrowLaws_optionASPArr : ArrowLaws optionASPArr := _.

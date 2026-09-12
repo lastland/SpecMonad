@@ -44,7 +44,7 @@ The `Code/Taxonomy/` directory is the core of the project. All monads share the 
 | `SetM` = `A -> Prop` | `ndprog` | `NonDetProg.v` | Nondeterministic computation |
 | `optionT SetM` (double optionT) | `nditprog` | `NonDetItProg.v` | Nondeterminism + divergence |
 
-`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPPairArr.v` retains the coupled presentation. See `Code/Taxonomy/README.md` for their well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify the module when both presentations are in scope: they intentionally share carrier names.
+`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPPairArr.v` defines the coupled presentation (`PureRelASPPairArr`, `PureRelDSLPPairArr`). See `Code/Taxonomy/README.md` for their well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify shared names such as `ASPostArr` and `DSLPostArr` when both presentations are in scope.
 
 **Observation functions** bridge computation monads to specification types (both WP and SP):
 - `Observation.v`: maps `prog` to 4 SP variants (`obsASP` / `obsDSLP` / `obsDSP` / `obsASLP`) and 4 WP variants (`obsAWP` / `obsDWP` / `obsAWLP` / `obsDWLP`), with `obsWPCollapse` / `obsWLPCollapse` showing angelic-demonic collapse under determinism
