@@ -22,7 +22,9 @@ value beyond that history.
   transformers. `tripleSPm` takes both `read` and `obs` explicitly.
 - The same file retains `AsSPObs`, `tripleSP`, and the `readSP` / `readSPM`
   and `readJoin` / `readMeet` machinery. Its vocabulary is local: names such
-  as `SPStExc`, `SPredT`, and `ordSP` need not denote the current carriers.
+  as `SPStExc` need not denote the current carriers. `SPredT` and `ordSP`
+  occur only in commented-out historical experiments; they are not compiled
+  or exported.
 - The four `no_ProgSP_for_obsDSP`, `no_ProgSPM_for_obsDSP`,
   `no_ProgSP_for_obsASLP`, and `no_ProgSPM_for_obsASLP` results rule out
   representing those readings directly in the earlier additive/multiplicative
@@ -53,7 +55,9 @@ SP specification layer.
   outcomes: `Some None` represents an exception; outer divergence is omitted.
 - A shared `S -> Prop` precondition matters for `Under` triples. Replacing
   it with independent per-state judgments changes the quantifier structure;
-  see `progSP_under_not_point` in `OldSPObservations.v`.
+  the commented-out historical example `progSP_under_not_point` in
+  `OldSPObservations.v` illustrates this distinction. It is not a compiled
+  theorem.
 - The no-go results explain the limitations of a forward reading-based
   construction. Current [DSP](../BaseSpecMonads/DSPMonad.v) and
   [ASLP](../BaseSpecMonads/ASLPMonad.v) recover relations when defining bind.
