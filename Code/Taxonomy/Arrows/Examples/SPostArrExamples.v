@@ -112,8 +112,8 @@ Qed.
 
 Local Notation coupled_state_arrow :=
   (@Arrow_stateArrT nat CoupledSP.optionASPArr
-    (@Arrow_optionArrT CoupledSP.PureASPostArr
-      CoupledSP.Arrow_PureASPostArr CoupledSP.ArrowChoice_PureASPostArr)).
+    (@Arrow_optionArrT CoupledSP.PureRelASPPairArr
+      CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr)).
 
 Example state_application_conversion :
   getASP (state_option_asp_from_coupled

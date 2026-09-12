@@ -11,9 +11,9 @@ From Incorrectness.Taxonomy.Arrows Require Import
 
 (** The concrete bundle must reuse the generic dictionary itself. *)
 Example coupled_asp_reuses_arrow (I : Type) :
-  @RelSPPairArr.Monad_PureASPostArr I =
-  @Monad_Arrow RelSPPairArr.PureASPostArr RelSPPairArr.Arrow_PureASPostArr
-    RelSPPairArr.ArrowApply_PureASPostArr I.
+  @RelSPPairArr.Monad_PureRelASPPairArr I =
+  @Monad_Arrow RelSPPairArr.PureRelASPPairArr RelSPPairArr.Arrow_PureRelASPPairArr
+    RelSPPairArr.ArrowApply_PureRelASPPairArr I.
 Proof. reflexivity. Qed.
 
 (** These monads are inferred without naming the concrete aliases.  The
@@ -21,8 +21,8 @@ Proof. reflexivity. Qed.
 Definition inferred_pred_monad : Monad (PredArr bool) := _.
 Definition inferred_prepost_monad : Monad (PrePostArr bool) := _.
 Definition inferred_relprepost_monad : Monad (RelPrePostArr bool) := _.
-Definition inferred_asp_monad : Monad (RelSPPairArr.PureASPostArr bool) := _.
-Definition inferred_dslp_monad : Monad (RelSPPairArr.PureDSLPostArr bool) := _.
+Definition inferred_asp_monad : Monad (RelSPPairArr.PureRelASPPairArr bool) := _.
+Definition inferred_dslp_monad : Monad (RelSPPairArr.PureRelDSLPPairArr bool) := _.
 
 Example pred_reuses_arrow :
   inferred_pred_monad = @Monad_Pred bool /\
@@ -41,17 +41,17 @@ Example relprepost_reuses_arrow :
 Proof. split; reflexivity. Qed.
 
 Example asp_resolution_uses_arrow :
-  inferred_asp_monad = @RelSPPairArr.Monad_PureASPostArr bool /\
-  @RelSPPairArr.Monad_PureASPostArr bool =
-    @Monad_Arrow RelSPPairArr.PureASPostArr RelSPPairArr.Arrow_PureASPostArr
-      RelSPPairArr.ArrowApply_PureASPostArr bool.
+  inferred_asp_monad = @RelSPPairArr.Monad_PureRelASPPairArr bool /\
+  @RelSPPairArr.Monad_PureRelASPPairArr bool =
+    @Monad_Arrow RelSPPairArr.PureRelASPPairArr RelSPPairArr.Arrow_PureRelASPPairArr
+      RelSPPairArr.ArrowApply_PureRelASPPairArr bool.
 Proof. split; reflexivity. Qed.
 
 Example dslp_reuses_arrow :
-  inferred_dslp_monad = @RelSPPairArr.Monad_PureDSLPostArr bool /\
-  @RelSPPairArr.Monad_PureDSLPostArr bool =
-    @Monad_Arrow RelSPPairArr.PureDSLPostArr RelSPPairArr.Arrow_PureDSLPostArr
-      RelSPPairArr.ArrowApply_PureDSLPostArr bool.
+  inferred_dslp_monad = @RelSPPairArr.Monad_PureRelDSLPPairArr bool /\
+  @RelSPPairArr.Monad_PureRelDSLPPairArr bool =
+    @Monad_Arrow RelSPPairArr.PureRelDSLPPairArr RelSPPairArr.Arrow_PureRelDSLPPairArr
+      RelSPPairArr.ArrowApply_PureRelDSLPPairArr bool.
 Proof. split; reflexivity. Qed.
 
 (** Canonical concrete equalities must resolve the generic law instances. *)
@@ -63,11 +63,11 @@ Definition relprepost_canonical_laws :
   @MonadLawsE (RelPrePostArr bool) (@Eq1_RelPrePost bool)
     inferred_relprepost_monad := _.
 Definition asp_canonical_laws :
-  @MonadLawsE (RelSPPairArr.PureASPostArr bool)
-    (@RelSPPairArr.Eq1_PureASPostArr bool) inferred_asp_monad := _.
+  @MonadLawsE (RelSPPairArr.PureRelASPPairArr bool)
+    (@RelSPPairArr.Eq1_PureRelASPPairArr bool) inferred_asp_monad := _.
 Definition dslp_canonical_laws :
-  @MonadLawsE (RelSPPairArr.PureDSLPostArr bool)
-    (@RelSPPairArr.Eq1_PureDSLPostArr bool) inferred_dslp_monad := _.
+  @MonadLawsE (RelSPPairArr.PureRelDSLPPairArr bool)
+    (@RelSPPairArr.Eq1_PureRelDSLPPairArr bool) inferred_dslp_monad := _.
 
 Definition pred_canonical_equivalence :
   @Eq1Equivalence (PredArr bool) inferred_pred_monad (@Eq1_Pred bool) := _.
@@ -77,11 +77,11 @@ Definition relprepost_canonical_equivalence :
   @Eq1Equivalence (RelPrePostArr bool) inferred_relprepost_monad
     (@Eq1_RelPrePost bool) := _.
 Definition asp_canonical_equivalence :
-  @Eq1Equivalence (RelSPPairArr.PureASPostArr bool) inferred_asp_monad
-    (@RelSPPairArr.Eq1_PureASPostArr bool) := _.
+  @Eq1Equivalence (RelSPPairArr.PureRelASPPairArr bool) inferred_asp_monad
+    (@RelSPPairArr.Eq1_PureRelASPPairArr bool) := _.
 Definition dslp_canonical_equivalence :
-  @Eq1Equivalence (RelSPPairArr.PureDSLPostArr bool) inferred_dslp_monad
-    (@RelSPPairArr.Eq1_PureDSLPostArr bool) := _.
+  @Eq1Equivalence (RelSPPairArr.PureRelDSLPPairArr bool) inferred_dslp_monad
+    (@RelSPPairArr.Eq1_PureRelDSLPPairArr bool) := _.
 
 (** Pointwise arrow equalities, rather than Leibniz equality. *)
 Definition pred_monad_laws :
@@ -122,33 +122,33 @@ Definition property_state_option_asp_monad_laws (S : Type) :
 
 (** Coupled demonic-liberal arrows exercise the other SP presentation. *)
 Definition coupled_dslp_monad_laws :
-  @MonadLawsE (RelSPPairArr.PureDSLPostArr bool)
-    (@Eq1_Arrow _ RelSPPairArr.ArrowEq_PureDSLPostArr bool)
-    (@Monad_Arrow _ RelSPPairArr.Arrow_PureDSLPostArr
-      RelSPPairArr.ArrowApply_PureDSLPostArr bool) := _.
+  @MonadLawsE (RelSPPairArr.PureRelDSLPPairArr bool)
+    (@Eq1_Arrow _ RelSPPairArr.ArrowEq_PureRelDSLPPairArr bool)
+    (@Monad_Arrow _ RelSPPairArr.Arrow_PureRelDSLPPairArr
+      RelSPPairArr.ArrowApply_PureRelDSLPPairArr bool) := _.
 
 Definition coupled_option_dslp_monad_laws :
   @MonadLawsE (RelSPPairArr.optionDSLPArr bool)
-    (@Eq1_Arrow _ (@ArrowEq_optionArrT _ RelSPPairArr.ArrowEq_PureDSLPostArr) bool)
-    (@Monad_Arrow _ (@Arrow_optionArrT _ RelSPPairArr.Arrow_PureDSLPostArr
-        RelSPPairArr.ArrowChoice_PureDSLPostArr)
-      (@ArrowApply_optionArrT _ RelSPPairArr.Arrow_PureDSLPostArr
-        RelSPPairArr.ArrowChoice_PureDSLPostArr
-        RelSPPairArr.ArrowApply_PureDSLPostArr) bool) := _.
+    (@Eq1_Arrow _ (@ArrowEq_optionArrT _ RelSPPairArr.ArrowEq_PureRelDSLPPairArr) bool)
+    (@Monad_Arrow _ (@Arrow_optionArrT _ RelSPPairArr.Arrow_PureRelDSLPPairArr
+        RelSPPairArr.ArrowChoice_PureRelDSLPPairArr)
+      (@ArrowApply_optionArrT _ RelSPPairArr.Arrow_PureRelDSLPPairArr
+        RelSPPairArr.ArrowChoice_PureRelDSLPPairArr
+        RelSPPairArr.ArrowApply_PureRelDSLPPairArr) bool) := _.
 
 Definition coupled_state_dslp_monad_laws (S : Type) :
-  @MonadLawsE (stateArrT S RelSPPairArr.PureDSLPostArr bool)
-    (@Eq1_Arrow _ (@ArrowEq_stateArrT S _ RelSPPairArr.ArrowEq_PureDSLPostArr) bool)
-    (@Monad_Arrow _ (@Arrow_stateArrT S _ RelSPPairArr.Arrow_PureDSLPostArr)
-      (@ArrowApply_stateArrT S _ RelSPPairArr.Arrow_PureDSLPostArr
-        RelSPPairArr.ArrowApply_PureDSLPostArr) bool) := _.
+  @MonadLawsE (stateArrT S RelSPPairArr.PureRelDSLPPairArr bool)
+    (@Eq1_Arrow _ (@ArrowEq_stateArrT S _ RelSPPairArr.ArrowEq_PureRelDSLPPairArr) bool)
+    (@Monad_Arrow _ (@Arrow_stateArrT S _ RelSPPairArr.Arrow_PureRelDSLPPairArr)
+      (@ArrowApply_stateArrT S _ RelSPPairArr.Arrow_PureRelDSLPPairArr
+        RelSPPairArr.ArrowApply_PureRelDSLPPairArr) bool) := _.
 
 Definition coupled_state_option_dslp_monad_laws (S : Type) :
   @MonadLawsE (stateArrT S RelSPPairArr.optionDSLPArr bool)
     (@Eq1_Arrow _ (RelSPPairArr.ArrowEq_stateOptDSLP S) bool)
     (@Monad_Arrow _ (@Arrow_stateArrT S _
-      (@Arrow_optionArrT _ RelSPPairArr.Arrow_PureDSLPostArr
-        RelSPPairArr.ArrowChoice_PureDSLPostArr))
+      (@Arrow_optionArrT _ RelSPPairArr.Arrow_PureRelDSLPPairArr
+        RelSPPairArr.ArrowChoice_PureRelDSLPPairArr))
       (RelSPPairArr.ArrowApply_stateOptDSLP S) bool) := _.
 
 (** The named monad dictionaries of [SPostArrMonad] alias the same

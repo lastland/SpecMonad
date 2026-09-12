@@ -44,6 +44,8 @@ See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
 
 ### Domain docs
 
+`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPPairArr.v` defines the coupled presentation (`PureRelASPPairArr`, `PureRelDSLPPairArr`). See `Code/Taxonomy/README.md` for their well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify shared names such as `ASPostArr` and `DSLPostArr` when both presentations are in scope.
+
 Multi-context: the root map links to contexts for active Coq directories.
 See [docs/agents/domain.md](docs/agents/domain.md).
 

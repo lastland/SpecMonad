@@ -664,8 +664,8 @@ coupled DSLP) register only their chosen `Eq1` aliases. Generic instances handle
 registrations for the same dictionaries. For example:
 
 ```coq
-Definition Monad_PureASPostArr (I : Type) : Monad (PureASPostArr I) :=
-  @Monad_Arrow PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr I.
+Definition Monad_PureRelASPPairArr (I : Type) : Monad (PureRelASPPairArr I) :=
+  @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr ArrowApply_PureRelASPPairArr I.
 ```
 
 The compact return/bind helpers retain their original formulas. Agreement
@@ -745,8 +745,10 @@ the base application laws. The corresponding coupled specializations live in
 counterparts, with both round trips and preservation of all five operations.
 The `option_*`, `state_*`, and `state_option_*` conversions lift this equivalence
 through the transformers. `morphism_app` explicitly converts the arrow stored
-in the application's input. The two presentations share short carrier names;
-qualify `SPostArr` or `RelSPPairArr` when using both.
+in the application's input. The coupled carriers are `PureRelASPPairArr` and
+`PureRelDSLPPairArr`; the property-only carriers are `PureASPostArr` and
+`PureDSLPostArr`. Qualify `SPostArr` or `RelSPPairArr` for shared names such as
+`ASPostArr` and `DSLPostArr` when using both.
 
 The normal-form proofs use functional and propositional extensionality, and
 bundled equality additionally uses proof irrelevance. Their assumption audits
