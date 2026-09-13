@@ -17,7 +17,9 @@ Makefile for build/audit targets. Source declarations override older prose.
 - [Taxonomy](Taxonomy/CONTEXT.md) separates computation outcomes, base
   specifications, concrete binary arrows, observations, and comparisons.
 - [Checks](Checks/CONTEXT.md) reports selected assumptions separately from
-  normal tests/examples. Reporting is not a proof of axiom-freedom.
+  normal tests/examples through `make check` in the maintained [Makefile](Makefile).
+  Reporting is not a proof of axiom-freedom; context documents are not an
+  assumption ledger.
 
 ## Shared distinctions
 

@@ -64,3 +64,6 @@ See [CI](.github/workflows/SpecMonad.yml), [tracker](docs/agents/issue-tracker.m
 and [labels](docs/agents/triage-labels.md) for supporting workflows.
 Generated output, local agent configuration, and separate worktrees are outside
 this map. Update context coverage when the manifest changes.
+
+The opt-in assumption audit runs through `make check` in the maintained
+[Code/Makefile](Code/Makefile); generated Makefiles are not entry points.

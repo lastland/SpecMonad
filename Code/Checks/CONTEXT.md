@@ -28,14 +28,14 @@ The selected reports cover:
 ## Build boundary and reading
 
 `Assumptions.v` is deliberately absent from [_CoqProject](../_CoqProject).
-[Makefile.local](../Makefile.local) keeps `all` as the default goal and
+The maintained [Makefile](../Makefile) keeps `all` as the default goal and
 provides opt-in `make check`: it builds the listed prerequisites and invokes
 Coq on the audit explicitly. Its `clean` rule also removes audit outputs
 that ordinary `VFILES` cleanup would miss.
 
-Read `Assumptions.v` for the exact report selection and `Makefile.local`
-for execution membership. The output reports assumptions; the target does
-not compare them against an allowlist.
+Read `Assumptions.v` for the exact report selection and the `check` target
+of [Makefile](../Makefile) for execution membership. The output reports
+assumptions; the target does not compare them against an allowlist.
 
 Related contexts: [Classes](../Classes/CONTEXT.md),
 [generic regressions](../Classes/Tests/CONTEXT.md), and

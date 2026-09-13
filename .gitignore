@@ -48,7 +48,7 @@ time-of-build-after.log
 time-of-build-before.log
 time-of-build-both.log
 time-of-build-pretty.log
-makefile.coq
-makefile.coq.conf
+Makefile.coq
+Makefile.coq.conf
 *.pdf
 .claude/settings.local.json
