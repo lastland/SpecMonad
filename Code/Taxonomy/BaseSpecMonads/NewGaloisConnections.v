@@ -101,10 +101,9 @@ Section SPPrePostEmbeddings.
   (** ** The four in-monad characterizations
 
       [Over] always compares [obs <= target]; [Under] always [target <= obs].
-      The two that are relation inclusions (ASP/[Over], DSLP/[Under]) work in
-      the GLOBAL order with no side condition; the two that are not work in the
-      [At]-order and pay the nonemptiness condition their healthiness condition
-      forces. *)
+      ASP/[Over] and DSLP/[Under] use the global order without a side
+      condition.  The other two characterizations use an [At]-order and
+      the nonemptiness hypotheses forced by the targets' well-formedness. *)
 
   Theorem gen_asp_over {A} (w : ASPStExc S A)
     (pre : S -> Prop) (post : option (A * S) -> Prop) :
@@ -250,10 +249,9 @@ Section SPPrePostEmbeddings.
   (** ** The four in-monad characterizations
 
       [Over] always compares [obs <= target]; [Under] always [target <= obs].
-      The two that are relation inclusions (ASP/[Over], DSLP/[Under]) work in
-      the GLOBAL order with no side condition; the two that are not work in the
-      [At]-order and pay the nonemptiness condition their healthiness condition
-      forces. *)
+      ASP/[Over] and DSLP/[Under] use the global order without a side
+      condition.  The other two characterizations use an [At]-order and
+      the nonemptiness hypotheses forced by the targets' well-formedness. *)
 
   Theorem gen_asp_over {A} (w : ASPSt S A)
     (pre : S -> Prop) (post : (A * S) -> Prop) :

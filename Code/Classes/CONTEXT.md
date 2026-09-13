@@ -46,8 +46,8 @@ The pre/post-order classes in [Common](../Common/CONTEXT.md) are a separate API.
 
 Start with `Arrow.v`, then `ArrowApplyFacts.v` and `ArrowMonad.v`, or the
 transformer context relevant to the task. The concrete relational carrier is
-`PredArr A B := A -> B -> Prop` in
-[PredArr.v](../Taxonomy/Arrows/PredArr.v), not a definition in `Arrow.v`.
+`Rel A B := A -> B -> Prop` in
+[Rel.v](../Taxonomy/Arrows/Rel.v), not a definition in `Arrow.v`.
 
 [Generic regressions](Tests/CONTEXT.md) protect the application contract and
 generic monad-law resolution. [Concrete tests](../Taxonomy/Arrows/Tests/CONTEXT.md)

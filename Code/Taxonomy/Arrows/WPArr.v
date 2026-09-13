@@ -1,24 +1,21 @@
-(** * The Reader-WP Kleisli arrow [WPArr A B = A -> WPure B].
+(** * The raw weakest-precondition arrow [WPArr].
 
-    [WPArr A B := A -> WPure B = A -> (B -> Prop) -> Prop] is the
-    Kleisli category of the [WPure] continuation monad (defined in
-    [Taxonomy/WP.v]).  Equivalently it is [readerT A WPure B], so it
-    is automatically a monad in [B] (for fixed [A]) by composition of
-    [Monad_PureWP] with the reader monad transformer — we leave that
-    monad instance to ExtLib's reader machinery and only develop the
-    Hughes-style [Arrow] interface here.
+    [WPArr A B = A -> WPureT B = A -> (B -> Prop) -> Prop] uses the
+    unrestricted carrier from [BaseSpecMonads/WPureMonad.v], not its
+    monotone subset [WPure].  Composition passes a continuation backward:
 
-    This file defines the type, the Dijkstra refinement order
-    [WPArr_le], and the [ArrowEq], [Arrow], [ArrowChoice],
-    [ArrowApply] instances.  All their laws are proved in
-    [Taxonomy/WPArr.v], where they mostly hold definitionally
-    up to Coq's eta conversion.
+      [arr_comp f g a Q = f a (fun b => g b Q)].
 
-    Note: [arrow_eq] on [WPArr] is Leibniz equality.  A
-    pointwise-iff equivalence is not usable here because the
-    [comp_proper] arrow law would require every [WPArr] value to be
-    monotone/Proper in its continuation, which is not enforced by
-    the [WPArr] type. *)
+    This file defines [WPArr_le], the arrow operations, and their
+    [ArrowLaws], [ArrowChoiceLaws], and [ArrowApplyLaws] instances.
+    Some equations hold by conversion; product and sum cases also use
+    functional extensionality.  The generic [Monad_Arrow] construction
+    supplies the fixed-input monad; concrete checks live in
+    [Tests/ArrowMonadInstances.v].
+
+    [arrow_eq] is Leibniz equality, unlike [WPure]'s pointwise iff.
+    The raw carrier does not bundle a proof that a transformer respects
+    pointwise-equivalent continuations. *)
 
 From Coq Require Import RelationClasses.
 From Incorrectness.Classes Require Import Arrow.
@@ -31,8 +28,8 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
 Definition WPArr (A B : Type) : Type := A -> WPureT B.
 
 (** DM4all refinement order (§3.1): reverse pointwise implication.
-    [w1 ≤ w2] iff [w2 a Q → w1 a Q] for all [a], [Q].  A more specific
-    (stronger) transformer is lower in this order. *)
+    [w1 ≤ w2] iff [w2 a Q → w1 a Q] for all [a], [Q].  A weaker
+    precondition demand is lower in this order. *)
 Definition WPArr_le {A B} (w1 w2 : WPArr A B) : Prop :=
   forall a Q, w2 a Q -> w1 a Q.
 

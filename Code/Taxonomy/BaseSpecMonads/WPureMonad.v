@@ -7,14 +7,13 @@
       [WSt    S A]    = stateT S WPure A            (* W^St     *)
       [WStExc S A]    = stateT S (optionT WPure) A  (* W^StExc  *)
 
-    Monotonicity is part of the carrier, not a side condition: it is exactly
-    what the [PrePost -| WPure] adjunctions of [BaseGaloisConnections.v] need, and they
-    are false without it.
+    Monotonicity is part of the carrier.  The adjunction proofs in
+    [BaseGaloisConnections.v] and the [Proper_bind] proof below use it.
 
-    Unfolded, [WSt S A = S -> (A * S -> Prop) -> Prop]: every outcome is a
-    normal return.  [WStExc S A = S -> (option (A * S) -> Prop) -> Prop]: the
-    extra outcome is the raised exception, so this is the stack that carries a
-    [MonadExc]. *)
+    The evaluators take an initial state and a postcondition on [A * S]
+    for [WSt], or on [option (A * S)] for [WStExc].  The latter stack
+    supplies [MonadExc].  These evaluator shapes omit the bundled
+    monotonicity proofs and the transformer wrappers. *)
 
 From Coq Require Import RelationClasses.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
@@ -27,8 +26,8 @@ From ITree Require Import Basics.Monad.
 Section WPure.
 
   (** The underlying, unrestricted transformer type.  The arrow presentation
-      in [Arrows/WPArr.v] uses this: its [ArrowEq] is Leibniz equality, which
-      a subset type cannot support without proof irrelevance. *)
+      in [Arrows/WPArr.v] uses this with Leibniz [ArrowEq].  The [WPure]
+      subset below instead uses pointwise logical equivalence for [Eq1]. *)
   Definition WPureT (A : Type) : Type := (A -> Prop) -> Prop.
 
   Definition wpure_mono {A} (f : WPureT A) : Prop :=

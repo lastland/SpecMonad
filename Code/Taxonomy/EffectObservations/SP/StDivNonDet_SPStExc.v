@@ -11,29 +11,24 @@ Open Scope monad_scope.
 (** * SP observations for [stdivnd]
 
     [stdivnd S A = stateT S (optionT SetM) A] is the nondeterministic, possibly
-    DIVERGENT stateful monad of [StDivNonDet]: its outcome set has type
+    divergent stateful monad of [StDivNonDet]: its outcome set has type
     [option (A * S) -> Prop], with [None] read as divergence.
 
-    The specification monads of [NonDetItObservationNew] never mention the
-    computation monad: they are predicate transformers
-    [(S -> Prop) -> option (A * S) -> Prop] carved out by a healthiness
-    condition.  So the whole of that development — [ASPStExc], [DSLPStExc],
-    [DSPStExc], [ASLPStExc], their monad instances and laws, the carrier
-    bridges, [pp2*] and [ordSPStExc] — is reused verbatim here.  What this file
-    re-does is the ONE layer that depends on the computation monad: the four
-    observations, that they are monad morphisms, and the triples over them.
+    The targets [ASPStExc], [DSLPStExc], [DSPStExc], and [ASLPStExc] come
+    from [BaseSpecMonads].  Each bundles a transformer of shape
+    [(S -> Prop) -> option (A * S) -> Prop] with its well-formedness proof.
+    This file supplies the computation-specific readings, their return/bind
+    preservation laws, and the triples that use them.
 
-    Note the contrast with [stdivexcnd].  There the SP observations read the
-    TERMINATING SLICE [unOptionT (unOptionT (runStateT m s)) (Some r)], which
-    discards the divergent outcome, so the [stdivexcnd] spec transformers cannot
-    talk about divergence at all.  Here [None] is an ordinary member of the
-    outcome set, so the transformers constrain divergence directly: e.g.
+    Unlike [StDivExcNonDet_SPStExc.v], which projects away divergence,
+    this file retains [None] as an outcome.  Its transformers can therefore
+    constrain divergence directly:
     [getASPStExc (obsASP m) pre None] says "some [pre]-state may diverge" and
     [getDSLPStExc (obsDSLP m) pre None] says "every state that may diverge
     satisfies [pre]".
 
-    Everything is wrapped in a module so the names do not clash with the
-    [stdivexcnd] observations of the imported file. *)
+    [FullOutcomeObs] qualifies these names.  The file imports the computation
+    and specification modules, not a sibling observation module. *)
 
 Module FullOutcomeObs.
 
@@ -361,18 +356,14 @@ Section NDTriples.
 
   (** ** The other two directions, via an order scoped to one precondition
 
-      [tripleASP _ Under] and [tripleDSLP _ Over] are NOT relation inclusions —
-      each asserts an existential over states — so no target characterises them
-      in the GLOBAL orders [ordASPStExc] / [ordDSLPStExc]
-      (the witnessing programs have several incomparable minimal elements).
+      The targets below characterize [tripleASP _ Under] and
+      [tripleDSLP _ Over] using orders at [pre].  Their well-formedness
+      conditions force side conditions: ASP is false at the empty
+      precondition, while DSLP is true at the full precondition.
 
-      Scoping the order to the single precondition [pre] removes exactly the
-      information that made those up-sets non-principal, and then a target does
-      exist.  The price is a nonemptiness side condition, and it is the one each
-      healthiness condition forces: [SingletonProg] makes every ASP FALSE at the
-      empty precondition, so [pre] must be inhabited; dually [MSingletonProg]
-      makes every DSLP TRUE at the full precondition, so [pre] must be
-      co-inhabited.  Neither condition is removable. *)
+      Evaluating the ASP target at [pre] therefore recovers [post] only
+      when [exists s, pre s]; the DSLP target requires [exists s, ~ pre s].
+      The following [_at] lemmas state these conditions explicitly. *)
 
   #[program] Definition pp2asp_under' {S A}
     (pre : S -> Prop) (post : option (A * S) -> Prop) : ASPStExc S A :=

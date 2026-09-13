@@ -4,20 +4,27 @@ This directory is the core of the project. It defines a family of computation
 monads, several families of specification monads, and *observations* connecting
 them.
 
-The organising principle:
+The organising principle is a dependency boundary:
 
-> **The specification side never mentions a computation monad.** It is
-> parameterised only by the *outcome type*.
+> **Specification carriers do not depend on concrete computation monads.**
+> Observations connect the two sides by interpreting computation outcomes.
 
-Everything in `BaseSpecMonads/` compiles against ExtLib/ITree and the logic
-axioms alone — that is the check that the separation is real. Everything that
-depends on a particular computation monad lives in an observation file under
-`EffectObservations/`, and amounts to just three things: `outcomes_bind`,
-`outcomes_ret`, and the observations themselves.
+`BaseSpecMonads/` and `Arrows/` use specification types, generic infrastructure,
+and library definitions. The generic `TransformerLaws.v` happens to live under
+`ComputationMonads/`, but names no concrete computation monad. Concrete models
+live in `ComputationMonads/`; their observations, triples, and comparisons live
+in `EffectObservations/`. Shared program definitions live in `ExampleProgramDefs.v`.
 
 A second separation runs alongside it: **defining** an observation and
 **comparing** observations live in different files. `EffectObservations/WP/` and
-`EffectObservations/SP/` define; `EffectObservations/Taxonomy_*.v` compare.
+`EffectObservations/SP/` define observations and local results;
+`EffectObservations/Taxonomy_*.v` assemble the cross-observation taxonomy.
+
+Start with the computation table (§2), then choose a specification presentation
+(§3–4 and §8) and its observations (§5). The [context map](../../CONTEXT-MAP.md)
+provides shorter directory guides. Formulas below describe carriers and readings;
+unless shown as complete declarations, they are schematic rather than standalone
+Coq commands.
 
 ---
 
@@ -33,23 +40,23 @@ Taxonomy/
                          SPPredicateTransformers     -- SP carriers + well-formedness
                          ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
                          BaseGaloisConnections, NewGaloisConnections
-  Arrows/                PredArr, PrePostArr, RelPrePostArr, WPArr, GaloisArr
+  Arrows/                Rel, PrePostArr, RelPrePostArr, WPArr, GaloisArr
                          PredicateTransformerProperties -- SP well-formedness properties
                          SPostArr, RelSPPairArr       -- property-only / coupled SP arrows
                          SPostArrMonad               -- monad dictionaries and SP readings
                          SPostArrEquiv               -- equivalence and transformer lifts
-                          OptionLoop                  -- obstruction to option feedback
-     Examples/            SPostArrExamples             -- checked clients
-     Tests/               ArrowMonadInstances          -- concrete monad dictionaries
-                          ArrowTransformerInstances    -- transformer resolution checks
+                         OptionLoop                  -- obstruction to option feedback
+     Examples/           SPostArrExamples             -- checked clients
+     Tests/              ArrowMonadInstances          -- concrete monad dictionaries
+                         ArrowTransformerInstances    -- transformer resolution checks
   EffectObservations/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
                          StDivExcNonDet_WStExc, StDivNonDet_WSt
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
                          StDivNonDet_SPSt, DivNonDet_SPPure,
                          RdDivNonDet_RdSPPure
-                          SPostArrObservation         -- shared SP judgments
-                          RawStOpt_SPostArr           -- shared single-option outcome laws
+                         SPostArrObservation         -- shared SP judgments
+                         RawStOpt_SPostArr           -- shared single-option outcome laws
                          StDivITree_SPostArr, StExcNonDet_SPostArr,
                          StDivNonDet_SPostArr, StDivExcNonDet_SPostArr
       (root)             Taxonomy_StDivExcNonDet_StExc,
@@ -59,8 +66,9 @@ Taxonomy/
   (root)                 ExampleProgramDefs, InCorrectnessPrinciples
 ```
 
-Observation files are named `<computation monad>_<specification target>.v`, so
-the file name states exactly which observation it defines. Logical paths follow
+Computation-specific observation files are named
+`<computation monad>_<specification target>.v`; one file can define several
+readings of that source. Logical paths follow
 the directories: `Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad`,
 `Incorrectness.Taxonomy.EffectObservations.SP.StDivExcNonDet_SPStExc`, and so
 on.
@@ -81,22 +89,19 @@ distinguished outcome `None`: an exception in the first, divergence in the
 second. Nothing in the type distinguishes them; what fixes the meaning is which
 operations are offered. `StExcNonDet.v` supplies `MonadExc` (`raiseP`/`catchP`);
 `StDivNonDet.v` deliberately supplies none, and offers `divergeD`, `mayDiverge`
-and `orD` instead. `None` is absorbing under `bind` either way, which is exactly
-the propagation rule divergence needs, so the monad structure is identical. The
-file and type names now carry that distinction, which used to live only in
-comments.
+and `orD` instead. `None` is absorbing under `bind` in both models, so the same
+monad structure supports either interpretation. The distinction is semantic,
+not enforced by different raw carriers.
 
 `StDivNonDet.v` also carries `stdivndNE`, the non-empty fragment used by the
 `WSt` observations. Non-emptiness supports `obsDWP_strict`, `obsAWLP_top`, and
 taxonomy inclusions; the observations' postcondition-monotonicity proofs do
 not use it. See [the WP context](EffectObservations/WP/CONTEXT.md).
 
-`divnd` is the state-free base of that stack — `stdivnd S A = stateT S divnd A`
-by `eq_refl` — standing to `StDivNonDet.v` as `SPPure` does to `SPSt` /
-`SPStExc` on the specification side. It carries the same operations minus
-`get`/`put` (`divergeD`, `orD`, `mayDiverge`), the same non-empty fragment
-`divndNE`, and additionally the pointwise `outcomes_bind` /
-`diverge_absorbing` / `mayDiverge_bind`, which are axiom-free.
+`divnd` is the state-free base: `stdivnd S A` and `stateT S divnd A` are
+definitionally equal. It supplies `divergeD`, `orD`, `mayDiverge`, a non-empty
+fragment `divndNE`, and pointwise outcome laws such as `outcomes_bind` and
+`diverge_absorbing`.
 
 `rddivnd` puts a read-only environment on that base instead of a state. The two
 have the same shape but differ in the outcome:
@@ -110,26 +115,22 @@ so `RdDivNonDet.v` offers `MonadReader` (`ask`, `local`) where `StDivNonDet.v`
 offers `MonadState` (`get`, `put`), and `nonEmpty_localD` is the extra closure
 lemma the non-empty fragment needs.
 
-Only `stdivexcnd` can distinguish the two effects, via its second `optionT`.
+`stdivexcnd` distinguishes exceptions from divergence with two option layers:
+`Some (Some (a, s'))` is a normal return, `Some None` an exception, and raw
+`None` divergence. The deterministic `stdivitree` also distinguishes these
+effects: `Ret None` is an exception, while divergence belongs to the underlying
+ITree rather than to its option result.
 
-`TransformerLaws.v` holds the `Eq1`-generic `optionT` / `stateT` / `readerT`
-monad-law instances that every stack in the development chains through — the
-computation monads, `WPureMonad.v`'s `WSt` / `WStExc`, `PredMonad.v`'s
-`ProgWPred`, and the `*Rd` specification monads. Each section is parametric in
-the base monad (`Monad` / `Eq1` / `Eq1Equivalence` / `MonadLawsE` taken as a
-`Context`) and names no concrete monad, so `BaseSpecMonads/` can depend on it
-without depending on any computation monad — which is what keeps the
-organising principle at the top of this file literally true.
-
-The `readerT` instances are simpler than the `stateT` ones: the environment is
-threaded but never returned, so no pairing has to be destructed in the law
-proofs.
+`TransformerLaws.v` lifts `Eq1`, equivalence, and monad laws through `optionT`,
+`stateT`, and `readerT`. Both computation and specification stacks reuse these
+instances; their hypotheses concern only the base monad's operations and laws.
 
 ## 3. The SP specification monads
 
-Predicate transformers `(S -> Prop) -> Outcome -> Prop`, carved into four
-monads by four well-formedness conditions. **The bare transformer type is not a
-monad**; only these subsets are.
+Four well-formedness conditions select the SP monads from the raw transformer
+type `(S -> Prop) -> Outcome -> Prop`. The raw type alone does not justify the
+sequencing laws: `SPostMonad.v` contains a counterexample to associativity for
+the weaker stateful Kenji-style carrier and its proposed bind.
 
 | Monad | Carrier condition | Equivalent well-formedness properties | Reading of a relation `R` |
 |---|---|---|---|
@@ -172,15 +173,13 @@ The raw order `ordSPStExc` sits with the carriers.
 `retASLPStExc`/`bindASLPStExc` the disjunction — see `dsp_split` / `aslp_split`
 and the `aspPart*` / `dslpPart*` projections.
 
-**Why DSP and ASLP need machinery the other two don't.** Reading a relation as
-an ASP is monotone in the relation and as a DSLP antitone, so those two orders
-*are* relation inclusion. DSP and ASLP are neither monotone nor antitone
-(`dspOf_not_monotone` / `dspOf_not_antitone` and duals), so their `bind` cannot
-be a forward pass over the precondition. It instead **recovers** each argument's
-relation by probing at two constant preconditions, composes the relations, and
-re-reads — see `dsp_recov` / `aslp_recov` and the `*_carrier` bridges. Both
-carriers are stated as well-formedness conditions; `dsp_carrier` / `aslp_carrier`
-prove these equivalent to the fixed-point form the proofs use.
+**Stateful DSP and ASLP recover relations before sequencing.** The `aspPart*`
+and `dslpPart*` projections read each argument's recovered relation. DSP recovers
+`R s r` by probing at top and the co-singleton `fun t => t <> s`; ASLP probes
+at bottom and the singleton `fun t => t = s`. The `dsp_recov` and `aslp_recov`
+lemmas justify these probes. The binds compose the recovered relations and
+read the result again. The `dsp_carrier` and `aslp_carrier` lemmas connect this
+representation to the stated well-formedness conditions.
 
 **Ordered bind is a separate requirement.**
 [`SPBindOrderCounterexample.v`](BaseSpecMonads/SPBindOrderCounterexample.v)
@@ -209,11 +208,9 @@ module of its own:
 | `DSPMonad.v` | `DSPStExc` | `Module StDSP` |
 | `ASLPMonad.v` | `ASLPStExc` | `Module StASLP` |
 
-Each module imports its predecessors (`StDSP` opens `StTrans StASP StDSLP`, and
-so on), mirroring the top-level dependency chain. Separate per-file modules are
-used rather than reassembling one combined module with `Include`, because
-`Include` copies constants — the copies are convertible but display and unify
-against the originals, which is a latent source of confusion.
+Each module imports its predecessors (`StDSP` opens `StTrans StASP StDSLP`, for
+example). Module qualification distinguishes the parallel names in the two
+outcome indexings.
 
 ### The pure variants, and why DSP and ASLP collapse there
 
@@ -230,18 +227,17 @@ strict_conj_iff_singleton   : Strict w /\ Conjunctive w   <-> Singleton w    (* 
 term_disj_iff_msingleton    : Terminating w /\ Disjunctive w <-> MSingleton w (* ASLP = DSLP *)
 ```
 
-`Strict` alone already forces `Singleton` (`strict_to_singleton`, using only
-propositional extensionality and `NNPP` — `join_to_singleton` never used its
-`Disjunctive` half), and `Singleton` returns *both* connectives
-(`singleton_to_join`, `singleton_to_conjunctive`); dually for the multiplicative
-side. So `DSPSP` and `ASPSP` are two presentations of the same subset of
-`SPPure`, and their monad structure is **transported** along that equivalence
-(`asp_to_dsp` / `dsp_to_asp`, both the identity on the underlying transformer)
-rather than rebuilt — none of the relation-recovery machinery is needed.
+`strict_to_singleton` shows that pure strictness already implies `Singleton`;
+the dual `terminating_to_msingleton` gives the multiplicative case. Thus
+`DSPSP` presents the same subset as `ASPSP`, while `ASLPSP` presents the same
+subset as `DSLPSP`. Their operations are transported through `asp_to_dsp` /
+`dsp_to_asp` and `dslp_to_aslp` / `aslp_to_dslp`, respectively. These maps leave
+the underlying transformer unchanged.
 
-What disappears is exactly what makes DSP interesting: a precondition that is a
-*set* of states, so that `R⁻¹(r) ⊆ pre` carries more information than
-`R⁻¹(r) ∩ pre ≠ ∅`. With one `Prop` in the precondition slot the two coincide.
+The pure precondition is one proposition, not a set of independently chosen
+initial states. For an inhabited inverse image, requiring every predecessor
+to satisfy that proposition is equivalent to requiring some predecessor to do
+so. This is why DSP collapses to ASP and ASLP to DSLP in the pure observation.
 
 ### The reader-indexed variants
 
@@ -263,33 +259,33 @@ one `Prop` per environment, environments specified independently. Since every
 fibre is additive, an `ASPRd R A` is exactly a relation `R -> A -> Prop`
 (`getASPRd_singleton`).
 
-Two consequences worth keeping straight. First, `ASPRd` coincides with what you
-would get by defining a coupled carrier `(R -> Prop) -> A -> Prop` and cutting
-it down by the ASP condition (strict + disjunctive): both are the relation
-`R -> A -> Prop`, and their binds agree. Second, that coincidence **fails** for
-DSP and ASLP: `DSPRd` inherits the pure collapse (`DSPSP = ASPSP`, above),
-whereas strict + conjunctive on the coupled carrier does not collapse — the
-transformer `fun pre _ => forall r, pre r` is strict and conjunctive but not
-singleton, and it has no counterpart in `readerT R ASPSP`. So the pointwise
-lift keeps ASP and DSLP faithfully but erases the DSP/ASLP distinction; only a
-shared `R -> Prop` precondition retains it.
+The reader lift inherits the pure collapse: `DSPRd` does not retain a distinct
+DSP reading, nor `ASLPRd` a distinct ASLP reading. A transformer with a shared
+precondition `(R -> Prop) -> A -> Prop` can express a different requirement.
+For example, with `R = bool` and an inhabited output type,
+`fun pre _ => forall r : bool, pre r` is strict and conjunctive but is not
+determined by singleton preconditions. This illustrates a distinction in
+precondition shape; the current reader observations use only the pointwise lift.
 
 ### In-monad characterizations
 
-Only two of the eight triple directions are relation inclusions, and only those
-work with the global order and no side condition:
+`NewGaloisConnections.v` supplies the following in-monad characterizations.
+ASP `Over` and DSLP `Under` use global orders; the other two supplied targets
+use orders at one precondition:
 
 | | `Over` | `Under` |
 |---|---|---|
 | ASP | `ordASPStExc obs (pp2asp_over …)` — global | `ordASPStExcAt pre (pp2asp_under …) obs` — needs `∃s, pre s` |
 | DSLP | `ordDSLPStExcAt pre obs (pp2dslp_over …)` — needs `∃s, ¬pre s` | `ordDSLPStExc (pp2dslp_under …) obs` — global |
-| DSP / ASLP | none | none |
+| DSP / ASLP | not supplied | not supplied |
 
 `Over` always compares `obs ⊑ target`, `Under` always `target ⊑ obs`. The two
 side conditions are forced by the well-formedness conditions themselves (`asp_bot`:
 every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at `⊤`) and are
-not removable. DSP and ASLP have no in-monad target in either direction, because
-their orders are not relation inclusion at all.
+not removable for these targets. These statements concern targets inside the
+well-formed monads. Comparisons against the raw `pp2_over` / `pp2_under`
+transformers are separate characterizations and do not require these two side
+conditions.
 
 ## 4. The WP specification monads
 
@@ -305,9 +301,10 @@ WSt    S   := stateT S WPure                          (* W^St     *)
 WStExc S   := stateT S (optionT WPure)                (* W^StExc  *)
 ```
 
-`WSt S A = S -> (A * S -> Prop) -> Prop`: every outcome is a normal return, so
-there is no `MonadExc`. `WStExc S A = S -> (option (A * S) -> Prop) -> Prop`:
-the extra outcome is the raised exception, and it carries `MonadExc`.
+After applying the stack runners and `runWPure`, `WSt` takes an initial state
+and a postcondition on `A * S`. `WStExc` instead takes a postcondition on
+`option (A * S)` and supplies `MonadExc`. These are the shapes of the
+evaluators, not equalities of the bundled carriers with unrestricted functions.
 
 `ret`, `bind`, `Eq1` (pointwise iff) and `MonadLawsE` are proved directly for
 `WPure`; both stacks get their laws from the `Eq1`-generic `optionT` / `stateT`
@@ -315,11 +312,10 @@ instances in `ComputationMonads/TransformerLaws.v`.
 `Coercion runWPure : WPure >-> Funclass` keeps application (`w post`) working
 through the subset type.
 
-Monotonicity is not decoration: `monotonicity_is_needed` shows the
-`PrePost -| WPure` adjunctions are **false** without it. Because the carrier is
-a subset type, each effect observation carries a monotonicity lemma
-(`obsAWP_mono` and friends), and downstream proofs apply those rather than
-`destruct`ing through the transformer.
+The adjunction and `Proper_bind` proofs use the bundled monotonicity. Each WP
+observation therefore supplies an `obs*_mono` proof when constructing a
+`WPure` value. Downstream proofs can use these lemmas or the public unfolding
+lemmas without unpacking the subset type.
 
 All three WP orders live in `WPureMonad.v`, each next to the type it orders —
 matching the SP side:
@@ -336,43 +332,42 @@ in `EffectObservations/` use the forward stack orders. They are opposite
 conventions, not a lifting of one another — lifting `WP_le` through the
 transformers would give `forall s, m2 s ⊆ m1 s`.
 
-**`Arrows/WPArr.v` deliberately stays on `WPureT`**, the unrestricted type: its
-`ArrowEq` is Leibniz equality on functions into the carrier, which a subset type
-cannot support without proof irrelevance, and its arrow laws hold definitionally
-only for the raw type.
+**`Arrows/WPArr.v` uses the raw carrier `WPureT`**, not `WPure`. Its `ArrowEq`
+is Leibniz equality. Some laws hold by conversion; laws involving products and
+sums also use functional extensionality. This equality contract differs from
+`WPure`'s pointwise logical equivalence.
 
 ## 5. Observations
 
-An observation maps a computation monad into the spec monads. Everything
-downstream — monad-morphism theorems, triples, the taxonomy — follows from
-`outcomes_bind` and `outcomes_ret`, whose case count tracks the effect layers.
+An observation maps computations into a specification carrier. Preservation
+theorems relate its source and target return/bind operations, usually through
+outcome laws or shared arrow normalization. Defining a reading alone does not
+establish these morphism laws.
 
-Observation modules expose their readings and morphism laws
-(`obs*_ret` / `obs*_bind`). Triples and their refinement characterizations
-use either the base-monad judgments or the shared arrow judgments described
-below. Comparisons between observations live in §6.
+Triples use either the base-monad judgments or the shared arrow judgments
+described below. Their refinement characterizations and the comparisons in §6
+also depend on the chosen orders and, where stated, side conditions.
 
 ### WP side — `EffectObservations/WP/`
 
-| File | Source | Target | Observations | Module |
-|---|---|---|---|---|
-| `StDivITree_WStExc.v` | `stdivitree` | `WStExc` | all four | — |
-| `StExcNonDet_WStExc.v` | `stexcnd` | `WStExc` | `obsDWP`, `obsAWP` only | — |
-| `StDivExcNonDet_WStExc.v` | `stdivexcnd` | `WStExc` | all four | — |
-| `StDivNonDet_WSt.v` | `stdivndNE` | `WSt` | all four | `TermSliceObsWP` |
+| File | Source | Target | Observations | Local return/bind laws | Module |
+|---|---|---|---|---|---|
+| `StDivITree_WStExc.v` | `stdivitree` | `WStExc` | all four | not proved here | — |
+| `StExcNonDet_WStExc.v` | `stexcnd` | `WStExc` | `obsDWP`, `obsAWP` only | not proved here | — |
+| `StDivExcNonDet_WStExc.v` | `stdivexcnd` | `WStExc` | all four | proved | — |
+| `StDivNonDet_WSt.v` | `stdivndNE` | `WSt` | all four | proved | `TermSliceObsWP` |
 
 The four readings are `obsDWP` (demonic total), `obsDWLP` (demonic liberal),
 `obsAWP` (angelic total), `obsAWLP` (angelic liberal). `StExcNonDet_WStExc.v`
-has no liberal readings because its monad has no divergence — they are not even
-definable there. `StDivITree_WStExc.v` is the deterministic case and is the only
-built file with `obsWPCollapse` / `obsWLPCollapse`, the angelic–demonic
-collapse.
+supplies no distinct liberal readings: its source has exceptions but no separate
+divergence outcome. `StDivITree_WStExc.v` proves the deterministic
+angelic–demonic collapse in `obsWPCollapse` / `obsWLPCollapse`.
 
 `StDivNonDet_WSt.v` targets `WSt`, whose postconditions range over `A * S`, so
 divergence is visible to the *observation* but not to the *postcondition*: the
-total/liberal axis is carried entirely by which observation you pick. Its source
-is the non-empty fragment `stdivndNE`, which is what makes the observations
-well-formed.
+total/liberal axis is carried by the choice of observation. Its non-empty source
+`stdivndNE` supports `obsDWP_strict`, `obsAWLP_top`, and selected taxonomy
+inclusions. Postcondition monotonicity alone does not require non-emptiness.
 
 ### SP side — `EffectObservations/SP/`
 
@@ -384,7 +379,10 @@ well-formed.
 | `DivNonDet_SPPure.v` | `divnd` | `SPPure` | **no** — reads the terminating slice | `PureObs` |
 | `RdDivNonDet_RdSPPure.v` | `rddivnd` | `ASPRd` / `DSLPRd` / `DSPRd` / `ASLPRd` | **no** — reads the terminating slice | `RdPureObs` |
 
-Note the deliberate contrast in the fourth column:
+Each row supplies four well-formed observations and their return/bind laws.
+The first four rows name the raw outcome indexing; the actual targets are the
+corresponding ASP, DSLP, DSP, and ASLP subsets. Note the contrast in divergence
+visibility:
 
 - `StDivExcNonDet_SPStExc.v` reads
   `unOptionT (unOptionT (runStateT m s)) (Some r)`; the outer `Some` discards
@@ -396,7 +394,7 @@ Note the deliberate contrast in the fourth column:
   `pre`"*.
 - `StDivNonDet_SPSt.v` observes the same monad into the `A * S`-indexed spec
   monads, so divergence is projected away again: `divergeD` satisfies every
-  `Over` triple vacuously.
+  ASP `Over` triple vacuously. Its DSLP reading, by contrast, is always true.
 
 The two modules exist because `StDivNonDet_SPStExc.v` and `StDivNonDet_SPSt.v`
 observe the same computation monad into differently-indexed targets, so their
@@ -413,10 +411,9 @@ targets `ASPRd` / `DSLPRd` / `DSPRd` / `ASLPRd` are defined in the SP monad
 files themselves (§3). Its triples take `pre : R -> Prop` and are read
 pointwise in the environment.
 
-There is a genuinely different reading it does **not** cover: letting the
-precondition range over *sets* of environments, `(R -> Prop) -> A -> Prop`.
-That couples the environments the way a shared `S -> Prop` couples initial
-states (§7), and is not any existing carrier, so it would need a new one.
+These reader observations do not use a shared set-of-environments precondition
+of shape `(R -> Prop) -> A -> Prop`; see the distinction in §3. No alternative
+reader observation is defined here.
 
 `DivNonDet_SPPure.v` is the state-free case of `StDivNonDet_SPSt.v`: stripping
 `S` collapses every `S -> Prop` precondition to a single `Prop`, the
@@ -473,9 +470,9 @@ and the ASP/DSLP distinction for many-to-one deterministic programs.
 
 ## 6. Comparing observations — `Taxonomy_*.v`
 
-Three files, one per source monad / target indexing, holding everything that
-compares observations against one another rather than defining them: the
-inclusions, the contrapositive pairs, and the resulting taxonomy of triples.
+Three files assemble the inclusions, contrapositive pairs, and triple taxonomy,
+one per source monad / target indexing. Observation modules also contain local
+collapse and simplification results.
 
 | File | Contents |
 |---|---|
@@ -483,11 +480,20 @@ inclusions, the contrapositive pairs, and the resulting taxonomy of triples.
 | `Taxonomy_StDivNonDet_StExc.v` | `Module TaxonomyFullOutcome` — the contrapositive pairs, the `DSP_conjunction` / `ASLP_disjunction` decompositions, the four orderings, and the `cc_*` / `ii_*` triple taxonomy. |
 | `Taxonomy_StDivNonDet_St.v` | `Module TaxonomyStDivNonDetWSt` (WP side) and `Module TaxonomyStDivNonDetSPSt` (SP side), each with its observation comparisons and triple taxonomy. |
 
-`Section GaloisConnection` in the first file is the crossover: `dwlp_slice` and
-`awp_slice` show that `obsDWLP` and `obsAWP` applied to a postcondition are the
-two readings of the same terminating slice that `obsASP` / `obsDSLP` use, so
-`dwlp_asp` and `awp_dslp` identify a WP triple with an SP triple — the triples
-differ only in the order of the `s` and `r` quantifiers.
+`Section GaloisConnection` in the first file connects the WP and SP judgments.
+The `dwlp_slice` and `awp_slice` lemmas express the WP readings through the
+terminating relation used by SP. The resulting equivalences have specific
+directions:
+
+```text
+dwlp_asp: tripleWP obsDWLP m pre SubsetOf post
+          <-> tripleASP m Over pre post
+awp_dslp: tripleWP obsAWP m pre SupersetOf post
+          <-> tripleDSLP m Under pre post
+```
+
+These are not an identification of angelic WP coverage with ASP incorrectness;
+the withdrawal example in §9 contrasts those judgments.
 
 Where a taxonomy file holds both halves, the SP-side `Require Import`s are
 placed *after* the WP sections rather than in the preamble, so the SP base-monad
@@ -497,9 +503,10 @@ modules cannot shadow names the WP proofs above resolve against.
 
 Five standalone base specification monads, faithful ports of the ones in
 *Dijkstra Monads For All* (ICFP 2019), `theories/sprop/SpecificationMonads.v`.
-Each is unary (`Type -> Type`), each has `Monad` + `MonadLawsE`, and every proof
-is **axiom-free** — DM4all needs `Ssig_eq`, `sprop_ext` and funext for the same
-results, which we avoid by taking `Eq1` to be pointwise iff rather than equality.
+Each is unary (`Type -> Type`) and has `Monad` and `MonadLawsE`. Their `Eq1`
+compares underlying propositions by logical equivalence, so the law statements
+do not require equality of bundled proofs. Assumptions should be checked for
+the particular theorem, not inferred from a file's imports or this summary.
 
 | file | module | carrier | DM4all name |
 |---|---|---|---|
@@ -509,10 +516,11 @@ results, which we avoid by taking `Eq1` to be pointwise iff rather than equality
 | `BaseSpecMonads/WPureMonad.v` | — | `WPure A = { f : (A -> Prop) -> Prop \| wpure_mono f }` | `WPure` |
 | `BaseSpecMonads/RelPrePostMonad.v` | `RPPM` | `RelPrePost X = { r : forall p, (X -> Assuming p) -> Assuming p \| rpp_mono r }` | `MRSpec` |
 
-Two subtypes carry the weight. `Over p` (props that *imply* `p`) is what makes
-`SPost`'s `bind_bind` typecheck; `Assuming p` (props closed under *assuming*
-`p`, i.e. `q <-> (p -> q)`) is its dual and is exactly what `RelPrePost`'s
-`bind_ret_l` needs — `ab_close` discharges the leading `p ->`.
+The carrier constraints explain two important proof steps. `Over p` stores a
+proposition that implies `p`; the `SPost` associativity proof uses that implication
+to recover an intermediate witness. `Assuming p` stores a proposition `q` with
+`q <-> (p -> q)`; `ab_close` discharges the leading assumption in the
+`RelPrePost` left-unit proof.
 
 `BaseSpecMonads/BaseGaloisConnections.v` defines the orders (`Pred_le`,
 `PP_le`, `SP_le`, `MR_le`, each with its `PreOrder` instance; `WP_le` comes from
@@ -531,19 +539,16 @@ at reflexivity (`pp2sp_sp2pp_loop` / `sp2pp_pp2sp_loop` are DM4all's).
 
 `WP_le` and `MR_le` are *reversed* — a weaker demand is lower.
 
-Four of the five right/left adjoints are formulas. `pp2sp` is not: the obvious
-candidate `pp2sp0 pp = fun p a => p /\ (pre pp -> post pp a)` is only a lax
-inverse, so the real right adjoint is the impredicative **intersection** of every
-`SPost` dominating the pair (`pp2spBase`), available because `Prop` is
-impredicative. `pp2sp01` places it below `pp2sp0`.
+`pp2sp` uses an impredicative intersection: `pp2spBase` quantifies over every
+`SPost` above `fun p a => p /\ PPM.post pp a`. Its underlying proposition
+depends only on `PPM.post pp`, not on the pair's precondition. The theorem
+`pp2sp01` compares it with the simpler candidate
+`pp2sp0 pp = fun p a => p /\ (PPM.pre pp -> PPM.post pp a)`.
 
-Note that `pp2sp` mentions only `PPM.post pp`, never `PPM.pre pp`. The
-intersection collapses to `post` itself, so `SP_le sp (pp2sp pp)` says exactly
-`app sp True ⊆ post` — the *over*-approximate direction, independent of the
-precondition. The under-approximate reading `post ⊆ app sp pre` is not an
-instance of the global order at all; it is the order **scoped to one
-precondition**, which is why the SP triples use `ordASPStExcAt` rather than
-`ordASPStExc` in that direction.
+This adjunction does not supply the ASP under-approximation target used in §3.
+That target belongs to `NewGaloisConnections.v`, whose characterization uses
+`ordASPStExcAt` at the asserted precondition. The DM4all unary carrier and the
+stateful ASP carrier have different contracts.
 
 The file does *not* `Import PPM`: `PPM` binds `pre` and `post`, which would
 capture the binders of the SP embeddings, so `PPM.pre` / `PPM.post` are written
@@ -576,24 +581,29 @@ Two modules repeat the section at the other outcome types:
   `exists s, pre s` becomes `pre`, `exists s, ~ pre s` becomes `~ pre` — and
   are justified by `asp_bot_pure` / `dslp_top_pure` in the monad files.
 
-The `gen_*` theorems are stated for an **arbitrary** `w` in the relevant monad;
-each observation file obtains its own version by `exact`, since e.g.
-`tripleASP m Over pre post` is *definitionally* the left-hand side.
+The `gen_*` theorems apply to an **arbitrary** `w` in the relevant monad.
+They can therefore characterize an observed specification without depending
+on the computation that produced it. Observation files also expose local
+versions of these triple characterizations.
 
 ### Relation to `Arrows/GaloisArr.v`
 
-`GaloisArr.v` ports the same DM4all connections to this development's **binary
-arrows** (`Pred A B`, `PrePost A B`, `WPArr A B`, `RelPrePost A B`), where two
-of the five break: SP↔MR fails outright, and SP↔PP holds only with the
-transformer restricted to the image of `asp` (`SingletonSPost`). Passing to the
-unary monads removes both obstructions — the binary failures are artifacts of
-the extra input index, not of the specifications.
+`Arrows/GaloisArr.v` proves four binary connections: `Galois_Pred_PrePost`,
+`Galois_Pred_SPost`, `Galois_WP_PrePost`, and `Galois_RPP_WP`. Its local
+`MonotoneSPost`, `MonotoneWP`, and `WFRelPrePost` subtypes state the required
+constraints. `Galois_Pred_SPost` is an adjunction with monotone transformers,
+not an isomorphism on that entire carrier; the property-only ASP normal form
+in §8 requires the stronger strictness and disjunctivity conditions.
 
-The obstruction is in the precondition slot, not the state. `SPStExc S A =
-(S -> Prop) -> option (A * S) -> Prop` has one `S -> Prop` *shared* across
-states, and `(S -> Prop) -> X` does not curry to `S -> Prop -> X`. A shared
-`S -> Prop` couples the initial states and makes the order strictly coarser than
-pointwise.
+The file also proves `gamma_uni_not_monotone`, rejecting one proposed
+SP/validator map. Its existential alternative remains informal discussion.
+These results do not establish that every binary version of a unary adjunction
+must fail.
+
+When comparing presentations, keep the precondition shape explicit.
+`(S -> Prop) -> X` accepts one predicate on all initial states; `S -> Prop -> X`
+accepts a proposition at each state. These types are not related by currying,
+and substituting one for the other changes the quantifiers in a triple.
 
 ## 8. Arrows vs monads: file split
 
@@ -602,7 +612,7 @@ presentations**:
 
 | family | monad (unary carrier) | arrow (binary carrier) |
 |---|---|---|
-| `Pred` | `BaseSpecMonads/PredMonad.v` — `Pred A = A -> Prop` | `Arrows/PredArr.v` — `Pred A B = A -> B -> Prop` |
+| `Pred` / `Rel` | `BaseSpecMonads/PredMonad.v` — `Pred A = A -> Prop` | `Arrows/Rel.v` — `Rel A B = A -> B -> Prop` |
 | `PrePost` | `BaseSpecMonads/PrePostMonad.v` — `PrePost A = Prop * (A -> Prop)` | `Arrows/PrePostArr.v` |
 | `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — property-only `PureASPostArr`, `PureDSLPostArr`; `Arrows/RelSPPairArr.v` — coupled variants |
 | `RelPrePost` | `BaseSpecMonads/RelPrePostMonad.v` — over `Assuming p` | `Arrows/RelPrePostArr.v` |
@@ -624,8 +634,9 @@ relational presentations. Its `rel_state_option_pure` and
 `rel_state_option_bind` theorems also normalize the actual arrow-derived
 return and bind of a state-over-option stack at any fixed input type `I`.
 Bind keeps the input, threads the intermediate state, and propagates `None`.
-These generic proofs are axiom-free; the SP monads instantiate them with
-`ASP_rel_presentation` and `DSLP_rel_presentation`.
+The SP monads instantiate the relational contract with `ASP_rel_presentation`
+and `DSLP_rel_presentation`; concrete proofs retain the assumptions used to
+establish those presentations.
 SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
 
 ### Arrow-derived monad laws
@@ -650,8 +661,8 @@ Here `HA`, `HAA`, and `HE` are the arrow, application, and equality dictionaries
 `Eq1_Arrow` restricts `arrow_eq` to `arr I`; it is an explicit definition so it
 does not compete with concrete monads' `Eq1` instances. The global
 `Eq1Equivalence_Arrow` and `MonadLawsE_Arrow` instances resolve for these explicit
-dictionaries. The generic proof has no logical axioms and needs no inhabitant
-of `I`; concrete instances retain the assumptions of their own law proofs.
+dictionaries. The derivation needs no inhabitant of `I`; concrete instances
+retain the assumptions of their own law proofs.
 
 The concrete arrows register their chosen `Eq1` aliases. Generic instances
 provide `Monad`, `Eq1Equivalence`, and `MonadLawsE`. Test-only named dictionary
@@ -688,8 +699,8 @@ state-over-option arrows with a non-unit input. It also checks that all five
 concrete monad names are definitionally the generic dictionary and that their
 canonical equalities support automatic law resolution.
 `Arrows/Tests/ArrowTransformerInstances.v` holds the transformer-stack
-resolution checks: the `optionPred` laws, the monad-view `progPredM` /
-`nditPredM` stacks, the coupled option and state-over-option dictionaries
+resolution checks: the `optionRel` laws, the monad-view `progRelM` /
+`nditRelM` stacks, the coupled option and state-over-option dictionaries
 (registered nowhere, resolved through the generic transformers), and the
 double-option application-law witnesses.
 Both test modules are in `_CoqProject`, so the normal build checks them.
@@ -747,27 +758,20 @@ in the application's input. The coupled carriers are `PureRelASPPairArr` and
 `ASPostArr` and `DSLPostArr` when using both.
 
 The normal-form proofs use functional and propositional extensionality, and
-bundled equality additionally uses proof irrelevance. Their assumption audits
-require no excluded middle. Checked clients live in
+bundled equality additionally uses proof irrelevance. Checked clients live in
 `Arrows/Examples/SPostArrExamples.v`; monad and transformer instantiation
 checks live in `Arrows/Tests/`.
 
-`Arrows/OptionLoop.v` proves that `optionPred` cannot satisfy unrestricted
+`Arrows/OptionLoop.v` proves that `optionRel` cannot satisfy unrestricted
 `ArrowLoop` left tightening: empty feedback makes failure propagation conflict
 with the empty relation. `SPostArrEquiv.v` transports this obstruction to both
 property-only option SP arrows.
 
 `PredMonad.v` also carries `WPred` and the stack
-`ProgWPred S := stateT S (optionT WPred)`. `WPred` stays a definition in its own
-right rather than an alias for `PredM.Pred`, even though the carriers are equal
-and `bind` is identical: making it an alias would put two `Eq1` instances on one
-type constructor (pointwise iff for `PredM`, Leibniz `eq` for the stack), and
-each is load-bearing for its own laws.
-
-**`PrePost` is strictly bigger than every SP monad.** `snd` composed with any SP
-reading is a monad morphism, but it forgets the precondition and no injective
-map exists (proved for the pure case). What does hold is a Galois connection
-with each SP monad; for ASP it is order-preserving and for DSLP order-reversing.
+`ProgWPred S := stateT S (optionT WPred)`. `WPred` and `PredM.Pred` use the
+same predicate shape but have separate equality dictionaries: Leibniz equality
+for `WPred` and pointwise logical equivalence for `PredM.Pred`. Check the
+selected `Eq1` when using their laws.
 
 ## 9. Example programs
 
@@ -781,8 +785,8 @@ with each SP monad; for ASP it is order-preserving and for DSLP order-reversing.
 | `progA_stexcnd` | `stexcnd` | `progA` read in the divergence-free monad |
 | `progA_stdivitree` | `stdivitree` | the deterministic variant |
 
-plus the shared `preEq0` / `postEq0`. It is a leaf so that observation files and
-example blocks can both use the programs without a cycle.
+plus the shared `preEq0` / `postEq0`. The file imports no observations, so
+different observation modules can use these programs without a cycle.
 
 Three programs share the shape of `progA` in three different monads, so the two
 transposed ones carry a monad suffix; `ExampleProgramDefs.v` imports more than
@@ -795,9 +799,9 @@ ASP/DSP ones at the end of `SP/StDivExcNonDet_SPStExc.v`, and so on. A triple
 means something different for each observation, so there is no single file where
 they all belong.
 
-The one exception is `Module WithdrawExample`, at the bottom of
-`Taxonomy_StDivExcNonDet_StExc.v`: it states `tripleWP obsAWP` and
-`tripleASP … Under` over the *same* program with the *same* postcondition,
+The cross-reading example is `Module WithdrawExample`, at the bottom of
+`EffectObservations/Taxonomy_StDivExcNonDet_StExc.v`: it states `tripleWP obsAWP`
+with `SubsetOf` and `tripleASP … Under` over the *same* program and postcondition,
 contrasting angelic *coverage* (∀ input, ∃ output) with O'Hearn-style bug
 *presence* (∀ asserted output, ∃ input). It is a comparison, so it sits with the
 other comparisons.
@@ -807,10 +811,10 @@ other comparisons.
 
 ## 10. `OldSP/`
 
-`OldSPObservations.v` (2844 lines) and `OldIncorrectnessRewritingRules.v` hold
-the earlier reading-based presentation of the SP side, superseded by
-`BaseSpecMonads/` + `EffectObservations/SP/` but **not** redundant. It is the
-only place with:
+`OldSPObservations.v`, `OldIncorrectnessRewritingRules.v`, and
+`OldExamplePrograms.v` remain in the build. They preserve an earlier
+reading-based presentation, now superseded by `BaseSpecMonads/` and
+`EffectObservations/SP/`. Its compiled results include:
 
 - the **additive / multiplicative** SP monads — `AdditiveSP`,
   `MultiplicativeSP`, `SPPure`/`PureSPM`, `SPStExc`/`ProgSPM`, the product monad
@@ -822,14 +826,18 @@ only place with:
   counterexamples `obsDSP_not_top`, `obsASLP_not_strict`, `obsDSP_not_join2`,
   `obsASLP_not_meet2`
 - the `AsSPObs` typeclass, `tripleSP` / `tripleSPm` / `tripleSPspec`,
-  `tripleJoin` / `tripleMeet`, and the `ProgSPObs` / `SPredObs` modules
+  and `tripleJoin` / `tripleMeet`
 
-The no-go theorems matter beyond history: they are the machine-checked reason
-`DSPStExc` / `ASLPStExc` are built by *recovering* relations rather than by a
-forward pass, and nothing in the current files records that argument.
+The no-go theorems reject representing the DSP/ASLP readings in those earlier
+additive/multiplicative carriers. They do not reject the current DSP/ASLP
+monads or every possible sequencing construction.
 
-`OldSP/` keeps its own vocabulary (`SPredT`, `ordSP`) and is not part of the
-naming scheme in §12.
+`OldSPObservations.v` also preserves a large **commented-out experiment**.
+`AspConjugation`, `ObsRelM`, `ProgSPObs`, `SPredObs`, `SPredT`, and `ordSP`
+inside that block are not compiled or exported. Its displayed proofs and
+examples are historical notes, not current theorem references. The compiled
+earlier presentation has its own local names, including `SPStExc`; do not
+assume they denote the carriers in §3 or follow all conventions in §12.
 
 `OldSP/Observation.v` and `OldSP/NonDetObservation.v` are **not** in
 `_CoqProject`. They are the older observation style, kept for reference; the
@@ -837,11 +845,15 @@ directory's only `Admitted` is in `Observation.v`.
 
 ## 11. Build status
 
-The files listed in `_CoqProject` build **clean from scratch**, with **no
-`Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
-classical reasoning enters on the multiplicative/demonic side
-(`Classical_Prop`), and several files also import `PropExtensionality` /
-`FunctionalExtensionality`.
+[`_CoqProject`](../_CoqProject) lists the normal build's sources. The
+[root README](../../README.md#build) gives the build commands, and the
+[opam manifest](../coq-spec-monad.opam) gives dependency constraints. A source
+file can belong to the build while containing aborted attempts or disabled
+experiments; neither is an exported theorem.
+
+Build success, admissions, and logical assumptions are separate checks. Some
+proofs use classical logic or extensionality. Use `Print Assumptions` on the
+theorem of interest rather than inferring its assumptions from imports.
 
 Run `make check` from `Code/` for assumption reports. The separate
 `Code/Checks/Assumptions.v` file audits the arrow-derived observations,
@@ -849,7 +861,8 @@ representative examples, and the ordered-bind counterexamples.
 `Code/Makefile.local` adds this opt-in target to the generated makefile;
 the audit file is outside `_CoqProject`, so ordinary `make` does not run it.
 Each explicit `make check` reruns the reports and returns an error if the
-audit file fails to compile. `make clean` also removes its generated outputs.
+audit file fails to compile. The reports do not compare assumptions against an
+allowlist and do not cover every theorem in this README.
 
 Not in the build, deliberately:
 
@@ -857,11 +870,11 @@ Not in the build, deliberately:
   references.
 - `OldSP/Observation.v`, `OldSP/NonDetObservation.v` — see §10.
 
-`Makefile` is gitignored; regenerate with
-`coq_makefile -f _CoqProject -o Makefile`. A stale `.vo` still satisfies a
-`Require`, which has masked a broken build during past reorganisations — if
-`_CoqProject` changes, rebuild from clean. There are a few `.v~` editor backups
-under `OldSP/` and `BaseSpecMonads/`; the build ignores them.
+`Makefile` is gitignored. Regenerate it when `_CoqProject` changes, and verify
+reorganizations with a clean build in an isolated checkout: stale `.vo` files
+can otherwise satisfy imports of removed sources. Do not clean a shared
+workspace while another process is building it. Editor backups (`.v~`) are
+outside the build manifest.
 
 ## 12. Naming conventions
 
@@ -877,10 +890,11 @@ The law instance is always `MonadLawsE` (matching the ITree class), never
 `MonadLaws`. Slice variants inside `Module St*` reuse the identical names; the
 module qualifies them (`StASP.MonadLawsE__ASPSt`).
 
-**Type names match their carriers** — `SPSt` for the terminating slice,
-`SPStExc` for the exception outcome:
+**Type names distinguish outcome indexings** — `SPSt` for plain pairs,
+`SPStExc` for option outcomes. The latter can represent an exception or divergence
+depending on the observation (§5):
 
-| | exception outcome | terminating slice (in `Module St*`) |
+| | option outcome | terminating slice (in `Module St*`) |
 |---|---|---|
 | type | `ASPStExc` | `ASPSt` |
 | projection | `getASPStExc` | `getASPSt` |
@@ -902,9 +916,7 @@ them apart.
 
 ## 13. Known duplication
 
-The option-outcome and terminating-slice developments are near-copies differing
-only in the outcome type, `bind`, and the four `comp_*` lemmas — everything else
-transfers by re-indexing. Parameterising one development over an abstract
-outcome functor plus a Kleisli `step` (with the three `comp_*` laws as
-hypotheses) would share the bridges, carriers and targets, and reduce each new
-outcome type to one instance.
+The option-outcome and terminating-slice developments repeat many carrier,
+recovery, and order proofs. Their sequencing differs in the propagation of
+`None`. Factoring them over an outcome type and its sequencing laws is a
+possible future refactor; no such common abstraction is implemented here.

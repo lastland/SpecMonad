@@ -3,14 +3,12 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet DivNonD
 
 (** * Nondeterministic, possibly divergent computations in an environment
 
-    [rddivnd R A = readerT R divnd A], whose payload is
-    [R -> option A -> Prop] — a SET of outcomes for each environment, with the
-    distinguished outcome [None] read as DIVERGENCE.
+    [rddivnd R A = readerT R divnd A] assigns a set of outcomes to each
+    environment.  Its unwrapped payload has type [R -> option A -> Prop],
+    with [None] read as divergence.
 
-    This is [DivNonDet.v] with a read-only environment on top, and it stands to
-    [stdivnd] as a reader stands to a state: [rddivnd R A] and [stdivnd R A]
-    have the same shape [R -> option (…) -> Prop], but the reader cannot
-    change [R], so its outcomes carry no final environment.  Concretely:
+    Unlike the stateful [stdivnd], this reader stack returns no final
+    environment.  Their unwrapped payloads differ as follows:
 
       [stdivnd R A]  =  R -> option (A * R) -> Prop     (state: outcome carries R)
       [rddivnd R A]  =  R -> option  A      -> Prop     (reader: it does not)
@@ -18,10 +16,10 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet DivNonD
     So this file offers [MonadReader] ([ask], [local]) where [StDivNonDet.v]
     offers [MonadState] ([get], [put]).
 
-    As in the rest of [ComputationMonads/], nothing in the type distinguishes
-    divergence from a raised exception; what fixes the meaning is which
-    operations are offered.  There is deliberately no [MonadExc] — [catch]
-    would be "recover from divergence" — and [divergeD] is provided instead.
+    As in [DivNonDet.v], the raw option type does not enforce this reading
+    of [None].  The module supplies divergence operations and registers no
+    exception instance: interpreting [catch] as recovery from divergence
+    would conflict with the intended semantics.
 
     Operation names match the other computation monads ([retD], [bindD],
     [divergeD], [orD], …); references to the underlying [divnd] operations are

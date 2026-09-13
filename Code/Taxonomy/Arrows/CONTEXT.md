@@ -54,8 +54,8 @@ type under `ArrowLaws` and `ArrowApplyLaws`. Effects are stacked before fixing
 the input. `asp_to_dslp` preserves the recovered relation and return/bind while
 changing its reading; the property-only/coupled conversions preserve the reading.
 
-[OptionLoop.v](OptionLoop.v), `optionPred_no_left_tightening`, rules out lawful
-`ArrowLoop` for the existing `optionPred` operations and pointwise equivalence
+[OptionLoop.v](OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
+`ArrowLoop` for the existing `optionRel` operations and pointwise equivalence
 when feedback ranges over all types, including `Empty_set`. Empty feedback hides
 the difference between an empty prefix and one returning `None`, while option
 composition outside the loop distinguishes them. `SPostArrEquiv.v` transports
@@ -67,7 +67,7 @@ unrestricted law and these operations, rather than every possible feedback desig
 Start with the properties, then `SPostArr.v`, then the
 [checked clients](Examples/CONTEXT.md); read `SPostArrEquiv.v` for representation
 changes and `SPostArrMonad.v` for observation-facing use.
-For other carriers, [PredArr.v](PredArr.v) defines relations,
+For other carriers, [Rel.v](Rel.v) defines relations,
 [PrePostArr.v](PrePostArr.v) pairs a precondition with an input-indexed
 post-relation, and [RelPrePostArr.v](RelPrePostArr.v) defines validators whose
 arrow equality compares `project_wp` behavior.

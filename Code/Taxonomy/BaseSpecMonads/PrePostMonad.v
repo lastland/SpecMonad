@@ -7,21 +7,19 @@
                      , fun b => exists a, snd m a /\ snd (k a) b )]
 
     A specification is a precondition together with the set of results it
-    admits.  Sequencing demands [m]'s precondition AND that every result [m]
-    can produce satisfies the continuation's precondition; the results are
-    those reachable through some intermediate value.
+    admits.  Sequencing requires [m]'s precondition and requires every result
+    admitted by [m] to satisfy the continuation's precondition.  The composite
+    postcondition admits results connected through an intermediate value.
 
     This is DM4all's [PPSpecMonad] ([PP_ret] / [PP_bind] in
-    [sprop/SpecificationMonads.v]), transcribed from [SProp] to [Prop].  DM4all
-    proves the laws as equalities, using propositional and functional
-    extensionality; here [Eq1] is pointwise logical equivalence on both
-    components, so the same laws hold with NO axioms.
+    [sprop/SpecificationMonads.v]), transcribed from [SProp] to [Prop].
+    Here [Eq1] compares both components by pointwise logical equivalence;
+    the monad laws do not require equality of predicate functions.
 
-    Wrapped in a module because [Taxonomy/PrePost.v] already binds the name
-    [PrePost] to the BINARY arrow [(A -> Prop) * (A -> B -> Prop)] — a
-    different type constructor, whose order and adjunctions are the subject of
-    [GaloisArr.v].  Write [PPM.PrePost], or [Import PPM] where the arrow is not
-    in play. *)
+    The unary carrier is [PPM.PrePost].  Its binary counterpart is
+    [PrePostArr] in [Arrows/PrePostArr.v], with a post-relation that also
+    retains the input.  Qualify [PPM.pre] and [PPM.post] when importing their
+    short names would shadow local binders. *)
 
 From ITree Require Import Basics.Monad.
 

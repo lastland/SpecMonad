@@ -12,8 +12,8 @@ concrete specification arrows, both SP presentations, and base/option/state/
 state-over-option layers with non-unit inputs. The named stacks from
 [SPostArrMonad.v](../SPostArrMonad.v) use explicit generic law witnesses.
 
-[ArrowTransformerInstances.v](ArrowTransformerInstances.v) checks `optionPred`,
-the monad-view `progPredM` / `nditPredM` stacks, coupled option/state stacks, and
+[ArrowTransformerInstances.v](ArrowTransformerInstances.v) checks `optionRel`,
+the monad-view `progRelM` / `nditRelM` stacks, coupled option/state stacks, and
 double-option application laws. It depends on the generic arrow transformers
 and [TransformerLaws.v](../../ComputationMonads/TransformerLaws.v).
 Plain definitions register no helper instances: `:= _` checks automatic

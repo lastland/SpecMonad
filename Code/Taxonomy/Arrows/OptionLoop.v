@@ -1,7 +1,7 @@
 (** * The [ArrowLoop] boundary for option relational arrows.
 
     With the existing [optionArrT] operations and pointwise logical
-    equivalence, no [ArrowLoop] on [optionPred] can satisfy even left
+    equivalence, no [ArrowLoop] on [optionRel] can satisfy even left
     tightening.  The law quantifies over arbitrary Coq types, including
     [Empty_set] as the feedback type.
 
@@ -18,35 +18,35 @@
 
 From Coq Require Import FunctionalExtensionality.
 From Incorrectness.Classes Require Import Arrow OptionArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel.
 
 (** Fix the existing operation and equality dictionaries explicitly. *)
-Local Notation OA := (@Arrow_optionArrT PredArr Arrow_Pred ArrowChoice_Pred).
-Local Notation OE := (@ArrowEq_optionArrT PredArr ArrowEq_Pred).
+Local Notation OA := (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel).
+Local Notation OE := (@ArrowEq_optionArrT Rel ArrowEq_Rel).
 
 (** Every candidate loop operation fails left tightening when feedback
     ranges over all [Type], including [Empty_set]. *)
-Theorem optionPred_no_left_tightening :
-  forall L : @ArrowLoop optionPred OA,
-    ~ (forall (A B C D : Type) (h : optionPred A B)
-         (f : optionPred (B * D) (C * D)),
-       @arrow_eq optionPred OE A C
-         (@arr_loop optionPred OA L A C D
-           (@arr_comp optionPred OA _ _ _
-             (@arr_first optionPred OA A B D h) f))
-         (@arr_comp optionPred OA _ _ _ h
-           (@arr_loop optionPred OA L B C D f))).
+Theorem optionRel_no_left_tightening :
+  forall L : @ArrowLoop optionRel OA,
+    ~ (forall (A B C D : Type) (h : optionRel A B)
+         (f : optionRel (B * D) (C * D)),
+       @arrow_eq optionRel OE A C
+         (@arr_loop optionRel OA L A C D
+           (@arr_comp optionRel OA _ _ _
+             (@arr_first optionRel OA A B D h) f))
+         (@arr_comp optionRel OA _ _ _ h
+           (@arr_loop optionRel OA L B C D f))).
 Proof.
   intros L Htight.
-  set (zero := (fun _ _ => False) : optionPred unit unit).
-  set (raises := (fun _ ob => ob = None) : optionPred unit unit).
+  set (zero := (fun _ _ => False) : optionRel unit unit).
+  set (raises := (fun _ ob => ob = None) : optionRel unit unit).
   set (body := (fun _ _ => False)
-    : optionPred (unit * Empty_set) (unit * Empty_set)).
+    : optionRel (unit * Empty_set) (unit * Empty_set)).
 
   (* Empty feedback makes every prefixed body Leibniz-equal to [body]. *)
-  assert (Hbody : forall h : optionPred unit unit,
-    @arr_comp optionPred OA _ _ _
-      (@arr_first optionPred OA unit unit Empty_set h) body = body).
+  assert (Hbody : forall h : optionRel unit unit,
+    @arr_comp optionRel OA _ _ _
+      (@arr_first optionRel OA unit unit Empty_set h) body = body).
   {
     intro h.
     apply functional_extensionality.
@@ -59,8 +59,8 @@ Proof.
 
   (* A raised failure propagates without consulting the loop result. *)
   assert (Hfailure :
-    @arr_comp optionPred OA unit unit unit raises
-      (@arr_loop optionPred OA L unit unit Empty_set body) tt None).
+    @arr_comp optionRel OA unit unit unit raises
+      (@arr_loop optionRel OA L unit unit Empty_set body) tt None).
   {
     cbn.
     exists None. split; [reflexivity |].
@@ -74,13 +74,13 @@ Proof.
   exact Hfalse.
 Qed.
 
-(** In particular, the existing [optionPred] dictionaries admit no
+(** In particular, the existing [optionRel] dictionaries admit no
     [ArrowLoop] satisfying [ArrowLoopLaws]. *)
-Corollary optionPred_no_lawful_ArrowLoop :
-  ~ exists L : @ArrowLoop optionPred OA,
-      @ArrowLoopLaws optionPred OA L OE.
+Corollary optionRel_no_lawful_ArrowLoop :
+  ~ exists L : @ArrowLoop optionRel OA,
+      @ArrowLoopLaws optionRel OA L OE.
 Proof.
   intros [L HL].
-  apply (optionPred_no_left_tightening L).
-  exact (@loop_left_tightening optionPred OA L OE HL).
+  apply (optionRel_no_left_tightening L).
+  exact (@loop_left_tightening optionRel OA L OE HL).
 Qed.

@@ -10,18 +10,17 @@
       first (pure (fun f => f >>> h)) >>> app = app >>> h
     ]]
 
-    The proofs use a faithful relational presentation of the base arrow
-    operations and establish Leibniz equality for the base arrow; core
-    law modules, such as the property-only and coupled SP arrows, reuse
-    these theorems as their application-coherence fields.  The option
-    and state-over-option layers below keep only the relational
-    semantics of the operations: the state-over-option layer evaluates
-    the arrow-derived monad's bind, which concrete SP stacks read off as
-    [ret] and [bind].  Application coherence for option and state
-    transformer stacks already follows generically from the
-    [ArrowApplyLaws] lifts in [OptionArrowT] and [StateArrowT].  These
-    generic proofs have no logical axioms and are independent of any
-    concrete SP carrier. *)
+    [RelArrowPresentation] supplies relation semantics and a faithful
+    equality principle for the base arrow.  The proofs use that contract
+    to establish Leibniz equalities; both SP presentations reuse them in
+    their base [ArrowApplyLaws] instances.
+
+    The later sections describe relation semantics for option and
+    state-over-option operations.  In particular, [rel_state_option_bind]
+    exposes the actual arrow-derived bind: it preserves the fixed input,
+    threads the intermediate state, and propagates [None].  Application
+    laws for these stacks come from the generic [OptionArrowT] and
+    [StateArrowT] lifts, not from new concrete proofs here. *)
 
 From Coq Require Import Classes.Morphisms_Prop.
 From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.

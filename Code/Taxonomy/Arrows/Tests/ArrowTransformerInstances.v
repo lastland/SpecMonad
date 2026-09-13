@@ -9,35 +9,35 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr SPostArr.
 
 (* ================================================================= *)
-(** ** [optionPred]: generic option-transformer laws, specialized      *)
+(** ** [optionRel]: generic option-transformer laws, specialized      *)
 (* ================================================================= *)
 
-(** Because [PredArr] already has [ArrowLaws], [ArrowChoiceLaws], and
-    [ArrowApplyLaws] instances, [optionPred = optionArrT PredArr]
+(** Because [Rel] already has [ArrowLaws], [ArrowChoiceLaws], and
+    [ArrowApplyLaws] instances, [optionRel = optionArrT Rel]
     inherits the transformer laws from [Classes/OptionArrowT] without
     any custom proof. *)
 
-Definition ArrowLaws_optionPred : ArrowLaws optionPred := _.
-Definition ArrowChoiceLaws_optionPred : ArrowChoiceLaws optionPred := _.
-Definition ArrowApplyLaws_optionPred : ArrowApplyLaws optionPred := _.
+Definition ArrowLaws_optionRel : ArrowLaws optionRel := _.
+Definition ArrowChoiceLaws_optionRel : ArrowChoiceLaws optionRel := _.
+Definition ArrowApplyLaws_optionRel : ArrowApplyLaws optionRel := _.
 
 (* ================================================================= *)
 (** ** Monad-view spec types: laws through the monad transformers      *)
 (* ================================================================= *)
 
 (** Confirm [MonadLawsE] resolves through the transformer stack down
-    to the arrow-derived [Monad (PredArr unit)]. *)
+    to the arrow-derived [Monad (Rel unit)]. *)
 
-Definition MonadLawsE__progPredM (S : Type)
-  : @MonadLawsE (progPredM S) _ _ :=
-  MonadLawsE_stateT S (optionT (PredArr unit)).
+Definition MonadLawsE__progRelM (S : Type)
+  : @MonadLawsE (progRelM S) _ _ :=
+  MonadLawsE_stateT S (optionT (Rel unit)).
 
-Definition MonadLawsE__nditPredM (S : Type)
-  : @MonadLawsE (nditPredM S) _ _ :=
-  MonadLawsE_stateT S (optionT (optionT (PredArr unit))).
+Definition MonadLawsE__nditRelM (S : Type)
+  : @MonadLawsE (nditRelM S) _ _ :=
+  MonadLawsE_stateT S (optionT (optionT (Rel unit))).
 
 (* ================================================================= *)
 (** ** Coupled presentations: option-level dictionaries                *)

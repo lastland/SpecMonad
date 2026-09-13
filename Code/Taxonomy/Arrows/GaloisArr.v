@@ -5,7 +5,7 @@
     specification monads to binary arrows.  Each Galois connection is
     stated with the DM4all refinement orders:
 
-    - [Pred_le]: covariant inclusion on relations.
+    - [Rel_le]: covariant inclusion on relations.
     - [PrePost_le]: Hoare order (strengthen pre, weaken post).
     - [WPArr_le]: DM4all refinement — reverse pointwise implication.
       [w1 ≤ w2] iff [w2 a Q → w1 a Q] for all [a], [Q].
@@ -13,30 +13,30 @@
 
     Four Galois connections are established:
 
-    1. [Galois_Pred_PrePost] — [α R := (True, R)], [γ pq := snd pq].
-       Embeds [PredArr] as the full-pre fragment of [PrePostArr].
+    1. [Galois_Rel_PrePost] — [α R := (True, R)], [γ pq := snd pq].
+       Embeds [Rel] as the full-pre fragment of [PrePostArr].
 
-    2. [Galois_Pred_SPost] — [α R := asp R], [γ sp := asp_inv sp].
-       Galois insertion: [PredArr] and monotone strongest-postcondition
-       transformers are isomorphic.
+    2. [Galois_Rel_SPost] — [α R := asp R], [γ sp := asp_inv sp].
+       Relates relations to monotone SP transformers.  Recovering a
+       relation after [asp] gives it back; the opposite round trip is
+       not an identity on all monotone transformers.
 
     3. [Galois_WP_PrePost] — demonic WP concretization paired with
-       existential abstraction.  Uses DM4all's paper maps ([w a True],
-       not [exists Q, w a Q]) and requires [MonotoneWP].
+       abstraction by [w a True] and the intersection of accepted
+       postconditions.  Requires [MonotoneWP].
 
-    4. [Galois_RPP_WP] — the [RelPrePostArr] embedding of [WPArr].
-       Requires [WFRelPrePost] to ensure α lands in [MonotoneWP].
+    4. [Galois_RPP_WP] — relates [MonotoneWP] to [WFRelPrePost].
+       The validator's well-formedness ensures that its projection [γ]
+       lands in [MonotoneWP].
 
-    One obstruction is documented:
-
-    5. SPostArr ↔ RelPrePostArr: the binary generalization breaks the
-       adjunction.  Two variants are proven to fail by counterexample
-    (Section "Obstruction" below). *)
+    The final section proves that one proposed binary SP/validator map,
+    [gamma_uni], is not monotone.  A second, existential proposal is
+    recorded as historical discussion, not as a proved counterexample. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses.
 
 From Incorrectness.Classes Require Import Galois.
-From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr PredArr PrePostArr WPArr RelPrePostArr.
+From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr Rel PrePostArr WPArr RelPrePostArr.
 
 (* ================================================================= *)
 (** ** Local subtypes                                                  *)
@@ -56,7 +56,7 @@ Definition MonotoneWP (A B : Type) : Type :=
   { w : WPArr A B | wp_monotone w }.
 
 (** [WFRelPrePost] — the DM4all carrier for [RelPrePostArr].  The
-    well-formedness condition ensures the α-projection ([project_wp]) is
+    well-formedness condition ensures the projection ([project_wp]) is
     monotone in [Q], so it lands in [MonotoneWP]. *)
 Definition rpp_wf {A B} (r : RelPrePostArr A B) : Prop :=
   forall a Q1 Q2, (forall b, Q1 b -> Q2 b) ->
@@ -65,8 +65,8 @@ Definition rpp_wf {A B} (r : RelPrePostArr A B) : Prop :=
 Definition WFRelPrePost (A B : Type) : Type :=
   { r : RelPrePostArr A B | rpp_wf r }.
 
-(** [MonotoneSPost] — the DM4all carrier for [SPostArr].  Forward
-    predicate transformers that are monotone in the precondition. *)
+(** [MonotoneSPost] bundles precondition monotonicity for raw forward
+    transformers.  It is not the strict, disjunctive carrier of [SPostArr.v]. *)
 Definition SPost_pt (A B : Type) : Type := (A -> Prop) -> B -> Prop.
 
 Definition sp_monotone {A B} (sp : SPost_pt A B) : Prop :=
@@ -117,7 +117,7 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** [Galois_Pred_PrePost]: full-pre / forget-pre                    *)
+(** ** [Galois_Rel_PrePost]: full-pre / forget-pre                    *)
 (* ================================================================= *)
 
 (** [α] equips a relation with the trivially-true (True) precondition;
@@ -126,66 +126,67 @@ Qed.
     Under the Hoare order on [PrePostArr], [True] is the top of [fst]:
     [fst pq ⊆ True] holds for every [pq], so the pre check dissolves
     and the adjunction reduces to [R ⊆ snd pq], which is exactly
-    [Pred_le R (snd pq)]. *)
-Definition pred_to_pp {A B} (R : PredArr A B) : PrePostArr A B :=
+    [Rel_le R (snd pq)]. *)
+Definition rel_to_pp {A B} (R : Rel A B) : PrePostArr A B :=
   (fun _ => True, R).
 
 (* Preconditions are discarded. *)
-Definition pp_to_pre {A B} (pq : PrePostArr A B) : PredArr A B := snd pq.
+Definition pp_to_rel {A B} (pq : PrePostArr A B) : Rel A B := snd pq.
 
-Lemma adjunction_Pred_PrePost {A B}
-  (R : PredArr A B) (pq : PrePostArr A B) :
-  PrePost_le (pred_to_pp R) pq <-> Pred_le R (pp_to_pre pq).
+Lemma adjunction_Rel_PrePost {A B}
+  (R : Rel A B) (pq : PrePostArr A B) :
+  PrePost_le (rel_to_pp R) pq <-> Rel_le R (pp_to_rel pq).
 Proof.
   destruct pq as [P R'].
-  unfold PrePost_le, Pred_le, pred_to_pp, pp_to_pre; cbn.
+  unfold PrePost_le, Rel_le, rel_to_pp, pp_to_rel; cbn.
   split.
   - intros [_ HR]. exact HR.
   - intros HR. split; [intros _ _; exact I | exact HR].
 Qed.
 
 #[global]
-Instance Galois_Pred_PrePost
-  : Galois PrePostArr PredArr (@PrePost_le) (@Pred_le) :=
+Instance Galois_Rel_PrePost
+  : Galois PrePostArr Rel (@PrePost_le) (@Rel_le) :=
 {
-  galois_alpha := @pred_to_pp ;
-  galois_gamma := @pp_to_pre ;
-  galois_adjunction := @adjunction_Pred_PrePost
+  galois_alpha := @rel_to_pp ;
+  galois_gamma := @pp_to_rel ;
+  galois_adjunction := @adjunction_Rel_PrePost
 }.
 
 (* ================================================================= *)
-(** ** [Galois_Pred_SPost]: strongest-postcondition embedding          *)
+(** ** [Galois_Rel_SPost]: strongest-postcondition embedding          *)
 (* ================================================================= *)
 
-(** [PredArr] and monotone [SPostArr] are isomorphic: [asp] sends a relation
-    to its existential strongest-postcondition transformer, [asp_inv]
-    applies the transformer at a singleton precondition to recover the
-    relation.
+(** [asp] sends a relation to its existential SP transformer; [asp_inv]
+    evaluates a transformer at singleton preconditions.  These maps form
+    the adjunction below, but not an isomorphism on [MonotoneSPost].
+    With unit input and output types, the constantly true transformer is
+    monotone, yet differs from every [asp R] at the empty precondition.
 
     The forward adjunction direction is free; the backward direction
     requires monotonicity of [sp] to lift from [sp (eq a)] to [sp pre]
     when [pre a] holds. *)
 
-Lemma asp_sp_monotone {A B} (R : PredArr A B) : sp_monotone (asp R).
+Lemma asp_sp_monotone {A B} (R : Rel A B) : sp_monotone (asp R).
 Proof.
   unfold sp_monotone, asp. intros pre1 pre2 Hsub b [a [Hpre HR]].
   exists a. split; [apply Hsub; exact Hpre | exact HR].
 Qed.
 
-#[program] Definition alpha_asp {A B} (R : PredArr A B) : MonotoneSPost A B :=
+#[program] Definition alpha_asp {A B} (R : Rel A B) : MonotoneSPost A B :=
   asp R.
 Next Obligation. exact (asp_sp_monotone R). Qed.
 
-#[program] Definition gamma_asp_inv {A B} (sp : MonotoneSPost A B) : PredArr A B :=
+#[program] Definition gamma_asp_inv {A B} (sp : MonotoneSPost A B) : Rel A B :=
   asp_inv sp.
 
-Lemma adjunction_Pred_SPost {A B}
-  (R : PredArr A B) (sp : MonotoneSPost A B) :
+Lemma adjunction_Rel_SPost {A B}
+  (R : Rel A B) (sp : MonotoneSPost A B) :
   MonotoneSPost_le (alpha_asp R) sp <->
-  Pred_le R (gamma_asp_inv sp).
+  Rel_le R (gamma_asp_inv sp).
 Proof.
   unfold MonotoneSPost_le, alpha_asp, gamma_asp_inv,
-         SPost_le, Pred_le, asp_inv; cbn.
+         SPost_le, Rel_le, asp_inv; cbn.
   split.
   - intros H a b HR.
     apply H. unfold asp. exists a. split; [reflexivity | exact HR].
@@ -196,12 +197,12 @@ Proof.
 Qed.
 
 #[global]
-Instance Galois_Pred_SPost
-  : Galois MonotoneSPost PredArr (@MonotoneSPost_le) (@Pred_le) :=
+Instance Galois_Rel_SPost
+  : Galois MonotoneSPost Rel (@MonotoneSPost_le) (@Rel_le) :=
 {
   galois_alpha := @alpha_asp ;
   galois_gamma := @gamma_asp_inv ;
-  galois_adjunction := @adjunction_Pred_SPost
+  galois_adjunction := @adjunction_Rel_SPost
 }.
 
 (* ================================================================= *)
@@ -272,7 +273,7 @@ Instance Galois_WP_PrePost
     [MonotoneWP].  With extensionality, [α ∘ γ = id] on [MonotoneWP],
     making this a Galois insertion. *)
 
-(** The α-projection of a well-formed validator is monotone. *)
+(** The projection of a well-formed validator is monotone. *)
 Lemma Y_monotone {A B} (r : RelPrePostArr A B) (Hr : rpp_wf r) :
   wp_monotone (fun a Q => project_wp r a Q).
 Proof. exact Hr. Qed.
@@ -342,21 +343,15 @@ Instance Galois_RPP_WP
 (** ** Obstruction: SPostArr ↔ RelPrePostArr in the binary setting          *)
 (* ================================================================= *)
 
-(** In DM4all (unary types), [SPostArr] embeds into [RelPrePostArr] via a
-    Galois connection.  The binary generalization breaks this: the
-    joint relation [A -> B -> Prop] carries input information that the
-    marginal [B -> Prop] in [SPostArr] loses.
+(** The unary [SPM.SPost] / [RPPM.RelPrePost] adjunction is proved in
+    [BaseSpecMonads/BaseGaloisConnections.v].  The proposed binary map
+    below instead takes a validator of input-indexed post-relations:
 
-    Two natural binary lifts are proven to fail:
+      [gamma_uni r P b = forall R0, r P R0 -> forall a, P a -> R0 a b].
 
-    - Universal variant: [α sp P R := forall a b, P a -> sp P b -> R a b],
-      [γ r P b := forall R0, r P R0 -> forall a, P a -> R0 a b].
-      The adjunction holds, but [γ] is not monotone in [P], so it does
-      not land in [MonotoneSPost] (counterexample below).
-
-    - Existential variant: [γ r P b := exists a, P a /\ (forall R0, r P R0 -> R0 a b)].
-      [γ] is monotone, but the adjunction fails: different validated
-      [R0]'s can force contradictory witnesses (counterexample below). *)
+    [gamma_uni_not_monotone] shows that this map does not land in
+    [MonotoneSPost] for arbitrary validators.  It rules out this map,
+    not every possible connection between binary specifications. *)
 
 (** Counterexample for the universal variant: [γ] is not monotone.
 
@@ -375,23 +370,18 @@ Proof.
   unfold sp_monotone, gamma_uni. intros Hmon.
   assert (Hincl : forall a : unit, (fun _ => False) a -> (fun _ => True) a).
   { intros a _. exact I. }
-  assert (Hbot : forall (R0 : PredArr unit bool) (_ : True) (a : unit),
+  assert (Hbot : forall (R0 : Rel unit bool) (_ : True) (a : unit),
                    (fun _ => False) a -> R0 a false).
   { intros R0 _ a Habs. destruct Habs. }
   assert (Htop := Hmon (fun _ => False) (fun _ => True) Hincl false Hbot).
   exact (Htop (fun _ _ => False) I tt I).
 Qed.
 
-(** Counterexample for the existential variant: the adjunction fails.
+(** Historical alternative, not formalized in this file:
 
-    Take [A = bool], [B = unit].  Two post-relations [R1], [R2] that
-    agree with the transformer but disagree on which input [a] is the
-    witness make the existential quantifier non-uniform: no single [a]
-    satisfies all [R0].  Details omitted; see DM4all investigation
-    [SPostRelPrePostProbe.v]. *)
+      [fun r P b => exists a, P a /\ (forall R0, r P R0 -> R0 a b)].
 
-(** The fundamental obstruction is that binary [R : A -> B -> Prop]
-    is a *joint* distribution over inputs and outputs, while [SPostArr]
-    operates on *marginals* [B -> Prop] parametrised by [A -> Prop].
-    Recovering the joint from marginals is ill-posed without extra
-    structure (e.g. independence, which is not available here). *)
+    This formula requires one input witness shared by all validated
+    post-relations.  The earlier investigation considered conflicting
+    witnesses, but this file contains neither a monotonicity theorem nor
+    an adjunction counterexample for the existential proposal. *)

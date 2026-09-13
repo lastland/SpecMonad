@@ -10,7 +10,7 @@
 From Coq Require Import FunctionalExtensionality PropExtensionality.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Classes Require Export ArrowMorphism.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr OptionLoop SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr OptionLoop SPostArr.
 
 Module PropertySP := SPostArr.
 Module CoupledSP := RelSPPairArr.
@@ -406,20 +406,20 @@ Qed.
 
 Section OptionLoopTransport.
   Context {arr : Type -> Type -> Type} {HA : Arrow arr}.
-  Variable project : forall A B, arr A B -> optionPred A B.
-  Variable embed : forall A B, optionPred A B -> arr A B.
+  Variable project : forall A B, arr A B -> optionRel A B.
+  Variable embed : forall A B, optionRel A B -> arr A B.
   Hypothesis project_embed : forall A B f, project A B (embed A B f) = f.
   Hypothesis project_injective : forall A B (f g : arr A B),
     project A B f = project A B g -> f = g.
-  Local Notation OPA := (@Arrow_optionArrT PredArr Arrow_Pred ArrowChoice_Pred).
+  Local Notation OPA := (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel).
   Hypothesis project_comp : forall A B C (f : arr A B) (g : arr B C),
     project A C (@arr_comp arr HA A B C f g) =
-    @arr_comp optionPred OPA A B C (project A B f) (project B C g).
+    @arr_comp optionRel OPA A B C (project A B f) (project B C g).
   Hypothesis project_first : forall A B C (f : arr A B),
     project (A * C)%type (B * C)%type (@arr_first arr HA A B C f) =
-    @arr_first optionPred OPA A B C (project A B f).
+    @arr_first optionRel OPA A B C (project A B f).
 
-  Theorem optionPred_no_left_tightening_transport (L : @ArrowLoop arr HA) :
+  Theorem optionRel_no_left_tightening_transport (L : @ArrowLoop arr HA) :
     ~ (forall (A B C D : Type) (h : arr A B) (f : arr (B * D) (C * D)),
       @arr_loop arr HA L A C D
         (@arr_comp arr HA _ _ _ (@arr_first arr HA A B D h) f) =
@@ -429,11 +429,11 @@ Section OptionLoopTransport.
     pose (LP :=
       {| arr_loop := fun A B C f => project A B
         (@arr_loop arr HA L A B C (embed (A * C)%type (B * C)%type f)) |}
-      : @ArrowLoop optionPred OPA).
-    apply (OptionLoop.optionPred_no_left_tightening LP).
+      : @ArrowLoop optionRel OPA).
+    apply (OptionLoop.optionRel_no_left_tightening LP).
     intros A B C D h f.
     assert (HE : embed (A * D)%type (C * D)%type
-      (@arr_comp optionPred OPA _ _ _ (@arr_first optionPred OPA A B D h) f) =
+      (@arr_comp optionRel OPA _ _ _ (@arr_first optionRel OPA A B D h) f) =
       @arr_comp arr HA _ _ _ (@arr_first arr HA A B D (embed A B h))
         (embed (B * D)%type (C * D)%type f)).
     { apply project_injective.
@@ -442,8 +442,8 @@ Section OptionLoopTransport.
     change (forall a c,
       project A C (@arr_loop arr HA L A C D
         (embed (A * D)%type (C * D)%type
-          (@arr_comp optionPred OPA _ _ _ (@arr_first optionPred OPA A B D h) f))) a c
-      <-> @arr_comp optionPred OPA _ _ _ h
+          (@arr_comp optionRel OPA _ _ _ (@arr_first optionRel OPA A B D h) f))) a c
+      <-> @arr_comp optionRel OPA _ _ _ h
         (project B C (@arr_loop arr HA L B C D
           (embed (B * D)%type (C * D)%type f))) a c).
     rewrite HE, Htight, project_comp, project_embed. intros a c. reflexivity.
@@ -451,9 +451,9 @@ Section OptionLoopTransport.
 End OptionLoopTransport.
 
 Local Definition option_asp_project A B (f : PropertySP.optionASPArr A B) :
-  optionPred A B := CoupledSP.rel (proj1_sig (option_asp_to_coupled f)).
+  optionRel A B := CoupledSP.rel (proj1_sig (option_asp_to_coupled f)).
 Local Definition option_dslp_project A B (f : PropertySP.optionDSLPArr A B) :
-  optionPred A B := CoupledSP.rel (proj1_sig (option_dslp_to_coupled f)).
+  optionRel A B := CoupledSP.rel (proj1_sig (option_dslp_to_coupled f)).
 
 Theorem optionASP_no_left_tightening
   (L : @ArrowLoop PropertySP.optionASPArr PropertySP.Arrow_optionASPArr) :
@@ -465,7 +465,7 @@ Theorem optionASP_no_left_tightening
     @arr_comp _ PropertySP.Arrow_optionASPArr _ _ _ h
       (@arr_loop _ PropertySP.Arrow_optionASPArr L B C D f)).
 Proof.
-  apply (optionPred_no_left_tightening_transport option_asp_project
+  apply (optionRel_no_left_tightening_transport option_asp_project
     (fun A B R => option_asp_from_coupled (CoupledSP.mkASP R))).
   - intros A B R. unfold option_asp_project. rewrite option_asp_to_from. reflexivity.
   - intros A B f g Heq. apply PropertySP.PureASPostArr_eq. intros P b.
@@ -492,7 +492,7 @@ Theorem optionDSLP_no_left_tightening
     @arr_comp _ PropertySP.Arrow_optionDSLPArr _ _ _ h
       (@arr_loop _ PropertySP.Arrow_optionDSLPArr L B C D f)).
 Proof.
-  apply (optionPred_no_left_tightening_transport option_dslp_project
+  apply (optionRel_no_left_tightening_transport option_dslp_project
     (fun A B R => option_dslp_from_coupled (CoupledSP.mkDSLP R))).
   - intros A B R. unfold option_dslp_project. rewrite option_dslp_to_from. reflexivity.
   - intros A B f g Heq. apply PropertySP.PureDSLPostArr_eq. intros P b.

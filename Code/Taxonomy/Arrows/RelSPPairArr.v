@@ -1,14 +1,14 @@
 (** * Predicate transformers and bundled predicate transformer arrows.
 
-    We define the two predicate transformers on [PredArr] relations:
+    Two readings turn a [Rel] relation into an SP transformer:
 
     [asp R pre b = exists a, pre a /\ R a b]   (angelic / existential)
-    [dslp R pre b = forall a, R a b -> pre a]  (demonic / universal)
+    [dslp R pre b = forall a, R a b -> pre a]  (demonic liberal / universal)
 
     Both [PureRelASPPairArr] and [PureRelDSLPPairArr] are sigma types over
     [RelSPPair], a record that couples a strongest-postcondition
     transformer with its underlying relation arrow.  They differ only
-    in the correctness condition:
+    in the required agreement between transformer and relation:
 
     [PureRelASPPairArr A B] requires [spost d pre b <-> asp (rel d) pre b]
     [PureRelDSLPPairArr A B] requires [spost d pre b <-> dslp (rel d) pre b]
@@ -22,11 +22,13 @@
     [ASPostArr S A = stateArrT S (optionArrT PureRelASPPairArr) unit A]
     [DSLPostArr S A = stateArrT S (optionArrT PureRelDSLPPairArr) unit A]
 
-    Both unfold to [PureRel(ASP/DSLP)PairArr (unit * S) (option (A * S))]. *)
+    Their underlying arrows have input [unit * S] and output [option (A * S)].
+    Qualify [ASPostArr] and [DSLPostArr] when the property-only presentation
+    is also in scope: the two files use the same stack names. *)
 
 From Coq Require Import Classical_Prop.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel.
 From Incorrectness.Classes Require Export ArrowMonad.
 
 (* ================================================================= *)
@@ -35,18 +37,17 @@ From Incorrectness.Classes Require Export ArrowMonad.
 
 (** Predicate transformer view: strongest postcondition (angelic / existential).
   *)
-Definition asp {A B} (R : PredArr A B) (pre : A -> Prop) : B -> Prop :=
+Definition asp {A B} (R : Rel A B) (pre : A -> Prop) : B -> Prop :=
   fun b => exists a, pre a /\ R a b.
 
-(* [asp] goes from predicate arrow to strongest postcondition arrow; [asp_inv] is
-   the inverse. Similar to the relation described in Kenji's Ph.D. thesis, we
-   can show that predicate monads and strongest postcondition monads are
-   equivalent, by showing [asp_asp_inv] and [asp_inv_asp] below.  The option and
-   state transformer stacks preserve this correspondence; see [SPostArrEquiv.v]. *)
-Definition asp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : PredArr A B :=
+(* [asp_inv] evaluates singleton preconditions.  It recovers [R] from [asp R]
+   by [asp_asp_inv].  The reverse round trip, [asp_inv_asp], is stated only
+   for transformers in the image of [asp], not for arbitrary raw transformers.
+   [SPostArrEquiv.v] relates the well-formed presentations and their stacks. *)
+Definition asp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : Rel A B :=
   fun a b => pt (fun a' => a = a') b.
 
-Theorem asp_asp_inv : forall {A B} (R : PredArr A B) a b,
+Theorem asp_asp_inv : forall {A B} (R : Rel A B) a b,
     asp_inv (asp R) a b <-> R a b.
 Proof.
   intros. unfold asp_inv, asp. split.
@@ -57,7 +58,7 @@ Qed.
 (** [asp] at a singleton precondition [eq a] recovers the relation at [a].
     This is [asp_asp_inv] with [asp_inv] unfolded ([asp_inv pt a := pt (eq a)]),
     packaged for rewriting in strongest-postcondition sequencing laws. *)
-Corollary asp_singleton : forall {A B} (R : PredArr A B) (a : A) (b : B),
+Corollary asp_singleton : forall {A B} (R : Rel A B) (a : A) (b : B),
     asp R (eq a) b <-> R a b.
 Proof.
   intros. unfold asp. split.
@@ -66,7 +67,7 @@ Proof.
 Qed.
 
 (* Cannot prove this for arbitrary [(A -> Prop) -> B -> Prop]. *)
-Theorem asp_inv_asp : forall {A B} (R : PredArr A B) pre b,
+Theorem asp_inv_asp : forall {A B} (R : Rel A B) pre b,
     asp (asp_inv (asp R)) pre b <-> asp R pre b.
 Proof.
   intros. unfold asp_inv, asp. split.
@@ -78,16 +79,16 @@ Proof.
 Qed.
 
 (** Demonic predicate transformer: universal dual of [asp]. *)
-Definition dslp {A B} (R : PredArr A B) (pre : A -> Prop) : B -> Prop :=
+Definition dslp {A B} (R : Rel A B) (pre : A -> Prop) : B -> Prop :=
   fun b => forall a, R a b -> pre a.
 
-(* This shows a different equivalence between predicate arrows and strongest
-   postcondition arrows. We can figure this out by "reverse engineering"
-   [dslp_dslp_inv], but why does this one make sense? *)
-Definition dslp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : PredArr A B :=
+(* [dslp_inv] intersects the preconditions accepted at [b].  For a [dslp R]
+   reading, an input belongs to every such precondition exactly when it is
+   a predecessor of [b]; [dslp_dslp_inv] proves that recovery. *)
+Definition dslp_inv {A B} (pt : (A -> Prop) -> B -> Prop) : Rel A B :=
   fun a b => forall pre, pt pre b -> pre a.
 
-Theorem dslp_dslp_inv : forall {A B} (R : PredArr A B) a b,
+Theorem dslp_dslp_inv : forall {A B} (R : Rel A B) a b,
     dslp_inv (dslp R) a b <-> R a b.
 Proof.
   intros. unfold dslp_inv, dslp. split.
@@ -95,7 +96,7 @@ Proof.
   - intros. auto.
 Qed.
 
-Theorem dslp_inv_dslp : forall {A B} (R : PredArr A B) pre b,
+Theorem dslp_inv_dslp : forall {A B} (R : Rel A B) pre b,
     dslp (dslp_inv (dslp R)) pre b <-> dslp R pre b.
 Proof.
   intros. unfold dslp_inv, dslp. split.
@@ -123,7 +124,7 @@ Qed.
 Section SPCharacterizations.
 
   Variables A B : Type.
-  Variable R : PredArr A B.
+  Variable R : Rel A B.
 
   Theorem dsp_asp_dslp (pre : A -> Prop) (b : B) :
     ((exists a, R a b) /\ forall a, R a b -> pre a) <->
@@ -158,7 +159,7 @@ End SPCharacterizations.
     causes when combined with [Eq1] from ExtLib. *)
 Record RelSPPair (A B : Type) := mkRelSPPair {
   spost : (A -> Prop) -> B -> Prop ;
-  rel : PredArr A B
+  rel : Rel A B
 }.
 Arguments mkRelSPPair {A B}.
 Arguments spost {A B}.
@@ -178,7 +179,7 @@ Definition PureRelASPPairArr (A B : Type) : Type :=
     forall pre b, spost d pre b <-> asp (rel d) pre b }.
 
 (** Smart constructor: wrap a relation with [asp]. *)
-#[program] Definition mkASP {A B} (R : PredArr A B) : PureRelASPPairArr A B :=
+#[program] Definition mkASP {A B} (R : Rel A B) : PureRelASPPairArr A B :=
   mkRelSPPair (asp R) R.
 Next Obligation. reflexivity. Qed.
 
@@ -257,7 +258,7 @@ Section PureRelASPPairArr.
   (** *** ArrowChoice instance for [PureRelASPPairArr]                    *)
   (* -------------------------------------------------------------- *)
 
-  Definition left_rel {A B C} (R : PredArr A B) : PredArr (A + C) (B + C) :=
+  Definition left_rel {A B C} (R : Rel A B) : Rel (A + C) (B + C) :=
     fun x y => match x, y with
       | inl a, inl b => R a b
       | inr c, inr c' => c = c'
@@ -302,7 +303,7 @@ Definition PureRelDSLPPairArr (A B : Type) : Type :=
     forall pre b, spost d pre b <-> dslp (rel d) pre b }.
 
 (** Smart constructor: wrap a relation with [dslp]. *)
-#[program] Definition mkDSLP {A B} (R : PredArr A B) : PureRelDSLPPairArr A B :=
+#[program] Definition mkDSLP {A B} (R : Rel A B) : PureRelDSLPPairArr A B :=
   mkRelSPPair (dslp R) R.
 Next Obligation. reflexivity. Qed.
 
@@ -513,7 +514,7 @@ Definition ASP_rel_presentation :
 |}.
 
 Lemma IsASP_rewrite {A B} (f : PureRelASPPairArr A B) :
-  exists R : PredArr A B,
+  exists R : Rel A B,
     forall pre b, spost (proj1_sig f) pre b <-> exists a, pre a /\ R a b.
 Proof.
   exists (rel (proj1_sig f)). intros pre b.
@@ -521,7 +522,7 @@ Proof.
 Qed.
 
 (** [spost] of any PureRelASPPairArr rewrites to existential form. *)
-Lemma ASP_asp {A B} (f : PureRelASPPairArr A B) (R : PredArr A B)
+Lemma ASP_asp {A B} (f : PureRelASPPairArr A B) (R : Rel A B)
   (HR : forall pre b, spost (proj1_sig f) pre b <-> exists a, pre a /\ R a b) :
   forall P b, spost (proj1_sig f) P b <-> exists a, P a /\ R a b.
 Proof. exact HR. Qed.
@@ -795,14 +796,14 @@ Definition DSLP_rel_presentation :
 |}.
 
 Lemma IsDSLP_rewrite {A B} (f : PureRelDSLPPairArr A B) :
-  exists R : PredArr A B,
+  exists R : Rel A B,
     forall pre b, spost (proj1_sig f) pre b <-> forall a, R a b -> pre a.
 Proof.
   exists (rel (proj1_sig f)). intros pre b.
   apply (proj2_sig f).
 Qed.
 
-Lemma DSLP_dslp {A B} (f : PureRelDSLPPairArr A B) (R : PredArr A B)
+Lemma DSLP_dslp {A B} (f : PureRelDSLPPairArr A B) (R : Rel A B)
   (HR : forall pre b, spost (proj1_sig f) pre b <-> forall a, R a b -> pre a) :
   forall P b, spost (proj1_sig f) P b <-> forall a, R a b -> P a.
 Proof. exact HR. Qed.

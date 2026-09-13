@@ -11,46 +11,46 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
-  PredArr PrePostArr RelPrePostArr RelSPPairArr SPostArr SPostArrMonad.
+  Rel PrePostArr RelPrePostArr RelSPPairArr SPostArr SPostArrMonad.
 
 Create HintDb sp_arrow_bind.
 #[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id
   : sp_arrow_bind.
 
 (* ================================================================= *)
-(** ** [PredArr]                                                       *)
+(** ** [Rel]                                                       *)
 (* ================================================================= *)
 
 (** Typeclass resolution uses [Monad_Arrow]; these are named aliases.
-     The compact [retPred]/[bindPred] helpers stay in [PredArr.v]: the
+     The compact [retRel]/[bindRel] helpers stay in [Rel.v]: the
      [OldSP] observations consume them. *)
 
-Definition Monad_Pred (A : Type) : Monad (PredArr A) :=
-  @Monad_Arrow PredArr Arrow_Pred ArrowApply_Pred A.
+Definition Monad_Rel (A : Type) : Monad (Rel A) :=
+  @Monad_Arrow Rel Arrow_Rel ArrowApply_Rel A.
 
-Definition Eq1Equivalence_Pred (A : Type)
-  : @Eq1Equivalence (PredArr A) (Monad_Pred A) Eq1_Pred :=
-  @Eq1Equivalence_Arrow PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred A.
+Definition Eq1Equivalence_Rel (A : Type)
+  : @Eq1Equivalence (Rel A) (Monad_Rel A) Eq1_Rel :=
+  @Eq1Equivalence_Arrow Rel Arrow_Rel ArrowApply_Rel ArrowEq_Rel A.
 
-Definition MonadLawsE_Pred (A : Type)
-  : @MonadLawsE (PredArr A) Eq1_Pred (Monad_Pred A) :=
-  @MonadLawsE_Arrow PredArr Arrow_Pred ArrowApply_Pred ArrowEq_Pred
-    ArrowLaws_Pred ArrowApplyLaws_Pred A.
+Definition MonadLawsE_Rel (A : Type)
+  : @MonadLawsE (Rel A) Eq1_Rel (Monad_Rel A) :=
+  @MonadLawsE_Arrow Rel Arrow_Rel ArrowApply_Rel ArrowEq_Rel
+    ArrowLaws_Rel ArrowApplyLaws_Rel A.
 
-Lemma retPred_eq_ret_arrow {A B} (b : B) :
-  @arrow_eq PredArr ArrowEq_Pred A B
-    (retPred b) (@ret_arrow PredArr Arrow_Pred A B b).
+Lemma retRel_eq_ret_arrow {A B} (b : B) :
+  @arrow_eq Rel ArrowEq_Rel A B
+    (retRel b) (@ret_arrow Rel Arrow_Rel A B b).
 Proof. intros a b'. reflexivity. Qed.
 
-Lemma bindPred_eq_bind_arrow {A B C}
-  (m : PredArr A B) (k : B -> PredArr A C) :
-  @arrow_eq PredArr ArrowEq_Pred A C
-    (bindPred m k) (@bind_arrow PredArr Arrow_Pred ArrowApply_Pred A B C m k).
+Lemma bindRel_eq_bind_arrow {A B C}
+  (m : Rel A B) (k : B -> Rel A C) :
+  @arrow_eq Rel ArrowEq_Rel A C
+    (bindRel m k) (@bind_arrow Rel Arrow_Rel ArrowApply_Rel A B C m k).
 Proof.
   autounfold with sp_arrow_bind.
-  setoid_rewrite (@first_pure PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
-  repeat setoid_rewrite (@pure_comp PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
-  intros a c. cbn. unfold bindPred. split.
+  setoid_rewrite (@first_pure Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
+  repeat setoid_rewrite (@pure_comp Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
+  intros a c. cbn. unfold bindRel. split.
   - intros [b [Hm Hk]]. exists (b, a). split.
     + exists (a, a). split; [reflexivity|].
       exists (b, a). cbn [swap]. auto.
@@ -296,7 +296,7 @@ Proof.
     exists b. exact (conj Hm Hk).
 Qed.
 
-Lemma proj_mkDSLP {J B} (R : PredArr J B) pre b :
+Lemma proj_mkDSLP {J B} (R : Rel J B) pre b :
   spost (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
 Proof. reflexivity. Qed.
 
@@ -320,15 +320,15 @@ Proof. reflexivity. Qed.
 
 (** These monads are inferred without naming the concrete aliases.  The
     equalities check both automatic resolution and the public alias bodies. *)
-Definition inferred_pred_monad : Monad (PredArr bool) := _.
+Definition inferred_rel_monad : Monad (Rel bool) := _.
 Definition inferred_prepost_monad : Monad (PrePostArr bool) := _.
 Definition inferred_relprepost_monad : Monad (RelPrePostArr bool) := _.
 Definition inferred_asp_monad : Monad (PureRelASPPairArr bool) := _.
 Definition inferred_dslp_monad : Monad (PureRelDSLPPairArr bool) := _.
 
-Example pred_reuses_arrow :
-  inferred_pred_monad = @Monad_Pred bool /\
-  @Monad_Pred bool = @Monad_Arrow PredArr Arrow_Pred ArrowApply_Pred bool.
+Example rel_reuses_arrow :
+  inferred_rel_monad = @Monad_Rel bool /\
+  @Monad_Rel bool = @Monad_Arrow Rel Arrow_Rel ArrowApply_Rel bool.
 Proof. split; reflexivity. Qed.
 
 Example prepost_reuses_arrow :
@@ -357,8 +357,8 @@ Example dslp_reuses_arrow :
 Proof. split; reflexivity. Qed.
 
 (** Canonical concrete equalities must resolve the generic law instances. *)
-Definition pred_canonical_laws :
-  @MonadLawsE (PredArr bool) (@Eq1_Pred bool) inferred_pred_monad := _.
+Definition rel_canonical_laws :
+  @MonadLawsE (Rel bool) (@Eq1_Rel bool) inferred_rel_monad := _.
 Definition prepost_canonical_laws :
   @MonadLawsE (PrePostArr bool) (@Eq1_PrePost bool) inferred_prepost_monad := _.
 Definition relprepost_canonical_laws :
@@ -371,8 +371,8 @@ Definition dslp_canonical_laws :
   @MonadLawsE (PureRelDSLPPairArr bool)
     (@Eq1_PureRelDSLPPairArr bool) inferred_dslp_monad := _.
 
-Definition pred_canonical_equivalence :
-  @Eq1Equivalence (PredArr bool) inferred_pred_monad (@Eq1_Pred bool) := _.
+Definition rel_canonical_equivalence :
+  @Eq1Equivalence (Rel bool) inferred_rel_monad (@Eq1_Rel bool) := _.
 Definition prepost_canonical_equivalence :
   @Eq1Equivalence (PrePostArr bool) inferred_prepost_monad (@Eq1_PrePost bool) := _.
 Definition relprepost_canonical_equivalence :
@@ -386,10 +386,10 @@ Definition dslp_canonical_equivalence :
     (@Eq1_PureRelDSLPPairArr bool) := _.
 
 (** Pointwise arrow equalities, rather than Leibniz equality. *)
-Definition pred_monad_laws :
-  @MonadLawsE (PredArr bool)
-    (@Eq1_Arrow _ ArrowEq_Pred bool)
-    (@Monad_Arrow _ Arrow_Pred ArrowApply_Pred bool) := _.
+Definition rel_monad_laws :
+  @MonadLawsE (Rel bool)
+    (@Eq1_Arrow _ ArrowEq_Rel bool)
+    (@Monad_Arrow _ Arrow_Rel ArrowApply_Rel bool) := _.
 
 Definition relprepost_monad_laws :
   @MonadLawsE (RelPrePostArr bool)

@@ -170,9 +170,9 @@ Section ProgASLPMonad.
         [ intro Hc; exact (H1 (proj1 (H _ r) Hc)) | exact (proj2 (H _ r) H2) ].
   Qed.
 
-  (** Dual of [dsp_carrier]: the healthiness condition that the type states is
-      the same thing as "[w] is the ASLP of its own recovered relation", which
-      is what the proofs use. *)
+  (** Dual of [dsp_carrier]: the carrier's well-formedness condition is
+      equivalent to saying that [w] is the ASLP reading of its recovered
+      relation.  The proofs use this representation. *)
   Lemma aslp_carrier {A} (w : SPStExc A) :
     TerminatingPositivelyJoinPreserving w <->
       (forall (pre : S -> Prop) (r : option (A * S)), w pre r <->
@@ -833,9 +833,9 @@ Section ProgASLPMonad.
         [ intro Hc; exact (H1 (proj1 (H _ r) Hc)) | exact (proj2 (H _ r) H2) ].
   Qed.
 
-  (** Dual of [dsp_carrier]: the healthiness condition that the type states is
-      the same thing as "[w] is the ASLP of its own recovered relation", which
-      is what the proofs use. *)
+  (** Dual of [dsp_carrier]: the carrier's well-formedness condition is
+      equivalent to saying that [w] is the ASLP reading of its recovered
+      relation.  The proofs use this representation. *)
   Lemma aslp_carrier {A} (w : SPSt A) :
     TerminatingPositivelyJoinPreserving w <->
       (forall (pre : S -> Prop) (r : (A * S)), w pre r <->

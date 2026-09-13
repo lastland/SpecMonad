@@ -3,24 +3,21 @@
     [RelPrePostArr A B := (A -> Prop) -> (A -> B -> Prop) -> Prop] is a
     "validator" of Hoare-style pre/post specs.
 
-    The natural [γ : WPArr → RelPrePostArr] is an injective embedding
-    (with [α : RelPrePostArr → WPArr] as its left inverse, [α ∘ γ = id]),
-    so [RelPrePostArr] is strictly larger than [WPArr]: it includes "wild"
-    predicates over [PrePostArr] that don't correspond to any
-    weakest-precondition transformer.
+    The carrier accepts arbitrary validators.  Its operations and laws
+    observe a validator through [project_wp]:
 
-    To get lawful [Arrow] and [Monad] instances on the *whole*
-    [RelPrePostArr] type (not just the γ-image), we use:
-    - **Projection operations**: monad/arrow operations are defined
-      via the helper [project_wp] (which equals [α]), so they only
-      "see" the γ-image of their inputs.
-    - **α-induced equivalence**: [Eq1] / [arrow_eq] identify two
-      [RelPrePostArr] values when they have the same projection
-      behavior — equivalently, when their [α] images coincide.
+      [project_wp r a Q = exists P R,
+         r P R /\ P a /\ (forall b, R a b <-> Q b)].
 
-    Under this equivalence, every [RelPrePostArr] value is identified
-    with its [γ ∘ α] closure (a γ-image), and the operations cleanly
-    inherit all laws from [WPArr]'s [Arrow] / [Monad].
+    Composition passes this projected WP behavior between validators.
+    [RelPrePost_arrow_eq] identifies validators whose projections agree
+    pointwise; it does not compare their verdicts on every pre/post pair.
+    The [project_wp_arr_*] lemmas reduce each operation to a WP-style
+    formula, which supports the arrow laws under this equivalence.
+
+    The refinement order [RelPrePost_le] separately compares validator
+    verdicts by reverse implication.  Its adjunction with monotone WP
+    transformers is in [GaloisArr.v].
 
     This file holds the type definition, all [Arrow] / [ArrowChoice]
     / [ArrowApply] / [Eq1] instances, and their laws.  The
@@ -40,8 +37,7 @@ From Incorrectness.Classes Require Import Arrow ArrowMonad.
 Definition RelPrePostArr (A B : Type) : Type :=
   (A -> Prop) -> (A -> B -> Prop) -> Prop.
 
-(** [project_wp r a Q] is the [α]-image of [r] at point [(a, Q)]: it
-    holds iff [r] validates some pre/post pair whose pre contains [a]
+(** [project_wp r a Q] holds iff [r] validates some pre/post pair whose pre contains [a]
     and whose post-row at [a] is pointwise iff [Q]. *)
 Definition project_wp {A B}
   (r : RelPrePostArr A B) (a : A) (Q : B -> Prop) : Prop :=
@@ -156,8 +152,9 @@ End RelPrePostMonad.
 
     This file collects the projection characterization lemmas
     ([project_wp_arr_pure], [project_wp_arr_comp], etc.) and proves
-    [ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws], [Eq1Equivalence]
-    and [MonadLawsE] for [RelPrePostArr]. *)
+    [ArrowLaws], [ArrowChoiceLaws], and [ArrowApplyLaws] for [RelPrePostArr].
+    The generic construction supplies [Eq1Equivalence] and [MonadLawsE];
+    their concrete checks live in [Tests/ArrowMonadInstances.v]. *)
 
 
 
