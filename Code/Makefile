@@ -7,7 +7,7 @@
 # (see .gitignore); this wrapper is the committed interface.
 #
 #   make                     build everything (default; no assumption reports)
-#   make check               opt-in audit: build prerequisites, print assumptions
+#   make check               opt-in audit: build the project, print assumptions
 #   make clean               delegate clean and also remove the audit's outputs
 #   make GOAL...             any other goal passes through to Makefile.coq
 #                             (file targets like Classes/Arrow.vo, install, ...)
@@ -35,19 +35,12 @@ all: regen
 	$(MAKE) -f $(COQMAKEFILE) all
 
 # The audit is deliberately outside _CoqProject, so the normal build never
-# compiles it and the generated clean rule never removes its outputs.
-CHECK_VOS := Classes/RelArrowCoherence.vo \
-  Taxonomy/Arrows/SPostArrMonad.vo \
-  Taxonomy/Arrows/GaloisArr.vo \
-  Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.vo \
-  Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.vo \
-  Taxonomy/EffectObservations/SP/StDivITree_SPostArr.vo \
-  Taxonomy/EffectObservations/SP/StDivExcNonDet_SPostArr.vo \
-  Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.vo
-
+# compiles it and the generated clean rule never removes its outputs.  Its
+# dependency closure lies inside the normal build, so building everything
+# first suffices; no prerequisite list is maintained here.
 .PHONY: check
 check: regen
-	$(MAKE) -f $(COQMAKEFILE) $(CHECK_VOS)
+	$(MAKE) -f $(COQMAKEFILE) all
 	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/Assumptions.v
 
 .PHONY: clean

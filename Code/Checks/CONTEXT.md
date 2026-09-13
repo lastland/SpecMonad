@@ -29,9 +29,10 @@ The selected reports cover:
 
 `Assumptions.v` is deliberately absent from [_CoqProject](../_CoqProject).
 The maintained [Makefile](../Makefile) keeps `all` as the default goal and
-provides opt-in `make check`: it builds the listed prerequisites and invokes
-Coq on the audit explicitly. Its `clean` rule also removes audit outputs
-that ordinary `VFILES` cleanup would miss.
+provides opt-in `make check`: it builds the normal build (the audit's
+dependency closure lies inside it) and invokes Coq on the audit explicitly.
+Its `clean` rule also removes audit outputs that ordinary `VFILES` cleanup
+would miss.
 
 Read `Assumptions.v` for the exact report selection and the `check` target
 of [Makefile](../Makefile) for execution membership. The output reports
