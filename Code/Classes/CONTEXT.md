@@ -24,6 +24,19 @@ bind semantics from faithful relational presentations; it does not add
 well-formedness fields to concrete carriers. Loop has its own laws; neither
 transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 
+- [RelArrowCoherence.v](RelArrowCoherence.v) proves the 16 structural equations
+  of `ArrowLaws` and `ArrowChoiceLaws` as ordinary equality lemmas named
+  `rel_<equation>_fields`. Each takes a relation reading, only the individual
+  operation facts it uses, and faithfulness (`rel_ext`), which turns pointwise
+  relation equivalence into arrow equality. Core equations need neither choice
+  nor application; choice equations need no application. Concrete SP modules
+  own the law instances that specialize these lemmas.
+  The same module supplies base application coherence and state-over-option
+  relation formulas, including `rel_state_option_bind_fields`. Relational-only
+  lemmas do not use faithfulness. `RelArrowPresentation` and the existing
+  wrappers retain the bundled interface, including `rel_state_option_bind`;
+  transformer application-law instances come from the generic transformer modules.
+
 [Galois.v](Galois.v) relates two ordered binary carriers via alpha/gamma,
 preorders, and the adjunction. [OrderedMonad.v](OrderedMonad.v) concerns unary
 monads under a specified preorder containing `eq1`, with monotone bind.

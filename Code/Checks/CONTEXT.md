@@ -12,6 +12,10 @@ the entire development is axiom-free.
 
 The selected reports cover:
 
+- The 16 shared structural equations in
+  [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and their eight concrete
+  `ArrowLaws` / `ArrowChoiceLaws` instances across the property-only and coupled
+  SP presentations.
 - `rel_state_option_bind` in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and `asp_to_dslp_bind`
   in [SPostArrMonad.v](../Taxonomy/Arrows/SPostArrMonad.v).

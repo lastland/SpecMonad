@@ -1,10 +1,40 @@
 (** Console assumption reports, compiled explicitly by [make check]. *)
 From Incorrectness.Classes Require Import RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad GaloisArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad RelSPPairArr GaloisArr.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import
   StExcNonDet_SPostArr StDivNonDet_SPostArr
   StDivITree_SPostArr StDivExcNonDet_SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPBindOrderCounterexample.
+
+(** Shared structural equations: each uses only its explicit relational
+    hypotheses, including faithfulness, with no global axioms. *)
+Print Assumptions RelArrowCoherence.rel_comp_id_l_fields.
+Print Assumptions RelArrowCoherence.rel_comp_id_r_fields.
+Print Assumptions RelArrowCoherence.rel_comp_assoc_fields.
+Print Assumptions RelArrowCoherence.rel_pure_comp_fields.
+Print Assumptions RelArrowCoherence.rel_first_pure_fields.
+Print Assumptions RelArrowCoherence.rel_first_comp_fields.
+Print Assumptions RelArrowCoherence.rel_first_fst_fields.
+Print Assumptions RelArrowCoherence.rel_first_assoc_fields.
+Print Assumptions RelArrowCoherence.rel_first_natural_fields.
+Print Assumptions RelArrowCoherence.rel_left_pure_fields.
+Print Assumptions RelArrowCoherence.rel_left_comp_fields.
+Print Assumptions RelArrowCoherence.rel_left_inl_fields.
+Print Assumptions RelArrowCoherence.rel_left_assoc_fields.
+Print Assumptions RelArrowCoherence.rel_left_inr_fields.
+Print Assumptions RelArrowCoherence.rel_left_natural_fields.
+Print Assumptions RelArrowCoherence.rel_first_left_dist_fields.
+
+(** Concrete structural-law instances additionally use the SP presentations'
+    operation semantics and extensional equality principles. *)
+Print Assumptions SPostArr.ArrowLaws_PureASPostArr.
+Print Assumptions SPostArr.ArrowChoiceLaws_PureASPostArr.
+Print Assumptions SPostArr.ArrowLaws_PureDSLPostArr.
+Print Assumptions SPostArr.ArrowChoiceLaws_PureDSLPostArr.
+Print Assumptions RelSPPairArr.ArrowLaws_PureRelASPPairArr.
+Print Assumptions RelSPPairArr.ArrowChoiceLaws_PureRelASPPairArr.
+Print Assumptions RelSPPairArr.ArrowLaws_PureRelDSLPPairArr.
+Print Assumptions RelSPPairArr.ArrowChoiceLaws_PureRelDSLPPairArr.
 
 (** Generic coherence and concrete return readings: axiom-free. *)
 Print Assumptions RelArrowCoherence.rel_state_option_bind_fields.

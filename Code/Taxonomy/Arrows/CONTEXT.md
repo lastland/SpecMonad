@@ -32,6 +32,25 @@ mkASP/mkDSLP package relations; bundled equality recovers both components.
 SPostArrEquiv proves operation-preserving equivalence with the property-only
 presentation. Qualify shared stack names when importing both.
 
+Both SP presentations provide `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`.
+`SPostArr.v` and `RelSPPairArr.v` own the eight core/choice instances for the four
+property-only and coupled ASP/DSLP carriers.
+[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v) supplies the 16 shared
+structural equations for specialization in those instances. The property-only
+instances pass `ASP_rel` / `DSLP_rel` and their individual operation facts to
+`rel_<equation>_fields`. For coupled carriers, the relation is `rel (proj1_sig f)`
+and the operation facts are `iff_refl`. Both presentations supply their own
+`ASP_rel_ext` / `DSLP_rel_ext` for faithfulness. The three `Proper` fields
+(`comp_proper`, `first_proper`, `left_proper`) remain concrete equality
+substitutions. Sharing these proofs leaves carriers, operations, dictionaries,
+and semantics unchanged.
+
+`RelArrowCoherence.v` also supplies base application coherence and the
+state-over-option relational bind formula. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
+[StateArrowT.v](../../Classes/StateArrowT.v) lift the full contract generically.
+The state-over-option stack maps `A * S` to `option (B * S)`; propagated `None`
+carries no final state. `ASPostArr S` / `DSLPostArr S` fix its input to `unit`.
+
 SPostArrMonad supplies selected generic dictionaries, recovered relations,
 observation runners, and the ASP-to-DSLP monad map. Classes/ArrowMonad owns
 generic return/bind and laws at arbitrary fixed input; unit-input clients
