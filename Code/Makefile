@@ -22,7 +22,8 @@ COQMAKEFILE  := Makefile.coq
 COQC         ?= coqc
 COQDEBUG     ?=
 COQFLAGS     ?= -q
-COQLIBS      := -Q . Incorrectness
+# Single source of truth for load-path flags: the -Q/-R lines of _CoqProject.
+COQLIBS      := $(shell grep -E '^-[QR][[:space:]]' $(COQPROJECT))
 
 .DEFAULT_GOAL := all
 
