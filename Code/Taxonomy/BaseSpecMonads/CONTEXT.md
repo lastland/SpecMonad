@@ -38,6 +38,21 @@ ASP is strict/disjunctive, DSLP terminating/conjunctive, DSP strict/conjunctive,
 ASLP terminating/disjunctive. ASP singleton joins and DSLP accepted-predicate
 meets recover relations constructively; DSP/ASLP recovery is classical.
 Equalities are transformer iff, not automatically Leibniz bundle equality.
+## Earlier-carrier recovery proof ownership
+
+[OldMonads/DSPMonad.v](OldMonads/DSPMonad.v) and [OldMonads/ASLPMonad.v](OldMonads/ASLPMonad.v) each share local,
+outcome-generic recovery and congruence proofs between their option-outcome and
+`StDSP` / `StASLP` presentations. Callers use the specialized `dsp_recov` /
+`aslp_recov` and `dsp_cong` / `aslp_cong` lemmas; the generic helpers are
+implementation details.
+
+`dsp_comp_recov_option` and `aslp_comp_recov_option` eliminate recovery from
+option-outcome relational composition. They reuse `comp_cong` and recovery;
+observation proofs lift the resulting equivalence with specialized congruence
+and combine it with `bindDSPProg_dsp` / `bindASLPProg_aslp`. Pair-outcome clients
+use `StDSP.comp_cong` and their specialized recovery lemmas directly.
+
+## Arrow-derived monad consumers
 
 ASPMonad/DSLPMonad/DSPMonad/ASLPMonad fix input unit and use generic
 Classes/ArrowMonad operations/laws. Each exposes pure/state/state-option APIs.
