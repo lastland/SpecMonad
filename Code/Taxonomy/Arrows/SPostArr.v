@@ -519,54 +519,43 @@ Definition DSLP_rel_presentation :
 
 (** ** Angelic arrow laws *)
 
-Local Lemma id_pred {A} (P : A -> Prop) :
-  (fun b => exists a, P a /\ a = b) = P.
-Proof.
-  extensionality b. apply propositional_extensionality. sauto limit: 200.
-Qed.
+(** The structural equations are specializations of the generic relational
+    coherence lemmas through the direct [ASP_rel_*] facts; the two Proper
+    fields remain direct equality substitutions. *)
 
 #[global] Instance ArrowLaws_PureASPostArr :
   @ArrowLaws PureASPostArr Arrow_PureASPostArr ArrowEq_PureASPostArr.
 Proof.
   constructor; intros.
-  - apply PureASPostArr_eq; intros P b. cbn. rewrite id_pred. reflexivity.
-  - apply PureASPostArr_eq; intros P b. cbn. sauto limit: 200.
-  - apply PureASPostArr_eq; intros P d. cbn. reflexivity.
-  - apply PureASPostArr_eq; intros P c. cbn. sauto limit: 200.
-  - apply PureASPostArr_eq; intros P [b c]. cbn. sauto limit: 200.
-  - apply PureASPostArr_eq; intros P [c d]. cbn. reflexivity.
-  - (* [first_fst] uses the full join implicit in the normal form, even
-       when the untouched component type is empty. *)
-    apply PureASPostArr_eq; intros P b. cbn.
-    destruct (IsASP_rewrite f) as [R HR]. split.
-    + intros [[b0 c] [Hfc Heq]]. cbn in Heq. subst.
-      rewrite HR in Hfc. destruct Hfc as [a [HP Ha]].
-      rewrite HR. exists a. split; [exists (a, c); auto | exact Ha].
-    + intro H. rewrite HR in H. destruct H as [a [[[a0 c] [HP Heq]] Ha]].
-      cbn in Heq. subst. exists (b, c). split.
-      * rewrite HR. exists a. auto.
-      * reflexivity.
-  - apply PureASPostArr_eq; intros P [b [c d]]. cbn.
-    destruct (IsASP_rewrite f) as [R HR]. split.
-    + intros [[[b0 c0] d0] [Hf Heq]].
-      unfold assoc_prod in Heq. inversion Heq; subst.
-      rewrite HR in Hf. destruct Hf as [a [HP Ha]].
-      rewrite HR. exists a. split; [exists ((a, c), d); auto | exact Ha].
-    + intro H. rewrite HR in H. destruct H as [a [[[[a0 c0] d0] [HP Heq]] Ha]].
-      unfold assoc_prod in Heq. inversion Heq; subst.
-      exists ((b, c), d). split; [rewrite HR; exists a; auto | reflexivity].
+  - exact (@RelArrowCoherence.rel_comp_id_l_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+      (@ASP_rel_ext) A B f).
+  - exact (@RelArrowCoherence.rel_comp_id_r_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+      (@ASP_rel_ext) A B f).
+  - exact (@RelArrowCoherence.rel_comp_assoc_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_comp)
+      (@ASP_rel_ext) A B C D f g h).
+  - exact (@RelArrowCoherence.rel_pure_comp_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+      (@ASP_rel_ext) A B C f g).
+  - exact (@RelArrowCoherence.rel_first_pure_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_first)
+      (@ASP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_first_comp_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_comp) (@ASP_rel_first)
+      (@ASP_rel_ext) A B C D f g).
+  - exact (@RelArrowCoherence.rel_first_fst_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+      (@ASP_rel_first) (@ASP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_first_assoc_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+      (@ASP_rel_first) (@ASP_rel_ext) A B C D f).
   - intros x y -> z w ->. reflexivity.
   - intros x y ->. reflexivity.
-  - (* first_natural *)
-    apply PureASPostArr_eq; intros P [b d]. cbn.
-    destruct (IsASP_rewrite f) as [R HR]. split.
-    + intros [[b0 c] [Hf Heq]]. injection Heq as Hb Hd. subst b0 d.
-      rewrite HR in Hf |- *. destruct Hf as [a [HP Ha]].
-      exists a. split; [exists (a, c); auto | exact Ha].
-    + intro H. rewrite HR in H.
-      destruct H as [a [[[a0 c] [HP Heq]] Ha]].
-      injection Heq as Ha0 Hd. subst a0 d.
-      exists (b, c). split; [rewrite HR; exists a; auto | reflexivity].
+  - exact (@RelArrowCoherence.rel_first_natural_fields PureASPostArr
+      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+      (@ASP_rel_first) (@ASP_rel_ext) A B C D f g).
 Qed.
 
 #[global] Instance ArrowChoiceLaws_PureASPostArr :
@@ -574,125 +563,74 @@ Qed.
     ArrowChoice_PureASPostArr ArrowEq_PureASPostArr.
 Proof.
   constructor; intros.
-  - apply PureASPostArr_eq; intros P [b|c]; cbn; unfold sum_bimap;
-      sauto limit: 200.
-  - apply PureASPostArr_eq; intros P [c|d]; cbn; reflexivity.
-  - apply PureASPostArr_eq; intros P [b|c]; cbn.
-    + destruct (IsASP_rewrite f) as [R HR]. split.
-      * intros [b0 [Hf Heq]]. injection Heq as Heq. subst.
-        rewrite HR in Hf. destruct Hf as [a [HP Ha]].
-        rewrite HR. exists a. split; [exists a; auto | exact Ha].
-      * intro H. rewrite HR in H. destruct H as [a [[a0 [HP Heq]] Ha]].
-        injection Heq as Heq. subst.
-        exists b. split; [rewrite HR; exists a; auto | reflexivity].
-    + sauto limit: 200.
-  - apply PureASPostArr_eq; intros P [b|[c|d]]; cbn.
-    + destruct (IsASP_rewrite f) as [R HR]. split.
-      * intros [x [Hf Heq]]. destruct x as [[b0|c0]|d0]; cbn in Heq;
-          try discriminate.
-        injection Heq as Heq. subst. cbn in Hf.
-        rewrite HR in Hf. destruct Hf as [a [HP Ha]].
-        rewrite HR. exists a. split; [exists (inl (inl a)); auto | exact Ha].
-      * intro H. rewrite HR in H. destruct H as [a [[x [HP Heq]] Ha]].
-        destruct x as [[a0|c0]|d0]; cbn in Heq; try discriminate.
-        injection Heq as Heq. subst.
-        exists (inl (inl b)). split; [cbn; rewrite HR; exists a; auto | reflexivity].
-    + split.
-      * intros [x [HP Heq]]. destruct x as [[b0|c0]|d0]; cbn in Heq;
-          try discriminate.
-        injection Heq as Heq. subst. exists (inl (inr c)). auto.
-      * intros [x [HP Heq]]. destruct x as [[a0|c0]|d0]; cbn in Heq;
-          try discriminate.
-        injection Heq as Heq. subst. exists (inl (inr c)). auto.
-    + split.
-      * intros [x [HP Heq]]. destruct x as [[b0|c0]|d0]; cbn in Heq;
-          try discriminate.
-        injection Heq as Heq. subst. exists (inr d). auto.
-      * intros [x [HP Heq]]. destruct x as [[a0|c0]|d0]; cbn in Heq;
-          try discriminate.
-        injection Heq as Heq. subst. exists (inr d). auto.
-  - apply PureASPostArr_eq; intros P [b|c]; cbn.
-    + destruct (IsASP_rewrite f) as [R HR]. rewrite HR.
-      split; intros H; exfalso.
-      * destruct H as [a [[c0 [_ H]] _]]. discriminate.
-      * destruct H as [c0 [_ H]]. discriminate.
-    + sauto limit: 200.
-  - apply PureASPostArr_eq; intros P [b|d]; cbn; unfold sum_bimap.
-    + destruct (IsASP_rewrite f) as [R HR]. split.
-      * intros [[b0|c0] [Hf Heq]]; [|discriminate].
-        injection Heq as Heq. subst. cbn in Hf.
-        rewrite HR in Hf. destruct Hf as [a [HP Ha]].
-        rewrite HR. exists a. split; [exists (inl a); auto | exact Ha].
-      * intro H. rewrite HR in H. destruct H as [a [[x [HP Heq]] Ha]].
-        destruct x as [a0|c0]; [injection Heq as Heq; subst | discriminate].
-        exists (inl b). split; [cbn; rewrite HR; exists a; auto | reflexivity].
-    + split.
-      * intros [[b0|c0] [HP Heq]]; [discriminate|].
-        injection Heq as Heq. subst. exists (inr c0). auto.
-      * intros [[a0|c0] [HP Heq]]; [discriminate|].
-        injection Heq as Heq. subst. exists (inr c0). auto.
-  - apply PureASPostArr_eq; intros P [[b d]|[c d]]; cbn; unfold sum_prod_dist.
-    + destruct (IsASP_rewrite f) as [R HR]. split.
-      * intros [[[b0|c0] d0] [Hf Heq]]; [|discriminate].
-        injection Heq as Hb Hd. subst. cbn in Hf.
-        rewrite HR in Hf. destruct Hf as [a [HP Ha]].
-        rewrite HR. exists a. split; [exists (inl a, d); auto | exact Ha].
-      * intro H. rewrite HR in H. destruct H as [a [[[[a0|c0] d0] [HP Heq]] Ha]];
-          cbn in Heq; [|discriminate].
-        injection Heq as Ha0 Hd. subst.
-        exists (inl b, d). split; [cbn; rewrite HR; exists a; auto | reflexivity].
-    + split.
-      * intros [[[b0|c0] d0] [HP Heq]]; [discriminate|].
-        injection Heq as Hc Hd. subst. exists (inr c, d). auto.
-      * intros [[[a0|c0] d0] [HP Heq]]; cbn in Heq; [discriminate|].
-        injection Heq as Hc Hd. subst. exists (inr c, d). auto.
+  - exact (@RelArrowCoherence.rel_left_pure_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_left) (@ASP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_left_comp_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_comp) (@ASP_rel_left) (@ASP_rel_ext)
+      A B C D f g).
+  - exact (@RelArrowCoherence.rel_left_inl_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
+      (@ASP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_left_assoc_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
+      (@ASP_rel_ext) A B C D f).
+  - exact (@RelArrowCoherence.rel_left_inr_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
+      (@ASP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_left_natural_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
+      (@ASP_rel_ext) A B C D f g).
+  - exact (@RelArrowCoherence.rel_first_left_dist_fields PureASPostArr
+      Arrow_PureASPostArr ArrowChoice_PureASPostArr
+      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_first)
+      (@ASP_rel_left) (@ASP_rel_ext) A B C D f).
   - intros x y ->. reflexivity.
 Qed.
 
 (** ** Demonic arrow laws *)
 
-Local Lemma id_pred_dslp {A} (P : A -> Prop) :
-  (fun b => forall a, a = b -> P a) = P.
-Proof.
-  extensionality b. apply propositional_extensionality. sauto limit: 200.
-Qed.
+(** As in the angelic case, the structural equations specialize the
+    generic coherence lemmas through the direct [DSLP_rel_*] facts. *)
 
 #[global] Instance ArrowLaws_PureDSLPostArr :
   @ArrowLaws PureDSLPostArr Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr.
 Proof.
   constructor; intros.
-  - apply PureDSLPostArr_eq; intros P b. cbn. rewrite id_pred_dslp. reflexivity.
-  - apply PureDSLPostArr_eq; intros P b. cbn. sauto limit: 200.
-  - apply PureDSLPostArr_eq; intros P d. cbn. reflexivity.
-  - apply PureDSLPostArr_eq; intros P c. cbn. sauto limit: 200.
-  - apply PureDSLPostArr_eq; intros P [b c]. cbn. sauto limit: 200.
-  - apply PureDSLPostArr_eq; intros P [c d]. cbn. reflexivity.
-  - (* The full meet in the normal form handles an empty component type. *)
-    apply PureDSLPostArr_eq; intros P b. cbn.
-    destruct (IsDSLP_rewrite f) as [R HR]. split.
-    + intro H. rewrite HR. intros a Ha [a0 c] Heq. cbn in Heq. subst.
-      assert (Hc := H (b, c) eq_refl). rewrite HR in Hc. exact (Hc a Ha).
-    + intro H. rewrite HR in H. intros [b0 c] Heq. cbn in Heq. subst.
-      rewrite HR. intros a Ha. exact (H a Ha (a, c) eq_refl).
-  - apply PureDSLPostArr_eq; intros P [b [c d]]. cbn.
-    destruct (IsDSLP_rewrite f) as [R HR]. split.
-    + intro H. rewrite HR. intros a Ha [[a0 c0] d0] Heq.
-      unfold assoc_prod in Heq. inversion Heq; subst.
-      assert (Hcd := H ((b, c), d) eq_refl). rewrite HR in Hcd. exact (Hcd a Ha).
-    + intro H. rewrite HR in H. intros [[b0 c0] d0] Heq.
-      unfold assoc_prod in Heq. inversion Heq; subst.
-      rewrite HR. intros a Ha. exact (H a Ha ((a, c), d) eq_refl).
+  - exact (@RelArrowCoherence.rel_comp_id_l_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+      (@DSLP_rel_ext) A B f).
+  - exact (@RelArrowCoherence.rel_comp_id_r_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+      (@DSLP_rel_ext) A B f).
+  - exact (@RelArrowCoherence.rel_comp_assoc_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_comp)
+      (@DSLP_rel_ext) A B C D f g h).
+  - exact (@RelArrowCoherence.rel_pure_comp_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+      (@DSLP_rel_ext) A B C f g).
+  - exact (@RelArrowCoherence.rel_first_pure_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_first)
+      (@DSLP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_first_comp_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_comp) (@DSLP_rel_first)
+      (@DSLP_rel_ext) A B C D f g).
+  - exact (@RelArrowCoherence.rel_first_fst_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+      (@DSLP_rel_first) (@DSLP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_first_assoc_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+      (@DSLP_rel_first) (@DSLP_rel_ext) A B C D f).
   - intros x y -> z w ->. reflexivity.
   - intros x y ->. reflexivity.
-  - (* first_natural *)
-    apply PureDSLPostArr_eq; intros P [b d]. cbn.
-    destruct (IsDSLP_rewrite f) as [R HR]. split.
-    + intro H. rewrite HR. intros a Ha [a0 c] Heq.
-      injection Heq as Ha0 Hd. subst a0 d.
-      assert (Hc := H (b, c) eq_refl). rewrite HR in Hc. exact (Hc a Ha).
-    + intro H. rewrite HR in H. intros [b0 c] Heq.
-      injection Heq as Hb Hd. subst b0 d.
-      rewrite HR. intros a Ha. exact (H a Ha (a, c) eq_refl).
+  - exact (@RelArrowCoherence.rel_first_natural_fields PureDSLPostArr
+      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+      (@DSLP_rel_first) (@DSLP_rel_ext) A B C D f g).
 Qed.
 
 #[global] Instance ArrowChoiceLaws_PureDSLPostArr :
@@ -700,71 +638,34 @@ Qed.
     ArrowChoice_PureDSLPostArr ArrowEq_PureDSLPostArr.
 Proof.
   constructor; intros.
-  - apply PureDSLPostArr_eq; intros P [b|c]; cbn; unfold sum_bimap;
-      sauto limit: 200.
-  - apply PureDSLPostArr_eq; intros P [c|d]; cbn; reflexivity.
-  - apply PureDSLPostArr_eq; intros P [b|c]; cbn.
-    + destruct (IsDSLP_rewrite f) as [R HR]. split.
-      * intro H. rewrite HR. intros a Ha a0 Heq. injection Heq as Heq. subst.
-        assert (Hf := H b eq_refl). rewrite HR in Hf. exact (Hf a Ha).
-      * intro H. rewrite HR in H. intros b0 Heq. injection Heq as Heq. subst.
-        rewrite HR. intros a Ha. exact (H a Ha a eq_refl).
-    + split; intros _ ? H; discriminate H.
-  - apply PureDSLPostArr_eq; intros P [b|[c|d]]; cbn.
-    + destruct (IsDSLP_rewrite f) as [R HR]. split.
-      * intro H. rewrite HR. intros a Ha [[a0|c0]|d0] Heq;
-          cbn in Heq; try discriminate.
-        injection Heq as Heq. subst.
-        assert (Hf := H (inl (inl b)) eq_refl). cbn in Hf. rewrite HR in Hf.
-        exact (Hf a Ha).
-      * intro H. rewrite HR in H. intros [[b0|c0]|d0] Heq;
-          cbn in Heq; try discriminate.
-        injection Heq as Heq. subst. cbn. rewrite HR.
-        intros a Ha. exact (H a Ha (inl (inl a)) eq_refl).
-    + split.
-      * intros H [[a0|c0]|d0] Heq; cbn in Heq; try discriminate.
-        injection Heq as Heq. subst. exact (H (inl (inr c)) eq_refl).
-      * intros H [[b0|c0]|d0] Heq; cbn in Heq; try discriminate.
-        injection Heq as Heq. subst. exact (H (inl (inr c)) eq_refl).
-    + split.
-      * intros H [[a0|c0]|d0] Heq; cbn in Heq; try discriminate.
-        injection Heq as Heq. subst. exact (H (inr d) eq_refl).
-      * intros H [[b0|c0]|d0] Heq; cbn in Heq; try discriminate.
-        injection Heq as Heq. subst. exact (H (inr d) eq_refl).
-  - apply PureDSLPostArr_eq; intros P [b|c]; cbn.
-    + destruct (IsDSLP_rewrite f) as [R HR]. split.
-      * intros _ c0 H. discriminate.
-      * intros _. rewrite HR. intros a _ c0 H. discriminate.
-    + split; intros H c0 Heq; injection Heq as Heq; subst; exact (H c eq_refl).
-  - apply PureDSLPostArr_eq; intros P [b|d]; cbn; unfold sum_bimap.
-    + destruct (IsDSLP_rewrite f) as [R HR]. split.
-      * intro H. rewrite HR. intros a Ha [a0|c0] Heq; [|discriminate].
-        injection Heq as Heq. subst.
-        specialize (H (inl b) eq_refl). cbn in H. rewrite HR in H. exact (H a Ha).
-      * intro H. rewrite HR in H. intros [b0|c0] Heq; [|discriminate].
-        injection Heq as Heq. subst. cbn. rewrite HR.
-        intros a Ha. exact (H a Ha (inl a) eq_refl).
-    + split.
-      * intros H [a0|c0] Heq; [discriminate|].
-        injection Heq as Heq. apply (H (inr c0)). f_equal. exact Heq.
-      * intros H [b0|c0] Heq; [discriminate|].
-        injection Heq as Heq. apply (H (inr c0)). f_equal. exact Heq.
-  - apply PureDSLPostArr_eq; intros P [[b d]|[c d]]; cbn; unfold sum_prod_dist.
-    + destruct (IsDSLP_rewrite f) as [R HR]. split.
-      * intro H. rewrite HR. intros a Ha [[a0|c0] d0] Heq;
-          cbn in Heq; [|discriminate].
-        injection Heq as Ha0 Hd. subst.
-        assert (Hf := H (inl b, d) eq_refl). cbn in Hf. rewrite HR in Hf.
-        exact (Hf a Ha).
-      * intro H. rewrite HR in H. intros [[b0|c0] d0] Heq;
-          cbn in Heq; [|discriminate].
-        injection Heq as Hb Hd. subst. cbn. rewrite HR.
-        intros a Ha. exact (H a Ha (inl a, d) eq_refl).
-    + split.
-      * intros H [[a0|c0] d0] Heq; cbn in Heq; [discriminate|].
-        injection Heq as Hc Hd. subst. exact (H (inr c, d) eq_refl).
-      * intros H [[b0|c0] d0] Heq; cbn in Heq; [discriminate|].
-        injection Heq as Hc Hd. subst. exact (H (inr c, d) eq_refl).
+  - exact (@RelArrowCoherence.rel_left_pure_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_left) (@DSLP_rel_ext)
+      A B C f).
+  - exact (@RelArrowCoherence.rel_left_comp_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_comp) (@DSLP_rel_left) (@DSLP_rel_ext)
+      A B C D f g).
+  - exact (@RelArrowCoherence.rel_left_inl_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
+      (@DSLP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_left_assoc_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
+      (@DSLP_rel_ext) A B C D f).
+  - exact (@RelArrowCoherence.rel_left_inr_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
+      (@DSLP_rel_ext) A B C f).
+  - exact (@RelArrowCoherence.rel_left_natural_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
+      (@DSLP_rel_ext) A B C D f g).
+  - exact (@RelArrowCoherence.rel_first_left_dist_fields PureDSLPostArr
+      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_first)
+      (@DSLP_rel_left) (@DSLP_rel_ext) A B C D f).
   - intros x y ->. reflexivity.
 Qed.
 

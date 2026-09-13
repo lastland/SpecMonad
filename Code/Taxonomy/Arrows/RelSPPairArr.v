@@ -444,12 +444,14 @@ End ComposedTypes.
 
 (** * Arrow law proofs for angelic and demonic predicate transformer arrows.
 
-    Angelic laws ([PureRelASPPairArr], [optionASPArr]) are proved by
-    [PureRelASPPairArr_eq] and then transferring through [IsASP] to work
-    with raw existentials.
-
-    Demonic laws ([PureRelDSLPPairArr], [optionDSLPArr]) follow the same
-    structure, using [IsDSLP] and raw universals. *)
+    The structural equations below specialize the generic relational
+    coherence lemmas from [RelArrowCoherence] through the coupled reading
+    [fun A B f => rel (proj1_sig f)]: every per-operation relational law
+    is definitionally [iff_refl] (see [ASP_rel_presentation] and
+    [DSLP_rel_presentation]), and faithfulness is [ASP_rel_ext] /
+    [DSLP_rel_ext].  The Proper fields remain direct equality
+    substitutions.  [PureRelASPPairArr_eq] and [PureRelDSLPPairArr_eq]
+    are still used by the application-law fields below. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms.
 From ITree Require Import Basics.Monad.
@@ -547,77 +549,78 @@ Instance ArrowLaws_PureRelASPPairArr : ArrowLaws PureRelASPPairArr.
 Proof.
   constructor; intros.
 
-  - (* comp_id_l: arr_comp arr_id f = f *)
-    apply PureRelASPPairArr_eq; intros pre b. cbn.
-    rewrite id_pred. reflexivity.
+  - (* comp_id_l *)
+    exact (@rel_comp_id_l_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (@ASP_rel_ext) A B f).
 
-  - (* comp_id_r: arr_comp f arr_id = f *)
-    apply PureRelASPPairArr_eq; intros pre b. cbn. sauto limit: 200.
+  - (* comp_id_r *)
+    exact (@rel_comp_id_r_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (@ASP_rel_ext) A B f).
 
   - (* comp_assoc *)
-    apply PureRelASPPairArr_eq; intros pre d0. cbn. reflexivity.
+    exact (@rel_comp_assoc_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B C f g a c => iff_refl _)
+      (@ASP_rel_ext) A B C D f g h).
 
   - (* pure_comp *)
-    apply PureRelASPPairArr_eq; intros pre c. cbn. sauto limit: 200.
+    exact (@rel_pure_comp_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (@ASP_rel_ext) A B C f g).
 
   - (* first_pure *)
-    apply PureRelASPPairArr_eq; intros pre [b d]. cbn. sauto limit: 200.
+    exact (@rel_first_pure_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@ASP_rel_ext) A B C f).
 
   - (* first_comp *)
-    apply PureRelASPPairArr_eq; intros pre [c d]. cbn. reflexivity.
+    exact (@rel_first_comp_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@ASP_rel_ext) A B C D f g).
 
-  - (* first_fst — requires IsASP for additivity *)
-    apply PureRelASPPairArr_eq; intros pre b. cbn.
-    destruct (IsASP_rewrite f) as [R_f H_f].
-    split.
-    + intros [[b0 c] [Hfc Heq]]; cbn in Heq; subst.
-      rewrite H_f in Hfc. destruct Hfc as [a [Hpre Hra]].
-      rewrite H_f. exists a. split.
-      * exists (a, c). cbn. auto.
-      * exact Hra.
-    + intro Hfb.
-      rewrite H_f in Hfb. destruct Hfb as [a [Hfst Hra]].
-      destruct Hfst as [[a0 c] [Hpre Heq]]; cbn in Heq; subst.
-      exists (b, c). split.
-      * rewrite H_f. eexists; eauto.
-      * cbn. reflexivity.
+  - (* first_fst *)
+    exact (@rel_first_fst_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@ASP_rel_ext) A B C f).
 
   - (* first_assoc *)
-    apply PureRelASPPairArr_eq; intros pre [b [c d]]. cbn.
-    destruct (IsASP_rewrite f) as [R_f H_f].
-    split.
-    + intros [[[b0 c0] d0] [Hff Hassoc]].
-      unfold assoc_prod in Hassoc. inversion Hassoc; subst.
-      rewrite H_f in Hff. destruct Hff as [a [Hpre Hra]].
-      rewrite H_f. exists a. split.
-      * exists ((a, c), d). split; [exact Hpre | reflexivity].
-      * exact Hra.
-    + intro Hf0.
-      rewrite H_f in Hf0. destruct Hf0 as [a [Hpure Hra]].
-      destruct Hpure as [[[a0 c0] d0] [Hpre Hassoc]].
-      unfold assoc_prod in Hassoc.
-      assert (Ha0 : a0 = a) by congruence.
-      assert (Hc0 : c0 = c) by congruence.
-      assert (Hd0 : d0 = d) by congruence.
-      subst a0 c0 d0.
-      exists ((b, c), d). split.
-      * rewrite H_f. exists a. auto.
-      * reflexivity.
+    exact (@rel_first_assoc_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@ASP_rel_ext) A B C D f).
 
   - (* comp_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
-    intros; subst; reflexivity.
+      intros; subst; reflexivity.
+
   - (* first_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
-    intros; subst; reflexivity.
+      intros; subst; reflexivity.
+
   - (* first_natural *)
-    apply ASP_rel_ext; intros [a c] [b d]. cbn. split.
-    + intros [[b0 c0] [[Hf Hc] Heq]]. cbn in Heq. subst c0.
-      injection Heq as Hb Hd. subst b0 d.
-      exists (a, g c). cbn. auto.
-    + intros [[a0 d0] [Heq [Hf Hd]]].
-      injection Heq as Ha Hg. subst a0 d0 d.
-      exists (b, c). cbn. auto.
+    exact (@rel_first_natural_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@ASP_rel_ext) A B C D f g).
 Qed.
 
 (* ================================================================= *)
@@ -628,117 +631,71 @@ Qed.
 Instance ArrowChoiceLaws_PureRelASPPairArr : ArrowChoiceLaws PureRelASPPairArr.
 Proof.
   constructor; intros.
+
   - (* left_pure *)
-    apply PureRelASPPairArr_eq; intros pre [b|c]; cbn; unfold sum_bimap; sauto limit: 200.
+    exact (@rel_left_pure_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C f).
+
   - (* left_comp *)
-    apply PureRelASPPairArr_eq; intros pre [c|d]; cbn; reflexivity.
+    exact (@rel_left_comp_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C D f g).
+
   - (* left_inl *)
-    apply PureRelASPPairArr_eq; intros pre [b|c]; cbn.
-    + destruct (IsASP_rewrite f) as [Rf Hf]. split.
-      * intros [b0 [Hfb Hinl]].
-        injection Hinl as Hinl. subst.
-        rewrite Hf in Hfb. destruct Hfb as [a [Hp Hra]].
-        rewrite Hf. exists a. split; [exists a; auto | exact Hra].
-      * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [[a0 [Hp Hinl]] Hra]].
-        injection Hinl as Hinl. subst.
-        exists b. split; [rewrite Hf; exists a; auto | reflexivity].
-    + sauto limit: 200.
+    exact (@rel_left_inl_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C f).
+
   - (* left_assoc *)
-    apply PureRelASPPairArr_eq; intros pre [b | [c | d]]; cbn.
-    + (* inl b *)
-      destruct (IsASP_rewrite f) as [Rf Hf]. split.
-      * intros [x [Hleft Hassoc]].
-        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        cbn in Hleft. rewrite Hf in Hleft. destruct Hleft as [a [Hp Hra]].
-        rewrite Hf. exists a. split; [exists (inl (inl a)); auto | exact Hra].
-      * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [Hex Hra]].
-        destruct Hex as [x [Hp Hassoc]].
-        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exists (inl (inl b)). split; [cbn; rewrite Hf; exists a; auto | reflexivity].
-    + (* inr (inl c) *)
-      split.
-      * intros [x [Hleft Hassoc]].
-        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exists (inl (inr c)). cbn. auto.
-      * intros [x [Hp Hassoc]].
-        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exists (inl (inr c)). cbn. auto.
-    + (* inr (inr d) *)
-      split.
-      * intros [x [Hleft Hassoc]].
-        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exists (inr d). cbn. auto.
-      * intros [x [Hp Hassoc]].
-        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exists (inr d). cbn. auto.
-    - (* left_inr *)
-      apply PureRelASPPairArr_eq; intros pre [b|c']; cbn.
-      + (* inl b: both sides should be False *)
-        destruct (IsASP_rewrite f) as [Rf Hf].
-        rewrite Hf. unfold asp.
-        split; intros H; exfalso.
-        * destruct H as [a [[c0 [_ Habs]] _]]. discriminate.
-        * destruct H as [c0 [_ Habs]]. discriminate.
-      + (* inr c': both sides give pre c' after simplification *)
-        sauto limit: 200.
-    - (* left_natural *)
-      apply PureRelASPPairArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
-      + destruct (IsASP_rewrite f) as [Rf Hf].
-        split.
-        * intros [[a'|c'] [Hex Heq]]; [| discriminate].
-          injection Heq as Heq. subst. cbn in Hex. rewrite Hf in Hex.
-          destruct Hex as [a0 [Hpre Hra]].
-          rewrite Hf. exists a0. split.
-          -- exists (inl a0). split; [exact Hpre | reflexivity].
-          -- exact Hra.
-        * intro Hfb. rewrite Hf in Hfb. destruct Hfb as [a [[x [Hpre Heq]] Hra]].
-          destruct x as [a'|c']; [injection Heq as Heq; subst | discriminate].
-          exists (inl b). split; [cbn; rewrite Hf; exists a; auto | reflexivity].
-      + split.
-        * intros [[b'|d'] [Hex Heq]]; [discriminate |].
-          injection Heq as Heq. subst.
-          exists (inr d'). split; [exact Hex | reflexivity].
-        * intros [x [Hpre Heq]].
-          destruct x as [b'|d']; [discriminate |].
-          injection Heq as Heq. subst.
-          exists (inr d'). split; [exact Hpre | reflexivity].
-    - (* first_left_dist *)
-      apply PureRelASPPairArr_eq; intros pre y.
-      destruct y as [[b d]|[c d]]; cbn; unfold sum_prod_dist.
-      + (* inl (b, d) *)
-        destruct (IsASP_rewrite f) as [Rf Hf]. split.
-        * intros [[[b'|c'] d'] [Hleft Hsd]].
-          -- injection Hsd as Hb Hd. subst.
-             cbn in Hleft. rewrite Hf in Hleft. destruct Hleft as [a [Hpre Hra]].
-             rewrite Hf. exists a. split.
-             ++ exists (inl a, d). split; [exact Hpre | reflexivity].
-             ++ exact Hra.
-          -- discriminate.
-        * intros Hfb. rewrite Hf in Hfb. destruct Hfb as [a [Hex Hra]].
-          destruct Hex as [[[a'|c'] d0] [Hpre Hsd]]; cbn in Hsd; [| discriminate].
-          injection Hsd as Ha Hd. subst.
-          exists (inl b, d). split.
-          -- cbn. rewrite Hf. exists a. auto.
-          -- reflexivity.
-      + (* inr (c, d) *)
-        split.
-        * intros [[[b'|c'] d'] [Hleft Hsd]].
-          -- discriminate.
-          -- injection Hsd as Hc Hd. subst. cbn in Hleft.
-             exists (inr c, d). split; [exact Hleft | reflexivity].
-        * intros [[[a'|c'] d'] [Hpre Hsd]]; cbn in Hsd; [discriminate |].
-          injection Hsd as Hc Hd. subst.
-          exists (inr c, d). split.
-          -- cbn. exact Hpre.
-          -- reflexivity.
-    - (* left_proper *)
-      unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
+    exact (@rel_left_assoc_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C D f).
+
+  - (* left_inr *)
+    exact (@rel_left_inr_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C f).
+
+  - (* left_natural *)
+    exact (@rel_left_natural_fields PureRelASPPairArr Arrow_PureRelASPPairArr
+      ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C D f g).
+
+  - (* first_left_dist *)
+    exact (@rel_first_left_dist_fields PureRelASPPairArr
+      Arrow_PureRelASPPairArr ArrowChoice_PureRelASPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@ASP_rel_ext) A B C D f).
+
+  - (* left_proper *)
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
       intros; subst; reflexivity.
 Qed.
 (* ================================================================= *)
@@ -828,78 +785,78 @@ Instance ArrowLaws_PureRelDSLPPairArr : ArrowLaws PureRelDSLPPairArr.
 Proof.
   constructor; intros.
 
-  - (* comp_id_l: arr_comp arr_id f = f *)
-    apply PureRelDSLPPairArr_eq; intros pre b. cbn.
-    rewrite id_pred_dslp. reflexivity.
+  - (* comp_id_l *)
+    exact (@rel_comp_id_l_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (@DSLP_rel_ext) A B f).
 
   - (* comp_id_r *)
-    apply PureRelDSLPPairArr_eq; intros pre b. cbn. sauto limit: 200.
+    exact (@rel_comp_id_r_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (@DSLP_rel_ext) A B f).
 
   - (* comp_assoc *)
-    apply PureRelDSLPPairArr_eq; intros pre d0. cbn. reflexivity.
+    exact (@rel_comp_assoc_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B C f g a c => iff_refl _)
+      (@DSLP_rel_ext) A B C D f g h).
 
   - (* pure_comp *)
-    apply PureRelDSLPPairArr_eq; intros pre c. cbn. sauto limit: 200.
+    exact (@rel_pure_comp_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (@DSLP_rel_ext) A B C f g).
 
   - (* first_pure *)
-    apply PureRelDSLPPairArr_eq; intros pre [b d]. cbn. sauto limit: 200.
+    exact (@rel_first_pure_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@DSLP_rel_ext) A B C f).
 
   - (* first_comp *)
-    apply PureRelDSLPPairArr_eq; intros pre [c d]. cbn. reflexivity.
+    exact (@rel_first_comp_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@DSLP_rel_ext) A B C D f g).
 
-  - (* first_fst — requires IsDSLP for multiplicativity.
-       Both sides reduce (via IsDSLP) to quantifier reordering:
-       ∀c ∀a, R a b → pre(a,c) ↔ ∀a, R a b → ∀c, pre(a,c). *)
-    apply PureRelDSLPPairArr_eq; intros pre b.
-    destruct (IsDSLP_rewrite f) as [R_f H_f].
-    cbn. split.
-    + intros H. rewrite H_f. intros a Hra p Heq.
-      destruct p as [a0 c]; cbn in Heq; subst.
-      assert (Hc := H (b, c) eq_refl).
-      rewrite H_f in Hc. exact (Hc a Hra).
-    + intros Hfb p Heq. destruct p as [b0 c]; cbn in Heq; subst.
-      rewrite H_f. intros a Hra.
-      rewrite H_f in Hfb. specialize (Hfb a Hra).
-      exact (Hfb (a, c) eq_refl).
+  - (* first_fst *)
+    exact (@rel_first_fst_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@DSLP_rel_ext) A B C f).
 
   - (* first_assoc *)
-    apply PureRelDSLPPairArr_eq; intros pre [b [c d]].
-    destruct (IsDSLP_rewrite f) as [R_f H_f].
-    cbn. split.
-    + intros H. rewrite H_f. intros a Hra p Hassoc.
-      destruct p as [[a0 c0] d0].
-      unfold assoc_prod in Hassoc.
-      assert (Ha : a0 = a) by congruence.
-      assert (Hc : c0 = c) by congruence.
-      assert (Hd : d0 = d) by congruence.
-      subst.
-      assert (Hcd := H ((b, c), d) eq_refl).
-      rewrite H_f in Hcd. exact (Hcd a Hra).
-    + intros Hfb p Hassoc.
-      destruct p as [[b0 c0] d0].
-      unfold assoc_prod in Hassoc.
-      assert (Hb : b0 = b) by congruence.
-      assert (Hc : c0 = c) by congruence.
-      assert (Hd : d0 = d) by congruence.
-      subst.
-      rewrite H_f. intros a Hra.
-      rewrite H_f in Hfb. specialize (Hfb a Hra).
-      exact (Hfb ((a, c), d) eq_refl).
+    exact (@rel_first_assoc_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@DSLP_rel_ext) A B C D f).
 
   - (* comp_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
-    intros; subst; reflexivity.
+      intros; subst; reflexivity.
+
   - (* first_proper *)
     unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
-    intros; subst; reflexivity.
+      intros; subst; reflexivity.
+
   - (* first_natural *)
-    apply DSLP_rel_ext; intros [a c] [b d]. cbn. split.
-    + intros [[b0 c0] [[Hf Hc] Heq]]. cbn in Heq. subst c0.
-      injection Heq as Hb Hd. subst b0 d.
-      exists (a, g c). cbn. auto.
-    + intros [[a0 d0] [Heq [Hf Hd]]].
-      injection Heq as Ha Hg. subst a0 d0 d.
-      exists (b, c). cbn. auto.
+    exact (@rel_first_natural_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (@DSLP_rel_ext) A B C D f g).
 Qed.
 
 (* ================================================================= *)
@@ -910,95 +867,71 @@ Qed.
 Instance ArrowChoiceLaws_PureRelDSLPPairArr : ArrowChoiceLaws PureRelDSLPPairArr.
 Proof.
   constructor; intros.
+
   - (* left_pure *)
-    apply PureRelDSLPPairArr_eq; intros pre [b|c]; cbn; unfold sum_bimap;
-    sauto limit: 200.
+    exact (@rel_left_pure_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C f).
+
   - (* left_comp *)
-    apply PureRelDSLPPairArr_eq; intros pre [c|d]; cbn; reflexivity.
+    exact (@rel_left_comp_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C D f g).
+
   - (* left_inl *)
-    apply PureRelDSLPPairArr_eq; intros pre [b|c]; cbn.
-    + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
-      * intros H. rewrite Hf. intros a Hra a0 Hinl.
-        injection Hinl as Hinl. subst.
-        assert (Hfa := H b eq_refl).
-        rewrite Hf in Hfa. exact (Hfa a Hra).
-      * intro Hfb. intros b0 Heq.
-        injection Heq as Heq. subst.
-        rewrite Hf. intros a Hra.
-        rewrite Hf in Hfb. specialize (Hfb a Hra (a) eq_refl). exact Hfb.
-    + split; intros _ ? H; discriminate H.
+    exact (@rel_left_inl_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C f).
+
   - (* left_assoc *)
-    apply PureRelDSLPPairArr_eq; intros pre [b | [c | d]]; cbn.
-    + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
-      * intro H. rewrite Hf. intros a Hra x Hassoc.
-        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        assert (Hfa := H (inl (inl b)) eq_refl).
-        cbn in Hfa. rewrite Hf in Hfa. exact (Hfa a Hra).
-      * intro Hfb. rewrite Hf in Hfb. intros x Hassoc.
-        destruct x as [[b'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        cbn. rewrite Hf. intros a Hra. exact (Hfb a Hra (inl (inl a)) eq_refl).
-    + split.
-      * intros H x Hassoc.
-        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exact (H (inl (inr c)) eq_refl).
-      * intros Hpre [[b'|c0]|d0] Hassoc; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst. exact (Hpre (inl (inr c)) eq_refl).
-    + split.
-      * intros H x Hassoc.
-        destruct x as [[a'|c0]|d0]; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst.
-        exact (H (inr d) eq_refl).
-      * intros Hpre [[b'|c0]|d0] Hassoc; cbn in Hassoc; try discriminate.
-        injection Hassoc as Hassoc. subst. exact (Hpre (inr d) eq_refl).
-    - (* left_inr *)
-      apply PureRelDSLPPairArr_eq; intros pre [b|c']; cbn.
-      + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
-        * intros _ c0 Habs. discriminate.
-        * intros _. rewrite Hf. intros a _ c0 Habs. discriminate.
-      + split; intros H c0 Heq; injection Heq as Heq; subst; exact (H c' eq_refl).
-    - (* left_natural *)
-      apply PureRelDSLPPairArr_eq; intros pre [b|d]; cbn; unfold sum_bimap.
-      + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
-        * intros H. rewrite Hf. intros a Hra [a'|c'] Heq; [| discriminate].
-          injection Heq as Heq. subst.
-          specialize (H (inl b) eq_refl). cbn in H. rewrite Hf in H.
-          exact (H a Hra).
-        * intro Hfb. rewrite Hf in Hfb.
-          intros [b'|c'] Heq; [| discriminate].
-          injection Heq as Heq. subst. cbn.
-          rewrite Hf. intros a Hra.
-          exact (Hfb a Hra (inl a) eq_refl).
-      + split.
-        * intros H [a'|c'] Heq; [discriminate |].
-          injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
-        * intros H [b'|c'] Heq; [discriminate |].
-          injection Heq as Heq. apply (H (inr c')). f_equal. exact Heq.
-    - (* first_left_dist *)
-      apply PureRelDSLPPairArr_eq; intros pre y.
-      destruct y as [[b d]|[c d]]; cbn; unfold sum_prod_dist.
-      + destruct (IsDSLP_rewrite f) as [Rf Hf]. split.
-        * intros H. rewrite Hf. intros a Hra [[a'|c'] d'] Hsd; cbn in Hsd;
-            [| discriminate].
-          injection Hsd as Ha Hd. subst.
-          assert (Hx := H (inl b, d) eq_refl). cbn in Hx. rewrite Hf in Hx.
-          exact (Hx a Hra).
-        * intro Hfb. rewrite Hf in Hfb.
-          intros [[b'|c'] d'] Heq; cbn in Heq; [| discriminate].
-          injection Heq as Hb Hd. subst. cbn.
-          rewrite Hf. intros a Hra.
-          exact (Hfb a Hra (inl a, d) eq_refl).
-      + split.
-        * intros H [[a'|c'] d'] Hsd; cbn in Hsd; [discriminate |].
-          injection Hsd as Hc Hd. subst.
-          exact (H (inr c, d) eq_refl).
-        * intros Hall [[b'|c'] d'] Heq; cbn in Heq; [discriminate |].
-          injection Heq as Hc Hd. subst. cbn.
-          exact (Hall (inr c, d) eq_refl).
-    - (* left_proper *)
-      unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
+    exact (@rel_left_assoc_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C D f).
+
+  - (* left_inr *)
+    exact (@rel_left_inr_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C f).
+
+  - (* left_natural *)
+    exact (@rel_left_natural_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
+      ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C D f g).
+
+  - (* first_left_dist *)
+    exact (@rel_first_left_dist_fields PureRelDSLPPairArr
+      Arrow_PureRelDSLPPairArr ArrowChoice_PureRelDSLPPairArr
+      (fun A B f => @rel A B (proj1_sig f))
+      (fun A B f a b => iff_refl _)
+      (fun A B C f g a c => iff_refl _)
+      (fun A B C f a c b d => iff_refl _)
+      (fun A B C f x y => iff_refl _)
+      (@DSLP_rel_ext) A B C D f).
+
+  - (* left_proper *)
+    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
       intros; subst; reflexivity.
 Qed.
 

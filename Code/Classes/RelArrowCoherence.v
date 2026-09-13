@@ -1,4 +1,4 @@
-(** * Standard application coherence for relationally presented arrows.
+(** * Structural laws and application coherence for relationally presented arrows.
 
     The standard [Control.Arrow] equations (GHC 9.12.2), included in
     [ArrowApplyLaws], require application to respect pairing,
@@ -11,9 +11,9 @@
     ]]
 
     The core section below takes the relation reading [R] and its
-    per-operation laws as explicit hypotheses; the three equations
-    additionally consume a faithful equality principle [rel_ext], which
-    no relational statement uses.  [RelArrowPresentation] packages the
+    per-operation laws as explicit hypotheses; the structural and application
+    equations additionally consume a faithful equality principle [rel_ext],
+    which no relational statement uses.  [RelArrowPresentation] packages the
     same fields, and the closing wrappers keep its original theorem
     interfaces; both SP presentations reuse them in their base
     [ArrowApplyLaws] instances.
@@ -91,7 +91,7 @@ Section RelationalCoherence.
   Variable rel_app : forall {A B} (f : arr A B) a b,
     R (@arr_app arr HA HAA A B) (f, a) b <-> R f a b.
 
-  (** Faithful equality, consumed only by the three arrow equalities
+  (** Faithful equality, consumed only by the arrow equalities
       below; section discharge keeps it out of every other statement. *)
   Variable rel_ext : forall {A B} (f g : arr A B),
     (forall a b, R f a b <-> R g a b) -> f = g.
@@ -184,6 +184,275 @@ Section RelationalCoherence.
     - exact Hh.
     - rewrite rel_app in Hf. exact Hf.
     - exact Hh.
+  Qed.
+
+  (** ** Structural law fields
+
+      Each equation uses only its per-operation relational laws and
+      faithfulness.  The core arrow equations require neither choice nor
+      application; the choice equations require no application. *)
+
+  Lemma rel_comp_id_l_fields {A B} (f : arr A B) :
+    comp (@arr_id arr HA A) f = f.
+  Proof.
+    apply rel_ext. intros a b. unfold arr_id.
+    rewrite rel_pure_comp. reflexivity.
+  Qed.
+
+  Lemma rel_comp_id_r_fields {A B} (f : arr A B) :
+    comp f (@arr_id arr HA B) = f.
+  Proof.
+    apply rel_ext. intros a b. unfold arr_id.
+    rewrite rel_comp_pure. split.
+    - intros [b' [Hf ->]]. exact Hf.
+    - intro Hf. exists b. auto.
+  Qed.
+
+  Lemma rel_comp_assoc_fields {A B C D}
+      (f : arr A B) (g : arr B C) (h : arr C D) :
+    comp (comp f g) h = comp f (comp g h).
+  Proof.
+    apply rel_ext. intros a d. rewrite !rel_comp. split.
+    - intros [c [Hfg Hh]]. apply rel_comp in Hfg.
+      destruct Hfg as [b [Hf Hg]]. exists b. split; [exact Hf |].
+      apply rel_comp. exists c. auto.
+    - intros [b [Hf Hgh]]. apply rel_comp in Hgh.
+      destruct Hgh as [c [Hg Hh]]. exists c. split; [|exact Hh].
+      apply rel_comp. exists b. auto.
+  Qed.
+
+  Lemma rel_pure_comp_fields {A B C} (f : A -> B) (g : B -> C) :
+    comp (pure f) (pure g) = pure (fun a => g (f a)).
+  Proof.
+    apply rel_ext. intros a c. rewrite rel_pure_comp, !rel_pure. reflexivity.
+  Qed.
+
+  Lemma rel_first_pure_fields {A B C} (f : A -> B) :
+    @arr_first arr HA A B C (pure f) =
+    pure (fun '(a, c) => (f a, c)).
+  Proof.
+    apply rel_ext. intros [a c] q. rewrite rel_first_pure, rel_pure. reflexivity.
+  Qed.
+
+  Lemma rel_first_comp_fields {A B C D} (f : arr A B) (g : arr B C) :
+    @arr_first arr HA A C D (comp f g) = comp (first f) (first g).
+  Proof.
+    apply rel_ext. intros [a d] [c d']. rewrite rel_first, !rel_comp. split.
+    - intros [[b [Hf Hg]] <-]. exists (b, d). split;
+        apply rel_first; auto.
+    - intros [[b d0] [Hf Hg]]. apply rel_first in Hf, Hg.
+      destruct Hf as [Hf <-], Hg as [Hg <-]. split; [|reflexivity].
+      exists b. auto.
+  Qed.
+
+  Lemma rel_first_assoc_fields {A B C D} (f : arr A B) :
+    comp (@arr_first arr HA _ _ D (@arr_first arr HA A B C f))
+      (pure assoc_prod) =
+    comp (pure assoc_prod) (@arr_first arr HA A B (C * D)%type f).
+  Proof.
+    apply rel_ext. intros [[a c] d] [b [c' d']].
+    rewrite rel_comp_pure, rel_pure_comp. cbn [assoc_prod].
+    rewrite rel_first. split.
+    - intros [[[b0 c0] d0] [Hf Heq]].
+      cbn [assoc_prod] in Heq. injection Heq as <- <- <-.
+      apply rel_first in Hf. destruct Hf as [Hf Hd].
+      apply rel_first in Hf. destruct Hf as [Hf Hc]. subst. auto.
+    - intros [Hf Heq]. injection Heq as <- <-.
+      exists ((b, c), d). split; [|reflexivity].
+      apply rel_first. split; [apply rel_first; auto | reflexivity].
+  Qed.
+
+  Lemma rel_first_natural_fields {A B C D} (f : arr A B) (g : C -> D) :
+    comp (first f) (pure (fun '(b, c) => (b, g c))) =
+    comp (pure (fun '(a, c) => (a, g c))) (first f).
+  Proof.
+    apply rel_ext. intros [a c] [b d].
+    rewrite rel_comp_pure, rel_pure_comp, rel_first. split.
+    - intros [[b0 c0] [Hf Heq]]. apply rel_first in Hf.
+      destruct Hf as [Hf <-]. injection Heq as <- <-. auto.
+    - intros [Hf <-]. exists (b, c). split.
+      + apply rel_first. auto.
+      + reflexivity.
+  Qed.
+
+  Lemma rel_first_fst_fields {A B C} (f : arr A B) :
+    comp (@arr_first arr HA A B C f) (pure fst) = comp (pure fst) f.
+  Proof.
+    apply rel_ext. intros [a c] b.
+    rewrite rel_comp_pure, rel_pure_comp. cbn [fst]. split.
+    - intros [[b0 c0] [Hf Heq]]. apply rel_first in Hf.
+      cbn in Heq. subst b0. exact (proj1 Hf).
+    - intro Hf. exists (b, c). split; [apply rel_first; auto | reflexivity].
+  Qed.
+
+  Lemma rel_left_pure_fields {A B C} (f : A -> B) :
+    @arr_left arr HA HC A B C (pure f) =
+    pure (fun x => sum_bimap f (fun c : C => c) x).
+  Proof.
+    apply rel_ext. intros x y.
+    rewrite rel_left, rel_pure.
+    destruct x as [a|c], y as [b|d]; cbn [sum_bimap].
+    - rewrite rel_pure. split; intro H; [subst; reflexivity | injection H; auto].
+    - split; intro H; [contradiction | discriminate].
+    - split; intro H; [contradiction | discriminate].
+    - split; intro H; [subst; reflexivity | injection H; auto].
+  Qed.
+
+  Lemma rel_left_comp_fields {A B C D} (f : arr A B) (g : arr B C) :
+    @arr_left arr HA HC A C D (comp f g) =
+    comp (@arr_left arr HA HC A B D f) (@arr_left arr HA HC B C D g).
+  Proof.
+    apply rel_ext. intros x y.
+    rewrite !rel_comp, rel_left.
+    destruct x as [a|d], y as [c|d']; cbn.
+    - rewrite rel_comp. split.
+      + intros [b [Hf Hg]]. exists (inl b). split; apply rel_left; auto.
+      + intros [[b|d0] [Hf Hg]].
+        * rewrite rel_left in Hf. rewrite rel_left in Hg. exists b. auto.
+        * rewrite rel_left in Hf. contradiction.
+    - split.
+      + intros [].
+      + intros [[b|d0] [Hf Hg]].
+        * rewrite rel_left in Hg. contradiction.
+        * rewrite rel_left in Hf. contradiction.
+    - split.
+      + intros [].
+      + intros [[b|d0] [Hf Hg]].
+        * rewrite rel_left in Hf. contradiction.
+        * rewrite rel_left in Hg. contradiction.
+    - split.
+      + intros <-. exists (inr d). split; apply rel_left; auto.
+      + intros [[b|d0] [Hf Hg]].
+        * rewrite rel_left in Hf. contradiction.
+        * rewrite rel_left in Hf. rewrite rel_left in Hg.
+          exact (eq_trans Hf Hg).
+  Qed.
+
+  Lemma rel_left_inl_fields {A B C} (f : arr A B) :
+    comp f (pure (@inl B C)) =
+    comp (pure (@inl A C)) (@arr_left arr HA HC A B C f).
+  Proof.
+    apply rel_ext. intros a x.
+    rewrite rel_comp_pure, rel_pure_comp, rel_left.
+    destruct x as [b|d]; cbn; split; intro H.
+    - destruct H as [b' [Hf Heq]]. injection Heq as Heq. subst b'. exact Hf.
+    - exists b. split; [exact H | reflexivity].
+    - destruct H as [b' [Hf Heq]]. discriminate Heq.
+    - contradiction.
+  Qed.
+
+  Lemma rel_left_assoc_fields {A B C D} (f : arr A B) :
+    comp (@arr_left arr HA HC _ _ D (@arr_left arr HA HC A B C f))
+      (pure assoc_sum) =
+    comp (pure assoc_sum) (@arr_left arr HA HC A B (C + D)%type f).
+  Proof.
+    apply rel_ext. intros x y.
+    rewrite rel_comp_pure, rel_pure_comp.
+    destruct x as [[a|c]|d], y as [b|[c'|d']];
+      cbn [assoc_sum]; rewrite !rel_left;
+      try solve [
+        split; [
+          intros [[[b0|c0]|d0] [Hf Heq]]; cbn [assoc_sum] in Heq;
+          try discriminate;
+          apply rel_left in Hf; try rewrite rel_left in Hf; contradiction
+        | intro Heq; try discriminate Heq; contradiction
+        ]
+      ].
+    - split.
+      + intros [[[b0|c0]|d0] [Hf Heq]]; cbn [assoc_sum] in Heq;
+          try discriminate.
+        injection Heq as <-. apply rel_left in Hf.
+        rewrite rel_left in Hf. exact Hf.
+      + intro Hf. exists (inl (inl b)). split; [|reflexivity].
+        apply rel_left. rewrite rel_left. exact Hf.
+    - split.
+      + intros [[[b0|c0]|d0] [Hf Heq]]; cbn [assoc_sum] in Heq;
+          try discriminate.
+        injection Heq as <-. apply rel_left in Hf.
+        rewrite rel_left in Hf. subst c0. reflexivity.
+      + intro Heq. injection Heq as <-. exists (inl (inr c)). split; [|reflexivity].
+        apply rel_left. rewrite rel_left. reflexivity.
+    - split.
+      + intros [[[b0|c0]|d0] [Hf Heq]]; cbn [assoc_sum] in Heq;
+          try discriminate.
+        injection Heq as <-. apply rel_left in Hf. subst d0. reflexivity.
+      + intro Heq. injection Heq as <-. exists (inr d). split; [|reflexivity].
+        apply rel_left. reflexivity.
+  Qed.
+
+  Lemma rel_left_natural_fields {A B C D} (f : arr A B) (g : C -> D) :
+    comp (@arr_left arr HA HC A B C f)
+      (pure (fun x => sum_bimap (fun b : B => b) g x)) =
+    comp (pure (fun x => sum_bimap (fun a : A => a) g x))
+      (@arr_left arr HA HC A B D f).
+  Proof.
+    apply rel_ext. intros x y.
+    rewrite rel_comp_pure, rel_pure_comp.
+    destruct x as [a|c], y as [b|d]; cbn [sum_bimap]; rewrite !rel_left;
+      try solve [
+        split; [
+          intros [[b0|c0] [Hf Heq]]; cbn [sum_bimap] in Heq; try discriminate;
+          rewrite rel_left in Hf; contradiction
+        | contradiction
+        ]
+      ].
+    - split.
+      + intros [[b0|c0] [Hf Heq]]; cbn [sum_bimap] in Heq; try discriminate.
+        injection Heq as <-. rewrite rel_left in Hf. exact Hf.
+      + intro Hf. exists (inl b). split; [rewrite rel_left; exact Hf | reflexivity].
+    - split.
+      + intros [[b0|c0] [Hf Heq]]; cbn [sum_bimap] in Heq; try discriminate.
+        injection Heq as <-. rewrite rel_left in Hf. subst c0. reflexivity.
+      + intros <-. exists (inr c). split; [rewrite rel_left; reflexivity | reflexivity].
+  Qed.
+
+  Lemma rel_left_inr_fields {A B C} (f : arr A B) :
+    comp (pure (@inr A C)) (@arr_left arr HA HC A B C f) =
+    pure (@inr B C).
+  Proof.
+    apply rel_ext; intros c y.
+    rewrite rel_pure_comp, rel_left, rel_pure.
+    destruct y as [b|d]; cbn; split; intro H.
+    - contradiction.
+    - discriminate H.
+    - subst; reflexivity.
+    - injection H; auto.
+  Qed.
+
+  Lemma rel_first_left_dist_fields {A B C D} (f : arr A B) :
+    comp (@arr_first arr HA _ _ D (@arr_left arr HA HC A B C f))
+      (pure sum_prod_dist) =
+    comp (pure sum_prod_dist)
+      (@arr_left arr HA HC _ _ (C * D)%type (first f)).
+  Proof.
+    apply rel_ext. intros [ac d] q.
+    rewrite rel_comp_pure, rel_pure_comp.
+    destruct ac as [a|c], q as [[b d']|[c' d']];
+      cbn [sum_prod_dist]; rewrite rel_left;
+      try solve [
+        split; [
+          intros [[[b0|c0] d0] [Hf Heq]]; cbn [sum_prod_dist] in Heq;
+            try discriminate;
+          apply rel_first in Hf; destruct Hf as [Hf _];
+          rewrite rel_left in Hf; contradiction
+        | contradiction
+        ]
+      ].
+    - rewrite rel_first. split.
+      + intros [[[b0|c0] d0] [Hf Heq]]; cbn [sum_prod_dist] in Heq;
+          try discriminate.
+        injection Heq as <- <-. apply rel_first in Hf.
+        destruct Hf as [Hf Hd]. rewrite rel_left in Hf. auto.
+      + intros [Hf <-]. exists (inl b, d). split; [|reflexivity].
+        apply rel_first. split; [rewrite rel_left; exact Hf | reflexivity].
+    - split.
+      + intros [[[b0|c0] d0] [Hf Heq]]; cbn [sum_prod_dist] in Heq;
+          try discriminate.
+        injection Heq as <- <-. apply rel_first in Hf.
+        destruct Hf as [Hf Hd]. rewrite rel_left in Hf. now subst.
+      + intro Heq. injection Heq as <- <-. exists (inr c, d).
+        split; [|reflexivity]. apply rel_first.
+        split; [rewrite rel_left; reflexivity | reflexivity].
   Qed.
 
   (** ** Option operation semantics

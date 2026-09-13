@@ -34,10 +34,18 @@ The pre/post-order classes in [Common](../Common/CONTEXT.md) are a separate API.
   with explicit dictionaries and Leibniz-equality preservation equations.
   Application preservation maps the embedded arrow in the input too.
   Inverse morphisms and option/state lifts reuse this record.
-- [RelArrowCoherence.v](RelArrowCoherence.v) packages faithful relation
-  semantics in `RelArrowPresentation`. It derives base application coherence
-  and relational formulas including `rel_state_option_bind`; transformer
-  application-law instances come from the generic transformer modules.
+- [RelArrowCoherence.v](RelArrowCoherence.v) proves the 16 structural equations
+  of `ArrowLaws` and `ArrowChoiceLaws` as ordinary equality lemmas named
+  `rel_<equation>_fields`. Each takes a relation reading, only the individual
+  operation facts it uses, and faithfulness (`rel_ext`), which turns pointwise
+  relation equivalence into arrow equality. Core equations need neither choice
+  nor application; choice equations need no application. Concrete SP modules
+  own the law instances that specialize these lemmas.
+  The same module supplies base application coherence and state-over-option
+  relation formulas, including `rel_state_option_bind_fields`. Relational-only
+  lemmas do not use faithfulness. `RelArrowPresentation` and the existing
+  wrappers retain the bundled interface, including `rel_state_option_bind`;
+  transformer application-law instances come from the generic transformer modules.
 - [Galois.v](Galois.v) indexes `Galois` by both binary constructors and their
   orders, allowing different orders for the same carriers. It supplies the
   adjunction and derived monotonicity/inflation/deflation lemmas.
