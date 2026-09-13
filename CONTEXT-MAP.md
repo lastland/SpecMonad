@@ -83,6 +83,7 @@ linked source definitions determine exact types and theorem statements.
 | Agent setup | [Tracker](docs/agents/issue-tracker.md), [labels](docs/agents/triage-labels.md), and [domain-document consumer rules](docs/agents/domain.md) |
 
 Coverage follows the active Coq sources in [the build manifest](Code/_CoqProject)
-plus the opt-in audit in [Makefile.local](Code/Makefile.local), including source
+plus the opt-in audit behind `make check` in [Code/Makefile](Code/Makefile),
+including source
 parent directories. Generated output, local agent configuration, `.scratch/`,
 and separate worktrees do not receive directory contexts.

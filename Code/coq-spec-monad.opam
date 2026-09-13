@@ -11,8 +11,7 @@ synopsis: "The Coq formalization of spec monads"
 description: "Theory for spec monads, Hoare logic, and incorrectness logic."
 
 build: [
-  ["coq_makefile" "-f" "_CoqProject" "-o" "Makefile"]
-  [make "-j%{jobs}%"]
+  [make "-j%{jobs}%" "all"]
 ]
 install: [make "install"]
 depends: [

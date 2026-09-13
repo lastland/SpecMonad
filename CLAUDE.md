@@ -37,7 +37,7 @@ See `.github/workflows/SpecMonad.yml` (Coq 8.20, docker-coq-action via opam).
 
 ## Build
 
-`Makefile` is gitignored; regenerate with `coq_makefile -f _CoqProject -o Makefile` in `Code/`.
+`Code/Makefile` is the maintained, committed entry point; every invocation regenerates the gitignored `Makefile.coq` from `_CoqProject` via `coq_makefile` and delegates to it. Run `make` from `Code/`.
 Single file: `make Classes/StateArrowT/Core.vo`. Use `timeout 30 make ...` to catch typeclass loops.
 
 ## Agent skills

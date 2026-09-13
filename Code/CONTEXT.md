@@ -12,7 +12,8 @@ alone does not establish that it belongs to that build. Dependency versions
 are declared in the [opam manifest](coq-spec-monad.opam).
 
 [Checks](Checks/CONTEXT.md) supplies a separate opt-in assumption audit through
-[Makefile.local](Makefile.local). Consult the audit's current output for the
+the `check` target of the maintained [Makefile](Makefile). Consult the audit's
+current output for the
 assumptions of selected theorems; context documents are not an assumption ledger.
 
 ## Main areas
