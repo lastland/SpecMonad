@@ -283,7 +283,17 @@ Section ProgDSPMonad.
   Lemma dsp_shape_wf {A} (R : S -> option (A * S) -> Prop) :
     StrictPositivelyMeetPreservingProg
       (fun pre r => (exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s)).
-  Proof. apply dsp_carrier. intros pre r. exact (dsp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r [[s [Hbot _]] _]. exact Hbot.
+    - intros I [i0] p r. split.
+      + intros [[s [Hmeet HR]] Hclose] i. split.
+        * exists s. split; [ exact (Hmeet i) | exact HR ].
+        * intros s' Hs'. exact (Hclose s' Hs' i).
+      + intros H. destruct (H i0) as [[s [Hp Hs]] _]. split.
+        * exists s. split; [ intro i; exact (proj2 (H i) s Hs) | exact Hs ].
+        * intros s' Hs' i. exact (proj2 (H i) s' Hs').
+  Qed.
 
   (** ... and every carrier element is the DSP of its recovered relation. *)
   Lemma getProgDSP_carrier {A} (w : DSPStExc A)
@@ -1046,7 +1056,17 @@ Section ProgDSPMonad.
   Lemma dsp_shape_wf {A} (R : S -> (A * S) -> Prop) :
     StrictPositivelyMeetPreservingProg
       (fun pre r => (exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s)).
-  Proof. apply dsp_carrier. intros pre r. exact (dsp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r [[s [Hbot _]] _]. exact Hbot.
+    - intros I [i0] p r. split.
+      + intros [[s [Hmeet HR]] Hclose] i. split.
+        * exists s. split; [ exact (Hmeet i) | exact HR ].
+        * intros s' Hs'. exact (Hclose s' Hs' i).
+      + intros H. destruct (H i0) as [[s [Hp Hs]] _]. split.
+        * exists s. split; [ intro i; exact (proj2 (H i) s Hs) | exact Hs ].
+        * intros s' Hs' i. exact (proj2 (H i) s' Hs').
+  Qed.
 
   Lemma getProgDSP_carrier {A} (w : DSPSt A) (pre : S -> Prop) (r : A * S) :
     getDSPSt w pre r <->

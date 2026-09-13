@@ -278,7 +278,21 @@ Section ProgASLPMonad.
   Lemma aslp_shape_wf {A} (R : S -> option (A * S) -> Prop) :
     TerminatingPositivelyJoinPreserving
       (fun pre r => (exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s)).
-  Proof. apply aslp_carrier. intros pre r. exact (aslp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r. right. intros s _. exact I.
+    - intros I [i0] p r. split.
+      + intros [[s [[i Hi] Hs]] | Hall].
+        * exists i. left. exists s. split; [ exact Hi | exact Hs ].
+        * destruct (classic (exists s, R s r)) as [[s0 Hs0] | Hno].
+          -- destruct (Hall s0 Hs0) as [i Hi]. exists i. left.
+             exists s0. split; [ exact Hi | exact Hs0 ].
+          -- exists i0. right. intros s Hs. exfalso.
+             exact (Hno (ex_intro _ s Hs)).
+      + intros [i [[s [Hp Hs]] | Hall]].
+        * left. exists s. split; [ exists i; exact Hp | exact Hs ].
+        * right. intros s Hs. exists i. exact (Hall s Hs).
+  Qed.
 
   (** ... and every carrier element is the ASLP of its recovered relation. *)
   Lemma getProgASLP_carrier {A} (w : ASLPStExc A)
@@ -939,7 +953,21 @@ Section ProgASLPMonad.
   Lemma aslp_shape_wf {A} (R : S -> (A * S) -> Prop) :
     TerminatingPositivelyJoinPreserving
       (fun pre r => (exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s)).
-  Proof. apply aslp_carrier. intros pre r. exact (aslp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r. right. intros s _. exact I.
+    - intros I [i0] p r. split.
+      + intros [[s [[i Hi] Hs]] | Hall].
+        * exists i. left. exists s. split; [ exact Hi | exact Hs ].
+        * destruct (classic (exists s, R s r)) as [[s0 Hs0] | Hno].
+          -- destruct (Hall s0 Hs0) as [i Hi]. exists i. left.
+             exists s0. split; [ exact Hi | exact Hs0 ].
+          -- exists i0. right. intros s Hs. exfalso.
+             exact (Hno (ex_intro _ s Hs)).
+      + intros [i [[s [Hp Hs]] | Hall]].
+        * left. exists s. split; [ exists i; exact Hp | exact Hs ].
+        * right. intros s Hs. exists i. exact (Hall s Hs).
+  Qed.
 
   Lemma getProgASLP_carrier {A} (w : ASLPSt A) (pre : S -> Prop) (r : A * S) :
     getASLPSt w pre r <->

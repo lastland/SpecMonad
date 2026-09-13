@@ -33,7 +33,7 @@
     [gamma_uni], is not monotone.  A second, existential proposal is
     recorded as historical discussion, not as a proved counterexample. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses.
+From Coq Require Import RelationClasses.
 
 From Incorrectness.Classes Require Import Galois.
 From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr Rel PrePostArr WPArr RelPrePostArr SPArr.
@@ -263,8 +263,11 @@ Instance Galois_WP_PrePost
 
     The adjunction holds for arbitrary [r] and monotone [w].  The
     well-formedness condition on [r] is needed only so that [γ] lands in
-    [MonotoneWP].  With extensionality, [α ∘ γ = id] on [MonotoneWP],
-    making this a Galois insertion. *)
+    [MonotoneWP].  No extensionality is needed for the adjunction: the
+    forward direction transfers [w a (R a)] to [w a Q] by monotonicity
+    of [w] applied to the [R a ⊆ Q] half of the iff.  The theorem below
+    states the adjunction under the two refinement orders, not an
+    equality of bundled values. *)
 
 (** The projection of a well-formed validator is monotone. *)
 Lemma Y_monotone {A B} (r : RelPrePostArr A B) (Hr : rpp_wf r) :
@@ -315,9 +318,9 @@ Proof.
          RelPrePost_le, MonotoneWP_le, WPArr_le; cbn.
   split.
   - intros H a Q [P [R [Hr [HPa Hiff]]]].
-    specialize (H P R Hr a HPa).
-    replace Q with (R a); [exact H|].
-    extensionality b. apply propositional_extensionality. apply Hiff.
+    apply (proj2_sig w a (R a) Q).
+    + intros b HRb. apply Hiff. exact HRb.
+    + exact (H P R Hr a HPa).
   - intros H P R Hr a HPa.
     apply H. exists P, R. split; [exact Hr | split; [exact HPa | reflexivity]].
 Qed.
