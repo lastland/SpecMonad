@@ -15,7 +15,7 @@ From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel.
 From Incorrectness.Classes Require Import ArrowMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSPArrowCore.
@@ -25,11 +25,11 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSPArrowCore.
 (* ----------------------------------------------------------------- *)
 
 Lemma dspRel_pure {X Y} (h : X -> Y) :
-  Pred_eq (dspRel (pure_DSP h)) (arr_pure h).
+  Rel_eq (dspRel (pure_DSP h)) (arr_pure h).
 Proof. apply dspRel_of. intros P y. reflexivity. Qed.
 
 Lemma dspRel_comp {X Y Z} (w : DSPArr X Y) (v : DSPArr Y Z) :
-  Pred_eq (dspRel (comp_DSP w v)) (arr_comp (dspRel w) (dspRel v)).
+  Rel_eq (dspRel (comp_DSP w v)) (arr_comp (dspRel w) (dspRel v)).
 Proof.
   apply dspRel_of. intros P z. unfold comp_DSP, getDSP. cbn [proj1_sig].
   unfold aspPart, dslpPart, dspOf.
@@ -38,7 +38,7 @@ Proof.
 Qed.
 
 Lemma dspRel_first {X Y C} (w : DSPArr X Y) :
-  Pred_eq (dspRel (@first_DSP X Y C w)) (arr_first (dspRel w)).
+  Rel_eq (dspRel (@first_DSP X Y C w)) (arr_first (dspRel w)).
 Proof.
   apply dspRel_of. intros P q. unfold first_DSP, getDSP. cbn [proj1_sig].
   unfold aspPart, dslpPart, dspOf.
@@ -48,7 +48,7 @@ Qed.
 
 (* ----------------------------------------------------------------- *)
 Lemma dspRel_left {X Y C} (w : DSPArr X Y) :
-  Pred_eq (dspRel (@left_DSP X Y C w)) (arr_left (dspRel w)).
+  Rel_eq (dspRel (@left_DSP X Y C w)) (arr_left (dspRel w)).
 Proof.
   apply dspRel_of. intros P [b|c]; unfold left_DSP, getDSP; cbn [proj1_sig];
     unfold dspOf.
@@ -56,12 +56,12 @@ Proof.
     rewrite (aspOf_left_inl (dspRel w)), (dslpOf_left_inl (dspRel w)). reflexivity.
   - rewrite (aspOf_left_inr (dspRel w)), (dslpOf_left_inr (dspRel w)). tauto.
 Qed.
-Lemma dspRel_app {A B} : Pred_eq (dspRel (@app_DSP A B)) appRel.
+Lemma dspRel_app {A B} : Rel_eq (dspRel (@app_DSP A B)) appRel.
 Proof. apply dspRel_of. intros P b. reflexivity. Qed.
 
 Lemma dspRel_second {X Y C} (w : DSPArr X Y) :
-  Pred_eq (dspRel (@arr_second DSPArr Arrow_DSPArr X Y C w))
-    (@arr_second PredArr Arrow_Pred X Y C (dspRel w)).
+  Rel_eq (dspRel (@arr_second DSPArr Arrow_DSPArr X Y C w))
+    (@arr_second Rel Arrow_Rel X Y C (dspRel w)).
 Proof.
   unfold arr_second.
   cbn [arr_comp arr_pure arr_first Arrow_DSPArr].
@@ -79,15 +79,15 @@ Qed.
 
 (** The same three, oriented for use on the right of a goal. *)
 Lemma dspRel_pure_sym {X Y} (h : X -> Y) :
-  Pred_eq (arr_pure h) (dspRel (pure_DSP h)).
+  Rel_eq (arr_pure h) (dspRel (pure_DSP h)).
 Proof. intros x y. symmetry. apply dspRel_pure. Qed.
 
 Lemma dspRel_comp_sym {X Y Z} (w : DSPArr X Y) (v : DSPArr Y Z) :
-  Pred_eq (arr_comp (dspRel w) (dspRel v)) (dspRel (comp_DSP w v)).
+  Rel_eq (arr_comp (dspRel w) (dspRel v)) (dspRel (comp_DSP w v)).
 Proof. intros x z. symmetry. apply dspRel_comp. Qed.
 
 Lemma dspRel_first_sym {X Y C} (w : DSPArr X Y) :
-  Pred_eq (arr_first (dspRel w)) (dspRel (@first_DSP X Y C w)).
+  Rel_eq (arr_first (dspRel w)) (dspRel (@first_DSP X Y C w)).
 Proof. intros p q. symmetry. apply dspRel_first. Qed.
 
 (** Reduce a law about [DSPArr] to the same law about the relations it
@@ -103,30 +103,30 @@ Proof. intros p q. symmetry. apply dspRel_first. Qed.
 Proof.
   constructor.
   - intros A B f. to_rel.
-    apply (@comp_id_l PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@comp_id_l Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B f. to_rel.
-    apply (@comp_id_r PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@comp_id_r Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B C D f g h. to_rel.
-    apply (@comp_assoc PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@comp_assoc Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B C f g. to_rel.
-    apply (@pure_comp PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@pure_comp Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B C f. to_rel.
-    etransitivity; [ apply Pred_first_cong; apply dspRel_pure |].
-    apply (@first_pure PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    etransitivity; [ apply Rel_first_cong; apply dspRel_pure |].
+    apply (@first_pure Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B C D f g. to_rel.
-    etransitivity; [ apply Pred_first_cong; apply dspRel_comp |].
-    apply (@first_comp PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    etransitivity; [ apply Rel_first_cong; apply dspRel_comp |].
+    apply (@first_comp Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B C f. to_rel.
-    apply (@first_fst PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@first_fst Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros A B C D f. to_rel.
-    apply (@first_assoc PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@first_assoc Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
   - intros X Y Z w w' Hw v v' Hv. to_rel.
-    apply Pred_comp_cong;
+    apply Rel_comp_cong;
       [ exact (dspRel_faithful_conv _ _ Hw) | exact (dspRel_faithful_conv _ _ Hv) ].
   - intros X Y Z w w' Hw. to_rel.
-    apply Pred_first_cong. exact (dspRel_faithful_conv _ _ Hw).
+    apply Rel_first_cong. exact (dspRel_faithful_conv _ _ Hw).
   - intros A B C D f g. to_rel.
-    apply (@first_natural PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred).
+    apply (@first_natural Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel).
 Qed.
 
 
@@ -158,7 +158,7 @@ Proof.
     + intro Hf. exists (f, a). split; [ reflexivity | exact Hf ].
   - (* app_pair : pairing then applying is the identity *)
     intros A B. to_rel_a.
-    etransitivity; [ apply Pred_comp_cong; [ apply Pred_first_cong; apply dspRel_pure | reflexivity ] |].
+    etransitivity; [ apply Rel_comp_cong; [ apply Rel_first_cong; apply dspRel_pure | reflexivity ] |].
     intros [a b] q. unfold appRel. cbn. split.
     + intros [[w b'] [[Hw Hb] Hd]]. cbn in *. subst w. subst b'.
       apply dspRel_pure in Hd. cbn in Hd. exact Hd.
@@ -166,7 +166,7 @@ Proof.
       split; [ split; reflexivity |]. cbn. apply dspRel_pure. exact Hq.
   - (* app_precompose *)
     intros A B C g. to_rel_a. setoid_rewrite dspRel_second.
-    etransitivity; [apply Pred_comp_cong; [apply Pred_first_cong; apply dspRel_pure | reflexivity]|].
+    etransitivity; [apply Rel_comp_cong; [apply Rel_first_cong; apply dspRel_pure | reflexivity]|].
     intros [f a] c. unfold appRel, arr_second, swap. cbn. split.
     + intros [[w a'] [[Hw Ha] Hd]]. cbn in *. subst w a'.
       apply dspRel_comp in Hd. destruct Hd as [b [Hg Hf]].
@@ -181,7 +181,7 @@ Proof.
       apply dspRel_comp. exists b. auto.
   - (* app_postcompose : post-composing before applying *)
     intros A B C h. to_rel_a.
-    etransitivity; [ apply Pred_comp_cong; [ apply Pred_first_cong; apply dspRel_pure | reflexivity ] |].
+    etransitivity; [ apply Rel_comp_cong; [ apply Rel_first_cong; apply dspRel_pure | reflexivity ] |].
     intros [f a] c. unfold appRel. cbn. split.
     + intros [[w a'] [[Hw Ha] Hd]]. cbn in *. subst w. subst a'.
       apply dspRel_comp in Hd. exact Hd.
@@ -210,19 +210,19 @@ Qed.
     unification to guess. *)
 
 Lemma dspRel_left2 {A B C D} (f : DSPArr A B) :
-  Pred_eq (dspRel (@left_DSP _ _ D (@left_DSP A B C f)))
+  Rel_eq (dspRel (@left_DSP _ _ D (@left_DSP A B C f)))
           (arr_left (arr_left (dspRel f))).
-Proof. etransitivity; [ apply dspRel_left | apply Pred_left_cong; apply dspRel_left ]. Qed.
+Proof. etransitivity; [ apply dspRel_left | apply Rel_left_cong; apply dspRel_left ]. Qed.
 
 Lemma dspRel_first_left {A B C D} (f : DSPArr A B) :
-  Pred_eq (dspRel (@first_DSP _ _ D (@left_DSP A B C f)))
+  Rel_eq (dspRel (@first_DSP _ _ D (@left_DSP A B C f)))
           (arr_first (arr_left (dspRel f))).
-Proof. etransitivity; [ apply dspRel_first | apply Pred_first_cong; apply dspRel_left ]. Qed.
+Proof. etransitivity; [ apply dspRel_first | apply Rel_first_cong; apply dspRel_left ]. Qed.
 
 Lemma dspRel_left_first {A B C D} (f : DSPArr A B) :
-  Pred_eq (dspRel (@left_DSP _ _ (C * D)%type (@first_DSP A B D f)))
+  Rel_eq (dspRel (@left_DSP _ _ (C * D)%type (@first_DSP A B D f)))
           (arr_left (arr_first (dspRel f))).
-Proof. etransitivity; [ apply dspRel_left | apply Pred_left_cong; apply dspRel_first ]. Qed.
+Proof. etransitivity; [ apply dspRel_left | apply Rel_left_cong; apply dspRel_first ]. Qed.
 
 #[local] Ltac faith :=
   apply dspRel_faithful;
@@ -236,41 +236,41 @@ Proof. etransitivity; [ apply dspRel_left | apply Pred_left_cong; apply dspRel_f
 Proof.
   constructor.
   - intros A B C f. to_rel_c.
-    etransitivity; [ apply Pred_left_cong; apply dspRel_pure |].
-    apply (@left_pure PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-             ArrowChoiceLaws_Pred).
+    etransitivity; [ apply Rel_left_cong; apply dspRel_pure |].
+    apply (@left_pure Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+             ArrowChoiceLaws_Rel).
   - intros A B C D f g. to_rel_c.
-    etransitivity; [ apply Pred_left_cong; apply dspRel_comp |].
-    apply (@left_comp PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-             ArrowChoiceLaws_Pred).
+    etransitivity; [ apply Rel_left_cong; apply dspRel_comp |].
+    apply (@left_comp Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+             ArrowChoiceLaws_Rel).
   - intros A B C f. to_rel_c.
-    apply (@left_inl PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-             ArrowChoiceLaws_Pred).
+    apply (@left_inl Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+             ArrowChoiceLaws_Rel).
   - intros A B C D f. faith.
     etransitivity; [ apply dspRel_comp |].
-    etransitivity; [ apply Pred_comp_cong; [ apply dspRel_left2 | apply dspRel_pure ] |].
+    etransitivity; [ apply Rel_comp_cong; [ apply dspRel_left2 | apply dspRel_pure ] |].
     etransitivity;
-      [ apply (@left_assoc PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-                 ArrowChoiceLaws_Pred) |].
+      [ apply (@left_assoc Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+                 ArrowChoiceLaws_Rel) |].
     symmetry.
     etransitivity; [ apply dspRel_comp |].
-    apply Pred_comp_cong; [ apply dspRel_pure | apply dspRel_left ].
+    apply Rel_comp_cong; [ apply dspRel_pure | apply dspRel_left ].
   - intros A B C f. to_rel_c.
-    apply (@left_inr PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-             ArrowChoiceLaws_Pred).
+    apply (@left_inr Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+             ArrowChoiceLaws_Rel).
   - intros A B C D f g. to_rel_c.
-    apply (@left_natural PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-             ArrowChoiceLaws_Pred).
+    apply (@left_natural Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+             ArrowChoiceLaws_Rel).
   - intros A B C D f. faith.
     etransitivity; [ apply dspRel_comp |].
     etransitivity;
-      [ apply Pred_comp_cong; [ apply dspRel_first_left | apply dspRel_pure ] |].
+      [ apply Rel_comp_cong; [ apply dspRel_first_left | apply dspRel_pure ] |].
     etransitivity;
-      [ apply (@first_left_dist PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-                 ArrowChoiceLaws_Pred) |].
+      [ apply (@first_left_dist Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+                 ArrowChoiceLaws_Rel) |].
     symmetry.
     etransitivity; [ apply dspRel_comp |].
-    apply Pred_comp_cong; [ apply dspRel_pure | apply dspRel_left_first ].
+    apply Rel_comp_cong; [ apply dspRel_pure | apply dspRel_left_first ].
   - intros A B C w w' Hw. to_rel_c.
-    apply Pred_left_cong. exact (dspRel_faithful_conv _ _ Hw).
+    apply Rel_left_cong. exact (dspRel_faithful_conv _ _ Hw).
 Qed.

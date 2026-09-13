@@ -4,14 +4,14 @@
     predicate transformer cut down by a healthiness condition; here it is
     the RELATION a specification denotes:
 
-      [SPureArr A B]   = [PredArr A B]                   = [A -> B -> Prop]
-      [SPStArr S]      = [stateArrT S PredArr]
-      [SPStExcArr S]   = [stateArrT S (optionArrT PredArr)]
+      [SPureArr A B]   = [Rel A B]                   = [A -> B -> Prop]
+      [SPStArr S]      = [stateArrT S Rel]
+      [SPStExcArr S]   = [stateArrT S (optionArrT Rel)]
 
     The four SP flavours are not four carriers.  They are four READINGS of
     one relation -- [aspOf], [dslpOf], [dspOf], [aslpOf] -- and the arrow
     and monad structure belongs to the relation, not to any of them.  So
-    the laws are [PredArr]'s, proved once in [Arrows/PredArr.v] and
+    the laws are [Rel]'s, proved once in [Arrows/Rel.v] and
     inherited here through the generic transformers of [Classes/].
 
     What the readings still owe, and what this file proves:
@@ -38,17 +38,17 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel.
 From Incorrectness.Classes Require Import ArrowMonad.
 
 (* ================================================================= *)
 (** ** The carrier and its two stacks                                *)
 (* ================================================================= *)
 
-Notation SPureArr := PredArr (only parsing).
+Notation SPureArr := Rel (only parsing).
 
-Definition SPStArr (S : Type) := stateArrT S PredArr.
-Definition SPStExcArr (S : Type) := stateArrT S (optionArrT PredArr).
+Definition SPStArr (S : Type) := stateArrT S Rel.
+Definition SPStExcArr (S : Type) := stateArrT S (optionArrT Rel).
 
 (** Every arrow law at every level is [PredArr]'s, reached by typeclass
     resolution through [Classes/StateArrowT] and [Classes/OptionArrowT].
@@ -78,9 +78,9 @@ Definition SPStExc (S : Type) (A : Type) : Type := SPStExcArr S unit A.
     [ArrowEq] instances for the two transformers are mutually recursive,
     so leaving either to resolution sends the search exponential. *)
 Definition ArrowEq_SPStArr (S : Type) : ArrowEq (SPStArr S) :=
-  @ArrowEq_stateArrT S PredArr ArrowEq_Pred.
+  @ArrowEq_stateArrT S Rel ArrowEq_Rel.
 Definition ArrowEq_SPStExcArr (S : Type) : ArrowEq (SPStExcArr S) :=
-  @ArrowEq_stateArrT S (optionArrT PredArr) (@ArrowEq_optionArrT PredArr ArrowEq_Pred).
+  @ArrowEq_stateArrT S (optionArrT Rel) (@ArrowEq_optionArrT Rel ArrowEq_Rel).
 
 #[global] Instance Eq1_SPSt (S : Type) : Eq1 (SPSt S) :=
   @Eq1_Arrow (SPStArr S) (ArrowEq_SPStArr S) unit.
@@ -265,13 +265,13 @@ Section Readings.
   Qed.
 
   Corollary aspOf_inj (R R' : SPureArr X Y) :
-    (forall P y, aspOf R P y <-> aspOf R' P y) -> Pred_eq R R'.
+    (forall P y, aspOf R P y <-> aspOf R' P y) -> Rel_eq R R'.
   Proof.
     intros H x y. rewrite <- (aspOf_rel R), <- (aspOf_rel R'). apply H.
   Qed.
 
   Corollary dslpOf_inj (R R' : SPureArr X Y) :
-    (forall P y, dslpOf R P y <-> dslpOf R' P y) -> Pred_eq R R'.
+    (forall P y, dslpOf R P y <-> dslpOf R' P y) -> Rel_eq R R'.
   Proof.
     intros H x y. rewrite <- (dslpOf_rel R), <- (dslpOf_rel R').
     split; intros HP Q HQ; apply HP; apply H; exact HQ.
@@ -311,7 +311,7 @@ Section Readings.
 
   (** Transformer inclusion IS relation inclusion for ASP ... *)
   Theorem aspOf_incl (R R' : SPureArr X Y) :
-    (forall P y, aspOf R P y -> aspOf R' P y) <-> Pred_le R R'.
+    (forall P y, aspOf R P y -> aspOf R' P y) <-> Rel_le R R'.
   Proof.
     split.
     - intros H x y HR. apply (aspOf_rel R' x y).
@@ -321,7 +321,7 @@ Section Readings.
 
   (** ... and its REVERSE for DSLP.  Note [R'] and [R] swap sides. *)
   Theorem dslpOf_incl (R R' : SPureArr X Y) :
-    (forall P y, dslpOf R P y -> dslpOf R' P y) <-> Pred_le R' R.
+    (forall P y, dslpOf R P y -> dslpOf R' P y) <-> Rel_le R' R.
   Proof.
     split.
     - intros H x y HR'. apply (proj1 (dslpOf_rel R x y)).
@@ -463,29 +463,29 @@ End MorphismStruct.
     [DSPMonad.v] and [ASLPMonad.v] both need them, which is why they live
     here rather than locally in either. *)
 
-Lemma Pred_comp_cong {X Y Z} (R R' : SPureArr X Y) (T T' : SPureArr Y Z) :
-  Pred_eq R R' -> Pred_eq T T' ->
-  Pred_eq (@arr_comp PredArr _ X Y Z R T) (arr_comp R' T').
+Lemma Rel_comp_cong {X Y Z} (R R' : SPureArr X Y) (T T' : SPureArr Y Z) :
+  Rel_eq R R' -> Rel_eq T T' ->
+  Rel_eq (@arr_comp Rel _ X Y Z R T) (arr_comp R' T').
 Proof.
   intros HR HT.
-  exact (@comp_proper PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred
+  exact (@comp_proper Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel
            X Y Z R R' HR T T' HT).
 Qed.
 
-Lemma Pred_first_cong {X Y C} (R R' : SPureArr X Y) :
-  Pred_eq R R' -> Pred_eq (@arr_first PredArr _ X Y C R) (arr_first R').
+Lemma Rel_first_cong {X Y C} (R R' : SPureArr X Y) :
+  Rel_eq R R' -> Rel_eq (@arr_first Rel _ X Y C R) (arr_first R').
 Proof.
   intro HR.
-  exact (@first_proper PredArr Arrow_Pred ArrowEq_Pred ArrowLaws_Pred
+  exact (@first_proper Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel
            X Y C R R' HR).
 Qed.
 
-Lemma Pred_left_cong {X Y C} (R R' : SPureArr X Y) :
-  Pred_eq R R' -> Pred_eq (@arr_left PredArr _ _ X Y C R) (arr_left R').
+Lemma Rel_left_cong {X Y C} (R R' : SPureArr X Y) :
+  Rel_eq R R' -> Rel_eq (@arr_left Rel _ _ X Y C R) (arr_left R').
 Proof.
   intro HR.
-  exact (@left_proper PredArr Arrow_Pred ArrowChoice_Pred ArrowEq_Pred
-           ArrowChoiceLaws_Pred X Y C R R' HR).
+  exact (@left_proper Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+           ArrowChoiceLaws_Rel X Y C R R' HR).
 Qed.
 
 (* ================================================================= *)
@@ -497,11 +497,11 @@ Qed.
     [dslpOf_incl].  Both stacks use the same two, because every level of
     the stack is still a [PredArr] at a larger type. *)
 
-Definition ordSP {S A} : relation (SPSt S A) := @Pred_le _ _.
-Definition ordSPop {S A} : relation (SPSt S A) := fun m n => Pred_le n m.
+Definition ordSP {S A} : relation (SPSt S A) := @Rel_le _ _.
+Definition ordSPop {S A} : relation (SPSt S A) := fun m n => Rel_le n m.
 
-Definition ordSPExc {S A} : relation (SPStExc S A) := @Pred_le _ _.
-Definition ordSPExcOp {S A} : relation (SPStExc S A) := fun m n => Pred_le n m.
+Definition ordSPExc {S A} : relation (SPStExc S A) := @Rel_le _ _.
+Definition ordSPExcOp {S A} : relation (SPStExc S A) := fun m n => Rel_le n m.
 
 Section Ordered.
 
@@ -514,7 +514,7 @@ Section Ordered.
   #[global] Instance OrderedMonad_SPSt : OrderedMonad (SPSt S) (@ordSP S).
   Proof.
     constructor.
-    - intro A. apply Pred_le_PreOrder.
+    - intro A. apply Rel_le_PreOrder.
     - intros A x y H a r. apply H.
     - intros A B m1 m2 Hm k1 k2 Hk [[] s] r.
       rewrite !bind_SPSt. intros [a [s' [Hm1 Hk1]]].
@@ -538,7 +538,7 @@ Section Ordered.
     : OrderedMonad (SPStExc S) (@ordSPExc S).
   Proof.
     constructor.
-    - intro A. apply Pred_le_PreOrder.
+    - intro A. apply Rel_le_PreOrder.
     - intros A x y H a r. apply H.
     - intros A B m1 m2 Hm k1 k2 Hk [[] s] r.
       rewrite !bind_SPStExc. intros [o [Hm1 Hk1]].

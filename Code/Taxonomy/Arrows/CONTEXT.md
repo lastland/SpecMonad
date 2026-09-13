@@ -5,7 +5,7 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
 
 ## Carriers
 
-- The relational carrier in PredArr is `A -> B -> Prop`, with existential
+- The relational carrier in Rel.v is `A -> B -> Prop`, with existential
   composition and pointwise iff equality. Its fixed-input bind shares the
   input: `exists b, m i b /\ k b i c`. Option/state stacks are separate
   from unary PredM.Pred. Read its module for exact names during renames.
@@ -43,6 +43,13 @@ semantics. Transformer law proofs are generic, not concrete carrier inspections.
 Main's ASPArr/DSLPArr/DSPArr/ASLPArr in BaseSpecMonads are retained distinct
 public bundles; their equality is transformer iff, not the property-only
 bundle's Leibniz equality. Canonical-carrier consolidation is not yet done.
+[OptionLoop.v](OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
+`ArrowLoop` for the existing `optionRel` operations and pointwise equivalence
+when feedback ranges over all types, including `Empty_set`. Empty feedback hides
+the difference between an empty prefix and one returning `None`, while option
+composition outside the loop distinguishes them. `SPostArrEquiv.v` transports
+this obstruction to property-only option ASP and DSLP arrows. Its scope is this
+unrestricted law and these operations, rather than every possible feedback design.
 
 ## Orders, boundaries, and clients
 
@@ -55,3 +62,13 @@ Relational modules can import computation semantics, and WPArr imports a base
 specification module: distinguish ownership from the current import graph.
 Read constructors → equality/laws → chosen monad dictionaries/orders →
 [examples](Examples/CONTEXT.md) and [tests](Tests/CONTEXT.md).
+Start with the properties, then `SPostArr.v`, then the
+[checked clients](Examples/CONTEXT.md); read `SPostArrEquiv.v` for representation
+changes and `SPostArrMonad.v` for observation-facing use.
+For other carriers, [Rel.v](Rel.v) defines relations,
+[PrePostArr.v](PrePostArr.v) pairs a precondition with an input-indexed
+post-relation, and [RelPrePostArr.v](RelPrePostArr.v) defines validators whose
+arrow equality compares `project_wp` behavior.
+[WPArr.v](WPArr.v) uses raw `WPureT`, not the monotone `WPure` subset.
+[GaloisArr.v](GaloisArr.v) is the entrypoint for their refinement orders,
+restricted adjunctions, and binary-arrow counterexamples.

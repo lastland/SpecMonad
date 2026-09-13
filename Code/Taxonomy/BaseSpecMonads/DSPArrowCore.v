@@ -44,7 +44,7 @@ From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel SPArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure ASPArrowCore DSLPArrowCore.
 
 (** Representability: [w] is the DSP of some relation. *)
@@ -118,7 +118,7 @@ Definition dspRel {X Y} (w : DSPArr X Y) : SPureArr X Y :=
   fun x y => getDSP w (fun _ => True) y /\ ~ getDSP w (fun z => z <> x) y.
 
 Lemma dspRel_of {X Y} (R : SPureArr X Y) (w : DSPArr X Y) :
-  (forall P y, getDSP w P y <-> dspOf R P y) -> Pred_eq (dspRel w) R.
+  (forall P y, getDSP w P y <-> dspOf R P y) -> Rel_eq (dspRel w) R.
 Proof.
   intros Hw x y. unfold dspRel. rewrite !Hw. symmetry. apply dspOf_rel.
 Qed.
@@ -127,7 +127,7 @@ Lemma dspRel_spec {X Y} (w : DSPArr X Y) P y :
   getDSP w P y <-> dspOf (dspRel w) P y.
 Proof.
   destruct (dsp_hom_healthy _ (proj2_sig w)) as [R HR].
-  assert (Hrel : Pred_eq (dspRel w) R) by (apply dspRel_of; exact HR).
+  assert (Hrel : Rel_eq (dspRel w) R) by (apply dspRel_of; exact HR).
   unfold getDSP. rewrite HR. unfold dspOf, aspOf, dslpOf.
   split; intros [Ha Hd]; split.
   - destruct Ha as [x [HP Hx]]. exists x. split; [ exact HP | apply Hrel; exact Hx ].
@@ -165,7 +165,7 @@ Proof. exact (dspRel_spec w P y). Qed.
 (** ** Faithfulness: an element is determined by its relation *)
 
 Lemma dspOf_cong {X Y} (R R' : SPureArr X Y) :
-  Pred_eq R R' -> forall P y, dspOf R P y <-> dspOf R' P y.
+  Rel_eq R R' -> forall P y, dspOf R P y <-> dspOf R' P y.
 Proof.
   intros H P y. unfold dspOf, aspOf, dslpOf.
   split; intros [Ha Hd]; split.
@@ -176,14 +176,14 @@ Proof.
 Qed.
 
 Theorem dspRel_faithful {X Y} (w v : DSPArr X Y) :
-  Pred_eq (dspRel w) (dspRel v) -> DSPArr_eq w v.
+  Rel_eq (dspRel w) (dspRel v) -> DSPArr_eq w v.
 Proof.
   intros H P y. rewrite (dspRel_spec w P y), (dspRel_spec v P y).
   exact (dspOf_cong _ _ H P y).
 Qed.
 
 Theorem dspRel_faithful_conv {X Y} (w v : DSPArr X Y) :
-  DSPArr_eq w v -> Pred_eq (dspRel w) (dspRel v).
+  DSPArr_eq w v -> Rel_eq (dspRel w) (dspRel v).
 Proof.
   intros H x y. unfold dspRel. split.
   - intros [Ht Hn]. split; [ apply H; exact Ht |].

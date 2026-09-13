@@ -112,39 +112,14 @@ Section GenericOptionArrTLaws.
       etransitivity. { apply cprop. 1: reflexivity. exact Hid. }
       apply cidr.
     - (* comp_assoc *)
-      (* LHS (unfolded): (f >>> [ts] >>> L g >>> [c]) >>> [ts] >>> L h >>> [c]
-         RHS (unfolded): f >>> [ts] >>> L (g >>> [ts] >>> L h >>> [c]) >>> [c]
+      (* Hcore moves the final continuation under arr_left.  Its proof uses
+         choice naturality and associativity to combine the two failure
+         branches, then left_comp combines the lifted operations.
 
-         Strategy:
-         1. Rewrite [ts.c] = L[ts] >>> [assoc] >>> [sbm id (const tt)] (pure fun eq)
-         2. Use lnat: [sbm id (const tt)] >>> Lh = L_{uu}h >>> [sbm id (const tt)]
-         3. Use lassoc: L(Lh) >>> [assoc] = [assoc] >>> L_{uu}h
-         4. [assoc] >>> [sbm id (const tt)] >>> [c] = L[c] >>> [c] (pure fun eq)
-         5. Collapse with lcomp *)
-      (* Core helper: [ts.c] >>> Lh >>> [c] = L([ts] >>> Lh >>> [c]) >>> [c]
-
-         Chain (all fully right-associated):
-         E0: [ts.c] >>> Lh >>> [c]
-         E1: [sbm ts id] >>> [assoc] >>> [sbm id ctt] >>> Lh >>> [c]
-         E2: [sbm ts id] >>> [assoc] >>> L_{uu}h >>> [sbm id ctt] >>> [c]
-         E3: [sbm ts id] >>> L(Lh) >>> [assoc] >>> [sbm id ctt] >>> [c]
-         E4: [sbm ts id] >>> L(Lh) >>> [sbm c id] >>> [c]
-         E5: L[ts] >>> L(Lh) >>> L[c] >>> [c]
-         E6: L([ts] >>> Lh >>> [c]) >>> [c]
-
-         E0=E1: pure function equality (Hdecomp + cassoc)
-         E1=E2: lnat (naturality)
-         E2=E3: lassoc
-         E3=E4: pure function equality (Htail)
-         E4=E5: lpure (2x)
-         E5=E6: lcomp (2x) *)
-
-      (* We express each Ei as a single term and assert the chain.
-         To avoid deep cprop navigation, we use cassoc to flatten,
-         then apply one law at the boundary. *)
-
-      (* All five-component right-associated compositions *)
-      (* No local notations needed - work with explicit terms *)
+         The equation sketches below use [u] for arr_pure u, L for arr_left,
+         ts for to_sum, c for collapse, sbm for sum_bimap, assoc for assoc_sum,
+         and ctt for the constant tt function.  The E0--E6 chain is recorded
+         once inside Hcore; the final steps apply it under the prefix f. *)
 
       assert (Hcore : @arrow_eq arr HE (option C + unit) (option D)
         (@arr_comp arr HA _ _ _
@@ -399,24 +374,16 @@ Section GenericOptionArrTLaws.
       etransitivity. { apply pcomp. }
       apply arr_pure_ext. intros [a c]. reflexivity.
     - (* first_comp *)
-      (* Goal (base level):
-           F(f >>> [ts] >>> Lg >>> [c]) >>> [seq]
-         ≃ (Ff >>> [seq]) >>> [ts] >>> L(Fg >>> [seq]) >>> [c]
+      (* Distribute arr_first over base composition, then move the carried
+         value through the option/sum conversions.  In the sketches, F is
+         arr_first and seq is sequence_option; other abbreviations are as
+         in comp_assoc above.  The target equation is:
 
-         Chain:
-         (1) fcomp x3:   Ff >>> F[ts] >>> F(Lg) >>> F[c] >>> [seq]
-         (2) fpure x2:   Ff >>> [Fts] >>> F(Lg) >>> [Fc] >>> [seq]
-         (3) pcomp:      Ff >>> [Fts] >>> F(Lg) >>> [Fc_seq]
-                          where Fc_seq = seq . (collapse * id)
-         (4) factor:     Ff >>> [Fts] >>> F(Lg) >>> [spd] >>> [cseq]
-                          where cseq (inl p) = seq p, cseq (inr _) = None
-         (5) fldist:     Ff >>> [Fts] >>> [spd] >>> L(Fg) >>> [cseq]
-         (6) L(Fg) >>> [cseq]
-              = L(Fg) >>> L[seq] >>> [sbm id g] >>> [c]   (lpure + pcomp)
-              = L(Fg>>>[seq]) >>> [sbm id g] >>> [c]      (lcomp)
-         (7) lnat:       ... >>> [sbm id g] >>> L(Fg>>>[seq]) >>> [c]
-         (8) pcomp:      [Fts] >>> [spd] >>> [sbm id g] = [seq >>> ts]
-         Final:          Ff >>> [seq] >>> [ts] >>> L(Fg>>>[seq]) >>> [c] *)
+           F(f >>> [ts] >>> Lg >>> [c]) >>> [seq]
+         ≃ (Ff >>> [seq]) >>> [ts] >>> L(Fg >>> [seq]) >>> [c].
+
+         Hcseq factors the final conversion, and Htail uses first_left_dist
+         and choice naturality to obtain the target beneath the prefix Ff. *)
 
       Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
 

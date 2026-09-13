@@ -11,23 +11,20 @@ Open Scope monad_scope.
 (** * SP observations of [stdivnd] over a plain stateful outcome
 
     [stdivnd S A] has outcome set [option (A * S) -> Prop], with [None] read as
-    divergence.  [SPSimplerSpecMonads] indexes its transformers by [A * S], so the
-    observations here read the TERMINATING SLICE
+    divergence.  The [StASP], [StDSLP], [StDSP], and [StASLP] carriers in
+    [BaseSpecMonads] use outcomes [A * S], so these observations read the
+    terminating slice:
 
       [unOptionT (runStateT m s) (Some r)]     with [r : A * S]
 
-    — the normal returns only, with divergence projected away.  This is exactly
-    the move [NonDetItObservationNew] makes for [stdivexcnd], one layer down.
+    Only normal returns remain; the divergence token is omitted.  In contrast,
+    [StDivNonDet_SPStExc.v] retains the full outcome set.  In that module,
+    [getASPStExc (obsASP m) pre None] says that some [pre]-state may diverge.
+    Here [getASPSt] takes a pair, not [None].
 
-    Contrast with [NonDetObservationNew], which observes the SAME computation
-    monad into the [option (A * S)]-indexed spec monads and therefore keeps
-    [None] visible: there [getASPSt (obsASP m) pre None] asserts "some
-    [pre]-state may diverge".  Here divergence cannot be spoken about at all;
-    the transformers constrain only the terminating behaviour.
-
-    Because the slice drops the one exceptional outcome, the composite relation
-    of a [bind] has a single case, and the observation proofs are correspondingly
-    shorter than their [option]-indexed counterparts. *)
+    The terminating-slice bind law has one case: a normal intermediate
+    result followed by a normal result of the continuation.  [TermSliceObs]
+    uses this law to prove return/bind preservation for all four readings. *)
 
 Import StTrans StASP StDSLP StDSP StASLP StSP.
 

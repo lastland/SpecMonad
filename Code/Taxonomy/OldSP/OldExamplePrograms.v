@@ -1,10 +1,10 @@
 (** * Old-style example programs and triples
 
-    The example theorems stated over the earlier [tripleSP] / [obsASP]
-    presentation of [OldSPObservations.v].  Split out of
-    [Taxonomy/ExamplePrograms.v], which retains the [tripleASP] / [tripleDSP]
-    and WP versions — the two families used the same theorem names, so they
-    could not live in one file. *)
+    These examples use the earlier [tripleSP] / [obsASP] presentation of
+    [OldSPObservations.v] and shared programs from [ExampleProgramDefs.v].
+    Examples for the current [tripleASP] / [tripleDSP] and WP judgments
+    live with their observations under [EffectObservations/SP] and
+    [EffectObservations/WP].  This earlier example file remains in the build. *)
 
 From ExtLib Require Import MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
@@ -17,18 +17,17 @@ Import MonadNotation.
 Open Scope monad_scope.
 
 (* ================================================================= *)
-(** ** O'Hearn's Example 3.1, ported to [stdivexcnd] / [tripleSP obsASP] *)
+(** ** Reading the earlier SP triples                               *)
 (* ================================================================= *)
 
-(** A port of [ST/PredArr.v]'s [OHearnExample] module.  The original
-    operates on the pure state monad [state S A := S -> A * S] with a
-    bespoke [Incorrect] predicate (reachability of a final state from
-    some initial state).  Here we use [stdivexcnd S A] (deterministic in
-    this example) and [tripleSP obsASP _ Under].
+(** [tripleSP obsASP prog Over pre post] includes the observed results in
+    [post]; [Under] reverses that inclusion and requires a witnessing
+    [pre]-state for each asserted result.  The first examples use [progA],
+    whose final state is either 42 or 43.  Divergence and other SP readings
+    follow in separate sections.
 
-    Program (O'Hearn, "Incorrectness Logic", Example 3.1): swap [z]
-    with [42] when [x] is even and [y] is odd; otherwise leave the
-    state alone. *)
+    For the state-only O'Hearn example, see [OHearnExample] in [ST/Pred.v];
+    [ExampleProgramDefs.v] defines its [stdivexcnd] counterpart [example_state]. *)
 
 
 (* ================================================================= *)

@@ -4,14 +4,14 @@ From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StDivExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
 Import MonadNotation.
 Open Scope monad_scope.
 
-(* Original idea for represent sppts in the PredArr monad *)
+(* Original idea for represent sppts in the Rel monad *)
 (* Problem: observations map from computation monad into
      specification arrow - does not really match the story
      of DM4All - computation monad -> specification monad. *)
@@ -23,7 +23,7 @@ Module OriginalTripleSP.
     Variable S : Type.
 
     Definition obsRel {A} (m : stdivexcnd S A)
-    : PredArr (unit * S) (option (A * S)) :=
+    : Rel (unit * S) (option (A * S)) :=
     fun '(tt, s) r =>
       match r with
       | Some (a, s') =>
@@ -55,7 +55,7 @@ Module OriginalTripleSP.
     - a plain predicate transformer is the identity;
     - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
       [spost] extracted;
-    - a plain relation [PredArr (unit * S) (option (A * S))] is lifted
+    - a plain relation [Rel (unit * S) (option (A * S))] is lifted
       angelically via [asp]. *)
     Class AsSPObs {S A : Type} (T : Type) :=
       as_sp_obs : T -> (unit * S -> Prop) -> option (A * S) -> Prop.
@@ -73,7 +73,7 @@ Module OriginalTripleSP.
       fun d => spost (proj1_sig d).
     
     #[global] Instance AsSPObs_Pred {S A} :
-      @AsSPObs S A (PredArr (unit * S) (option (A * S))) :=
+      @AsSPObs S A (Rel (unit * S) (option (A * S))) :=
       fun R => asp R.
 
     Definition tripleSP {S A T} `{@AsSPObs S A T}
@@ -96,7 +96,7 @@ Module OriginalTripleSP.
 End OriginalTripleSP.
 
 (* Came from the observation that the arrow can be represented by
-   PredArr A B. However, this requires moving the interpretation of
+   Rel A B. However, this requires moving the interpretation of
    whether the observation is angelic or demonic into the triple
    definition. While this seems correct at first (and it is good
    that WPred A is indeed a monad), it means that the inclusions
@@ -109,7 +109,7 @@ Module WPredTripleSP.
   Section NonDetItObservationSP.
 
     Definition obsRel {S A} (m : stdivexcnd S A)
-    : PredArr S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s r =>
       match r with
       | Some (a, s') => unOptionT (unOptionT (runStateT m s)) (Some (Some (a, s')))
@@ -162,7 +162,7 @@ Section NonDetItObservationSP.
       reaching any final state (dual to how divergence in WP is the
       absence of termination). *)
   Definition obsRel {A} (m : stdivexcnd S A)
-    : PredArr S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s r =>
       match r with
       | Some (a, s') =>
@@ -176,13 +176,13 @@ Section NonDetItObservationSP.
       wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
       [RelSPPairArr.v], as are [spDSP]/[spASLP] (their meet/join). *)
   Definition obsASP {A} (m : stdivexcnd S A)
-    : PredArr (S -> Prop) (option (A * S)) := asp (obsRel m). 
+    : Rel (S -> Prop) (option (A * S)) := asp (obsRel m).
   Definition obsDSLP {A} (m : stdivexcnd S A)
-    : PredArr (S -> Prop) (option (A * S)) := dslp (obsRel m).
+    : Rel (S -> Prop) (option (A * S)) := dslp (obsRel m).
   Definition obsDSP {A} (m : stdivexcnd S A)
-    : PredArr (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
+    : Rel (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r /\ dslp (obsRel m) pre r.
   Definition obsASLP {A} (m : stdivexcnd S A)
-    : PredArr (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
+    : Rel (S -> Prop) (option (A * S)) := fun pre r => asp (obsRel m) pre r \/ dslp (obsRel m) pre r.
 
   (* -------------------------------------------------------------- *)
   (** *** Theorem 3.7: Square inclusions                             *)
@@ -284,7 +284,7 @@ Inductive approximationKind := | Under | Over.
     [obsASP] / [obsDSLP] / [obsDSP] / [obsASLP] — the four readings of the
     single reachability relation [obsRel]. *)
 Definition tripleSP {S A}
-  (obs : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S)))
+  (obs : stdivexcnd S A -> Rel (S -> Prop) (option (A * S)))
   (prog : stdivexcnd S A)
   (kind : approximationKind)
   (pre : S -> Prop)
@@ -297,17 +297,17 @@ Definition tripleSP {S A}
         forall r, post r -> obs prog pre r
     end.
 
-Definition pp2sp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : PredArr (S -> Prop) (option (A * S)) :=
+Definition pp2sp_over {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : Rel (S -> Prop) (option (A * S)) :=
   fun p r => (forall s, p s -> pre s) -> post r.
 
-Definition pp2sp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : PredArr (S -> Prop) (option (A * S)) :=
+Definition pp2sp_under {S A} (pre : S -> Prop) (post : option (A * S) -> Prop) : Rel (S -> Prop) (option (A * S)) :=
   fun p r => (forall s, pre s -> p s) /\ post r.
 
-Definition ordSPStExc {S A} (m1 m2 : PredArr (S -> Prop) (option (A * S))) : Prop :=
+Definition ordSPStExc {S A} (m1 m2 : Rel (S -> Prop) (option (A * S))) : Prop :=
   forall pre r, m1 pre r -> m2 pre r.
 
 Definition tripleSPspec {S A}
-  (obs : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S)))
+  (obs : stdivexcnd S A -> Rel (S -> Prop) (option (A * S)))
   (prog : stdivexcnd S A)
   (kind:approximationKind)
   (pre : S -> Prop)
@@ -330,7 +330,7 @@ Section tripleSPDefEq.
       [p <= pre] / [pre <= p].  Without monotonicity only
       [tripleSPspec -> tripleSP] holds (instantiate [p := pre]). *)
   Theorem tripleSPDefEq {A}
-  (obs : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S)))
+  (obs : stdivexcnd S A -> Rel (S -> Prop) (option (A * S)))
   (prog : stdivexcnd S A)
   (kind:approximationKind)
   (pre : S -> Prop)
@@ -825,30 +825,26 @@ Section MonadMorphismLawsSP.
 
   (** *** [obsASP] preserves [ret]/[bind] — but its codomain is not a monad
 
-      The two preceding laws are [obsASP]'s [bind]-preservation; together
-      with [obsASP_retG] below they are the monad-morphism *equations* for
-      [obsASP : stdivexcnd S A -> PredArr (S -> Prop) (option (A * S))], against
-      the unit [retG] and bind [bindG] forced by [obsASP_bind].
+      [obsASP_retG] and [obsASP_bindG] relate the reading [obsASP] to
+      [retG] and [bindG] on raw transformers.  They do not establish a
+      lawful monad on that entire raw carrier.
 
-      They do NOT promote [obsASP] to a genuine monad morphism, because
-      [(PredArr (S -> Prop) (option (_ * S)), retG, bindG)] is not a lawful
-      monad: [bindG] feeds the continuation the *singleton* precondition
-      [eq s'], so it only sees a continuation through its values on
-      singletons, and the left-unit law [bindG (retG a) k ≈ k a] fails
-      unless [k a] is [asp]-closed (determined by its singletons —
-      [asp_singleton]).  Every [obsASP m] *is* [asp]-closed
-      ([obsASP_asp_closed]), so [obsASP] factors through the lawful
-      sub-monad of [asp]-closed relations — which is exactly [obsRelM]
-      (below) up to the iso [asp]/[asp_inv].  Hence the genuine monad
-      morphism is [obsRelM], and [obsASP = asp ∘ obsRel] inherits only the
-      equations. *)
-  Definition retG {A} (a : A) : PredArr (S -> Prop) (option (A * S)) :=
+      [bindG] evaluates continuations only at singleton preconditions.
+      Its left-unit equation therefore reconstructs [k a] from those
+      singleton values, which need not recover an arbitrary transformer.
+      [obsASP_asp_closed] proves that every observed [obsASP m] does have
+      the required singleton form.
+
+      The [obsRelM] sketch below is disabled.  For compiled monad-valued
+      observations in this earlier presentation, see [SPMonadObs] and
+      [obsASPmorph_ret] / [obsASPmorph_bind] later in this file. *)
+  Definition retG {A} (a : A) : Rel (S -> Prop) (option (A * S)) :=
     fun pre r => exists s, pre s /\ r = Some (a, s).
 
   Definition bindG {A B}
-    (m : PredArr (S -> Prop) (option (A * S)))
-    (k : A -> PredArr (S -> Prop) (option (B * S)))
-    : PredArr (S -> Prop) (option (B * S)) :=
+    (m : Rel (S -> Prop) (option (A * S)))
+    (k : A -> Rel (S -> Prop) (option (B * S)))
+    : Rel (S -> Prop) (option (B * S)) :=
     fun pre r =>
       (exists a s', m pre (Some (a, s')) /\ k a (eq s') r)
       \/ (m pre None /\ r = None).
@@ -871,8 +867,7 @@ Section MonadMorphismLawsSP.
       obsASP (x >>= f) pre r <-> bindG (obsASP x) (fun a => obsASP (f a)) pre r.
   Proof. intros pre r. apply obsASP_bind. Qed.
 
-  (** Every [obsASP] output is [asp]-closed: determined by its singletons.
-      This is what lands [obsASP] in the lawful sub-monad. *)
+  (** Every [obsASP] output is [asp]-closed: determined by its singletons. *)
   Lemma obsASP_asp_closed {A} (m : stdivexcnd S A) (pre : S -> Prop) r :
     obsASP m pre r <-> exists s, pre s /\ obsASP m (eq s) r.
   Proof.
@@ -885,42 +880,44 @@ End MonadMorphismLawsSP.
 
 
 (* ================================================================= *)
-(** ** [obsASP]'s ret/bind laws by conjugation through an injective reading *)
+(** ** Historical conjugation and refinement experiments (disabled) *)
 (* ================================================================= *)
 
-(** This makes precise the claim: the reachability monad morphism is *enough*.
-    The SP ret/bind equations for [obsASP] need NOT be proved directly; they
-    are the reachability-level laws ([obsRel_ret] / [obsRel_bind], the [tt]-slice
-    of the [obsRelM] monad morphism) *conjugated* by the reading [asp] and its
-    retract [asp_inv].  The only property of the reading used is its
-    injectivity, [asp_asp_inv : asp_inv (asp R) = R].  (For a non-injective
-    reading — e.g. [obsDSP = asp /\ dslp] — [asp_inv] has no analogue and this
-    transport fails.) *)
+(** The following comment block preserves the earlier [AspConjugation],
+    [ObsRelM], [ProgSPObs], and [SPredObs] experiments.  None of their
+    declarations or displayed proofs is compiled or exported.
+
+    The conjugation sketch uses the pointwise round trip
+    [asp_inv (asp R) a b <-> R a b].  Its historical descriptions are not
+    current API claims: in particular, stateful DSP and ASLP do recover
+    relations, using [dsp_recov] and [aslp_recov] in [BaseSpecMonads].
+    The later refinement sketches compare shared-predicate and per-state
+    preconditions.  The compiled additive development resumes after the block. *)
 (*Section AspConjugation.
   Variable S : Type.
 
   (** Reachability-level (relation) [ret]/[bind] — the bind is exactly the RHS
       of [obsRel_bind] (state-threaded, exception-propagating). *)
-  Definition retRel {A} (a : A) : PredArr S (option (A * S)) :=
+  Definition retRel {A} (a : A) : Rel S (option (A * S)) :=
     fun s r => r = Some (a, s).
   Definition bindRel {A B}
-    (m : PredArr S (option (A * S))) (k : A -> PredArr S (option (B * S)))
-    : PredArr S (option (B * S)) :=
+    (m : Rel S (option (A * S))) (k : A -> Rel S (option (B * S)))
+    : Rel S (option (B * S)) :=
     fun s r =>
       (exists a s', m s (Some (a, s')) /\ k a s' r) \/ (m s None /\ r = None).
 
   (** SP-level [ret]/[bind], DEFINED by conjugation:
       [bindSP = asp ∘ bindRel ∘ asp_inv]. *)
-  Definition retSP {A} (a : A) : PredArr (S -> Prop) (option (A * S)) :=
+  Definition retSP {A} (a : A) : Rel (S -> Prop) (option (A * S)) :=
     asp (retRel a).
   Definition bindSP {A B}
-    (m : PredArr (S -> Prop) (option (A * S)))
-    (k : A -> PredArr (S -> Prop) (option (B * S)))
-    : PredArr (S -> Prop) (option (B * S)) :=
+    (m : Rel (S -> Prop) (option (A * S)))
+    (k : A -> Rel (S -> Prop) (option (B * S)))
+    : Rel (S -> Prop) (option (B * S)) :=
     asp (bindRel (asp_inv m) (fun a => asp_inv (k a))).
 
   (** [asp] and [bindRel] are congruences for pointwise equivalence. *)
-  Lemma asp_Proper {A} (R1 R2 : PredArr S (option (A * S))) :
+  Lemma asp_Proper {A} (R1 R2 : Rel S (option (A * S))) :
     (forall s r, R1 s r <-> R2 s r) ->
     forall pre r, asp R1 pre r <-> asp R2 pre r.
   Proof.
@@ -929,8 +926,8 @@ End MonadMorphismLawsSP.
     - intros [s [Hp Hr]]. exists s. split; [exact Hp | exact (proj2 (H s r) Hr)].
   Qed.
 
-  Lemma bindRel_Proper {A B} (m1 m2 : PredArr S (option (A * S)))
-    (k1 k2 : A -> PredArr S (option (B * S))) :
+  Lemma bindRel_Proper {A B} (m1 m2 : Rel S (option (A * S)))
+    (k1 k2 : A -> Rel S (option (B * S))) :
     (forall s r, m1 s r <-> m2 s r) ->
     (forall a s r, k1 a s r <-> k2 a s r) ->
     forall s r, bindRel m1 k1 s r <-> bindRel m2 k2 s r.
@@ -951,9 +948,9 @@ End MonadMorphismLawsSP.
       [asp rxf ≈ bindSP (asp rx) (asp ∘ kf)].  The proof is pure conjugation:
       unfold [bindSP], cancel [asp_inv ∘ asp] via [asp_asp_inv]. *)
   Lemma asp_conj_bind {A B}
-    (rxf : PredArr S (option (B * S)))
-    (rx : PredArr S (option (A * S)))
-    (kf : A -> PredArr S (option (B * S))) :
+    (rxf : Rel S (option (B * S)))
+    (rx : Rel S (option (A * S)))
+    (kf : A -> Rel S (option (B * S))) :
     (forall s r, rxf s r <-> bindRel rx kf s r) ->
     forall pre r,
       asp rxf pre r <-> bindSP (asp rx) (fun a => asp (kf a)) pre r.
@@ -1001,15 +998,15 @@ End AspConjugation.
 (** The [obsRel]/[obsASP] above are the *arrow*/reading view, used to
     state triples; they are not inhabitants of a [Monad] (and the [asp]
     reading would target the flagged-incorrect [SPStExc]).  Here is the
-    *monad-view* observation [obsRelM : stdivexcnd S A -> nditPredM S A]
-    into the spec monad [nditPredM = stateT S (optionT (optionT (PredArr
-    unit)))] (the SP mirror of [WStExc], with base [PredArr unit] instead of
-    [SetM]; lawful [Monad] + [MonadLawsE] via [PredArr.v]).  It is the
-    lifting along the base iso [SetM ~ PredArr unit] — it copies [stdivexcnd]'s
-    full outcome predicate (divergence included) into [PredArr unit].
+    *monad-view* observation [obsRelM : stdivexcnd S A -> nditRelM S A]
+    into the spec monad [nditRelM = stateT S (optionT (optionT (Rel
+    unit)))] (the SP mirror of [WStExc], with base [Rel unit] instead of
+    [SetM]; lawful [Monad] + [MonadLawsE] via [Rel.v]).  It is the
+    lifting along the base iso [SetM ~ Rel unit] — it copies [stdivexcnd]'s
+    full outcome predicate (divergence included) into [Rel unit].
 
     [obsRelM] is a genuine monad morphism: [obsRelM_ret] and [obsRelM_bind]
-    are its unit/bind laws, stated as [eq1] ([≈]) in [nditPredM] — purely
+    are its unit/bind laws, stated as [eq1] ([≈]) in [nditRelM] — purely
     in terms of the monads' [ret] / [>>=], with no [asp]/[∃]/[=] unfolding.
     (These are the clean statements that [obsASP (ret a) = ret a] could
     not be, because [obsASP] is a reading, not a monad element.) *)
@@ -1020,12 +1017,12 @@ Section ObsRelM.
   #[local] Existing Instance Monad_stateT.
   #[local] Existing Instance Monad_optionT.
 
-  (** Codomain is definitionally [nditPredM S A]. *)
+  (** Codomain is definitionally [nditRelM S A]. *)
   Definition obsRelM {A} (m : stdivexcnd S A)
-    : stateT S (optionT (optionT (PredArr unit))) A :=
+    : stateT S (optionT (optionT (Rel unit))) A :=
     mkStateT (fun s =>
-      @mkOptionT (optionT (PredArr unit)) (A * S) (
-        @mkOptionT (PredArr unit) (option (A * S)) (
+      @mkOptionT (optionT (Rel unit)) (A * S) (
+        @mkOptionT (Rel unit) (option (A * S)) (
           fun (_ : unit) (oa : option (option (A * S))) =>
             unOptionT (unOptionT (runStateT m s)) oa))).
 
@@ -1052,25 +1049,25 @@ Section ObsRelM.
   (* -------------------------------------------------------------- *)
 
   (** [reach] extracts the reachability *relation* from an element of the
-      reachability monad [nditPredM S A = stateT S (optionT (optionT (PredArr
+      reachability monad [nditRelM S A = stateT S (optionT (optionT (Rel
       unit)))]: the terminating ([Some r]) outcomes read off at the trivial
       [tt] precondition slot. *)
-  Definition reach {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
-    : PredArr S (option (A * S)) :=
+  Definition reach {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel S (option (A * S)) :=
     fun s r => unOptionT (unOptionT (runStateT M s)) tt (Some r).
 
   (** The four strongest-postcondition readings, as functions of a
       reachability-monad element: [asp] (angelic), [dslp] (demonic-liberal),
       and their meet ([DSP]) and join ([ASLP]). *)
-  Definition readASP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
-    : PredArr (S -> Prop) (option (A * S)) := asp (reach M).
-  Definition readDSLP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
-    : PredArr (S -> Prop) (option (A * S)) := dslp (reach M).
-  Definition readDSP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
-    : PredArr (S -> Prop) (option (A * S)) :=
+  Definition readASP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) := asp (reach M).
+  Definition readDSLP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) := dslp (reach M).
+  Definition readDSP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) :=
     fun pre r => asp (reach M) pre r /\ dslp (reach M) pre r.
-  Definition readASLP {A} (M : stateT S (optionT (optionT (PredArr unit))) A)
-    : PredArr (S -> Prop) (option (A * S)) :=
+  Definition readASLP {A} (M : stateT S (optionT (optionT (Rel unit))) A)
+    : Rel (S -> Prop) (option (A * S)) :=
     fun pre r => asp (reach M) pre r \/ dslp (reach M) pre r.
 
   (** [obsRel] and all four SP observations factor through the monad morphism
@@ -1125,25 +1122,25 @@ Section ObsRelM.
     unOptionT (unOptionT (runStateT (obsRelM (ret a)) s)) u oa <-> oa = Some (Some (a, s)).
   Proof. rewrite obsRelM_apply. cbn. split; intro H; congruence. Qed.
 
-  (** *** The monad-morphism laws (stated as [eq1] in [nditPredM]) *)
+  (** *** The monad-morphism laws (stated as [eq1] in [nditRelM]) *)
 
   (** Return law of the monad morphism: [obsRelM (ret a) ≈ ret a]. *)
   Lemma obsRelM_ret {A} (a : A) : eq1 (obsRelM (ret a)) (ret a).
   Proof.
-    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Pred. intros s u oa. cbn.
+    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Rel. intros s u oa. cbn.
     split; intro H; congruence.
   Qed.
 
   (** Bind law of the monad morphism: [obsRelM (x >>= f) ≈ obsRelM x >>=
       (obsRelM ∘ f)].  The two sides are [exists b, (x at b) /\ (cont at
-      oa)] decompositions ([SetM]-bind vs [PredArr unit]-bind); they differ
+      oa)] decompositions ([SetM]-bind vs [Rel unit]-bind); they differ
       only by equation orientation in the exception/divergence branches
-      ([retPred]), discharged by [congruence]. *)
+      ([retRel]), discharged by [congruence]. *)
   Lemma obsRelM_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
     eq1 (obsRelM (x >>= f)) (obsRelM x >>= (fun a => obsRelM (f a))).
   Proof.
-    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Pred. intros s u oa.
-    cbn. unfold bindPred. cbn.
+    unfold eq1, Eq1_stateT, Eq1_optionT, Eq1_Rel. intros s u oa.
+    cbn. unfold bindRel. cbn.
     split; intros [b [Hb Hk]]; exists b; (split; [exact Hb|]);
       destruct b as [[[v s0]|]|]; cbn in *; (exact Hk || congruence).
   Qed.
@@ -1422,51 +1419,31 @@ Proof.
   destruct (H (Some (tt, 42)) I) as [s [[] _]].
 Qed.*)
 
-(* Here are my first attempts at looking at a sub-monad of the
-   SPostArr monad - additive vs. disjunctive. *)
+(* End of disabled experiments.  The declarations below are compiled. *)
 
 (* ================================================================= *)
 (** ** [SPPure] / [SPStExc]: the spec monad of *additive* strongest-
        postcondition predicate transformers                          *)
 (* ================================================================= *)
 
-(** Forward (strongest-postcondition) counterpart of [WPure] / [WStExc].
+(** [SPPure] restricts [SPT A = Prop -> A -> Prop] to additive transformers:
 
-    A *point* SP transformer has type [SPT A = Prop -> A -> Prop]: it turns
-    a precondition (a [Prop] — at a point there is no input value to
-    quantify over) into a postcondition on [A].  This is the naive dual of
-    [WPure A = (A -> Prop) -> Prop], and it is exactly the (now commented
-    out, "INCORRECT DEFINITION") [SPStExc] above.
+      [t p a <-> p /\ t True a].
 
-    The naive version is not a monad.  Sequencing forward transformers is
-    relational composition, so [bind m k] must run [k] at the *intermediate*
-    postcondition produced by [m]; the only way to write that with the
-    continuation seeing a single [Prop] is
+    [AdditiveSP_join] proves preservation of arbitrary joins, including
+    the empty join.  Conversely, [AdditiveSP_of_join] derives this closed
+    form from join preservation and congruence in the precondition.
 
-      [bind m k p b := exists a, m p a /\ k a True b]
+    The bind below chooses an intermediate value admitted by [m], then
+    evaluates [k a] at [True].  Its left-unit equation reduces to the
+    additive condition [p /\ k a True b <-> k a p b].  The carrier therefore
+    matters: this bind is not lawful on arbitrary raw transformers.
 
-    and then the left-unit law [bind (ret a) k ≈ k a] reduces to
-    [p /\ k a True b <-> k a p b], which holds *iff* [k a] is ADDITIVE.
-
-    [AdditiveSP t] is join-preservation ([AdditiveSP_join],
-    [AdditiveSP_strict], [AdditiveSP_mono]; conversely [AdditiveSP_of_join]
-    recovers it from join-preservation plus congruence).  Over [Prop] every
-    [p] is the join [\/_{h : p} True], so join-preservation has the closed
-    form [t p a <-> p /\ t True a], which we take as the definition.
-
-    Restricting to additive transformers therefore yields a genuine monad
-    [SPPure], with [MonadLawsE] proved below, and hence
-    [SPStExc S = stateT S (optionT SPPure)] inherits [MonadLawsE] through the
-    generic transformer instances of [Prog.v] — exactly as [WStExc]
-    does in [WP.v].
-
-    The closed form is also a *representation theorem*: an additive [t] is
-    determined by its value at [True] ([ofSet] / [spSet] are mutually
-    inverse, [spSet_ofSet] / [ofSet_spSet]), so [SPPure] is the transformer
-    presentation of the powerset monad.  That is the precise sense in which
-    "additive strongest postcondition transformer" = "reachability
-    relation": it is the same content as [PredMonad.v]'s [PredStExc], but
-    packaged as predicate transformers with the laws proved. *)
+    [spSet] reads the transformer at [True], and [ofSet] rebuilds it;
+    [spSet_ofSet] and [ofSet_spSet] prove their pointwise round trips.
+    The local [SPStExc S = stateT S (optionT SPPure)] inherits monad laws
+    through [ComputationMonads/TransformerLaws.v].  These local names differ
+    from the raw [SPPure] / [SPStExc] in [BaseSpecMonads/SPPredicateTransformers.v]. *)
 
 Section PureSPMonad.
 
@@ -1575,9 +1552,8 @@ Section PureSPMonad.
 
 End PureSPMonad.
 
-(** [Eq1] is pointwise [iff] (not Leibniz [eq] as for [WPure]: [SPPure] is
-    a subset type, so extensional equality is the right notion and no
-    functional extensionality is needed anywhere below). *)
+(** [Eq1] compares the underlying propositions by pointwise [iff], rather
+    than requiring equality of the bundled transformer values. *)
 Section PureSPLaws.
 
   #[global] Instance Eq1_PureSP : Eq1 SPPure :=
@@ -1697,7 +1673,7 @@ Definition obsSP {S A} (m : stdivexcnd S A) : SPStExc S A :=
 Definition applySP {S A} (M : SPStExc S A) (s : S) : Prop -> option (A * S) -> Prop :=
   spApp (unOptionT (runStateT M s)).
 
-Definition runSP {S A} (M : SPStExc S A) : PredArr S (option (A * S)) :=
+Definition runSP {S A} (M : SPStExc S A) : Rel S (option (A * S)) :=
   fun s r => applySP M s True r.
 
 Lemma applySP_obsSP {S A} (m : stdivexcnd S A) s p r :
@@ -2088,34 +2064,28 @@ Qed.
 (** ** [PureSPM] / [ProgSPM]: the *multiplicative* SP spec monad      *)
 (* ================================================================= *)
 
-(** The de Morgan dual of [SPPure].  Where an additive transformer
-    factors as [t p a <-> p /\ t True a] (a *join* of per-outcome
-    contributions), a MULTIPLICATIVE one factors as
+(** The multiplicative carrier is the de Morgan dual of the additive one.
+    Its defining closed form is:
 
       [t p a <-> p \/ t False a]
 
-    which is meet-preservation ([MultiplicativeSP_meet]; the converse
-    [MultiplicativeSP_of_meet] recovers the closed form from
-    meet-preservation plus congruence, using [p <-> (~p -> False)]).
-    The corresponding representation is the *co-set*
-    [spCoSet t a := ~ t False a], with [t p a <-> (spCoSet t a -> p)]
-    ([spAppM_repr]).  Concretely: an additive transformer says "[p]
-    holds AND [a] is reachable"; a multiplicative one says "[a] is
-    reachable IMPLIES [p]".
+    [MultiplicativeSP_meet] proves preservation of arbitrary meets,
+    including the empty meet.  [MultiplicativeSP_of_meet] derives the
+    closed form from meet preservation and congruence.  The representation
+    [spCoSet t a := ~ spAppM t False a] gives the reading
+    [spAppM t p a <-> (spCoSet t a -> p)] via [spAppM_repr]: reachability
+    implies the precondition, rather than being conjoined with it.
 
     Sequencing is again relational composition, but written in the
     dual (universal) way:
 
-      [bindSPM m k p b := forall a, m (k a p b) a]
+      [spAppM (bindSPM m k) p b = forall a, spAppM m (spAppM (k a) p b) a].
 
-    — a nesting rather than an existential, exactly like [WPure]'s
-    continuation-style [bind].  This is a genuine monad ([MonadLawsE]
-    below), and [ProgSPM S = stateT S (optionT PureSPM)] inherits the
-    laws through [Prog.v] just as [SPStExc] and [WStExc] do.
+    The [MonadLawsE] proof is below.  [ProgSPM S = stateT S (optionT PureSPM)]
+    lifts these laws through [ComputationMonads/TransformerLaws.v].
 
-    Classical logic ([Classical_Prop.classic], already used by this
-    file's contrapositive theorems) is needed on this side: the
-    representation [t p a <-> (Q a -> p)] passes through [~~p -> p]. *)
+    The representation proofs use classical logic; for example,
+    [spCoSet_ofCoSet] eliminates double negation. *)
 
 Section PureSPMMonad.
 
@@ -2579,22 +2549,18 @@ Qed.
 (** *** No-go: [obsDSP] and [obsASLP] fit NEITHER monad               *)
 (* ----------------------------------------------------------------- *)
 
-(** The requested signatures [obsDSP : stdivexcnd S A -> ProgSPM S A] and
-    [obsASLP : stdivexcnd S A -> SPStExc S A] cannot be realised, and neither
-    can the swapped assignment.  The obstruction is sharp: DSP and ASLP
-    preserve *binary* meets/joins respectively ([obsDSP_meet2],
-    [obsASLP_join2]) but fail the *empty* ones —
+(** The four [no_ProgSP*_for_obs*] results reject representing the DSP/ASLP
+    readings of [progEx] by [readSP] or [readSPM] on these earlier carriers.
 
-      [obsDSP  pre r = (r is reachable at all) /\ (all reachers satisfy pre)]
-        so [obsDSP (fun _ => True) r] is FALSE at an unreachable [r]
-        (no top-preservation, which every meet reading has);
+    Two failures use the unreachable exception outcome [None]: DSP is false
+    at the full precondition, violating [readSPM_top]; ASLP is true at the
+    empty precondition, violating [readSP_strict].  The swapped assignments
+    fail at a reachable result, using [obsDSP_not_join2] and
+    [obsASLP_not_meet2].
 
-      [obsASLP pre r = (some reacher satisfies pre) \/ (all reachers do)]
-        so [obsASLP (fun _ => False) r] is TRUE at an unreachable [r]
-        (no strictness, which every join reading has).
-
-    Both witnesses use [progEx], whose exception outcome [None] is
-    unreachable. *)
+    DSP still preserves binary meets, and ASLP binary joins.  The failures
+    concern the specific readings and carriers here, not the existence of
+    the current DSP/ASLP monads in [BaseSpecMonads]. *)
 
 Lemma progEx_no_exception : forall s, ~ obsRel progEx s None.
 Proof. intros s H. unfold obsRel in H. cbn in H. sauto. Qed.

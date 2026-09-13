@@ -9,35 +9,23 @@ Open Scope monad_scope.
 
 (** * SP observations of [rddivnd] into the pure spec monads under [readerT]
 
-    [rddivnd R A = readerT R divnd A].  The environment is read-only, so the
-    outcome of a computation carries no final environment — it is just
-    [option A], exactly what [DivNonDet_SPPure.v] observes.  The observations
-    here therefore apply that file's pointwise, one environment at a time, and
-    the target is the SAME transformer applied to the specification side:
+    [rddivnd R A = readerT R divnd A] returns an [option A] outcome with no
+    final environment.  Each observation applies [PureObs] from
+    [DivNonDet_SPPure.v] at one environment.  The specification target
+    retains the reader layer; for example:
 
       [rddivnd R A = readerT R divnd A]   -->   [ASPRd R A = readerT R ASPSP A]
 
-    So the reader is threaded through the observation rather than absorbed into
-    it, and every law reduces to the corresponding law of [PureObs].
-    The four targets [ASPRd] / [DSLPRd] / [DSPRd] / [ASLPRd] are defined in
-    the SP monad files themselves, each as [readerT R] over the corresponding
-    pure monad, with laws from the generic [readerT] instances in
-    [ComputationMonads/StDivITree.v].
+    The targets [ASPRd], [DSLPRd], [DSPRd], and [ASLPRd] live in their
+    respective [BaseSpecMonads] files.  Their monad laws use the generic
+    reader instances in [ComputationMonads/TransformerLaws.v]; observation
+    return/bind laws reuse the corresponding [PureObs] laws pointwise.
 
-    **The alternative reading, and why it is not here.**  One could instead let
-    the precondition range over SETS of environments, giving
-
-      [(R -> Prop) -> A -> Prop]
-
-    which is the [StDivNonDet_SPSt.v] shape with the outcome's environment
-    component dropped.  That is a genuinely different observation — it couples
-    the environments, exactly as a shared [S -> Prop] couples initial states —
-    and it is not any existing carrier, so it would need a new one.  Nothing
-    below covers it.
-
-    As in [DivNonDet_SPPure.v], DSP and ASLP degenerate: [obsDSP_is_obsASP] and
-    [obsASLP_is_obsDSLP] hold environment by environment, so they hold here
-    too. *)
+    The precondition slot at each environment is a [Prop].  A transformer
+    [(R -> Prop) -> A -> Prop] would instead accept one shared predicate on
+    environments; this file does not define that alternative observation.
+    The pointwise lift inherits the pure collapse, proved here by
+    [obsDSP_is_obsASP] and [obsASLP_is_obsDSLP]. *)
 
 Module RdPureObs.
 

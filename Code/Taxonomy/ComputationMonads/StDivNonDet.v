@@ -17,8 +17,8 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StE
     divergent program.
 
     [None] is absorbing under [bind] (see [outcomes_bind] in
-    [NonDetObservationNew]), which is exactly the propagation rule divergence
-    needs, so the monad structure is unchanged. *)
+    [EffectObservations/SP/StDivNonDet_SPStExc.v]).  This propagation rule
+    supports the divergence reading without changing the monad structure. *)
 
 Section StDivNonDet.
 

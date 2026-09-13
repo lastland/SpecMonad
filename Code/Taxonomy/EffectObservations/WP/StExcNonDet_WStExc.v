@@ -1,10 +1,9 @@
-(** * Observation functions for [stexcnd].
+(** * WP observations for [stexcnd].
 
-    SP observation: maps [stexcnd S A] to [ASPostArr S A] via
-    set membership in the outcome set.
-
-    WP observations: [obsDWP] (demonic, all outcomes) and
-    [obsAWP] (angelic, some outcome) map into [WStExc S A]. *)
+    [obsDWP] quantifies over all outcomes and [obsAWP] over some outcome,
+    each targeting [WStExc S A].  This file proves postcondition
+    monotonicity and example specifications, but no return/bind laws.
+    The SP arrow observations live in [SP/StExcNonDet_SPostArr.v]. *)
 
 From Coq Require Import Lia.
 From ExtLib Require Import Monad StateMonad OptionMonad.
@@ -50,8 +49,8 @@ Section NDObservationWP.
   Definition obsAWP {A} (m : stexcnd S A) : WStExc S A :=
     mkStateT (fun s => @mkOptionT WPure _ (mkWPure _ (obsAWP_mono m s))).
 
-  (** No WLP because no divergence. In this case, they are not even definable.
-  *)
+  (** The source has no separate divergence outcome, so this module supplies
+      no distinct liberal readings.  [None] is an exception described by [post]. *)
 
 End NDObservationWP.
 

@@ -12,7 +12,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
 Import MonadNotation.

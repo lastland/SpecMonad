@@ -242,25 +242,22 @@ Section Denote.
 
       1. [run_state] (ITree.Events.State) handles [stateE] by
          threading state, producing
-         [itree (exceptE unit +' nondetE) (A * S)].
+         [itree (exceptE unit +' nondetE) (S * A)].
 
       2. [throw_prefix] (ITree.Events.Exception) catches exceptions
          and converts them to [inr tt] return values, producing
-         [itree (exceptE unit +' nondetE) ((A * S) + unit)].
-         After this step no [exceptE] events remain in the tree.
+         [itree (exceptE unit +' nondetE) ((S * A) + unit)].
+         The event type is unchanged, but throws become return values.
 
       3. [Leaf] and [any_infinite] (ITree.Props) extract the
          set-of-outcomes representation:
-         - [Leaf (inl (s', a))] : some path converges with [(a, s')]
-         - [Leaf (inr tt)]      : some path raises an exception
-         - [any_infinite]       : some path diverges
+         - [Leaf (inl (s', a)) t] selects [Some (Some (a, s'))].
+         - [Leaf (inr tt) t] selects [Some None], an exception.
+         - [any_infinite t] selects raw [None], divergence.
 
       Note: ITree's [run_state] returns [(S * A)] (state first),
       while ExtLib's [stateT] uses [(A * S)] (result first),
       hence the swap in the [Leaf] pattern. *)
-
-  (* stdivexcnd S A := option (option (A * S)) -> Prop *)
-  (* can you define a recursive program? *)
 
   Definition denote {A} (m : freeprog A) : stdivexcnd S A :=
     mkStateT (fun s =>
@@ -285,9 +282,9 @@ End Denote.
     state, exceptions, nontermination, and nondeterminism.
 
     Since [SetM] satisfies [MonadLawsE] (from [StExcNonDet]),
-    the generic [optionT] and [stateT] towers from [Prog]
+    the generic [optionT] and [stateT] laws from [TransformerLaws.v]
     lift the laws through two [optionT] layers and one [stateT]
-    layer with zero additional proof work. *)
+    layer. *)
 
 From ITree Require Import Basics.Monad.
 

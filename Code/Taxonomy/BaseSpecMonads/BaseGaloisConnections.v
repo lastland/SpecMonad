@@ -2,22 +2,22 @@
 
     The orders are DM4all's:
 
-      [Pred]  pointwise implication
-      [PP]    Hoare: strengthen the pre, weaken the post
-      [SP]    pointwise implication in [(pre, result)]
-      [WP]    REVERSE pointwise implication (weaker precondition is lower)
-      [MR]    REVERSE: [r1 <= r2] iff [r2] validates fewer specs
+      [Pred_le]  pointwise implication
+      [PP_le]    strengthen the precondition, weaken the postcondition
+      [SP_le]    pointwise implication in [(pre, result)]
+      [WP_le]    reverse implication: a weaker precondition demand is lower
+      [MR_le]    reverse implication on validator verdicts
 
-    Adjunctions ([Section Adjunctions], DM4all):
+    The five adjunctions below use those orders (schematically):
 
       [pred_pp_adjunction]      [pred2pp post <= pp     <->  post <= pp2pred pp]
-      [wp_pp_over_adjunction]   [pp <= wp2pp_over w     <->  pp2wp_over pp <= w]
-      [wp_pp_under_adjunction]  [wp2pp_under w <= pp    <->  w <= pp2wp_under pp]
+      [wp_pp_under_adjunction]  [pp <= wp2pp_under w    <->  pp2wp_under pp <= w]
       [wp_mr_adjunction]        [w <= mr2wp r           <->  wp2mr w <= r]
       [sp_pp_adjunction]        [sp2pp sp <= pp         <->  sp <= pp2sp pp]
       [sp_mr_adjunction]        [sp2mr sp <= mr         <->  sp <= mr2sp mr]
 
-    *)
+    [NewGaloisConnections.v] supplies the second WP/PrePost adjunction:
+      [wp_pp_over_adjunction]   [wp2pp_over w <= pp     <->  w <= pp2wp_over pp]. *)
 
 From Coq Require Import RelationClasses.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
@@ -97,8 +97,8 @@ Qed.
 (** ** 2.  [PrePost] -| [MonoWP]                                     *)
 (* ================================================================= *)
 
-(** [wp2pp_over w] reads off [w]'s weakest precondition ([w] at [True]) and the
-    intersection of every postcondition [w] accepts; [pp2wp_over pp] is the demonic
+(** [wp2pp_under w] reads off [w] at [True] and the intersection of every
+    postcondition [w] accepts; [pp2wp_under pp] is the demonic
     transformer of a Hoare pair. *)
 
 Definition wp2pp_under {A} (w : WPure A) : PPM.PrePost A :=
@@ -191,17 +191,16 @@ Qed.
 (** ** 4.  [SPost] -| [PrePost]                                      *)
 (* ================================================================= *)
 
-(** The one adjunction that needs a construction rather than a formula.
+(** The SP/PrePost adjunction uses an impredicative intersection.
 
     [sp2pp sp] reads off the postcondition [sp] establishes from EVERY true
     precondition, and the precondition witnessing that this is achievable.
 
-    For the right adjoint, the obvious candidate is [pp2sp0]: [pre] holds and,
-    if [pp]'s precondition does, so does its postcondition.  That is only a
-    lax inverse.  The actual right adjoint [pp2sp] is the impredicative
-    INTERSECTION of every [SPost] that dominates the pair — a free
-    construction, available because [Prop] is impredicative.  [pp2sp01] shows
-    it sits below [pp2sp0]. *)
+    [pp2sp0 pp] has the reading [p /\ (PPM.pre pp -> PPM.post pp a)].
+    The actual right adjoint [pp2sp] uses [pp2spBase], which intersects all
+    [SPost] values above [fun p a => p /\ PPM.post pp a].  Its underlying
+    proposition therefore depends only on [pp]'s postcondition.
+    [pp2sp01] places this right adjoint below [pp2sp0]. *)
 
 Definition pp2sp0T {A} (pp : PPM.PrePost A) : SPM.SPostT A :=
   fun p a =>
@@ -221,7 +220,7 @@ Definition sp2pp {A} (sp : SPM.SPost A) : PPM.PrePost A :=
   ( exists p : Prop, (forall a, post a -> SPM.app sp p a) /\ p
   , post ).
 
-(** The intersection of every [SPost] dominating [pp]. *)
+(** Intersect all [SPost] values above [fun q x => q /\ PPM.post pp x]. *)
 Definition pp2spBase {A} (pp : PPM.PrePost A) (p : Prop) (a : A) : Prop :=
   forall sp : SPM.SPost A,
     (forall x q, q /\ PPM.post pp x -> SPM.app sp q x) -> SPM.app sp p a.

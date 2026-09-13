@@ -371,6 +371,13 @@ Section RelationPred2PrePost.
 
 End RelationPred2PrePost.
 
+(** Historical forward-transformer experiment (not compiled).
+
+    The block below preserves alternative carrier shapes and attempted
+    connections to pre/post specifications, including an unfinished proof.
+    Its definitions and displayed proofs are not exported by this module.
+    Current unary SP carriers and connections live in [Taxonomy/BaseSpecMonads];
+    binary SP arrows live in [Taxonomy/Arrows]. *)
 (*
 Section ForwardPredicateTransformer.
   

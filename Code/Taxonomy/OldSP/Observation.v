@@ -18,7 +18,7 @@ From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr.
 From Paco Require Import paco.
 From Hammer Require Import Tactics.
 From ITree Require Import ITree Eq Props.Infinite.
@@ -299,7 +299,7 @@ Section ObservationSP.
   (** Reachability relation for a deterministic [stdivitree]: an initial state
       [s] reaches outcome [r] iff the computation converges to [ret r]. *)
   Definition obsRel {A} (m : stdivitree S A)
-    : PredArr S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s r => eutt eq (unOptionT (runStateT m s)) (ret r).
 
   (** The four SP transformers are readings of the reachability relation
@@ -355,10 +355,10 @@ Section ObservationSP.
   Qed.
 
   (* -------------------------------------------------------------- *)
-  (** *** [ret] as the pure [PredArr]-arrow                             *)
+  (** *** [ret] as the pure [Rel]-arrow                             *)
   (* -------------------------------------------------------------- *)
 
-  (** [PredArr] is an [Arrow] ([Arrow_Pred] in [PredArr.v]) with
+  (** [Rel] is an [Arrow] ([Arrow_Rel] in [Rel.v]) with
       [arr_pure f a b := f a = b] (the graph of [f]).  The *reachability*
       observation of [ret a] is exactly the pure arrow of [s |-> Some
       (a, s)] (return value [a], state unchanged): *)
@@ -369,15 +369,15 @@ Section ObservationSP.
   Lemma obsRel_ret_arr_pure {A} (a : A) :
     arrow_eq (obsRel (ret a)) (arr_pure (fun s : S => Some (a, s))).
   Proof.
-    unfold arrow_eq, ArrowEq_Pred, Pred_eq. intros sigma r.
-    unfold obsRel. rewrite ret_run. unfold arr_pure, Arrow_Pred; cbn.
+    unfold arrow_eq, ArrowEq_Rel, Rel_eq. intros sigma r.
+    unfold obsRel. rewrite ret_run. unfold arr_pure, Arrow_Rel; cbn.
     split.
     - intro H. apply eutt_inv_Ret in H. exact H.
     - intro H. subst r. reflexivity.
   Qed.
 
   (** [obsASP = asp (obsRel _)] is the *angelic reading*, of type
-      [PredArr (S -> Prop) (option (A * S))].  [obsASP (ret a)] is therefore
+      [Rel (S -> Prop) (option (A * S))].  [obsASP (ret a)] is therefore
       [asp] applied to the pure arrow above — the direct image of [pre]
       under [s |-> Some (a, s)].  It is NOT itself an [arr_pure]: [asp]
       turns the function graph into an existential relation
@@ -404,7 +404,7 @@ Arguments obsDSLP {_} {_}.
 (* ================================================================= *)
 
 (** The SP observations [obsASP]/[obsDSLP]/[obsDSP]/[obsASLP] above are
-    *arrows* — [PredArr (S -> Prop) (option (A * S))]: they take a
+    *arrows* — [Rel (S -> Prop) (option (A * S))]: they take a
     precondition [pre : S -> Prop] and return a postcondition predicate
     ([asp]/[dslp]/[spDSP]/[spASLP] of the reachability relation [obsRel]).
     A triple compares [obs m pre] with [post] by inclusion.  Carrying the

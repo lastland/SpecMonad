@@ -13,7 +13,7 @@ From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -72,7 +72,7 @@ Section NDObservationSP.
   (** Reachability relation for [stexcnd]: initial state [s0] reaches
       outcome [r] iff [r] is in the outcome set. *)
   Definition obsRel {A} (m : stexcnd S A)
-    : PredArr S (option (A * S)) :=
+    : Rel S (option (A * S)) :=
     fun s0 r => unOptionT (runStateT m s0) r.
 
   (** The four SP transformers are readings of the reachability relation

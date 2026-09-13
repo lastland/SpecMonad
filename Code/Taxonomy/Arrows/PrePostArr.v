@@ -1,11 +1,10 @@
 (** * The pre/post relational arrow [PrePostArr].
 
     [PrePostArr A B := (A -> Prop) * (A -> B -> Prop)] packages a Hoare
-    triple [{P} _ {R}] where the post-relation [R] may reference the
-    initial state [a].  Making the post-relation depend on the input
-    [a] (rather than just on [b]) lets [arr_pure id] hold the diagonal
-    [fun a b => a = b], so a strict Hughes-style [Arrow] instance
-    works without coarsening the equivalence.
+    specification with precondition [P] and post-relation [R].  The
+    post-relation retains the input [a], so [arr_pure id] can express
+    the diagonal [fun a b => a = b].  The arrow laws use pointwise iff
+    on both components, without coarsening that equivalence.
 
     This file defines the type [PrePostArr], the pointwise-iff
     equivalence [PrePost_eq], the partial-correctness Hoare order
@@ -17,8 +16,8 @@
     [MonadLawsE]) are generic and are collected with their
     resolution checks in [Tests/ArrowMonadInstances.v].
 
-    GaloisArr connections relating [PrePostArr] to [PredArr] and [WPArr] are
-    collected in [Taxonomy/GaloisArr.v]. *)
+    Galois connections relating [PrePostArr] to [Rel] and monotone
+    [WPArr] values are collected in [GaloisArr.v]. *)
 
 From Coq Require Import RelationClasses.
 From ITree Require Import Basics.Monad.
@@ -50,9 +49,9 @@ Qed.
 
 (** Partial-correctness Hoare order: strengthen the precondition,
     weaken the post-relation.  [pq1 ≤ pq2] iff [fst pq2 ⊆ fst pq1]
-    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Pred_le] to make
-    [α R := (True, R)], [γ pq := snd pq] a GaloisArr connection (see
-    [Taxonomy/GaloisArr.v]). *)
+    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Rel_le] to make
+    [α R := (True, R)], [γ pq := snd pq] a Galois connection (see
+    [GaloisArr.v]). *)
 Definition PrePost_le {A B} (pq1 pq2 : PrePostArr A B) : Prop :=
   (forall a,   fst pq2 a   -> fst pq1 a) /\
   (forall a b, snd pq1 a b -> snd pq2 a b).
@@ -131,20 +130,18 @@ Section PrePostMonad.
 
 End PrePostMonad.
 
-(** GaloisArr connections with other spec types are collected in
-    [Taxonomy/GaloisArr.v]. *)
+(** Galois connections with other specification types are in [GaloisArr.v]. *)
 
 (* ================================================================= *)
 (** * Facts and laws (merged from PrePostArrFacts.v)                          *)
 (* ================================================================= *)
 
-(** * Laws for the [PrePostArr] arrow and monad.
+(** * Laws for the [PrePostArr] arrow.
 
-    Proves [ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws] for the
-    arrow instances, and [Eq1Equivalence] + [MonadLawsE] for the
-    monad-in-[B] instance, all from [Taxonomy/PrePostArr.v].  Uses the
-    [PrePost_eq] helper to bridge pointwise iff to structural
-    equality via funext + propext. *)
+    The proofs establish [ArrowLaws], [ArrowChoiceLaws], and
+    [ArrowApplyLaws] under [PrePost_eq].  They reason directly with
+    pointwise iff, not by converting it to structural equality.
+    The generic arrow-to-monad construction supplies the monad laws. *)
 
 From Hammer Require Import Tactics.
 

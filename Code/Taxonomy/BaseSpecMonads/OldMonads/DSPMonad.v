@@ -124,9 +124,9 @@ Section ProgDSPMonad.
       are introduced. *)
 
   (** Probing that transformer at [fun _ => True] and at the co-singleton of
-      [s] recovers [R s r] exactly.  This is the ONLY use of classical logic
-      in the section: from "some state reaches [r]" together with "[fun t =>
-      t <> s] is not a valid precondition for [r]" one concludes [R s r]. *)
+      [s] recovers [R s r] exactly. The forward direction uses classical
+      logic: some state reaches [r], and excluding [s] invalidates the
+      precondition, so [s] itself must reach [r]. *)
   Lemma dsp_recov {A} (R : S -> option (A * S) -> Prop)
     (s : S) (r : option (A * S)) :
     (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
@@ -142,8 +142,8 @@ Section ProgDSPMonad.
       + intros [_ Hall]. exact (Hall s Hs eq_refl).
   Qed.
 
-  (** Consequently every such transformer inhabits [DSPStExc]: this discharges
-      each of the [#[program]] obligations below. *)
+  (** The DSP shape at [R] is pointwise the DSP of the relation recovered
+      from it by probing ([dsp_recov]). *)
   Lemma dsp_wf {A} (R : S -> option (A * S) -> Prop) :
     forall (pre : S -> Prop) (r : option (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
@@ -194,10 +194,9 @@ Section ProgDSPMonad.
         [ exact (proj2 (H _ r) H1) | intro Hc; exact (H2 (proj1 (H _ r) Hc)) ].
   Qed.
 
-  (** The carrier condition [StrictPositivelyMeetPreservingProg] says the same
-      thing as "[w] is the DSP of its own recovered relation".  This is the
-      bridge between the healthiness reading (which the type states) and the
-      fixed-point reading (which the proofs use). *)
+  (** [StrictPositivelyMeetPreservingProg] is equivalent to saying that [w]
+      is the DSP reading of its recovered relation. This connects the
+      carrier's well-formedness condition to the representation used in proofs. *)
   Lemma dsp_carrier {A} (w : SPStExc A) :
     StrictPositivelyMeetPreservingProg w <->
       (forall (pre : S -> Prop) (r : option (A * S)), w pre r <->
@@ -434,7 +433,7 @@ Section ProgDSPMonad.
       split; [ exists s0; split; [ exact (Hall s0 Hr0) | exact Hr0 ] | exact Hall ].
   Qed.
 
-  (** Both healthiness classes transport along pointwise equivalence. *)
+  (** Both well-formedness properties transport along pointwise equivalence. *)
   Lemma singletonProg_ext {A} (w1 w2 : @SPStExc S A) :
     (forall pre r, w1 pre r <-> w2 pre r) -> SingletonProg S w1 -> SingletonProg S w2.
   Proof.
@@ -908,8 +907,8 @@ Section ProgDSPMonad.
       + intros [_ Hall]. exact (Hall s Hs eq_refl).
   Qed.
 
-  (** Consequently every such transformer inhabits [DSPSt]: this discharges
-      each of the [#[program]] obligations below. *)
+  (** The DSP shape at [R] is pointwise the DSP of the relation recovered
+      from it by probing ([dsp_recov]). *)
   Lemma dsp_wf {A} (R : S -> (A * S) -> Prop) :
     forall (pre : S -> Prop) (r : (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
@@ -960,10 +959,9 @@ Section ProgDSPMonad.
         [ exact (proj2 (H _ r) H1) | intro Hc; exact (H2 (proj1 (H _ r) Hc)) ].
   Qed.
 
-  (** The carrier condition [StrictPositivelyMeetPreservingProg] says the same
-      thing as "[w] is the DSP of its own recovered relation".  This is the
-      bridge between the healthiness reading (which the type states) and the
-      fixed-point reading (which the proofs use). *)
+  (** [StrictPositivelyMeetPreservingProg] is equivalent to saying that [w]
+      is the DSP reading of its recovered relation. This connects the
+      carrier's well-formedness condition to the representation used in proofs. *)
   Lemma dsp_carrier {A} (w : SPSt A) :
     StrictPositivelyMeetPreservingProg w <->
       (forall (pre : S -> Prop) (r : (A * S)), w pre r <->

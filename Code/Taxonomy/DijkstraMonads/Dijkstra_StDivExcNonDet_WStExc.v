@@ -12,7 +12,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
@@ -658,4 +658,3 @@ Qed.
 Definition progB_div_compositional
   : Dawlp (pp2wp_subset (fun _ : nat => True) (fun _ => False)) :=
   Dawlp_wkn progB_compositional_awlp_le progB_compositional_awlp.
-

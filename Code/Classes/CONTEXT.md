@@ -32,6 +32,11 @@ These differ from [Common/Classes.v](../Common/Classes.v)'s pre/post API.
 
 ## Boundaries and tests
 
+Start with `Arrow.v`, then `ArrowApplyFacts.v` and `ArrowMonad.v`, or the
+transformer context relevant to the task. The concrete relational carrier is
+`Rel A B := A -> B -> Prop` in
+[Rel.v](../Taxonomy/Arrows/Rel.v), not a definition in `Arrow.v`.
+
 Read [option](OptionArrowT/CONTEXT.md) or [state](StateArrowT/CONTEXT.md)
 contexts after the base contract. Keep explicit dictionaries in recursive
 transformer stacks. [Generic tests](Tests/CONTEXT.md) check arrow monads;
