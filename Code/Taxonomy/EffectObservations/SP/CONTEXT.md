@@ -37,6 +37,17 @@ ASP/DSLP presentation. Cross-observation taxonomy lives in the parent directory.
   environment by environment. Comparisons of the stateful readings belong to
   the [parent taxonomy layer](../CONTEXT.md).
 
+## Base DSP/ASLP bind proofs
+
+The DSP/ASLP bind proofs in [FullOutcomeObs](StDivNonDet_SPStExc.v) and
+[TermSliceObs](StDivNonDet_SPSt.v) combine computation `outcomes_bind` with
+specification bind normalization and relation congruence. Recovery reasoning
+belongs to [DSPMonad.v](../../BaseSpecMonads/DSPMonad.v) and
+[ASLPMonad.v](../../BaseSpecMonads/ASLPMonad.v): full-outcome proofs use
+`dsp_comp_recov_option` / `aslp_comp_recov_option`, while terminating-slice
+proofs apply specialized recovery through `StDSP.comp_cong`. Neither proof
+reconstructs recovery probes; both retain their own outcome relation.
+
 ## Semantic traps
 
 - [StDivNonDet_SPStExc.v](StDivNonDet_SPStExc.v) retains `None` as divergence.

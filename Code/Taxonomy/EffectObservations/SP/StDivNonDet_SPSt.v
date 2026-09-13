@@ -176,34 +176,20 @@ Section StObservations.
     eq1 (obsDSP (x >>= f)) (obsDSP x >>= (fun a => obsDSP (f a))).
   Proof.
     unfold eq1, Eq1__DSPSt. intros pre r.
-    assert (Hx : forall s y,
-               (getDSPSt (obsDSP x) (fun _ => True) y
-                /\ ~ getDSPSt (obsDSP x) (fun t => t <> s) y)
-               <-> unOptionT (runStateT x s) (Some y)).
-    { intros s y.
-      exact (dsp_recov S (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y). }
-    assert (Hf : forall a s y,
-               (getDSPSt (obsDSP (f a)) (fun _ => True) y
-                /\ ~ getDSPSt (obsDSP (f a)) (fun t => t <> s) y)
-               <-> unOptionT (runStateT (f a) s) (Some y)).
-    { intros a s y.
-      exact (dsp_recov S (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y). }
     refine (iff_trans
-              (dsp_cong S
-                 (fun s r0 => unOptionT (runStateT (x >>= f) s) (Some r0))
-                 (fun s r0 =>
-                    exists a smid,
-                      (getDSPSt (obsDSP x) (fun _ => True) (a, smid)
-                       /\ ~ getDSPSt (obsDSP x) (fun t => t <> s) (a, smid))
-                      /\ (getDSPSt (obsDSP (f a)) (fun _ => True) r0
-                          /\ ~ getDSPSt (obsDSP (f a)) (fun t => t <> smid) r0))
-                 _ pre r)
-              (iff_sym (bindDSPProg_dsp S (obsDSP x) (fun a => obsDSP (f a)) pre r))).
-    intros s r0. split.
-    - intro H. apply outcomes_bind in H. destruct H as [a [s' [Hxx Hk]]].
-      exists a, s'. split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
-    - intros [a [s' [Hm Hk]]]. apply Hx in Hm. apply Hf in Hk.
-      apply outcomes_bind. exists a, s'. split; [ exact Hm | exact Hk ].
+              (dsp_cong S _ _ (outcomes_bind x f) pre r)
+              (iff_trans
+                 (iff_sym (dsp_cong S _ _
+                             (comp_cong S _ _ _ _
+                                (fun s y =>
+                                   dsp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y)
+                                (fun a s y =>
+                                   dsp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y))
+                             pre r))
+                 (iff_sym (bindDSPProg_dsp S (obsDSP x)
+                             (fun a => obsDSP (f a)) pre r)))).
   Qed.
 
   Theorem obsASLP_ret {A} (a : A) : eq1 (obsASLP (ret a : stdivnd S A)) (ret a).
@@ -219,34 +205,20 @@ Section StObservations.
     eq1 (obsASLP (x >>= f)) (obsASLP x >>= (fun a => obsASLP (f a))).
   Proof.
     unfold eq1, Eq1__ASLPSt. intros pre r.
-    assert (Hx : forall s y,
-               (~ getASLPSt (obsASLP x) (fun _ => False) y
-                /\ getASLPSt (obsASLP x) (fun t => t = s) y)
-               <-> unOptionT (runStateT x s) (Some y)).
-    { intros s y.
-      exact (aslp_recov S (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y). }
-    assert (Hf : forall a s y,
-               (~ getASLPSt (obsASLP (f a)) (fun _ => False) y
-                /\ getASLPSt (obsASLP (f a)) (fun t => t = s) y)
-               <-> unOptionT (runStateT (f a) s) (Some y)).
-    { intros a s y.
-      exact (aslp_recov S (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y). }
     refine (iff_trans
-              (aslp_cong S
-                 (fun s r0 => unOptionT (runStateT (x >>= f) s) (Some r0))
-                 (fun s r0 =>
-                    exists a smid,
-                      (~ getASLPSt (obsASLP x) (fun _ => False) (a, smid)
-                       /\ getASLPSt (obsASLP x) (fun t => t = s) (a, smid))
-                      /\ (~ getASLPSt (obsASLP (f a)) (fun _ => False) r0
-                          /\ getASLPSt (obsASLP (f a)) (fun t => t = smid) r0))
-                 _ pre r)
-              (iff_sym (bindASLPProg_aslp S (obsASLP x) (fun a => obsASLP (f a)) pre r))).
-    intros s r0. split.
-    - intro H. apply outcomes_bind in H. destruct H as [a [s' [Hxx Hk]]].
-      exists a, s'. split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
-    - intros [a [s' [Hm Hk]]]. apply Hx in Hm. apply Hf in Hk.
-      apply outcomes_bind. exists a, s'. split; [ exact Hm | exact Hk ].
+              (aslp_cong S _ _ (outcomes_bind x f) pre r)
+              (iff_trans
+                 (iff_sym (aslp_cong S _ _
+                             (comp_cong S _ _ _ _
+                                (fun s y =>
+                                   aslp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y)
+                                (fun a s y =>
+                                   aslp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y))
+                             pre r))
+                 (iff_sym (bindASLPProg_aslp S (obsASLP x)
+                             (fun a => obsASLP (f a)) pre r)))).
   Qed.
 
 End StObservations.

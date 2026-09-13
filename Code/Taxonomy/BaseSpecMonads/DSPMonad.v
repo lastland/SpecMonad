@@ -104,6 +104,45 @@ Section PureDSPMonad.
 
 End PureDSPMonad.
 
+(* ================================================================= *)
+(** ** Outcome-generic recovery and congruence (internal)             *)
+(* ================================================================= *)
+
+(** Recovery and congruence do not inspect the outcome type.  The public
+    option-outcome and [StDSP] lemmas specialize these local proofs.
+    Recovery uses classical logic; congruence is constructive. *)
+
+Local Lemma dsp_recov_gen (S O : Type)
+  (R : S -> O -> Prop) (s : S) (r : O) :
+  (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
+   /\ ~ ((exists t, t <> s /\ R t r) /\ (forall t, R t r -> t <> s)))
+  <-> R s r.
+Proof.
+  split.
+  - intros [[[t [_ Ht]] _] Hn]. apply NNPP. intro Hns. apply Hn. split.
+    + exists t. split; [ intro Heq; subst t; exact (Hns Ht) | exact Ht ].
+    + intros t' Ht' Heq. subst t'. exact (Hns Ht').
+  - intro Hs. split.
+    + split; [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
+    + intros [_ Hall]. exact (Hall s Hs eq_refl).
+Qed.
+
+Local Lemma dsp_cong_gen (S O : Type)
+  (R R' : S -> O -> Prop)
+  (H : forall s r, R s r <-> R' s r) :
+  forall (pre : S -> Prop) (r : O),
+    ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
+    <-> ((exists s, pre s /\ R' s r) /\ (forall s, R' s r -> pre s)).
+Proof.
+  intros pre r. split.
+  - intros [[s [Hp Hs]] Hall]. split.
+    + exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
+    + intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
+  - intros [[s [Hp Hs]] Hall]. split.
+    + exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
+    + intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
+Qed.
+
 Section ProgDSPMonad.
   Variable S : Type.
 
@@ -131,15 +170,7 @@ Section ProgDSPMonad.
     (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
      /\ ~ ((exists t, t <> s /\ R t r) /\ (forall t, R t r -> t <> s)))
     <-> R s r.
-  Proof.
-    split.
-    - intros [[[t [_ Ht]] _] Hn]. apply NNPP. intro Hns. apply Hn. split.
-      + exists t. split; [ intro Heq; subst t; exact (Hns Ht) | exact Ht ].
-      + intros t' Ht' Heq. subst t'. exact (Hns Ht').
-    - intro Hs. split.
-      + split; [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
-      + intros [_ Hall]. exact (Hall s Hs eq_refl).
-  Qed.
+  Proof. exact (dsp_recov_gen S (option (A * S)) R s r). Qed.
 
   (** The DSP shape at [R] is pointwise the DSP of the relation recovered
       from it by probing ([dsp_recov]). *)
@@ -169,15 +200,7 @@ Section ProgDSPMonad.
     forall (pre : S -> Prop) (r : option (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
       <-> ((exists s, pre s /\ R' s r) /\ (forall s, R' s r -> pre s)).
-  Proof.
-    intros pre r. split.
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
-  Qed.
+  Proof. exact (dsp_cong_gen S (option (A * S)) R R' H). Qed.
 
   (** ... and extensionally equal transformers recover the same relation. *)
   Lemma dsp_rec_ext {A} (w1 w2 : @SPStExc S A)
@@ -397,6 +420,29 @@ Section ProgDSPMonad.
         exists (Some (a, s1)). split; [ exact HR | exact HF ].
       + exists None. split; [| exact H ].
         exists None. split; [ exact HR | reflexivity ].
+  Qed.
+
+  (** Eliminate recovery when composing option-outcome relations.
+      Callers lift this equivalence with [dsp_cong] to reason about bind. *)
+  Lemma dsp_comp_recov_option (A B : Type)
+    (Rx : S -> option (A * S) -> Prop)
+    (F : A -> S -> option (B * S) -> Prop) :
+    forall (s : S) (r : option (B * S)),
+      (exists o, (((exists t, True /\ Rx t o) /\ (forall t, Rx t o -> True))
+                  /\ ~ ((exists t, t <> s /\ Rx t o) /\ (forall t, Rx t o -> t <> s)))
+                 /\ match o with
+                    | Some (a, smid) =>
+                        (((exists t, True /\ F a t r) /\ (forall t, F a t r -> True))
+                         /\ ~ ((exists t, t <> smid /\ F a t r)
+                               /\ (forall t, F a t r -> t <> smid)))
+                    | None => r = None
+                    end)
+      <-> (exists o, Rx s o /\ match o with
+                         | Some (a, smid) => F a smid r
+                         | None => r = None
+                         end).
+  Proof.
+    exact (comp_cong _ _ _ _ (dsp_recov Rx) (fun a => dsp_recov (F a))).
   Qed.
 
   (** ** [ret] and [bind] *)
@@ -906,15 +952,7 @@ Section ProgDSPMonad.
     (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
      /\ ~ ((exists t, t <> s /\ R t r) /\ (forall t, R t r -> t <> s)))
     <-> R s r.
-  Proof.
-    split.
-    - intros [[[t [_ Ht]] _] Hn]. apply NNPP. intro Hns. apply Hn. split.
-      + exists t. split; [ intro Heq; subst t; exact (Hns Ht) | exact Ht ].
-      + intros t' Ht' Heq. subst t'. exact (Hns Ht').
-    - intro Hs. split.
-      + split; [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
-      + intros [_ Hall]. exact (Hall s Hs eq_refl).
-  Qed.
+  Proof. exact (dsp_recov_gen S (A * S) R s r). Qed.
 
   (** The DSP shape at [R] is pointwise the DSP of the relation recovered
       from it by probing ([dsp_recov]). *)
@@ -944,15 +982,7 @@ Section ProgDSPMonad.
     forall (pre : S -> Prop) (r : (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
       <-> ((exists s, pre s /\ R' s r) /\ (forall s, R' s r -> pre s)).
-  Proof.
-    intros pre r. split.
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
-  Qed.
+  Proof. exact (dsp_cong_gen S (A * S) R R' H). Qed.
 
   (** ... and extensionally equal transformers recover the same relation. *)
   Lemma dsp_rec_ext {A} (w1 w2 : @SPSt S A)

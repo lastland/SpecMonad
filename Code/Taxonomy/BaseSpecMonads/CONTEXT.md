@@ -40,6 +40,20 @@ do not mention a concrete computation monad.
 - [BaseGaloisConnections.v](BaseGaloisConnections.v) relates the DM4all monads;
   `NewGaloisConnections.v` builds further WP and SP embeddings on that layer.
 
+## Recovery proof ownership
+
+[DSPMonad.v](DSPMonad.v) and [ASLPMonad.v](ASLPMonad.v) each share local,
+outcome-generic recovery and congruence proofs between their option-outcome and
+`StDSP` / `StASLP` presentations. Callers use the specialized `dsp_recov` /
+`aslp_recov` and `dsp_cong` / `aslp_cong` lemmas; the generic helpers are
+implementation details.
+
+`dsp_comp_recov_option` and `aslp_comp_recov_option` eliminate recovery from
+option-outcome relational composition. They reuse `comp_cong` and recovery;
+observation proofs lift the resulting equivalence with specialized congruence
+and combine it with `bindDSPProg_dsp` / `bindASLPProg_aslp`. Pair-outcome clients
+use `StDSP.comp_cong` and their specialized recovery lemmas directly.
+
 ## Semantic traps
 
 - Raw SP carriers alone do not supply the four monads. `Terminating` means
