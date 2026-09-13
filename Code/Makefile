@@ -38,6 +38,7 @@ all: regen
 # compiles it and the generated clean rule never removes its outputs.
 CHECK_VOS := Classes/RelArrowCoherence.vo \
   Taxonomy/Arrows/SPostArrMonad.vo \
+  Taxonomy/Arrows/GaloisArr.vo \
   Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.vo \
   Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.vo \
   Taxonomy/EffectObservations/SP/StDivITree_SPostArr.vo \

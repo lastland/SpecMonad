@@ -10,17 +10,22 @@
       first (pure (fun f => f >>> h)) >>> app = app >>> h
     ]]
 
-    [RelArrowPresentation] supplies relation semantics and a faithful
-    equality principle for the base arrow.  The proofs use that contract
-    to establish Leibniz equalities; both SP presentations reuse them in
-    their base [ArrowApplyLaws] instances.
+    The core section below takes the relation reading [R] and its
+    per-operation laws as explicit hypotheses; the three equations
+    additionally consume a faithful equality principle [rel_ext], which
+    no relational statement uses.  [RelArrowPresentation] packages the
+    same fields, and the closing wrappers keep its original theorem
+    interfaces; both SP presentations reuse them in their base
+    [ArrowApplyLaws] instances.
 
     The later sections describe relation semantics for option and
-    state-over-option operations.  In particular, [rel_state_option_bind]
-    exposes the actual arrow-derived bind: it preserves the fixed input,
-    threads the intermediate state, and propagates [None].  Application
-    laws for these stacks come from the generic [OptionArrowT] and
-    [StateArrowT] lifts, not from new concrete proofs here. *)
+    state-over-option operations.  In particular,
+    [rel_state_option_bind_fields] exposes the actual arrow-derived
+    bind: it preserves the fixed input, threads the intermediate state,
+    and propagates [None].  Concrete stacks instantiate it directly
+    with their per-operation laws.  Application laws for these stacks
+    come from the generic [OptionArrowT] and [StateArrowT] lifts, not
+    from new concrete proofs here. *)
 
 From Coq Require Import Classes.Morphisms_Prop.
 From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
@@ -63,9 +68,34 @@ Arguments present_app {arr HA HC HAA} _ {A B} _ _ _.
 Section RelationalCoherence.
   Context {arr : Type -> Type -> Type}
     {HA : Arrow arr} {HC : @ArrowChoice arr HA} {HAA : @ArrowApply arr HA}.
-  Variable P : RelArrowPresentation arr HA HC HAA.
 
-  Local Notation R := (present_rel P).
+  (** The relation reading of the base arrow and its per-operation
+      laws, supplied as explicit hypotheses.  Concrete stacks pass the
+      readings they already prove, without a bundled presentation, so
+      relational results never inherit an equality principle. *)
+  Variable R : forall {A B}, arr A B -> A -> B -> Prop.
+  Variable rel_pure : forall {A B} (f : A -> B) a b,
+    R (@arr_pure arr HA A B f) a b <-> f a = b.
+  Variable rel_comp : forall {A B C} (f : arr A B) (g : arr B C) a c,
+    R (@arr_comp arr HA A B C f g) a c <->
+    exists b, R f a b /\ R g b c.
+  Variable rel_first : forall {A B C} (f : arr A B) a c b d,
+    R (@arr_first arr HA A B C f) (a, c) (b, d) <-> R f a b /\ c = d.
+  Variable rel_left : forall {A B C} (f : arr A B) x y,
+    R (@arr_left arr HA HC A B C f) x y <->
+    match x, y with
+    | inl a, inl b => R f a b
+    | inr c, inr d => c = d
+    | _, _ => False
+    end.
+  Variable rel_app : forall {A B} (f : arr A B) a b,
+    R (@arr_app arr HA HAA A B) (f, a) b <-> R f a b.
+
+  (** Faithful equality, consumed only by the three arrow equalities
+      below; section discharge keeps it out of every other statement. *)
+  Variable rel_ext : forall {A B} (f g : arr A B),
+    (forall a b, R f a b <-> R g a b) -> f = g.
+
   Local Notation pure := (@arr_pure arr HA).
   Local Notation comp := (@arr_comp arr HA).
   Local Notation first := (@arr_first arr HA).
@@ -75,26 +105,26 @@ Section RelationalCoherence.
   Local Lemma rel_pure_comp {A B C} (f : A -> B) (g : arr B C) a c :
     R (comp (pure f) g) a c <-> R g (f a) c.
   Proof.
-    rewrite (present_comp P). split.
-    - intros [b [Hb Hg]]. apply (present_pure P) in Hb. subst b. exact Hg.
-    - intro Hg. exists (f a). split; [apply (present_pure P); reflexivity | exact Hg].
+    rewrite rel_comp. split.
+    - intros [b [Hb Hg]]. apply rel_pure in Hb. subst b. exact Hg.
+    - intro Hg. exists (f a). split; [apply rel_pure; reflexivity | exact Hg].
   Qed.
 
   Local Lemma rel_comp_pure {A B C} (f : arr A B) (g : B -> C) a c :
     R (comp f (pure g)) a c <->
     exists b, R f a b /\ g b = c.
   Proof.
-    rewrite (present_comp P). split; intros [b [Hf Hg]]; exists b; split.
+    rewrite rel_comp. split; intros [b [Hf Hg]]; exists b; split.
     - exact Hf.
-    - apply (present_pure P) in Hg. exact Hg.
+    - apply rel_pure in Hg. exact Hg.
     - exact Hf.
-    - apply (present_pure P). exact Hg.
+    - apply rel_pure. exact Hg.
   Qed.
 
   Local Lemma rel_first_pure {A B C} (f : A -> B) (a : A) (c : C) q :
     R (first (pure f)) (a, c) q <-> (f a, c) = q.
   Proof.
-    destruct q as [b d]. rewrite (present_first P), (present_pure P).
+    destruct q as [b d]. rewrite rel_first, rel_pure.
     split; [intros [-> ->]; reflexivity | intro H; injection H; auto].
   Qed.
 
@@ -104,55 +134,55 @@ Section RelationalCoherence.
     unfold arr_second. rewrite rel_pure_comp. cbn [swap].
     rewrite rel_comp_pure. split.
     - intros [[b' d'] [Hf Heq]]. cbn [swap] in Heq.
-      injection Heq as -> ->. apply (present_first P) in Hf. exact Hf.
-    - intro Hf. exists (b, d). split; [apply (present_first P); exact Hf | reflexivity].
+      injection Heq as -> ->. apply rel_first in Hf. exact Hf.
+    - intro Hf. exists (b, d). split; [apply rel_first; exact Hf | reflexivity].
   Qed.
 
   Local Lemma rel_first_pure_app {X A B} (k : X -> arr A B) x a b :
     R (comp (first (pure k)) app) (x, a) b <->
     R (k x) a b.
   Proof.
-    rewrite (present_comp P). split.
+    rewrite rel_comp. split.
     - intros [fa [Hk Happ]]. apply rel_first_pure in Hk. subst fa.
-      rewrite (present_app P) in Happ. exact Happ.
+      rewrite rel_app in Happ. exact Happ.
     - intro Hk. exists (k x, a). split.
       + apply rel_first_pure. reflexivity.
-      + rewrite (present_app P). exact Hk.
+      + rewrite rel_app. exact Hk.
   Qed.
 
-  Lemma rel_app_unit (A B : Type) :
+  Lemma rel_app_unit_fields (A B : Type) :
     comp (first (pure (fun x : A => pure (fun y : B => (x, y)))))
       app = @arr_id arr HA (A * B).
   Proof.
-    apply (present_ext P). intros [a b] q.
+    apply rel_ext. intros [a b] q.
     rewrite rel_first_pure_app. unfold arr_id.
-    rewrite ! (present_pure P). reflexivity.
+    rewrite ! rel_pure. reflexivity.
   Qed.
 
-  Lemma rel_app_precompose {A B C} (g : arr A B) :
+  Lemma rel_app_precompose_fields {A B C} (g : arr A B) :
     comp (first (pure (fun f : arr B C => comp g f)))
       app = comp (second g) app.
   Proof.
-    apply (present_ext P). intros [f a] c.
-    rewrite rel_first_pure_app, ! (present_comp P). split.
+    apply rel_ext. intros [f a] c.
+    rewrite rel_first_pure_app, ! rel_comp. split.
     - intros [b [Hg Hf]]. exists (f, b). split.
       + apply rel_second. auto.
-      + rewrite (present_app P). exact Hf.
+      + rewrite rel_app. exact Hf.
     - intros [[f' b] [Hg Hf]]. apply rel_second in Hg.
       destruct Hg as [Hg <-]. exists b. split; [exact Hg |].
-      rewrite (present_app P) in Hf. exact Hf.
+      rewrite rel_app in Hf. exact Hf.
   Qed.
 
-  Lemma rel_app_postcompose {A B C} (h : arr B C) :
+  Lemma rel_app_postcompose_fields {A B C} (h : arr B C) :
     comp (first (pure (fun f : arr A B => comp f h)))
       app = comp app h.
   Proof.
-    apply (present_ext P). intros [f a] c.
-    rewrite rel_first_pure_app, ! (present_comp P).
+    apply rel_ext. intros [f a] c.
+    rewrite rel_first_pure_app, ! rel_comp.
     split; intros [b [Hf Hh]]; exists b; split.
-    - rewrite (present_app P). exact Hf.
+    - rewrite rel_app. exact Hf.
     - exact Hh.
-    - rewrite (present_app P) in Hf. exact Hf.
+    - rewrite rel_app in Hf. exact Hf.
     - exact Hh.
   Qed.
 
@@ -172,7 +202,7 @@ Section RelationalCoherence.
 
   Local Lemma rel_option_pure {A B} (f : A -> B) a ob :
     R (opure f) a ob <-> Some (f a) = ob.
-  Proof. exact (present_pure P (fun a => Some (f a)) a ob). Qed.
+  Proof. exact (rel_pure (fun a => Some (f a)) a ob). Qed.
 
   Local Lemma rel_option_cont {B C} (g : optionArrT arr B C) ob oc :
     R (comp (pure to_sum)
@@ -181,18 +211,18 @@ Section RelationalCoherence.
   Proof.
     rewrite rel_pure_comp, rel_comp_pure.
     destruct ob as [b|]; cbn [to_sum]; split.
-    - intros [[oc'|[]] [Hg Heq]]; rewrite (present_left P) in Hg.
+    - intros [[oc'|[]] [Hg Heq]]; rewrite rel_left in Hg.
       + cbn [collapse] in Heq. subst oc'. exact Hg.
       + contradiction.
-    - intro Hg. exists (inl oc). split; [rewrite (present_left P); exact Hg | reflexivity].
-    - intros [[oc'|[]] [Hg Heq]]; rewrite (present_left P) in Hg.
+    - intro Hg. exists (inl oc). split; [rewrite rel_left; exact Hg | reflexivity].
+    - intros [[oc'|[]] [Hg Heq]]; rewrite rel_left in Hg.
       + contradiction.
       + exact Heq.
-    - intro Heq. exists (inr tt). split; [rewrite (present_left P); reflexivity | exact Heq].
+    - intro Heq. exists (inr tt). split; [rewrite rel_left; reflexivity | exact Heq].
   Qed.
 
   Local Lemma rel_option_comp {A B C}
-    (f : optionArrT arr A B) (g : optionArrT arr B C) a oc :
+      (f : optionArrT arr A B) (g : optionArrT arr B C) a oc :
     R (ocomp f g) a oc <-> exists ob, R f a ob /\
       match ob with Some b => R g b oc | None => None = oc end.
   Proof.
@@ -200,11 +230,11 @@ Section RelationalCoherence.
       (comp (@arr_left arr HA HC _ _ unit g) (pure collapse)))) a oc <->
       exists ob, R f a ob /\
         match ob with Some b => R g b oc | None => None = oc end).
-    rewrite (present_comp P). setoid_rewrite rel_option_cont. reflexivity.
+    rewrite rel_comp. setoid_rewrite rel_option_cont. reflexivity.
   Qed.
 
   Local Lemma rel_option_pure_comp {A B C}
-    (f : A -> B) (g : optionArrT arr B C) a oc :
+      (f : A -> B) (g : optionArrT arr B C) a oc :
     R (ocomp (opure f) g) a oc <-> R g (f a) oc.
   Proof.
     rewrite rel_option_comp. split.
@@ -213,7 +243,7 @@ Section RelationalCoherence.
   Qed.
 
   Local Lemma rel_option_comp_pure {A B C}
-    (f : optionArrT arr A B) (g : B -> C) a oc :
+      (f : optionArrT arr A B) (g : B -> C) a oc :
     R (ocomp f (opure g)) a oc <->
     exists ob, R f a ob /\ option_map g ob = oc.
   Proof.
@@ -231,17 +261,17 @@ Section RelationalCoherence.
     change (R (comp (first f) (pure sequence_option)) (a, c) q <->
       exists ob, R f a ob /\ option_map (fun b => (b, c)) ob = q).
     rewrite rel_comp_pure. split.
-    - intros [[ob d] [Hf Heq]]. apply (present_first P) in Hf.
+    - intros [[ob d] [Hf Heq]]. apply rel_first in Hf.
       destruct Hf as [Hf <-]. exists ob. split; [exact Hf |].
       destruct ob; exact Heq.
     - intros [ob [Hf Heq]]. exists (ob, c). split.
-      + apply (present_first P). auto.
+      + apply rel_first. auto.
       + destruct ob; exact Heq.
   Qed.
 
   Local Lemma rel_option_app {A B} (f : optionArrT arr A B) a ob :
     R oapp (f, a) ob <-> R f a ob.
-  Proof. exact (present_app P f a ob). Qed.
+  Proof. exact (rel_app f a ob). Qed.
 
   (** ** State-over-option semantics
 
@@ -261,11 +291,12 @@ Section RelationalCoherence.
         (@ArrowApply_stateArrT S (optionArrT arr) OA
           (@ArrowApply_optionArrT arr HA HC HAA))).
 
-    (** [rel_state_option_pure] and [rel_state_option_bind] below are the
-        public seams of this layer: concrete SP stacks instantiate them
-        with their relational presentation to read off [ret] and [bind]. *)
+    (** [rel_state_option_pure_fields] and
+        [rel_state_option_bind_fields] below are the public seams of
+        this layer: concrete SP stacks instantiate them with their
+        per-operation relational laws to read off [ret] and [bind]. *)
 
-    Lemma rel_state_option_pure {A B} (f : A -> B) a s q :
+    Lemma rel_state_option_pure_fields {A B} (f : A -> B) a s q :
       R (sopure f) (a, s) q <-> Some (f a, s) = q.
     Proof. exact (rel_option_pure (fun '(a, s) => (f a, s)) (a, s) q). Qed.
 
@@ -334,7 +365,7 @@ Section RelationalCoherence.
       split.
       - intro Hf.
         rewrite rel_state_option_comp in Hf. destruct Hf as [od [Hop Hmid]].
-        rewrite rel_state_option_pure in Hop.
+        rewrite rel_state_option_pure_fields in Hop.
         destruct od as [[[i1 i2] s1]|]; [|discriminate Hop].
         injection Hop. intros; subst.
         rewrite rel_state_option_comp in Hmid. destruct Hmid as [oim [Hfirst Hsecond]].
@@ -345,23 +376,22 @@ Section RelationalCoherence.
           cbn [option_map] in Hsecond |- *.
           rewrite rel_state_option_second in Hsecond.
           destruct Hsecond as [oidx [Hidx Hox2]].
-          unfold arr_id in Hidx. rewrite rel_state_option_pure in Hidx.
+          unfold arr_id in Hidx. rewrite rel_state_option_pure_fields in Hidx.
           cbn [option_map] in Hox2. cbn in Hidx. subst oidx. exact Hox2.
         + exists None. split; [exact Hm|].
           cbn [option_map] in Hoim. subst oim.
           cbn [option_map] in Hsecond |- *. exact Hsecond.
       - intros [om [Hm Hox]].
         rewrite rel_state_option_comp. exists (Some ((i, i), s)). split.
-        + rewrite rel_state_option_pure. reflexivity.
+        + rewrite rel_state_option_pure_fields. reflexivity.
         + cbn [option_map].
           rewrite rel_state_option_comp.
-          exists (option_map (fun '(a, t) => ((a, i), t)) om).
-          split.
+          exists (option_map (fun '(a, t) => ((a, i), t)) om). split.
           * rewrite rel_state_option_first. exists om.
             split; [exact Hm | reflexivity].
           * destruct om as [[a t]|]; cbn [option_map].
             -- rewrite rel_state_option_second. exists (Some (i, t)). split.
-               ++ unfold arr_id. rewrite rel_state_option_pure. reflexivity.
+               ++ unfold arr_id. rewrite rel_state_option_pure_fields. reflexivity.
                ++ exact Hox.
             -- exact Hox.
     Qed.
@@ -373,14 +403,14 @@ Section RelationalCoherence.
     Proof.
       rewrite rel_state_option_comp. split.
       - intros [o [Hk Happ]].
-        rewrite rel_state_option_pure in Hk. subst o.
+        rewrite rel_state_option_pure_fields in Hk. subst o.
         exact (proj1 (rel_state_option_app (k a) i t r) Happ).
       - intro Hk. exists (Some ((k a, i), t)). split.
-        + rewrite rel_state_option_pure. reflexivity.
+        + rewrite rel_state_option_pure_fields. reflexivity.
         + exact (proj2 (rel_state_option_app (k a) i t r) Hk).
     Qed.
 
-    Theorem rel_state_option_bind {I A B : Type}
+    Theorem rel_state_option_bind_fields {I A B : Type}
         (m : stateArrT S (optionArrT arr) I A)
         (k : A -> stateArrT S (optionArrT arr) I B) (i : I) (s : S) r :
       R (@bind_arrow (stateArrT S (optionArrT arr)) SOA
@@ -416,3 +446,86 @@ Section RelationalCoherence.
   End StateOptionCoherence.
 
 End RelationalCoherence.
+
+(** ** Presentation wrappers
+
+    These lemmas keep the original interfaces that consume a whole
+    [RelArrowPresentation] record.  The [Let] adapters below expose all
+    arguments of the record projections, and each wrapper delegates to the
+    explicit-field core, so no proof body is duplicated. *)
+
+Section PresentationCoherence.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HC : @ArrowChoice arr HA} {HAA : @ArrowApply arr HA}.
+  Variable P : RelArrowPresentation arr HA HC HAA.
+
+  Local Notation R := (present_rel P).
+  Local Notation pure := (@arr_pure arr HA).
+  Local Notation comp := (@arr_comp arr HA).
+  Local Notation first := (@arr_first arr HA).
+  Local Notation second := (@arr_second arr HA).
+  Local Notation app := (@arr_app arr HA HAA).
+
+  Let Rof := @present_rel arr HA HC HAA P.
+  Let pure_law := @present_pure arr HA HC HAA P.
+  Let comp_law := @present_comp arr HA HC HAA P.
+  Let first_law := @present_first arr HA HC HAA P.
+  Let left_law := @present_left arr HA HC HAA P.
+  Let app_law := @present_app arr HA HC HAA P.
+  Let ext_law := @present_ext arr HA HC HAA P.
+
+  Lemma rel_app_unit (A B : Type) :
+    comp (first (pure (fun x : A => pure (fun y : B => (x, y))))) app
+      = @arr_id arr HA (A * B).
+  Proof.
+    exact (rel_app_unit_fields Rof pure_law comp_law first_law app_law ext_law A B).
+  Qed.
+
+  Lemma rel_app_precompose {A B C} (g : arr A B) :
+    comp (first (pure (fun f : arr B C => comp g f))) app
+      = comp (second g) app.
+  Proof.
+    exact (rel_app_precompose_fields Rof pure_law comp_law first_law app_law
+      ext_law g).
+  Qed.
+
+  Lemma rel_app_postcompose {A B C} (h : arr B C) :
+    comp (first (pure (fun f : arr A B => comp f h))) app
+      = comp app h.
+  Proof.
+    exact (rel_app_postcompose_fields Rof pure_law comp_law first_law app_law
+      ext_law h).
+  Qed.
+
+  Section StateOptionPresentation.
+    Variable S : Type.
+
+    Local Notation OA := (@Arrow_optionArrT arr HA HC).
+    Local Notation SOA := (@Arrow_stateArrT S (optionArrT arr) OA).
+
+    Lemma rel_state_option_pure {A B} (f : A -> B) a s q :
+      R (@arr_pure (stateArrT S (optionArrT arr)) SOA A B f) (a, s) q <->
+      Some (f a, s) = q.
+    Proof.
+      exact (rel_state_option_pure_fields Rof pure_law S f a s q).
+    Qed.
+
+    Lemma rel_state_option_bind {I A B : Type}
+        (m : stateArrT S (optionArrT arr) I A)
+        (k : A -> stateArrT S (optionArrT arr) I B) (i : I) (s : S) r :
+      R (@bind_arrow (stateArrT S (optionArrT arr)) SOA
+           (@ArrowApply_stateArrT S (optionArrT arr) OA
+              (@ArrowApply_optionArrT arr HA HC HAA)) I A B m k) (i, s) r <->
+        exists om, R m (i, s) om /\
+          match om with
+          | Some (a, t) => R (k a) (i, t) r
+          | None => r = None
+          end.
+    Proof.
+      exact (rel_state_option_bind_fields Rof pure_law comp_law first_law
+        left_law app_law S m k i s r).
+    Qed.
+
+  End StateOptionPresentation.
+
+End PresentationCoherence.

@@ -2,10 +2,12 @@
 
     Minimal monad-facing layer for [Taxonomy/EffectObservations/SP]: the
     monad dictionaries of the arrow stacks, the relational readings of
-    their [ret] and [bind] (instantiating the generic specs of
-    [Classes.RelArrowCoherence]), the angelic-to-demonic conversion with
-    its operation preservation, and the evaluators over an initial-state
-    precondition. *)
+    their [ret] and [bind] — [ret] read through the pure layers of the
+    stack directly at the base pure law of [SPostArr], [bind] by
+    instantiating [Classes.RelArrowCoherence.rel_state_option_bind_fields]
+    with the five base relational operation laws — the angelic-to-demonic
+    conversion with its operation preservation, and the evaluators over
+    an initial-state precondition. *)
 
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad RelArrowCoherence.
@@ -91,15 +93,17 @@ Definition Monad_DSLPostArr (S : Type) : Monad (DSLPostArr S) :=
 
 (** ** Relational [ret] and [bind] on the concrete stacks
 
-     Each is the generic [RelArrowCoherence] spec instantiated with the
-     stack's presentation; [apply] closes the goal by conversion. *)
+     [ret] reads only the base pure law [ASP_rel_pure] / [DSLP_rel_pure].
+     Its function keeps [Some] outside the state-pair match, matching
+     the option-over-base pure operation by conversion.  [bind]
+     instantiates the generic [rel_state_option_bind_fields] with the
+     stack's relation and the five base relational operation laws of
+     [SPostArr]; [apply] closes the goal by conversion. *)
 
 Lemma ASP_rel_ret {S A} (a : A) (i : unit) (s : S) r :
   ASP_rel (@ret _ (Monad_ASPostArr S) A a) (i, s) r <-> Some (a, s) = r.
 Proof.
-  apply (@rel_state_option_pure PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr ASP_rel_presentation
-    S unit A (fun _ => a) i s r).
+  exact (ASP_rel_pure (fun p => Some ((fun '(_, s) => (a, s)) p)) (i, s) r).
 Qed.
 
 Lemma ASP_rel_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B)
@@ -111,9 +115,17 @@ Lemma ASP_rel_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B)
     | None => r = None
     end.
 Proof.
-  apply (@rel_state_option_bind PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr ASP_rel_presentation
+  apply (@rel_state_option_bind_fields PureASPostArr Arrow_PureASPostArr
+    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr
+    (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
+    (@ASP_rel_first) (@ASP_rel_left) (@ASP_rel_app)
     S unit A B m k tt s r).
+Qed.
+
+Lemma DSLP_rel_ret {S A} (a : A) (i : unit) (s : S) r :
+  DSLP_rel (@ret _ (Monad_DSLPostArr S) A a) (i, s) r <-> Some (a, s) = r.
+Proof.
+  exact (DSLP_rel_pure (fun p => Some ((fun '(_, s) => (a, s)) p)) (i, s) r).
 Qed.
 
 Lemma DSLP_rel_bind {S A B} (m : DSLPostArr S A) (k : A -> DSLPostArr S B)
@@ -125,8 +137,10 @@ Lemma DSLP_rel_bind {S A B} (m : DSLPostArr S A) (k : A -> DSLPostArr S B)
     | None => r = None
     end.
 Proof.
-  apply (@rel_state_option_bind PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr DSLP_rel_presentation
+  apply (@rel_state_option_bind_fields PureDSLPostArr Arrow_PureDSLPostArr
+    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr
+    (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
+    (@DSLP_rel_first) (@DSLP_rel_left) (@DSLP_rel_app)
     S unit A B m k tt s r).
 Qed.
 
@@ -188,10 +202,7 @@ Lemma asp_to_dslp_ret {S A} (a : A) :
 Proof.
   apply DSLP_rel_ext. intros [[] s] r.
   rewrite (DSLP_rel_asp_to_dslp (@ret _ (Monad_ASPostArr S) A a) (tt, s) r).
-  rewrite ASP_rel_ret. symmetry.
-  apply (@rel_state_option_pure PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr DSLP_rel_presentation
-    S unit A (fun _ => a) tt s r).
+  rewrite ASP_rel_ret, DSLP_rel_ret. reflexivity.
 Qed.
 
 Lemma asp_to_dslp_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B) :
