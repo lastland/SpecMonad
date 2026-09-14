@@ -37,42 +37,35 @@ Section ObsASP.
 
   (* ---------------- [obsASP] is a monad morphism ---------------- *)
 
-  Lemma outcomes_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) s ob :
-    unOptionT (unOptionT (runStateT (x >>= f) s)) ob <->
-    (exists oy, unOptionT (unOptionT (runStateT x s)) oy /\
-       match oy with
-       | Some (Some (a, s')) => unOptionT (unOptionT (runStateT (f a) s')) ob
-       | Some None => ob = Some None
-       | None => ob = None
-       end).
-  Proof.
-    cbn. split; intros [oy [H1 H2]]; exists oy; split; [exact H1 | | exact H1 |];
-      destruct oy as [[[a s']|]|]; cbn in *; exact H2.
-  Qed.
+  (** Raw outcome laws are owned by the computation module: the morphism
+      proofs in the four sections below consume
+      [StDivExcNonDet.outcomes_ret] and [StDivExcNonDet.outcomes_bind]
+      through the qualified name rather than unfolding the transformer
+      stack. *)
 
   Theorem obsASP_ret {A} (a : A) : eq1 (obsASP (ret a : stdivexcnd S A)) (ret a).
   Proof.
     unfold eq1, Eq1__ASPStExc. intros pre r. split.
     - intros [s [Hp Hr]]. exists s. split; [exact Hp |].
-      destruct r as [[b s']|]; cbn in Hr; congruence.
+      apply (StDivExcNonDet.outcomes_ret S a s (Some r)) in Hr. congruence.
     - intros [s [Hp Heq]]. exists s. split; [exact Hp |].
-      destruct r as [[b s']|]; cbn; congruence.
+      apply (StDivExcNonDet.outcomes_ret S a s (Some r)). congruence.
   Qed.
 
   Theorem obsASP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
     eq1 (obsASP (x >>= f)) (obsASP x >>= (fun a => obsASP (f a))).
   Proof.
     unfold eq1, Eq1__ASPStExc. intros pre r. split.
-    - intros [s [Hp Hrel]]. apply outcomes_bind in Hrel.
+    - intros [s [Hp Hrel]]. apply (StDivExcNonDet.outcomes_bind S) in Hrel.
       destruct Hrel as [oy [Hx Hk]]. destruct oy as [[[a s']|]|].
       + left. exists a, s'. split; [| exact Hk].
         exists s. split; [exact Hp | exact Hx].
       + right. split; [congruence |]. exists s. split; [exact Hp | exact Hx].
       + discriminate Hk.
     - intros [[a [s' [[s [Hp Hx]] Hf]]] | [Hr [s [Hp Hx]]]].
-      + exists s. split; [exact Hp |]. apply outcomes_bind.
+      + exists s. split; [exact Hp |]. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some (Some (a, s'))). split; [exact Hx | exact Hf].
-      + exists s. split; [exact Hp |]. apply outcomes_bind.
+      + exists s. split; [exact Hp |]. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some None). split; [exact Hx | congruence].
   Qed.
 
@@ -184,8 +177,10 @@ Section ObsDSLP.
   Theorem obsDSLP_ret {A} (a : A) : eq1 (obsDSLP (ret a : stdivexcnd S A)) (ret a).
   Proof.
     unfold eq1, Eq1__DSLPStExc. intros pre r. split.
-    - intros H s0 Heq. apply H. subst r. cbn. reflexivity.
-    - intros H s Hr. apply H. cbn in Hr. congruence.
+    - intros H s0 Heq. apply H.
+      apply (StDivExcNonDet.outcomes_ret S a s0 (Some r)). congruence.
+    - intros H s Hr. apply H.
+      apply (StDivExcNonDet.outcomes_ret S a s (Some r)) in Hr. congruence.
   Qed.
 
   Theorem obsDSLP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
@@ -194,12 +189,12 @@ Section ObsDSLP.
     unfold eq1, Eq1__DSLPStExc. intros pre r. split.
     - intro H. split.
       + (* normal return: [x] reaches [Some (a, s')], then [f a] reaches [r] *)
-        intros a s' Hf s Hx. apply H. apply outcomes_bind.
+        intros a s' Hf s Hx. apply H. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some (Some (a, s'))). split; [exact Hx | exact Hf].
       + (* exception: [x] raises, and [r] must be [None] *)
-        intros Hr s Hx. apply H. apply outcomes_bind.
+        intros Hr s Hx. apply H. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some None). split; [exact Hx | congruence].
-    - intros [H1 H2] s Hrel. apply outcomes_bind in Hrel.
+    - intros [H1 H2] s Hrel. apply (StDivExcNonDet.outcomes_bind S) in Hrel.
       destruct Hrel as [oy [Hx Hk]]. destruct oy as [[[a s']|]|].
       + exact (H1 a s' Hk s Hx).
       + assert (Hr : r = None) by congruence. exact (H2 Hr s Hx).
@@ -304,7 +299,9 @@ Section ObsDSP.
              (fun s r0 => unOptionT (unOptionT (runStateT (ret a : stdivexcnd S A) s))
                             (Some r0))
              (fun s r0 => r0 = Some (a, s))).
-    intros s r0. destruct r0 as [[b s']|]; cbn; split; intro H; congruence.
+    intros s r0.
+    apply (iff_trans (StDivExcNonDet.outcomes_ret S a s (Some r0))).
+    split; intro H; congruence.
   Qed.
 
   Theorem obsDSP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
@@ -341,15 +338,15 @@ Section ObsDSP.
                  _ pre r)
               (iff_sym (bindDSPProg_dsp S (obsDSP x) (fun a => obsDSP (f a)) pre r))).
     intros s r0. split.
-    - intro H. apply (outcomes_bind S) in H. destruct H as [oy [Hxx Hk]].
+    - intro H. apply (StDivExcNonDet.outcomes_bind S) in H. destruct H as [oy [Hxx Hk]].
       destruct oy as [[[a s']|]|].
       + exists (Some (a, s')). split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
       + exists None. split; [ apply Hx; exact Hxx | congruence ].
       + discriminate Hk.
     - intros [[[a s']|] [Hm Hk]].
-      + apply Hx in Hm. apply Hf in Hk. apply (outcomes_bind S).
+      + apply Hx in Hm. apply Hf in Hk. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some (Some (a, s'))). split; [ exact Hm | exact Hk ].
-      + apply Hx in Hm. apply (outcomes_bind S).
+      + apply Hx in Hm. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some None). split; [ exact Hm | congruence ].
   Qed.
 End ObsDSP.
@@ -427,7 +424,9 @@ Section ObsASLP.
              (fun s r0 => unOptionT (unOptionT (runStateT (ret a : stdivexcnd S A) s))
                             (Some r0))
              (fun s r0 => r0 = Some (a, s))).
-    intros s r0. destruct r0 as [[b s']|]; cbn; split; intro H; congruence.
+    intros s r0.
+    apply (iff_trans (StDivExcNonDet.outcomes_ret S a s (Some r0))).
+    split; intro H; congruence.
   Qed.
 
   Theorem obsASLP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) :
@@ -463,15 +462,15 @@ Section ObsASLP.
                  _ pre r)
               (iff_sym (bindASLPProg_aslp S (obsASLP x) (fun a => obsASLP (f a)) pre r))).
     intros s r0. split.
-    - intro H. apply (outcomes_bind S) in H. destruct H as [oy [Hxx Hk]].
+    - intro H. apply (StDivExcNonDet.outcomes_bind S) in H. destruct H as [oy [Hxx Hk]].
       destruct oy as [[[a s']|]|].
       + exists (Some (a, s')). split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
       + exists None. split; [ apply Hx; exact Hxx | congruence ].
       + discriminate Hk.
     - intros [[[a s']|] [Hm Hk]].
-      + apply Hx in Hm. apply Hf in Hk. apply (outcomes_bind S).
+      + apply Hx in Hm. apply Hf in Hk. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some (Some (a, s'))). split; [ exact Hm | exact Hk ].
-      + apply Hx in Hm. apply (outcomes_bind S).
+      + apply Hx in Hm. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some None). split; [ exact Hm | congruence ].
   Qed.
 End ObsASLP.

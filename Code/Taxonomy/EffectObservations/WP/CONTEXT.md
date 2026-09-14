@@ -32,9 +32,28 @@ cross-observation inclusions and the WP/SP comparisons.
   [WPureMonad.v](../../BaseSpecMonads/WPureMonad.v); the target itself has no
   concrete computation dependency. Its transformer laws come from generic
   [TransformerLaws.v](../../ComputationMonads/TransformerLaws.v).
+- The double-option return/bind proofs use
+  [StDivExcNonDet.outcomes_ret / outcomes_bind](../../ComputationMonads/StDivExcNonDet.v)
+  directly. `TermSliceObsWP.outcomes_bind` in
+  [StDivNonDet_WSt.v](StDivNonDet_WSt.v) is a non-empty-carrier adapter for
+  [StExcNonDet.outcomes_bind](../../ComputationMonads/StExcNonDet.v): projecting
+  `bindNE` through `getNE` gives the underlying `bindD` definitionally.
 - [Double-option comparisons](../Taxonomy_StDivExcNonDet_StExc.v) and
   [state-only comparisons](../Taxonomy_StDivNonDet_St.v) consume these readings.
   Definition modules also retain local collapse lemmas and examples.
+
+## Independent state and result types
+
+The four return laws in [StDivExcNonDet_WStExc.v](StDivExcNonDet_WStExc.v) —
+`obsDWP_ret`, `obsDWLP_ret`, `obsAWP_ret`, and `obsAWLP_ret` — compare the
+observation of `ret a : stdivexcnd S A` with `WPureMonad.retP S a`.
+The correction from `retP A a` to `retP S a` removes the earlier restriction
+that state and result have the same type. The laws take `s0 : S` and
+`post : option (A * S) -> Prop`.
+
+The [audit](../../../Checks/Assumptions.v) instantiates each law with `bool`
+state and `0 : nat`. These `Check` commands verify the type instantiations,
+not program behavior.
 
 ## Semantic traps
 
@@ -57,8 +76,9 @@ cross-observation inclusions and the WP/SP comparisons.
 
 ## Reading order
 
-Read `WPureMonad.v`, then the chosen source's outcome encoding. Start with
-the observation's monotonicity and unfolding lemmas before return/bind proofs
-or triples. Use the deterministic file for angelic/demonic collapse, the
-non-empty state-only file for hidden divergence, and the
+Read `WPureMonad.v`, then the source's outcome encoding and computation-owned
+raw laws. Read `stdivndNE` and its `getNE` adapter for the non-empty source.
+Use the observation's monotonicity and unfolding lemmas before return/bind
+proofs or triples. Use the deterministic file for angelic/demonic collapse,
+the non-empty state-only file for divergence absent from postconditions, and the
 [parent comparison layer](../CONTEXT.md) for the resulting taxonomy.

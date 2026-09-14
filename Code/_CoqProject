@@ -82,7 +82,6 @@ Taxonomy/EffectObservations/SP/RdDivNonDet_RdSPPure.v
 Taxonomy/ExampleProgramDefs.v
 Taxonomy/EffectObservations/SP/StDivExcNonDet_SPStExc.v
 Taxonomy/EffectObservations/SP/SPostArrObservation.v
-Taxonomy/EffectObservations/SP/RawStOpt_SPostArr.v
 Taxonomy/EffectObservations/SP/StDivITree_SPostArr.v
 Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.v

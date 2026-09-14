@@ -92,6 +92,132 @@ End StDivExcNonDet.
 Arguments pickP {S A}.
 
 (* ================================================================= *)
+(** ** Raw outcome laws                                                *)
+(* ================================================================= *)
+
+(** The laws below expose the operational semantics of the operations
+    directly on raw outcomes, [unOptionT (unOptionT (runStateT m s)) r],
+    with no accessor indirection.  They are stated as constructive
+    pointwise iff (no extensionality needed) and are the single owned
+    copy: clients should reuse them instead of unfolding the
+    implementation again. *)
+
+(** The everywhere-blocking computation: its outcome set is EMPTY — it
+    neither converges, nor raises, nor diverges.  Blocking is an empty
+    outcome set, distinct from the divergence token [None].  Defined
+    only to state the checked examples below; not an operation of the
+    model. *)
+Local Definition blockP (S : Type) {A} : stdivexcnd S A :=
+  mkStateT (fun _ =>
+    @mkOptionT (optionT SetM) _ (
+      @mkOptionT SetM _ (fun _ => False))).
+
+Section OutcomeLaws.
+
+  Variable S : Type.
+
+  Lemma outcomes_ret {A} (a : A) (s : S) (r : option (option (A * S))) :
+    unOptionT (unOptionT (runStateT (retP S a) s)) r <-> r = Some (Some (a, s)).
+  Proof. cbn. split; intro H; congruence. Qed.
+
+  Lemma outcomes_bind {A B} (m : stdivexcnd S A) (k : A -> stdivexcnd S B)
+      (s : S) (r : option (option (B * S))) :
+    unOptionT (unOptionT (runStateT (bindP S m k) s)) r <->
+    (exists oy, unOptionT (unOptionT (runStateT m s)) oy /\
+       match oy with
+       | Some (Some (a, s')) => unOptionT (unOptionT (runStateT (k a) s')) r
+       | Some None => r = Some None
+       | None => r = None
+       end).
+  Proof.
+    cbn. split; intros [oy [H1 H2]]; exists oy; split; [exact H1 | | exact H1 |];
+      destruct oy as [[[a s']|]|]; cbn in *; exact H2.
+  Qed.
+
+  Lemma outcomes_get (s : S) (r : option (option (S * S))) :
+    unOptionT (unOptionT (runStateT (getP S) s)) r <-> r = Some (Some (s, s)).
+  Proof. cbn. split; intro H; congruence. Qed.
+
+  Lemma outcomes_put (t : S) (s : S) (r : option (option (unit * S))) :
+    unOptionT (unOptionT (runStateT (putP S t) s)) r <-> r = Some (Some (tt, t)).
+  Proof. cbn. split; intro H; congruence. Qed.
+
+  (** An exception is the outcome [Some None]: the inner option fails,
+      the outer one still terminates. *)
+  Lemma outcomes_raise {A} (s : S) (r : option (option (A * S))) :
+    unOptionT (unOptionT (runStateT (raiseP S tt) s)) r <-> r = Some None.
+  Proof.
+    cbn. split.
+    - intros [a [Ha Hr]]. destruct a as [[x|]|]; congruence.
+    - intros ->. exists (Some None). split; reflexivity.
+  Qed.
+
+  Lemma outcomes_pickP {A} (s : S) (r : option (option (A * S))) :
+    unOptionT (unOptionT (runStateT (pickP (S := S)) s)) r
+    <-> exists a, r = Some (Some (a, s)).
+  Proof.
+    cbn. split.
+    - intros [a H]. exists a. congruence.
+    - intros [a H]. exists a. congruence.
+  Qed.
+
+  (** Divergence is the outcome [None]: the outer option fails. *)
+  Lemma outcomes_spin {A} (s : S) (r : option (option (A * S))) :
+    unOptionT (unOptionT (runStateT (spinP S) s)) r <-> r = None.
+  Proof. cbn. split; intro H; congruence. Qed.
+
+  (** ** Checked examples
+
+      An empty PREFIX blocks; yet an empty CONTINUATION is not a right
+      annihilator, because both failure tokens are absorbing under
+      [bind] rather than erasing it.  The proofs go through the raw
+      laws above, not by unfolding the implementation again. *)
+
+  Lemma blockP_outcomes {A} (s : S) (r : option (option (A * S))) :
+    ~ unOptionT (unOptionT (runStateT (blockP S) s)) r.
+  Proof. intro H. cbn in H. exact H. Qed.
+
+  (** An empty prefix blocks the whole computation, whatever the
+      continuation: no intermediate outcome exists to continue from. *)
+  Example blockP_bind_blocks {A B} (k : A -> stdivexcnd S B)
+      (s : S) (r : option (option (B * S))) :
+    ~ unOptionT (unOptionT (runStateT (bindP S (blockP S) k) s)) r.
+  Proof.
+    intro H. apply outcomes_bind in H. destruct H as [oa [Hblk _]].
+    exact (blockP_outcomes s oa Hblk).
+  Qed.
+
+  (** The raised exception survives an empty continuation. *)
+  Example raiseP_bind_empty {A B} (s : S) :
+    unOptionT (unOptionT (runStateT
+      (bindP S (raiseP S tt) (fun _ : A => blockP S (A := B))) s)) (Some None).
+  Proof.
+    apply outcomes_bind. exists (Some None). split.
+    - apply outcomes_raise. reflexivity.
+    - reflexivity.
+  Qed.
+
+  (** ...and so does divergence. *)
+  Example spinP_bind_empty {A B} (s : S) :
+    unOptionT (unOptionT (runStateT
+      (bindP S (spinP S) (fun _ : A => blockP S (A := B))) s)) None.
+  Proof.
+    apply outcomes_bind. exists None. split.
+    - apply outcomes_spin. reflexivity.
+    - reflexivity.
+  Qed.
+
+  (** [pickP] over an empty choice type blocks: there is no [a] to
+      pick, so the outcome set is empty. *)
+  Example pickP_Empty_set_blocks (s : S) (r : option (option (Empty_set * S))) :
+    ~ unOptionT (unOptionT (runStateT (pickP (S := S) (A := Empty_set)) s)) r.
+  Proof.
+    intro H. apply outcomes_pickP in H. destruct H as [a _]. destruct a.
+  Qed.
+
+End OutcomeLaws.
+
+(* ================================================================= *)
 (** ** Interpretation from fully uninterpreted itree                  *)
 (* ================================================================= *)
 

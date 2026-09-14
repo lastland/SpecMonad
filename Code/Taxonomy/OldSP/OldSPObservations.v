@@ -774,7 +774,7 @@ Section MonadMorphismLawsSP.
   (exists a s', obsRel x sigma (Some (a, s')) /\ obsRel (f a) s' r)
   \/ (obsRel x sigma None /\ r = None).
   Proof.
-  unfold obsRel. destruct r as [[b s'']|]; rewrite outcomes_bind; split.
+  unfold obsRel. destruct r as [[b s'']|]; setoid_rewrite (StDivExcNonDet.outcomes_bind S); split.
   - intros [oy [Hx Hk]]. destruct oy as [[[a s']|]|].
     + left. exists a, s'. split; [exact Hx | exact Hk].
     + cbn in Hk; discriminate Hk.

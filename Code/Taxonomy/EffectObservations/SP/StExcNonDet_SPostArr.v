@@ -5,10 +5,12 @@
     observations [obsASP]/[obsDSLP] read the outcome payload
     [unOptionT (runStateT m s)] into the arrow-derived specification monads of
     [SPostArrMonad] — the exception is an ordinary outcome, visible to both
-    readings — and both are monad morphisms; the raw outcome normalization is
-    shared with [StDivNonDet_SPostArr] in [RawStOpt_SPostArr], which applies
-    to this module's [retP]/[bindP] definitionally.  Examples use the shared
-    triple judgments of [SPostArrObservation]. *)
+    readings — and both are monad morphisms; the raw outcome laws are the
+    computation-owned [StExcNonDet.outcomes_ret]/[outcomes_bind] (plus the
+    primitive laws [outcomes_get]/[outcomes_put]/[outcomes_raise]), which
+    apply to this module's [retP]/[bindP]/[getP]/[putP]/[raiseP]
+    definitionally.  Examples use the shared triple judgments of
+    [SPostArrObservation]. *)
 
 From Coq Require Import PeanoNat.
 From Coq Require Import Morphisms_Prop.
@@ -17,7 +19,6 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
-From Incorrectness.Taxonomy.EffectObservations.SP Require Import RawStOpt_SPostArr.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
@@ -31,9 +32,10 @@ Open Scope monad_scope.
 Section Obs.
   Variable S : Type.
 
-  (** The raw outcome lemmas live in [RawStOpt_SPostArr]: [stexcnd S] IS
-      [stateT S (optionT SetM)] and [StExcNonDet] resolves to the
-      dictionaries stated there, so they apply to [retP]/[bindP] by
+  (** The raw outcome lemmas are owned by the computation module
+      [StExcNonDet]: [stexcnd S] IS [stateT S (optionT SetM)] and
+      [StExcNonDet] resolves to the dictionaries stated there, so they
+      apply to [retP]/[bindP] (and [getP]/[putP]/[raiseP]) by
       definitional conversion. *)
 
   Definition obsASP {A} (m : stexcnd S A) : ASPostArr S A :=
@@ -71,7 +73,7 @@ Section Obs.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
     rewrite ASP_rel_ret, ASP_rel_obsASP,
-      (RawStOpt_SPostArr.outcomes_ret S a s r).
+      (StExcNonDet.outcomes_ret S a s r).
     split; intro H; symmetry; exact H.
   Qed.
 
@@ -81,7 +83,7 @@ Section Obs.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
     rewrite ASP_rel_bind, ASP_rel_obsASP,
-      (RawStOpt_SPostArr.outcomes_bind S m k s r).
+      (StExcNonDet.outcomes_bind S m k s r).
     apply ex_iff_morphism. intros [[a t]|];
       rewrite !ASP_rel_obsASP; reflexivity.
   Qed.
@@ -135,7 +137,17 @@ Example raiser : stexcnd nat unit :=
 Lemma raiser_outcomes (s : nat) r :
   unOptionT (runStateT raiser s) r <-> r = None.
 Proof.
-  unfold raiser. cbn. split; sauto limit: 200.
+  unfold raiser.
+  rewrite (StExcNonDet.outcomes_bind nat (putP nat 43)
+             (fun _ => raiseP nat tt) s r).
+  split.
+  - intros [oa [Hput Hraise]].
+    apply (proj1 (StExcNonDet.outcomes_put nat 43 s oa)) in Hput.
+    subst oa. exact (proj1 (StExcNonDet.outcomes_raise nat 43 r) Hraise).
+  - intros Hr. exists (Some (tt, 43)). split.
+    + exact (proj2 (StExcNonDet.outcomes_put nat 43 s (Some (tt, 43)))
+              eq_refl).
+    + exact (proj2 (StExcNonDet.outcomes_raise nat 43 r) Hr).
 Qed.
 
 (** Angelic: the exception is reachable, so it appears in the ASP reading. *)
@@ -248,26 +260,20 @@ Qed.
 Definition getEven : stexcnd nat bool :=
   bindP nat (getP nat) (fun s => retP nat (Nat.even s)).
 
-Lemma getP_outcomes (s : nat) (r : option (nat * nat)) :
-  unOptionT (runStateT (getP nat) s) r <-> r = Some (s, s).
-Proof. unfold getP. cbn. split; intro H; congruence. Qed.
-
 Lemma getEven_outcomes (s : nat) (r : option (bool * nat)) :
   unOptionT (runStateT getEven s) r <-> r = Some (Nat.even s, s).
 Proof.
   unfold getEven.
-  rewrite (RawStOpt_SPostArr.outcomes_bind nat (getP nat)
+  rewrite (StExcNonDet.outcomes_bind nat (getP nat)
              (fun s => retP nat (Nat.even s)) s r).
   split.
   - intros [oa [Hget Hrest]].
-    apply (proj1 (getP_outcomes s oa)) in Hget. subst oa.
-    apply (proj1 (RawStOpt_SPostArr.outcomes_ret nat (Nat.even s) s r)).
-    exact Hrest.
+    apply (proj1 (StExcNonDet.outcomes_get nat s oa)) in Hget. subst oa.
+    exact (proj1 (StExcNonDet.outcomes_ret nat (Nat.even s) s r) Hrest).
   - intros ->. exists (Some (s, s)). split.
-    + apply (proj2 (getP_outcomes s (Some (s, s)))). reflexivity.
-    + apply (proj2 (RawStOpt_SPostArr.outcomes_ret nat (Nat.even s) s
-                      (Some (Nat.even s, s)))).
-      reflexivity.
+    + exact (proj2 (StExcNonDet.outcomes_get nat s (Some (s, s))) eq_refl).
+    + exact (proj2 (StExcNonDet.outcomes_ret nat (Nat.even s) s
+                      (Some (Nat.even s, s))) eq_refl).
 Qed.
 
 Example getEven_under :

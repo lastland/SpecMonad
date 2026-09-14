@@ -1,6 +1,6 @@
 From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import NewGaloisConnections.
 Require Import Coq.Logic.Classical_Prop.
@@ -35,27 +35,12 @@ Module FullOutcomeObs.
 Section NDObservations.
   Variable S : Type.
 
-  (** The outcome set of a bind, one step.  Two cases rather than [stdivexcnd]'s
-      three: normal return, and divergence — which is absorbing, exactly the
-      propagation rule divergence needs. *)
-  Lemma outcomes_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) s ob :
-    unOptionT (runStateT (x >>= f) s) ob <->
-    (exists oy, unOptionT (runStateT x s) oy /\
-       match oy with
-       | Some (a, s') => unOptionT (runStateT (f a) s') ob
-       | None => ob = None
-       end).
-  Proof.
-    cbn. split.
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-  Qed.
-
-  Lemma outcomes_ret {A} (a : A) (s : S) (r : option (A * S)) :
-    unOptionT (runStateT (ret a : stdivnd S A) s) r <-> r = Some (a, s).
-  Proof. cbn. split; intro H; congruence. Qed.
+  (** The raw outcome laws are owned by the computation module
+      [StExcNonDet]: [stdivnd S] IS [stateT S (optionT SetM)] with the same
+      dictionaries, so [StExcNonDet.outcomes_ret] and
+      [StExcNonDet.outcomes_bind] — with [None] read here as the absorbing
+      divergence token rather than an exception — apply to this module's
+      [ret]/[>>=] by definitional conversion. *)
 
   (* ================================================================== *)
   (** ** The four observations                                          *)
@@ -122,32 +107,36 @@ Section NDObservations.
   Proof.
     unfold eq1, Eq1__ASPStExc. intros pre r. split.
     - intros [s [Hp Hr]]. exists s.
-      split; [ exact Hp | exact (proj1 (outcomes_ret a s r) Hr) ].
+      split; [ exact Hp | exact (proj1 (StExcNonDet.outcomes_ret S a s r) Hr) ].
     - intros [s [Hp Heq]]. exists s.
-      split; [ exact Hp | exact (proj2 (outcomes_ret a s r) Heq) ].
+      split; [ exact Hp | exact (proj2 (StExcNonDet.outcomes_ret S a s r) Heq) ].
   Qed.
 
   Theorem obsASP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
     eq1 (obsASP (x >>= f)) (obsASP x >>= (fun a => obsASP (f a))).
   Proof.
     unfold eq1, Eq1__ASPStExc. intros pre r. split.
-    - intros [s [Hp Hrel]]. apply outcomes_bind in Hrel.
+    - intros [s [Hp Hrel]].
+      apply (StExcNonDet.outcomes_bind S x f s r) in Hrel.
       destruct Hrel as [oy [Hx Hk]]. destruct oy as [[a s']|].
       + left. exists a, s'. split; [| exact Hk ].
         exists s. split; [ exact Hp | exact Hx ].
       + right. split; [ exact Hk |]. exists s. split; [ exact Hp | exact Hx ].
     - intros [[a [s' [[s [Hp Hx]] Hf]]] | [Hr [s [Hp Hx]]]].
-      + exists s. split; [ exact Hp |]. apply outcomes_bind.
+      + exists s. split; [ exact Hp |].
+        apply (StExcNonDet.outcomes_bind S x f s r).
         exists (Some (a, s')). split; [ exact Hx | exact Hf ].
-      + exists s. split; [ exact Hp |]. apply outcomes_bind.
+      + exists s. split; [ exact Hp |].
+        apply (StExcNonDet.outcomes_bind S x f s r).
         exists None. split; [ exact Hx | exact Hr ].
   Qed.
 
   Theorem obsDSLP_ret {A} (a : A) : eq1 (obsDSLP (ret a : stdivnd S A)) (ret a).
   Proof.
     unfold eq1, Eq1__DSLPStExc. intros pre r. split.
-    - intros H s0 Heq. exact (H s0 (proj2 (outcomes_ret a s0 r) Heq)).
-    - intros H s Hr. exact (H s (proj1 (outcomes_ret a s r) Hr)).
+    - intros H s0 Heq.
+      exact (H s0 (proj2 (StExcNonDet.outcomes_ret S a s0 r) Heq)).
+    - intros H s Hr. exact (H s (proj1 (StExcNonDet.outcomes_ret S a s r) Hr)).
   Qed.
 
   Theorem obsDSLP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
@@ -155,11 +144,14 @@ Section NDObservations.
   Proof.
     unfold eq1, Eq1__DSLPStExc. intros pre r. split.
     - intro H. split.
-      + intros a s' Hf s Hx. apply H. apply outcomes_bind.
+      + intros a s' Hf s Hx. apply H.
+        apply (StExcNonDet.outcomes_bind S x f s r).
         exists (Some (a, s')). split; [ exact Hx | exact Hf ].
-      + intros Hr s Hx. apply H. apply outcomes_bind.
+      + intros Hr s Hx. apply H.
+        apply (StExcNonDet.outcomes_bind S x f s r).
         exists None. split; [ exact Hx | exact Hr ].
-    - intros [H1 H2] s Hrel. apply outcomes_bind in Hrel.
+    - intros [H1 H2] s Hrel.
+      apply (StExcNonDet.outcomes_bind S x f s r) in Hrel.
       destruct Hrel as [oy [Hx Hk]]. destruct oy as [[a s']|].
       + exact (H1 a s' Hk s Hx).
       + exact (H2 Hk s Hx).
@@ -171,7 +163,7 @@ Section NDObservations.
     apply (dsp_cong S
              (fun s r0 => unOptionT (runStateT (ret a : stdivnd S A) s) r0)
              (fun s r0 => r0 = Some (a, s))).
-    intros s r0. exact (outcomes_ret a s r0).
+    intros s r0. exact (StExcNonDet.outcomes_ret S a s r0).
   Qed.
 
   Theorem obsDSP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
@@ -179,7 +171,7 @@ Section NDObservations.
   Proof.
     unfold eq1, Eq1__DSPStExc. intros pre r.
     rewrite (bindDSPProg_dsp S (obsDSP x) (fun a => obsDSP (f a))).
-    refine (iff_trans (dsp_cong S _ _ (outcomes_bind x f) pre r) _).
+    refine (iff_trans (dsp_cong S _ _ (StExcNonDet.outcomes_bind S x f) pre r) _).
     exact (iff_sym (dsp_cong S _ _
                       (dsp_comp_recov_option S A B
                          (fun (s : S) (o : option (A * S)) =>
@@ -194,7 +186,7 @@ Section NDObservations.
     apply (aslp_cong S
              (fun s r0 => unOptionT (runStateT (ret a : stdivnd S A) s) r0)
              (fun s r0 => r0 = Some (a, s))).
-    intros s r0. exact (outcomes_ret a s r0).
+    intros s r0. exact (StExcNonDet.outcomes_ret S a s r0).
   Qed.
 
   Theorem obsASLP_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) :
@@ -202,7 +194,7 @@ Section NDObservations.
   Proof.
     unfold eq1, Eq1__ASLPStExc. intros pre r.
     rewrite (bindASLPProg_aslp S (obsASLP x) (fun a => obsASLP (f a))).
-    refine (iff_trans (aslp_cong S _ _ (outcomes_bind x f) pre r) _).
+    refine (iff_trans (aslp_cong S _ _ (StExcNonDet.outcomes_bind S x f) pre r) _).
     exact (iff_sym (aslp_cong S _ _
                       (aslp_comp_recov_option S A B
                          (fun (s : S) (o : option (A * S)) =>

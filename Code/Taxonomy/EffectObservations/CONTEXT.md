@@ -16,9 +16,10 @@ the taxonomy of triples.
 - An **observation** chooses a reading of a computation's outcomes in a
   target specification carrier. File names identify the source and target;
   see [`StDivNonDet_SPStExc.v`](SP/StDivNonDet_SPStExc.v).
-- `outcomes_ret` and `outcomes_bind` expose concrete operational semantics.
-  The `obs*_ret` / `obs*_bind` theorems establish preservation of the chosen
-  specification operations, using those outcome laws or shared normalization.
+- Computation-owned `outcomes_ret` and `outcomes_bind` expose raw operational
+  semantics. The `obs*_ret` / `obs*_bind` theorems establish preservation of
+  the chosen specification operations, using those laws or derived adapters
+  together with specification-side normalization.
 - A **terminating slice** keeps returning outcomes and projects away
   divergence. It includes exceptions when the retained outcome is an option;
   see [`StDivExcNonDet_SPStExc.v`](SP/StDivExcNonDet_SPStExc.v).
@@ -31,9 +32,11 @@ the taxonomy of triples.
   and [base-monad](../BaseSpecMonads/CONTEXT.md) or [arrow](../Arrows/CONTEXT.md)
   target. The specification side has no concrete computation dependency;
   [TransformerLaws](../ComputationMonads/TransformerLaws.v) remains generic.
-- Shared helpers are explicit: [arrow judgments](SP/SPostArrObservation.v)
-  operate on observed specifications, [raw single-option laws](SP/RawStOpt_SPostArr.v)
-  handle concrete outcomes, and the reader observation reuses the pure one.
+- The [raw outcome-law interface](../ComputationMonads/CONTEXT.md#raw-outcome-law-interface)
+  belongs to computation modules. SP slice facts and non-empty WP statements
+  derive from it; they do not supply independent raw normalization proofs.
+- [Shared arrow judgments](SP/SPostArrObservation.v) operate on observed
+  specifications. The reader observation reuses the pure observation.
 - [Taxonomy_StDivExcNonDet_StExc.v](Taxonomy_StDivExcNonDet_StExc.v) combines
   WP/SP comparisons. Its `dwlp_slice`, `awp_slice`, `dwlp_asp`, and `awp_dslp`
   relate WP and SP triples through the same terminating relation.
@@ -59,7 +62,8 @@ the taxonomy of triples.
 
 ## Reading order
 
-Choose [SP](SP/CONTEXT.md) or [WP](WP/CONTEXT.md), inspect the observation's
-source outcomes and target carrier, then read its laws and triples. Follow the
-matching root taxonomy module for inclusions, contrapositive pairs, and
-cross-reading examples; the [README](../README.md#5-observations) has the full matrix.
+Read the source computation's outcome encoding and raw laws, then choose an
+[SP](SP/CONTEXT.md) or [WP](WP/CONTEXT.md) target. Inspect any slice or non-empty
+adapter before the observation's preservation laws and triples. Follow the
+matching root taxonomy module for comparisons and cross-reading examples;
+the [README](../README.md#5-observations) has the full matrix.

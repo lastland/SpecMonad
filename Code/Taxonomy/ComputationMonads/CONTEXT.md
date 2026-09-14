@@ -5,8 +5,8 @@ Details: [README, computation monads](../README.md#2-computation-monads).
 
 ## Purpose and scope
 
-These modules define computations, their effect operations, and monad laws.
-They supply the concrete semantics consumed by
+These modules define computations, effect operations, monad laws, and raw
+outcome laws. They supply the concrete semantics consumed by
 [effect observations](../EffectObservations/CONTEXT.md).
 
 ## Established terms and definitions
@@ -29,6 +29,23 @@ They supply the concrete semantics consumed by
 - [`nonEmptyOutcomes` / `stdivndNE`](StDivNonDet.v) require an outcome at
   every initial state. The pure and reader modules have corresponding fragments.
 
+## Raw outcome-law interface
+
+The stateful nondeterministic modules own the following full-outcome laws.
+Each is a constructive pointwise `<->` statement at an initial state and raw
+outcome, rather than an equality of computations.
+
+| Module | Laws | Scope |
+|---|---|---|
+| [StExcNonDet.v](StExcNonDet.v) | `outcomes_ret`, `outcomes_bind`, `outcomes_get`, `outcomes_put`, `outcomes_raise` | Shared single-option return/bind; state and exception primitives |
+| [StDivNonDet.v](StDivNonDet.v) | `outcomes_diverge` | `divergeD` has exactly the outcome `None` |
+| [StDivExcNonDet.v](StDivExcNonDet.v) | `outcomes_ret`, `outcomes_bind`, `outcomes_get`, `outcomes_put`, `outcomes_raise`, `outcomes_pickP`, `outcomes_spin` | Double-option return/bind and primitives |
+
+`StExcNonDet.outcomes_ret` / `outcomes_bind` name the shared raw dictionaries
+of `stateT S (optionT SetM)`. The single-option `retP` / `bindP` and
+`retD` / `bindD` convert to these operations definitionally. Clients reuse
+these laws without choosing the same reading of `None`.
+
 ## Dependency boundaries
 
 - Concrete stacks reuse ExtLib transformers and ITree laws. `StExcNonDet.v`
@@ -39,8 +56,9 @@ They supply the concrete semantics consumed by
   can import it without depending on a concrete computation.
 - Observation-specific readings and triples belong in
   [SP](../EffectObservations/SP/CONTEXT.md) or [WP](../EffectObservations/WP/CONTEXT.md).
-  Raw outcome lemmas can also live here: `DivNonDet.outcomes_bind` is reused
-  downstream without choosing an SP or WP reading.
+  Their slice and non-empty-carrier adapters derive from computation-owned
+  laws instead of repeating raw stack normalization. The state-free
+  [DivNonDet.outcomes_bind](DivNonDet.v) follows the same ownership pattern.
 
 ## Semantic traps
 
@@ -49,15 +67,34 @@ They supply the concrete semantics consumed by
   names when several computation modules are imported.
 - An empty outcome set is blocking: it is neither a return nor the explicit
   divergence token. `stdivndNE` excludes it; it does not require termination.
+- Bind runs the continuation only after a normal return and propagates failure
+  tokens unchanged. An empty prefix therefore blocks, but an empty continuation
+  does not erase a preceding exception or divergence.
 - State-over-option failure has no final state in its outcome.
 - [`denote`](StDivExcNonDet.v) interprets `freeprog` using ITree handlers,
   `Leaf`, and `any_infinite`. ITree's state handler returns `(state, result)`;
   the ExtLib stack stores `(result, state)`, so the definition swaps them.
 
+## Semantic regressions
+
+The examples beside the computation laws check the raw semantics:
+
+- [StExcNonDet.v](StExcNonDet.v): `empty_prefix_blocks` and `raise_survives_empty`.
+- [StDivNonDet.v](StDivNonDet.v): `diverge_survives_empty`.
+- [StDivExcNonDet.v](StDivExcNonDet.v): `blockP_bind_blocks`, `raiseP_bind_empty`,
+  `spinP_bind_empty`, and `pickP_Empty_set_blocks`.
+
+The empty computations are local example definitions, not new model operations.
+At the [double-option arrow observation](../EffectObservations/SP/StDivExcNonDet_SPostArr.v),
+`raiseP_obs_retained` and `spinP_obs_invisible` separately check that the
+terminating slice retains exceptions but omits divergence.
+
 ## Reading order
 
-Start with `SetM` and the single-option semantics, then the double-option or
-ITree model needed by the client. Read non-empty fragments before the
+Start with `SetM` and the single-option raw laws in `StExcNonDet.v`, then the
+divergence, double-option, or ITree model needed by the client. Follow the raw
+laws into the observation's full-outcome reading or derived slice adapter.
+Read non-empty fragments before the
 [`WSt` observations](../EffectObservations/WP/StDivNonDet_WSt.v).
 Read `TransformerLaws.v` when following a law instance through a stack;
 use the [README](../README.md#2-computation-monads) for the complete effect table.
