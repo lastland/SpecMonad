@@ -256,38 +256,30 @@ End WPTriples.
 Section MonadMorphismLawsWP.
   Variable S : Type.
 
-  Lemma outcomes_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) sigma ob :
-  unOptionT (unOptionT (runStateT (x >>= f) sigma)) ob <->
-  (exists oy, unOptionT (unOptionT (runStateT x sigma)) oy /\
-    match oy with
-    | Some (Some (a, s')) => unOptionT (unOptionT (runStateT (f a) s')) ob
-    | Some None => ob = Some None
-    | None => ob = None
-    end).
-  Proof.
-  cbn. split.
-  - intros [oy [H1 H2]]. exists oy. split; [exact H1|]. destruct oy as [[[a s']|]|]; cbn in *; exact H2.
-  - intros [oy [H1 H2]]. exists oy. split; [exact H1|]. destruct oy as [[[a s']|]|]; cbn in *; exact H2.
-  Qed.
-  
-  Lemma obsDWP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
-    unOptionT (runStateT (obsDWP (ret a)) s0) post <->
-    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
-  Proof.
-    cbn. split.
-    - intro H. exact (H (Some (Some (a, s0))) eq_refl).
-    - intros H oa Hoa. subst oa. exact H.
-  Qed.
-
   Lemma obsDWP_unfold {A} (m : stdivexcnd S A) s post :
   unOptionT (runStateT (obsDWP m) s) post <->
   (forall oa, unOptionT (unOptionT (runStateT m s)) oa ->
               match oa with Some r => post r | None => False end).
   Proof. unfold obsDWP. cbn. destruct (runStateT m s) as [[outcomes]]. cbn. reflexivity. Qed.
 
+  (** [ret]: each observation of [ret a] agrees with the specification
+      return [WPureMonad.retP S a], via the computation-owned raw law
+      [StDivExcNonDet.outcomes_ret].  The state type is pinned
+      explicitly: [WPureMonad.retP]'s [S] is a leading explicit
+      argument. *)
+  Lemma obsDWP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
+    unOptionT (runStateT (obsDWP (ret a : stdivexcnd S A)) s0) post <->
+    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP S a) s0) post.
+  Proof.
+    rewrite (obsDWP_unfold (ret a : stdivexcnd S A) s0 post).
+    setoid_rewrite (StDivExcNonDet.outcomes_ret S a s0).
+    split; [ intro H; exact (H _ eq_refl) | intros H oa ->; exact H ].
+  Qed.
+
   (** WP bind adequacy: the Dijkstra [wp_bind] law (same shape for all four
     WP observations; shown for [obsDWP]).  The [None] branch threads [x]'s
-    exception through to [post None]. *)
+    exception through to [post None].  The outcome semantics is the
+    computation-owned [StDivExcNonDet.outcomes_bind]. *)
   Lemma obsDWP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) s post :
     unOptionT (runStateT (obsDWP (x >>= f)) s) post <->
     unOptionT (runStateT (obsDWP x) s)
@@ -297,7 +289,7 @@ Section MonadMorphismLawsWP.
                end).
   Proof.
   rewrite (obsDWP_unfold (x >>= f) s post). rewrite (obsDWP_unfold x s _).
-  setoid_rewrite outcomes_bind. split.
+  setoid_rewrite (StDivExcNonDet.outcomes_bind S). split.
   - intros HL oy Hoy. destruct oy as [[[a s']|]|].
     + cbn beta iota. rewrite obsDWP_unfold. intros ob Hob.
       apply HL. exists (Some (Some (a, s'))). split; [exact Hoy | exact Hob].
@@ -309,20 +301,20 @@ Section MonadMorphismLawsWP.
     + cbn in Hk. subst oa. destruct HR.
   Qed.
 
-  Lemma obsDWLP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
-    unOptionT (runStateT (obsDWLP (ret a)) s0) post <->
-    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
-  Proof.
-    cbn. split.
-    - intro H. exact (H (Some (Some (a, s0))) eq_refl).
-    - intros H oa Hoa. subst oa. exact H.
-  Qed.
-
   Lemma obsDWLP_unfold {A} (m : stdivexcnd S A) s post :
   unOptionT (runStateT (obsDWLP m) s) post <->
   (forall oa, unOptionT (unOptionT (runStateT m s)) oa ->
               match oa with Some r => post r | None => True end).
   Proof. unfold obsDWLP. cbn. destruct (runStateT m s) as [[outcomes]]. cbn. reflexivity. Qed.
+
+  Lemma obsDWLP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
+    unOptionT (runStateT (obsDWLP (ret a : stdivexcnd S A)) s0) post <->
+    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP S a) s0) post.
+  Proof.
+    rewrite (obsDWLP_unfold (ret a : stdivexcnd S A) s0 post).
+    setoid_rewrite (StDivExcNonDet.outcomes_ret S a s0).
+    split; [ intro H; exact (H _ eq_refl) | intros H oa ->; exact H ].
+  Qed.
 
   (** [wp_bind] for demonic-liberal WP. *)
   Lemma obsDWLP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) s post :
@@ -333,7 +325,7 @@ Section MonadMorphismLawsWP.
                | None => post None end).
   Proof.
   rewrite (obsDWLP_unfold (x >>= f) s post). rewrite (obsDWLP_unfold x s _).
-  setoid_rewrite outcomes_bind. split.
+  setoid_rewrite (StDivExcNonDet.outcomes_bind S). split.
   - intros HL oy Hoy. destruct oy as [[[a s']|]|].
     + cbn beta iota. rewrite obsDWLP_unfold. intros ob Hob.
       apply HL. exists (Some (Some (a, s'))). split; [exact Hoy | exact Hob].
@@ -345,19 +337,21 @@ Section MonadMorphismLawsWP.
     + cbn in Hk. subst oa. exact I.
   Qed.
 
-  Lemma obsAWP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
-    unOptionT (runStateT (obsAWP (ret a)) s0) post <->
-    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
-  Proof.
-    cbn. split.
-    - intros [r [Hr Hp]]. injection Hr as Hr. subst r. exact Hp.
-    - intro H. exists (Some (a, s0)). split; [ reflexivity | exact H ].
-  Qed.
-
   Lemma obsAWP_unfold {A} (m : stdivexcnd S A) s post :
   unOptionT (runStateT (obsAWP m) s) post <->
   (exists r, unOptionT (unOptionT (runStateT m s)) (Some r) /\ post r).
   Proof. unfold obsAWP. cbn. destruct (runStateT m s) as [[outcomes]]. cbn. reflexivity. Qed.
+
+  Lemma obsAWP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
+    unOptionT (runStateT (obsAWP (ret a : stdivexcnd S A)) s0) post <->
+    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP S a) s0) post.
+  Proof.
+    rewrite (obsAWP_unfold (ret a : stdivexcnd S A) s0 post).
+    setoid_rewrite (StDivExcNonDet.outcomes_ret S a s0).
+    split.
+    - intros [r [Heq Hpost]]. injection Heq as Heq. subst r. exact Hpost.
+    - intro H. exists (Some (a, s0)). split; [reflexivity | exact H].
+  Qed.
 
   (** [wp_bind] for angelic-total WP. *)
   Lemma obsAWP_bind {A B} (x : stdivexcnd S A) (f : A -> stdivexcnd S B) s post :
@@ -368,7 +362,7 @@ Section MonadMorphismLawsWP.
                | None => post None end).
   Proof.
   rewrite (obsAWP_unfold (x >>= f) s post). rewrite (obsAWP_unfold x s _). split.
-  - intros [r [Hr Hpost]]. apply outcomes_bind in Hr. destruct Hr as [oy [Hoy Hk]].
+  - intros [r [Hr Hpost]]. apply (StDivExcNonDet.outcomes_bind S) in Hr. destruct Hr as [oy [Hoy Hk]].
     destruct oy as [[[a s']|]|].
     + exists (Some (a, s')). split; [exact Hoy|].
       cbn beta iota. rewrite obsAWP_unfold. exists r. split; [exact Hk | exact Hpost].
@@ -376,20 +370,10 @@ Section MonadMorphismLawsWP.
     + cbn in Hk. discriminate Hk.
   - intros [rx [Hrx HQ]]. destruct rx as [[a s']|].
     + cbn beta iota in HQ. rewrite obsAWP_unfold in HQ. destruct HQ as [r [Hr Hpost]].
-      exists r. split; [|exact Hpost]. apply outcomes_bind.
+      exists r. split; [|exact Hpost]. apply (StDivExcNonDet.outcomes_bind S).
       exists (Some (Some (a, s'))). split; [exact Hrx | exact Hr].
-    + cbn beta iota in HQ. exists None. split; [|exact HQ]. apply outcomes_bind.
+    + cbn beta iota in HQ. exists None. split; [|exact HQ]. apply (StDivExcNonDet.outcomes_bind S).
       exists (Some None). split; [exact Hrx | reflexivity].
-  Qed.
-
-  Lemma obsAWLP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
-    unOptionT (runStateT (obsAWLP (ret a)) s0) post <->
-    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
-  Proof.
-    cbn. split.
-    - intros [[r [Hr Hp]] | Hd];
-        [ injection Hr as Hr; subst r; exact Hp | discriminate Hd ].
-    - intro H. left. exists (Some (a, s0)). split; [ reflexivity | exact H ].
   Qed.
 
   Lemma obsAWLP_unfold {A} (m : stdivexcnd S A) s post :
@@ -397,6 +381,19 @@ Section MonadMorphismLawsWP.
   ((exists r, unOptionT (unOptionT (runStateT m s)) (Some r) /\ post r)
    \/ unOptionT (unOptionT (runStateT m s)) None).
   Proof. unfold obsAWLP. cbn. destruct (runStateT m s) as [[outcomes]]. cbn. reflexivity. Qed.
+
+  Lemma obsAWLP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
+    unOptionT (runStateT (obsAWLP (ret a : stdivexcnd S A)) s0) post <->
+    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP S a) s0) post.
+  Proof.
+    rewrite (obsAWLP_unfold (ret a : stdivexcnd S A) s0 post).
+    setoid_rewrite (StDivExcNonDet.outcomes_ret S a s0).
+    split.
+    - intros [[r [Heq Hpost]] | Hdiv].
+      + injection Heq as Heq. subst r. exact Hpost.
+      + discriminate Hdiv.
+    - intro H. left. exists (Some (a, s0)). split; [reflexivity | exact H].
+  Qed.
   
   (** [wp_bind] for angelic-liberal WP (the divergence disjunct threads
     through both [x] diverging and [f] diverging after [x] converges). *)
@@ -409,12 +406,12 @@ Section MonadMorphismLawsWP.
   Proof.
   rewrite (obsAWLP_unfold (x >>= f) s post). rewrite (obsAWLP_unfold x s _). split.
   - intros [[r [Hr Hpost]] | Hdiv].
-    + apply outcomes_bind in Hr. destruct Hr as [oy [Hoy Hk]]. destruct oy as [[[a s']|]|].
+    + apply (StDivExcNonDet.outcomes_bind S) in Hr. destruct Hr as [oy [Hoy Hk]]. destruct oy as [[[a s']|]|].
       * left. exists (Some (a, s')). split; [exact Hoy|].
         cbn beta iota. rewrite obsAWLP_unfold. left. exists r. split; [exact Hk | exact Hpost].
       * cbn in Hk. injection Hk as Hk. subst r. left. exists None. split; [exact Hoy|]. cbn beta iota. exact Hpost.
       * cbn in Hk. discriminate Hk.
-    + apply outcomes_bind in Hdiv. destruct Hdiv as [oy [Hoy Hk]]. destruct oy as [[[a s']|]|].
+    + apply (StDivExcNonDet.outcomes_bind S) in Hdiv. destruct Hdiv as [oy [Hoy Hk]]. destruct oy as [[[a s']|]|].
       * left. exists (Some (a, s')). split; [exact Hoy|].
         cbn beta iota. rewrite obsAWLP_unfold. right. exact Hk.
       * cbn in Hk. discriminate Hk.
@@ -422,12 +419,12 @@ Section MonadMorphismLawsWP.
   - intros [[rx [Hrx HQ]] | Hdivx].
     + destruct rx as [[a s']|].
       * cbn beta iota in HQ. rewrite obsAWLP_unfold in HQ. destruct HQ as [[r [Hr Hpost]] | Hdivf].
-        -- left. exists r. split; [|exact Hpost]. apply outcomes_bind.
+        -- left. exists r. split; [|exact Hpost]. apply (StDivExcNonDet.outcomes_bind S).
            exists (Some (Some (a, s'))). split; [exact Hrx | exact Hr].
-        -- right. apply outcomes_bind. exists (Some (Some (a, s'))). split; [exact Hrx | exact Hdivf].
-      * cbn beta iota in HQ. left. exists None. split; [|exact HQ]. apply outcomes_bind.
+        -- right. apply (StDivExcNonDet.outcomes_bind S). exists (Some (Some (a, s'))). split; [exact Hrx | exact Hdivf].
+      * cbn beta iota in HQ. left. exists None. split; [|exact HQ]. apply (StDivExcNonDet.outcomes_bind S).
         exists (Some None). split; [exact Hrx | reflexivity].
-    + right. apply outcomes_bind. exists None. split; [exact Hdivx | reflexivity].
+    + right. apply (StDivExcNonDet.outcomes_bind S). exists None. split; [exact Hdivx | reflexivity].
   Qed.
 End MonadMorphismLawsWP.
 

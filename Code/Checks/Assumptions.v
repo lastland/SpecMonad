@@ -5,6 +5,35 @@ From Incorrectness.Taxonomy.EffectObservations.SP Require Import
   StExcNonDet_SPostArr StDivNonDet_SPostArr
   StDivITree_SPostArr StDivExcNonDet_SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPBindOrderCounterexample.
+From Incorrectness.Taxonomy.ComputationMonads Require Import
+  StExcNonDet StDivNonDet StDivExcNonDet.
+From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
+
+(** Computation-owned raw outcome laws use pointwise equivalence and are
+    closed under the global context. *)
+Print Assumptions StExcNonDet.outcomes_ret.
+Print Assumptions StExcNonDet.outcomes_bind.
+Print Assumptions StExcNonDet.outcomes_get.
+Print Assumptions StExcNonDet.outcomes_put.
+Print Assumptions StExcNonDet.outcomes_raise.
+Print Assumptions StDivNonDet.outcomes_diverge.
+Print Assumptions StDivExcNonDet.outcomes_ret.
+Print Assumptions StDivExcNonDet.outcomes_bind.
+Print Assumptions StDivExcNonDet.outcomes_get.
+Print Assumptions StDivExcNonDet.outcomes_put.
+Print Assumptions StDivExcNonDet.outcomes_raise.
+Print Assumptions StDivExcNonDet.outcomes_pickP.
+Print Assumptions StDivExcNonDet.outcomes_spin.
+
+(** WP return laws support independent state and result types. *)
+Check (StDivExcNonDet_WStExc.obsDWP_ret bool (0 : nat)).
+Check (StDivExcNonDet_WStExc.obsDWLP_ret bool (0 : nat)).
+Check (StDivExcNonDet_WStExc.obsAWP_ret bool (0 : nat)).
+Check (StDivExcNonDet_WStExc.obsAWLP_ret bool (0 : nat)).
+Print Assumptions StDivExcNonDet_WStExc.obsDWP_ret.
+Print Assumptions StDivExcNonDet_WStExc.obsDWLP_ret.
+Print Assumptions StDivExcNonDet_WStExc.obsAWP_ret.
+Print Assumptions StDivExcNonDet_WStExc.obsAWLP_ret.
 
 (** Shared structural equations: each uses only its explicit relational
     hypotheses, including faithfulness, with no global axioms. *)

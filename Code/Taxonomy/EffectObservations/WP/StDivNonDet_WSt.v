@@ -331,6 +331,11 @@ Section NDMonadMorphismLawsWP.
 
   Variable S : Type.
 
+  (** This statement specializes the shared raw law to the non-empty
+      source carrier: [getNE (x >>= f)] is definitionally
+      [bindD (getNE x) (fun a => getNE (f a))], so
+      [StExcNonDet.outcomes_bind] — with [None] read as divergence —
+      applies verbatim through [getNE]. *)
   Lemma outcomes_bind {A B} (x : stdivndNE S A) (f : A -> stdivndNE S B) s ob :
     unOptionT (runStateT (getNE (x >>= f)) s) ob <->
     (exists oy, unOptionT (runStateT (getNE x) s) oy /\
@@ -339,47 +344,48 @@ Section NDMonadMorphismLawsWP.
        | None => ob = None
        end).
   Proof.
-    cbn. split.
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
+    exact (StExcNonDet.outcomes_bind S (getNE x) (fun a => getNE (f a)) s ob).
   Qed.
 
-  (** [ret]: every observation of [ret a] is [post] at [(a, s)]. *)
+  (** [ret]: every observation of [ret a] is [post] at [(a, s)].  The
+      outcome semantics is the computation-owned raw law
+      [StExcNonDet.outcomes_ret] — [None] read as divergence — consumed
+      through [getNE] by the unfolding lemmas above. *)
 
   Lemma obsDWP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsDWP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intro H. exact (H (Some (a, s)) eq_refl).
-    - intros Hp oa Heq. assert (E : oa = Some (a, s)) by congruence.
-      rewrite E. exact Hp.
+    rewrite (obsDWP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split; [ intro H; exact (H _ eq_refl) | intros Hp oa ->; exact Hp ].
   Qed.
 
   Lemma obsDWLP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsDWLP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intro H. exact (H (Some (a, s)) eq_refl).
-    - intros Hp oa Heq. assert (E : oa = Some (a, s)) by congruence.
-      rewrite E. exact Hp.
+    rewrite (obsDWLP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split; [ intro H; exact (H _ eq_refl) | intros Hp oa ->; exact Hp ].
   Qed.
 
   Lemma obsAWP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsAWP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intros [r [Hr Hp]]. assert (E : r = (a, s)) by congruence. subst r. exact Hp.
+    rewrite (obsAWP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split.
+    - intros [r [Heq Hp]]. injection Heq as Heq. subst r. exact Hp.
     - intro Hp. exists (a, s). split; [ reflexivity | exact Hp ].
   Qed.
 
   Lemma obsAWLP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsAWLP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intros [[r [Hr Hp]] | Hdiv].
-      + assert (E : r = (a, s)) by congruence. subst r. exact Hp.
+    rewrite (obsAWLP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split.
+    - intros [[r [Heq Hp]] | Hdiv].
+      + injection Heq as Heq. subst r. exact Hp.
       + discriminate Hdiv.
     - intro Hp. left. exists (a, s). split; [ reflexivity | exact Hp ].
   Qed.

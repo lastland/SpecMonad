@@ -6,10 +6,12 @@
     observations [obsASP]/[obsDSLP] read the FULL outcome payload
     [unOptionT (runStateT m s)] into the arrow-derived specification monads of
     [SPostArrMonad] — divergence is an ordinary outcome, visible to both
-    readings — and both are monad morphisms; the raw outcome normalization is
-    shared with [StExcNonDet_SPostArr] in [RawStOpt_SPostArr], which applies
-    to this module's [retD]/[bindD] definitionally.  Examples use the shared
-    triple judgments of [SPostArrObservation]. *)
+    readings — and both are monad morphisms; the raw outcome laws are the
+    computation-owned [StExcNonDet.outcomes_ret]/[outcomes_bind] (shared with
+    [StExcNonDet_SPostArr], since [stdivnd] uses the same raw dictionaries)
+    together with [StDivNonDet.outcomes_diverge], and they apply to this
+    module's [retD]/[bindD]/[divergeD] definitionally.  Examples use the
+    shared triple judgments of [SPostArrObservation]. *)
 
 From Coq Require Import Morphisms_Prop.
 From ExtLib Require Import StateMonad OptionMonad.
@@ -17,8 +19,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
-From Incorrectness.Taxonomy.EffectObservations.SP Require Import RawStOpt_SPostArr.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -30,10 +31,11 @@ Open Scope monad_scope.
 Section Obs.
   Variable S : Type.
 
-  (** The raw outcome lemmas live in [RawStOpt_SPostArr]: [stdivnd S] IS
-      [stateT S (optionT SetM)] and [StDivNonDet] resolves to the
-      dictionaries stated there, so they apply to [retD]/[bindD] by
-      definitional conversion. *)
+  (** The raw outcome lemmas are owned by the computation modules:
+      [StExcNonDet.outcomes_ret]/[outcomes_bind] state the shared
+      dictionaries of [stateT S (optionT SetM)], and [stdivnd S] IS that
+      carrier with [StDivNonDet] resolving to the same dictionaries, so
+      they apply to [retD]/[bindD] by definitional conversion. *)
 
   Definition obsASP {A} (m : stdivnd S A) : ASPostArr S A :=
     relASP (fun us r => unOptionT (runStateT m (snd us)) r).
@@ -70,7 +72,7 @@ Section Obs.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
     rewrite ASP_rel_ret, ASP_rel_obsASP,
-      (RawStOpt_SPostArr.outcomes_ret S a s r).
+      (StExcNonDet.outcomes_ret S a s r).
     split; intro H; symmetry; exact H.
   Qed.
 
@@ -80,7 +82,7 @@ Section Obs.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
     rewrite ASP_rel_bind, ASP_rel_obsASP,
-      (RawStOpt_SPostArr.outcomes_bind S m k s r).
+      (StExcNonDet.outcomes_bind S m k s r).
     apply ex_iff_morphism. intros [[a t]|];
       rewrite !ASP_rel_obsASP; reflexivity.
   Qed.
@@ -127,10 +129,8 @@ Arguments tripleDSL {S A} m kind pre post.
 (** ** Divergence is visible to both readings                         *)
 (* ================================================================= *)
 
-(** [divergeD] has exactly one outcome, [None], from every state. *)
-Lemma diverge_outcomes (s : nat) r :
-  unOptionT (runStateT (divergeD : stdivnd nat unit) s) r <-> r = None.
-Proof. unfold divergeD. cbn. reflexivity. Qed.
+(** [divergeD]'s only outcome is the divergence token [None], from every
+    state: [StDivNonDet.outcomes_diverge], used below. *)
 
 (** Angelic: some initial state diverges exactly when [pre] is inhabited
     and the outcome looked at is the divergence token. *)
@@ -141,12 +141,13 @@ Proof.
   intros pre r. rewrite getProgASP_obsASP. destruct r as [p|].
   - split.
     + intros [s [Hpre Hout]].
-      split; [exact (proj1 (diverge_outcomes s (Some p)) Hout) | exists s; exact Hpre].
+      split; [exact (proj1 (StDivNonDet.outcomes_diverge nat s (Some p)) Hout)
+              | exists s; exact Hpre].
     + intros [Hnone _]. discriminate Hnone.
   - split.
     + intros [s [Hpre Hout]]. split; [reflexivity | exists s; exact Hpre].
     + intros [_ [s Hpre]]. exists s. split; [exact Hpre |].
-      apply diverge_outcomes. reflexivity.
+      apply (StDivNonDet.outcomes_diverge nat s None). reflexivity.
 Qed.
 
 (** Demonic: every state may diverge, so the reading of [None] forces [pre]
@@ -158,10 +159,12 @@ Proof.
   intros pre r. rewrite getProgDSLP_obsDSLP. destruct r as [p|].
   - split.
     + intros _ Hnone. discriminate Hnone.
-    + intros H s Hout. apply (proj1 (diverge_outcomes s (Some p))) in Hout.
+    + intros H s Hout.
+      apply (proj1 (StDivNonDet.outcomes_diverge nat s (Some p))) in Hout.
       discriminate Hout.
   - split.
-    + intros H _ s. apply H. apply diverge_outcomes. reflexivity.
+    + intros H _ s. apply H.
+      apply (StDivNonDet.outcomes_diverge nat s None). reflexivity.
     + intros H s Hout. exact (H eq_refl s).
 Qed.
 

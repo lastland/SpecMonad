@@ -102,7 +102,6 @@ Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_WStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_SPStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivNonDet_SPSt.v
 Taxonomy/EffectObservations/SP/SPostArrObservation.v
-Taxonomy/EffectObservations/SP/RawStOpt_SPostArr.v
 Taxonomy/EffectObservations/SP/StDivITree_SPostArr.v
 Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.v

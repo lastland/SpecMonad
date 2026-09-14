@@ -56,7 +56,6 @@ Taxonomy/
                          StDivNonDet_SPSt, DivNonDet_SPPure,
                          RdDivNonDet_RdSPPure
                          SPostArrObservation         -- shared SP judgments
-                         RawStOpt_SPostArr           -- shared single-option outcome laws
                          StDivITree_SPostArr, StExcNonDet_SPostArr,
                          StDivNonDet_SPostArr, StDivExcNonDet_SPostArr
       (root)             Taxonomy_StDivExcNonDet_StExc,
@@ -124,6 +123,33 @@ ITree rather than to its option result.
 `TransformerLaws.v` lifts `Eq1`, equivalence, and monad laws through `optionT`,
 `stateT`, and `readerT`. Both computation and specification stacks reuse these
 instances; their hypotheses concern only the base monad's operations and laws.
+
+### Raw outcome laws
+
+**Computation modules own the raw outcome-law interface.** The stateful
+nondeterministic laws are constructive pointwise `<->` statements about full
+outcome sets at an initial state and raw outcome:
+
+- [StExcNonDet.v](ComputationMonads/StExcNonDet.v) owns `outcomes_ret` /
+  `outcomes_bind` for the shared single-option dictionaries, plus get/put/raise
+  laws. Both `stexcnd` and `stdivnd` use those return/bind operations by
+  definitional conversion.
+- [StDivNonDet.v](ComputationMonads/StDivNonDet.v) owns `outcomes_diverge`:
+  `divergeD` has exactly the outcome `None`.
+- [StDivExcNonDet.v](ComputationMonads/StDivExcNonDet.v) owns the double-option
+  return/bind laws and full laws for get, put, raise, `pickP`, and `spinP`.
+
+Bind runs the continuation only after a normal return and propagates exception
+or divergence tokens unchanged. An empty prefix blocks, but an empty
+continuation does not erase a preceding exception or divergence. `pickP` at
+`Empty_set` blocks: it has no outcome, not even divergence.
+
+SP/WP clients reuse this interface rather than independently normalizing the
+raw transformer stacks. Observation modules retain derived slice and
+non-empty-carrier adapters; those adapters choose the retained outcomes or
+project through `getNE`. This seam leaves specification-side recovery in the
+SP monad modules (§3). See the [computation context](ComputationMonads/CONTEXT.md#raw-outcome-law-interface)
+for the law inventory.
 
 ## 3. The SP specification monads
 
@@ -347,9 +373,11 @@ sums also use functional extensionality. This equality contract differs from
 ## 5. Observations
 
 An observation maps computations into a specification carrier. Preservation
-theorems relate its source and target return/bind operations, usually through
-outcome laws or shared arrow normalization. Defining a reading alone does not
-establish these morphism laws.
+theorems relate its source and target return/bind operations. For stateful
+nondeterministic sources, they combine computation-owned outcome laws (or
+derived adapters) with specification-side laws. Arrow clients use shared arrow
+normalization on the target side. Defining a reading alone does not establish
+these morphism laws.
 
 Triples use either the base-monad judgments or the shared arrow judgments
 described below. Their refinement characterizations and the comparisons in §6
@@ -370,11 +398,19 @@ supplies no distinct liberal readings: its source has exceptions but no separate
 divergence outcome. `StDivITree_WStExc.v` proves the deterministic
 angelic–demonic collapse in `obsWPCollapse` / `obsWLPCollapse`.
 
+The four double-option return laws compare the observed return with
+`WPureMonad.retP S a`, where state `S` and result `A` are independent. The
+earlier `retP A a` statement restricted them to the same type; the
+[audit](../Checks/Assumptions.v) now includes `Check` instantiations with `bool`
+state and `0 : nat`.
+
 `StDivNonDet_WSt.v` targets `WSt`, whose postconditions range over `A * S`, so
 divergence is visible to the *observation* but not to the *postcondition*: the
 total/liberal axis is carried by the choice of observation. Its non-empty source
 `stdivndNE` supports `obsDWP_strict`, `obsAWLP_top`, and selected taxonomy
 inclusions. Postcondition monotonicity alone does not require non-emptiness.
+Its `TermSliceObsWP.outcomes_bind` derives from `StExcNonDet.outcomes_bind`
+through `getNE`; the non-empty carrier does not need another raw bind proof.
 
 ### SP side — `EffectObservations/SP/`
 
@@ -407,8 +443,14 @@ The two modules exist because `StDivNonDet_SPStExc.v` and `StDivNonDet_SPSt.v`
 observe the same computation monad into differently-indexed targets, so their
 `obsASP` and friends would otherwise clash.
 
-`StDivNonDet_SPStExc.v` imports only its computation monad and the SP monads —
-no sibling observation file. That is the intended shape for a new observation.
+`StDivNonDet_SPStExc.v` imports computation and specification modules, but no
+sibling observation file. That is the intended shape for a new observation.
+
+`FullOutcomeObs` uses the shared `StExcNonDet.outcomes_ret` / `outcomes_bind`
+directly. `TermSliceObs` derives its return/bind and absence-of-divergence
+facts by selecting `Some r` from the full raw laws. The double-option SP
+observations similarly use `StDivExcNonDet` laws at `Some r`, retaining the
+inner exception outcome while omitting outer divergence.
 
 `RdDivNonDet_RdSPPure.v` threads the reader through the observation rather than
 absorbing it: the target is the *same* transformer applied to the specification
@@ -451,11 +493,11 @@ relASP (fun us r => unOptionT (runStateT m (snd us)) r)
 
 `obsDSLP` is `asp_to_dslp` applied to `obsASP`. The conversion preserves the
 recovered relation and the monad operations, so the DSLP return/bind proofs
-reuse the ASP proofs. Each file proves its ASP return/bind laws using the
-generic arrow normalization and local lemmas about the raw computation.
-Both observations preserve the exact arrow-derived return and bind.
-`RawStOpt_SPostArr.v` shares the raw return/bind outcome laws for
-`stateT S (optionT SetM)`, which both single-option observations use.
+reuse the ASP proofs. The nondeterministic files combine generic arrow
+normalization with computation-owned raw laws; the double-option file derives
+a local slice bind adapter and slice get/put/raise/`pickP` facts from those
+laws. The ITree file uses convergence facts. Both observations preserve the
+exact arrow-derived return and bind.
 
 `SPostArrObservation.v` supplies `tripleASP` and `tripleDSL` over an observed
 specification. Each effect file specializes those judgments to programs via
@@ -800,11 +842,19 @@ transposed ones carry a monad suffix; `ExampleProgramDefs.v` imports more than
 one nondeterminism monad, so `progA_stexcnd` writes `StExcNonDet.orP`
 explicitly.
 
-**The worked examples live with the observation they exercise** — the WP
+**Observation examples live with the observation they exercise** — the WP
 examples for `stdivexcnd` at the end of `WP/StDivExcNonDet_WStExc.v`, the
 ASP/DSP ones at the end of `SP/StDivExcNonDet_SPStExc.v`, and so on. A triple
 means something different for each observation, so there is no single file where
 they all belong.
+
+The [raw semantic regressions](ComputationMonads/CONTEXT.md#semantic-regressions)
+live beside the computation laws. They check empty-prefix blocking, failure
+tokens surviving empty continuations, and `pickP` at `Empty_set` blocking.
+At the observation interface,
+[StDivExcNonDet_SPostArr.v](EffectObservations/SP/StDivExcNonDet_SPostArr.v)
+proves `raiseP_obs_retained` and `spinP_obs_invisible`: the terminating slice
+retains the exception but omits divergence.
 
 The cross-reading example is `Module WithdrawExample`, at the bottom of
 `EffectObservations/Taxonomy_StDivExcNonDet_StExc.v`: it states `tripleWP obsAWP`
@@ -839,6 +889,10 @@ The no-go theorems reject representing the DSP/ASLP readings in those earlier
 additive/multiplicative carriers. They do not reject the current DSP/ASLP
 monads or every possible sequencing construction.
 
+The built `obsRel_bind` proof in [OldSPObservations.v](OldSP/OldSPObservations.v)
+uses `StDivExcNonDet.outcomes_bind` directly. Its WP observation imports still
+serve comparisons; computation-owned raw laws do not remove that dependency.
+
 `OldSPObservations.v` also preserves a large **commented-out experiment**.
 `AspConjugation`, `ObsRelM`, `ProgSPObs`, `SPredObs`, `SPredT`, and `ordSP`
 inside that block are not compiled or exported. Its displayed proofs and
@@ -863,13 +917,18 @@ proofs use classical logic or extensionality. Use `Print Assumptions` on the
 theorem of interest rather than inferring its assumptions from imports.
 
 Run `make check` from `Code/` for assumption reports. The separate
-`Code/Checks/Assumptions.v` file audits the arrow-derived observations,
-representative examples, and the ordered-bind counterexamples.
-`Code/Makefile.local` adds this opt-in target to the generated makefile;
+[Checks/Assumptions.v](../Checks/Assumptions.v) reports all 13 laws in the stateful
+raw outcome-law interface, the four double-option WP return laws, selected
+arrow-derived observation laws and examples, and ordered-bind counterexamples.
+Its WP `Check` commands instantiate theorem types; the semantic regression
+proofs described in §9 belong to the normal build. See the
+[Checks context](../Checks/CONTEXT.md) for audit scope and execution details.
+
+The maintained [Code/Makefile](../Makefile) provides this opt-in target;
 the audit file is outside `_CoqProject`, so ordinary `make` does not run it.
 Each explicit `make check` reruns the reports and returns an error if the
-audit file fails to compile. The reports do not compare assumptions against an
-allowlist and do not cover every theorem in this README.
+audit file fails to compile. The reports cover selected declarations, not
+every theorem in this README, and do not compare assumptions against an allowlist.
 
 Not in the build, deliberately:
 
@@ -877,11 +936,11 @@ Not in the build, deliberately:
   references.
 - `OldSP/Observation.v`, `OldSP/NonDetObservation.v` — see §10.
 
-`Makefile` is gitignored. Regenerate it when `_CoqProject` changes, and verify
-reorganizations with a clean build in an isolated checkout: stale `.vo` files
-can otherwise satisfy imports of removed sources. Do not clean a shared
-workspace while another process is building it. Editor backups (`.v~`) are
-outside the build manifest.
+The maintained `Code/Makefile` regenerates the gitignored `Makefile.coq` from
+`_CoqProject` on every invocation. Verify source removals with a clean build
+in an isolated checkout: stale `.vo` files can otherwise satisfy imports of
+removed sources. Do not clean a shared workspace while another process is
+building it. Editor backups (`.v~`) are outside the build manifest.
 
 ## 12. Naming conventions
 
@@ -923,7 +982,9 @@ them apart.
 
 ## 13. Known duplication
 
-The option-outcome and terminating-slice developments repeat many carrier,
-recovery, and order proofs. Their sequencing differs in the propagation of
-`None`. Factoring them over an outcome type and its sequencing laws is a
-possible future refactor; no such common abstraction is implemented here.
+The option-outcome and terminating-slice developments repeat carrier and order
+structure. DSP/ASLP already share local recovery and congruence proofs in their
+specification modules. Sequencing still differs in the propagation of `None`.
+Factoring the full specification developments over an outcome type and its
+sequencing laws remains a possible refactor, separate from sharing raw
+computation laws.

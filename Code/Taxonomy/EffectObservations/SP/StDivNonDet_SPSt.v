@@ -1,6 +1,6 @@
 From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import NewGaloisConnections.
@@ -24,7 +24,11 @@ Open Scope monad_scope.
 
     The terminating-slice bind law has one case: a normal intermediate
     result followed by a normal result of the continuation.  [TermSliceObs]
-    uses this law to prove return/bind preservation for all four readings. *)
+    uses this law to prove return/bind preservation for all four readings.
+    The slice laws below are derived from the computation-owned full raw
+    laws — [StExcNonDet.outcomes_ret]/[outcomes_bind] and
+    [StDivNonDet.outcomes_diverge] — rather than by a fresh stack
+    normalization. *)
 
 Import StTrans StASP StDSLP StDSP StASLP StSP.
 
@@ -34,28 +38,38 @@ Section StObservations.
   Variable S : Type.
 
   (** The terminating slice of a bind: one case, since the divergent branch
-      cannot produce a [Some] outcome. *)
+      cannot produce a [Some] outcome.  Derived from the full raw law; the
+      [None] branch of the match is refuted by discrimination. *)
   Lemma outcomes_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) s (r : B * S) :
     unOptionT (runStateT (x >>= f) s) (Some r)
     <-> (exists a s', unOptionT (runStateT x s) (Some (a, s'))
                       /\ unOptionT (runStateT (f a) s') (Some r)).
   Proof.
-    cbn. split.
-    - intros [oy [H1 H2]]. destruct oy as [[a s']|]; cbn in *.
-      + exists a, s'. split; [ exact H1 | exact H2 ].
-      + congruence.
-    - intros [a [s' [H1 H2]]]. exists (Some (a, s')).
-      split; [ exact H1 | exact H2 ].
+    refine (iff_trans (StExcNonDet.outcomes_bind S x f s (Some r)) _).
+    split.
+    - intros [oy [Hx Hk]]. destruct oy as [[a s']|].
+      + exists a, s'. split; [ exact Hx | exact Hk ].
+      + discriminate Hk.
+    - intros [a [s' [Hx Hk]]]. exists (Some (a, s')).
+      split; [ exact Hx | exact Hk ].
   Qed.
 
+  (** Derived from the full raw law by injectivity of [Some]. *)
   Lemma outcomes_ret {A} (a : A) (s : S) (r : A * S) :
     unOptionT (runStateT (ret a : stdivnd S A) s) (Some r) <-> r = (a, s).
-  Proof. cbn. split; intro H; congruence. Qed.
+  Proof.
+    refine (iff_trans (StExcNonDet.outcomes_ret S a s (Some r)) _).
+    split; intro Heq; congruence.
+  Qed.
 
-  (** [divergeD] has no terminating outcome at all. *)
+  (** [divergeD] has no terminating outcome at all: the full raw law forces
+      [Some r = None]. *)
   Lemma outcomes_diverge {A} (s : S) (r : A * S) :
     ~ unOptionT (runStateT (divergeD : stdivnd S A) s) (Some r).
-  Proof. cbn. intro H. congruence. Qed.
+  Proof.
+    intro Hout. apply (StDivNonDet.outcomes_diverge S) in Hout.
+    discriminate Hout.
+  Qed.
 
   (* ---- the two observations ---- *)
 

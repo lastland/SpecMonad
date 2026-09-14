@@ -20,32 +20,45 @@ Open Scope monad_scope.
 (** ** Visible outcomes of the operations                             *)
 (* ================================================================= *)
 
+(** These are SLICE facts: they read raw outcomes at [Some r] only.
+    Within that slice an exception is the outcome [None] (the inner
+    option failed while the outer one still terminates), and the raw
+    outer [None] — divergence — is omitted.  The slice decisions are
+    the same as [StDivExcNonDet_SPStExc.v]'s; each fact below is
+    derived from the corresponding FULL law owned by the computation
+    module, never by unfolding the transformer stack. *)
+
 Section Ops.
 
   Variable S : Type.
 
   Lemma outcomes_put (s0 s : S) (r : option (unit * S)) :
     unOptionT (unOptionT (runStateT (putP S s0) s)) (Some r) <-> r = Some (tt, s0).
-  Proof. split; intro H; congruence. Qed.
+  Proof.
+    apply (iff_trans (StDivExcNonDet.outcomes_put S s0 s (Some r))).
+    split; intro H; congruence.
+  Qed.
 
   Lemma outcomes_get (s : S) (r : option (S * S)) :
     unOptionT (unOptionT (runStateT (getP S) s)) (Some r) <-> r = Some (s, s).
-  Proof. split; intro H; congruence. Qed.
+  Proof.
+    apply (iff_trans (StDivExcNonDet.outcomes_get S s (Some r))).
+    split; intro H; congruence.
+  Qed.
 
+  (** The exception survives the slice as [r = None]. *)
   Lemma outcomes_raise {A} (s : S) (r : option (A * S)) :
     unOptionT (unOptionT (runStateT (raiseP S tt) s)) (Some r) <-> r = None.
   Proof.
-    cbn. split.
-    - intros [a [Ha Hr]]. destruct a as [[x|]|]; congruence.
-    - intros ->. exists (Some None). split; reflexivity.
+    apply (iff_trans (StDivExcNonDet.outcomes_raise S s (Some r))).
+    split; intro H; congruence.
   Qed.
 
   Lemma outcomes_pickP {A} (s : S) (r : option (A * S)) :
     unOptionT (unOptionT (runStateT pickP s)) (Some r) <-> exists a, r = Some (a, s).
   Proof.
-    cbn. split.
-    - intros [a H]. exists a. congruence.
-    - intros [a H]. exists a. congruence.
+    apply (iff_trans (StDivExcNonDet.outcomes_pickP S s (Some r))).
+    split; intros [a H]; exists a; congruence.
   Qed.
 
 End Ops.
@@ -86,9 +99,15 @@ Section Obs.
   Proof.
     apply ASP_rel_ext. intros [[] s] r.
     unfold obsASP. rewrite ASP_rel_relASP, ASP_rel_ret.
-    cbn. split; intro H; congruence.
+    apply (iff_trans (StDivExcNonDet.outcomes_ret S a s (Some r))).
+    split; intro H; congruence.
   Qed.
 
+  (** The slice outcome set of a bind, derived from the FULL
+      computation-owned [StDivExcNonDet.outcomes_bind]: a middle normal
+      outcome [Some (a, t)] continues into [k]; the exception [None] is
+      retained; and the raw outer [None] (divergence) never reaches the
+      slice — the [discriminate] below is exactly that omission. *)
   Local Lemma outcomes_bind {A B} (m : stdivexcnd S A)
       (k : A -> stdivexcnd S B) s r :
     unOptionT (unOptionT (runStateT (bindP S m k) s)) (Some r) <->
@@ -98,8 +117,9 @@ Section Obs.
       | None => r = None
       end.
   Proof.
-    cbn. split.
-    - intros [oom [Hm Hk]]. destruct oom as [om|]; [|discriminate].
+    apply (iff_trans (StDivExcNonDet.outcomes_bind S m k s (Some r))).
+    split.
+    - intros [oy [Hm Hk]]. destruct oy as [om|]; [|discriminate].
       exists om. split; [exact Hm |].
       destruct om as [[a t]|]; [exact Hk | congruence].
     - intros [om [Hm Hk]]. exists (Some om). split; [exact Hm |].
@@ -134,6 +154,41 @@ Section Obs.
     SPostArrObservation.tripleDSL (obsDSLP m) kind pre post.
 
 End Obs.
+
+(* ================================================================= *)
+(** ** Primitive checks through the observation interface              *)
+(* ================================================================= *)
+
+(** The slice decisions of [Section Ops], read at the OBSERVATION
+    interface through [getProgASP_obsASP] and the full computation
+    laws — no program or stack unfolding is involved.
+    [progloom_may_raise] and [progB_under] below exercise the same two
+    facts through programs; these are their primitive counterparts. *)
+
+(** The raised exception is retained: [raiseP] is observed at the
+    exceptional slice outcome [None]. *)
+Example raiseP_obs_retained :
+  runASP (obsASP nat (raiseP nat (A := unit) tt)) (fun _ => True) None.
+Proof.
+  apply (proj2 (getProgASP_obsASP nat (raiseP nat (A := unit) tt)
+                  (fun _ => True) None)).
+  exists 0. split; [exact I |].
+  apply (StDivExcNonDet.outcomes_raise nat (A := unit) 0 (Some None)).
+  reflexivity.
+Qed.
+
+(** Divergence is invisible: the slice is read at [Some r], so [spinP]'s
+    raw outer [None] token is never observed. *)
+Example spinP_obs_invisible (r : option (unit * nat)) :
+  ~ runASP (obsASP nat (spinP nat (A := unit))) (fun _ => True) r.
+Proof.
+  intros H.
+  apply (proj1 (getProgASP_obsASP nat (spinP nat (A := unit))
+                  (fun _ => True) r)) in H.
+  destruct H as [s [_ Hr]].
+  apply (StDivExcNonDet.outcomes_spin nat (A := unit) s (Some r)) in Hr.
+  discriminate Hr.
+Qed.
 
 (* ================================================================= *)
 (** ** Worked examples (S := nat)                                      *)
