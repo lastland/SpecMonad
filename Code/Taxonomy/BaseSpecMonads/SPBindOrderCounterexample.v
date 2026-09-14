@@ -1,4 +1,4 @@
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers DSPMonad ASLPMonad.
 
 (** * Ordered-bind counterexamples for stateful DSP and ASLP
 
@@ -28,7 +28,25 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSPMonad ASLPMonad.
 
     Thus divergence is represented by the absence of a terminating outcome.
     After composition, [K] sends both intermediate states to [(tt, false)].
-    This makes the composed transformers fail the original pointwise order. *)
+    This makes the composed transformers fail the original pointwise order.
+
+    A second group of results strengthens the refutation from the
+    current bind to every candidate bind.  On the boolean-state
+    carriers, no function [beta] from boolean-result to unit-result
+    computations whatsoever satisfies, together, the monad's
+    left-identity law for the current return and monotonicity in the
+    first argument.  Two direct evaluation probes drive the
+    contradiction: [c] accepts an outcome when the precondition holds
+    at the outcome's state component, and [k b] accepts an outcome
+    when the precondition holds at the fixed boolean [b].  Every DSP
+    return lies below [c], while [c] lies below every ASLP return;
+    monotonicity thus forces [beta] applied to the probes to accept
+    either every singleton precondition — contradicting the strictness
+    of its output once conjunctivity meets them into the empty
+    precondition — or some singleton precondition whose images under
+    the two continuations force one boolean to equal both [false] and
+    [true], once termination and disjunctivity extract it from the
+    top precondition. *)
 
 Module SPBindOrderCounterexample.
 
@@ -174,6 +192,177 @@ Module SPBindOrderCounterexample.
   Proof.
     intro H; destruct aslp_counterexample as [m0 [m1 [k [Hle Hbad]]]].
     exact (Hbad (H m0 m1 k Hle)).
+  Qed.
+
+  (** ** No candidate bind is left-identity and first-argument monotone
+
+      [dsp_bind_not_monotone] and [aslp_bind_not_monotone] above refute
+      the CURRENT binds.  The two theorems below show that no
+      replacement helps: quantifying over an ARBITRARY
+      [beta : M bool -> (bool -> M unit) -> M unit], the monad's
+      left-identity law for the current return and monotonicity in the
+      first argument are jointly unsatisfiable.  The essential
+      ingredient is the well-formedness of [beta]'s OUTPUT, guaranteed
+      by its carrier type: strictness and conjunctivity close the DSP
+      case, termination and disjunctivity the ASLP case.  The two
+      direct evaluation witnesses below merely need to inhabit the
+      carrier.  Neither the concrete bind nor relation recovery is
+      involved. *)
+
+  (** The current returns read through their defining formulas: the DSP
+      return conjoins and the ASLP return disjoins the existential (ASP)
+      and universal (DSLP) returns. *)
+  Lemma retDSPSt_iff (a : bool) (pre : bool -> Prop) (r : bool * bool) :
+    StDSP.getDSPSt (StDSP.retDSPSt a) pre r <->
+    ((exists s, pre s /\ r = (a, s)) /\ (forall s, r = (a, s) -> pre s)).
+  Proof. reflexivity. Qed.
+
+  Lemma retASLPSt_iff (a : bool) (pre : bool -> Prop) (r : bool * bool) :
+    StASLP.getASLPSt (StASLP.retASLPSt a) pre r <->
+    ((exists s, pre s /\ r = (a, s)) \/ (forall s, r = (a, s) -> pre s)).
+  Proof. reflexivity. Qed.
+
+  (** Direct evaluation witnesses.  [dsp_c] tests the precondition at
+      [snd r], the state component of the outcome; [dsp_k b] tests it
+      at the fixed boolean [b], independently of the outcome.  Neither
+      enforces any relation between the result value and the state:
+      both are pure precondition evaluations.  Each well-formedness
+      obligation reduces to direct evaluation of the precondition. *)
+  #[program] Definition dsp_c : StDSP.DSPSt bool bool :=
+    fun p r => p (snd r).
+  Next Obligation.
+    split.
+    - intros r H; exact H.
+    - intros I [i0] p r; split; intro H; exact H.
+  Qed.
+
+  #[program] Definition dsp_k (b : bool) : StDSP.DSPSt bool unit :=
+    fun p r => p b.
+  Next Obligation.
+    split.
+    - intros r H; exact H.
+    - intros I [i0] p r; split; intro H; exact H.
+  Qed.
+
+  #[program] Definition aslp_c : StASLP.ASLPSt bool bool :=
+    fun p r => p (snd r).
+  Next Obligation.
+    split.
+    - intros r; exact I.
+    - intros I [i0] p r; split; intro H; exact H.
+  Qed.
+
+  #[program] Definition aslp_k (b : bool) : StASLP.ASLPSt bool unit :=
+    fun p r => p b.
+  Next Obligation.
+    split.
+    - intros r; exact I.
+    - intros I [i0] p r; split; intro H; exact H.
+  Qed.
+
+  (** Left identity is stated as a pointwise iff over preconditions and
+      outcomes, and monotonicity transports an order between
+      computations through a fixed continuation. *)
+  Theorem dsp_arbitrary_bind_impossible :
+    forall (beta : StDSP.DSPSt bool bool
+              -> (bool -> StDSP.DSPSt bool unit)
+              -> StDSP.DSPSt bool unit),
+      (forall (b : bool) (k : bool -> StDSP.DSPSt bool unit)
+             (pre : bool -> Prop) (r : unit * bool),
+         StDSP.getDSPSt (beta (StDSP.retDSPSt b) k) pre r
+         <-> StDSP.getDSPSt (k b) pre r) ->
+      (forall (m0 m1 : StDSP.DSPSt bool bool)
+             (k : bool -> StDSP.DSPSt bool unit),
+         StDSP.ordDSPSt m0 m1 ->
+         StDSP.ordDSPSt (beta m0 k) (beta m1 k)) ->
+      False.
+  Proof.
+    intros beta HLID HMONO.
+    (* [ret b <= dsp_c]: the existential component of the return
+       already hands over a predecessor satisfying the precondition. *)
+    assert (Hret : forall b : bool, StDSP.ordDSPSt (StDSP.retDSPSt b) dsp_c).
+    { intros b pre r H.
+      destruct (proj1 (retDSPSt_iff b pre r) H) as [[s [Hps Hr]] _].
+      subst r; exact Hps. }
+    (* Left identity followed by monotonicity yields
+       [dsp_k b <= beta dsp_c dsp_k]. *)
+    assert (Hbound : forall (b : bool) (pre : bool -> Prop) (r : unit * bool),
+             StDSP.getDSPSt (dsp_k b) pre r ->
+             StDSP.getDSPSt (beta dsp_c dsp_k) pre r).
+    { intros b pre r H.
+      apply (HMONO (StDSP.retDSPSt b) dsp_c dsp_k (Hret b) pre r).
+      exact (proj2 (HLID b dsp_k pre r) H). }
+    (* At [(tt, false)] every singleton precondition is accepted. *)
+    assert (Hsing : forall b : bool,
+             StDSP.getDSPSt (beta dsp_c dsp_k) (fun s => s = b) (tt, false)).
+    { intros b; exact (Hbound b (fun s => s = b) (tt, false) eq_refl). }
+    (* Conjunctivity over the inhabited family of singletons accepts
+       their meet, which is the empty precondition. *)
+    pose proof (proj2 (proj2_sig (beta dsp_c dsp_k)) bool (inhabits true)
+                  (fun b s => s = b) (tt, false)) as Hconj.
+    assert (Hbot : StDSP.getDSPSt (beta dsp_c dsp_k)
+                     (fun s => forall b, s = b) (tt, false))
+      by exact (proj2 Hconj Hsing).
+    assert (Heq : (fun s => forall b, s = b) = (fun _ : bool => False)).
+    { apply (StTrans.predExt bool); intro s; split.
+      - intro H.
+        assert (E : true = false)
+          by (rewrite <- (H true), (H false); reflexivity).
+        discriminate E.
+      - intros []. }
+    rewrite Heq in Hbot.
+    exact (proj1 (proj2_sig (beta dsp_c dsp_k)) (tt, false) Hbot).
+  Qed.
+
+  Theorem aslp_arbitrary_bind_impossible :
+    forall (beta : StASLP.ASLPSt bool bool
+              -> (bool -> StASLP.ASLPSt bool unit)
+              -> StASLP.ASLPSt bool unit),
+      (forall (b : bool) (k : bool -> StASLP.ASLPSt bool unit)
+             (pre : bool -> Prop) (r : unit * bool),
+         StASLP.getASLPSt (beta (StASLP.retASLPSt b) k) pre r
+         <-> StASLP.getASLPSt (k b) pre r) ->
+      (forall (m0 m1 : StASLP.ASLPSt bool bool)
+             (k : bool -> StASLP.ASLPSt bool unit),
+         StASLP.ordASLPSt m0 m1 ->
+         StASLP.ordASLPSt (beta m0 k) (beta m1 k)) ->
+      False.
+  Proof.
+    intros beta HLID HMONO.
+    (* [aslp_c <= ret b]: the universal component of the return covers
+       every directly evaluated precondition. *)
+    assert (Hret : forall b : bool,
+             StASLP.ordASLPSt aslp_c (StASLP.retASLPSt b)).
+    { intros b pre r H.
+      apply (proj2 (retASLPSt_iff b pre r)).
+      right; intros s Hr; subst r; exact H. }
+    (* Monotonicity followed by left identity yields
+       [beta aslp_c aslp_k <= aslp_k b] for every [b]. *)
+    assert (Hbound : forall (b : bool) (pre : bool -> Prop) (r : unit * bool),
+             StASLP.getASLPSt (beta aslp_c aslp_k) pre r ->
+             StASLP.getASLPSt (aslp_k b) pre r).
+    { intros b pre r H.
+      exact (proj1 (HLID b aslp_k pre r)
+               (HMONO aslp_c (StASLP.retASLPSt b) aslp_k (Hret b) pre r H)). }
+    (* Top preservation at [(tt, false)], read through the singleton
+       cover of the state space, plus disjunctivity: some singleton is
+       accepted. *)
+    pose proof (proj1 (proj2_sig (beta aslp_c aslp_k)) (tt, false)) as Htop.
+    assert (Heq : (fun _ : bool => True) = (fun s => exists b, s = b)).
+    { apply (StTrans.predExt bool); intro s; split.
+      - intros _; exists s; reflexivity.
+      - intros _; exact I. }
+    rewrite Heq in Htop.
+    destruct (proj1 (proj2 (proj2_sig (beta aslp_c aslp_k)) bool
+                      (inhabits true) (fun b s => s = b) (tt, false)) Htop)
+      as [b0 Hb0].
+    (* Projecting the accepted singleton through [aslp_k false] and
+       [aslp_k true] forces [b0] to equal both booleans. *)
+    assert (Hf : false = b0)
+      by exact (Hbound false (fun s => s = b0) (tt, false) Hb0).
+    assert (Ht : true = b0)
+      by exact (Hbound true (fun s => s = b0) (tt, false) Hb0).
+    congruence.
   Qed.
 
 End SPBindOrderCounterexample.

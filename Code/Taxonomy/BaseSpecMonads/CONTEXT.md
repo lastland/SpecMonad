@@ -65,6 +65,11 @@ use `StDSP.comp_cong` and their specialized recovery lemmas directly.
 - [`SPBindOrderCounterexample.v`](SPBindOrderCounterexample.v) refutes ordered
   bind for `StDSP.DSPSt` / `StASLP.ASLPSt` under their global pointwise orders.
   Monad laws and monotonicity in a fixed transformer's precondition still hold.
+  Its `dsp_arbitrary_bind_impossible` and `aslp_arbitrary_bind_impossible`
+  strengthen this result for Boolean state: any candidate Boolean-to-unit bind
+  with the current return and pointwise order cannot satisfy both left identity
+  and first-argument monotonicity. The contradiction uses well-formedness of
+  the candidate's output, independently of the existing bind.
 - `WP_le` is reverse implication; `ordWSt` / `ordWStExc` are forward implication.
   Global SP orders and `...At` orders at one precondition are also distinct.
 - Pure DSP collapses to ASP, and pure ASLP to DSLP. Reader variants lift these

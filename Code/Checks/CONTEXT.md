@@ -36,7 +36,8 @@ The selected reports cover:
 - Representative deterministic ITree and double-option bind laws from
   [StDivITree_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivITree_SPostArr.v)
   and [StDivExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivExcNonDet_SPostArr.v).
-- DSP/ASLP ordered-bind counterexamples and non-monotonicity theorems in
+- DSP/ASLP ordered-bind counterexamples, non-monotonicity theorems, and
+  arbitrary-bind impossibility theorems for Boolean state in
   [SPBindOrderCounterexample.v](../Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v).
 
 ## Semantic regressions versus audit commands
