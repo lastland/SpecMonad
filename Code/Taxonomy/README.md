@@ -181,6 +181,9 @@ resulting nonmonotonicity blocks an `OrderedMonad` instance using these binds
 and orders together, as required by the standard Dijkstra bind construction.
 Their `MonadLawsE` instances and `dspMono` / `aslpMono` precondition-monotonicity
 lemmas remain valid; the counterexample does not depend on arrow-derived bind.
+The [coupled reader counterexamples](#coupled-reader-observations) below show
+that a shared precondition over read-only environments can also induce a
+nonmonotone bind order. The existing pointwise reader lifts have monotone binds.
 
 ### The terminating slice lives alongside each monad
 
@@ -270,6 +273,12 @@ one `Prop` per environment, environments specified independently. Since every
 fibre is additive, an `ASPRd R A` is exactly a relation `R -> A -> Prop`
 (`getASPRd_singleton`).
 
+The pointwise DSP and ASLP binds are monotone in both arguments:
+[`bindDSPRd_mono`](BaseSpecMonads/DSPMonad.v) and
+[`bindASLPRd_mono`](BaseSpecMonads/ASLPMonad.v) lift the pure bind-monotonicity
+lemmas at each environment. They use the existing global `ordDSPRd` and
+`ordASLPRd` orders and the existing `Monad__DSPRd` and `Monad__ASLPRd` binds.
+
 Two consequences worth keeping straight. First, `ASPRd` coincides with what you
 would get by defining a coupled carrier `(R -> Prop) -> A -> Prop` and cutting
 it down by the ASP condition (strict + disjunctive): both are the relation
@@ -280,6 +289,58 @@ transformer `fun pre _ => forall r, pre r` is strict and conjunctive but not
 singleton, and it has no counterpart in `readerT R ASPSP`. So the pointwise
 lift keeps ASP and DSLP faithfully but erases the DSP/ASLP distinction; only a
 shared `R -> Prop` precondition retains it.
+
+#### Coupled reader observations
+
+[`ReaderSPBindOrderCounterexample.v`](EffectObservations/SP/ReaderSPBindOrderCounterexample.v)
+proves that ordinary reader bind fails to preserve the order induced by coupled
+DSP/ASLP observations. Its local `dspOf` and `aslpOf` formulas use the shared
+precondition shape `(bool -> Prop) -> A -> Prop`, and `ordCoupled` compares them
+by implication for every precondition and result. DSP requires an outcome's
+predecessor set to be nonempty and included in the precondition; ASLP accepts
+an empty predecessor set or one that intersects the precondition.
+
+The witnesses use ExtLib's total, deterministic `reader` with Boolean
+environments and results:
+
+```coq
+Definition m0 : reader bool bool := ret false.
+Definition m1 : reader bool bool := ask.
+Definition k (b : bool) : reader bool bool :=
+  bind (ask : reader bool bool) (fun r => ret (xorb b r)).
+```
+
+Reader bind supplies the same environment to the prefix and continuation.
+Thus `bind m0 k` behaves as `ask`, while `bind m1 k` constantly returns `false`:
+sequencing with `k` swaps the two behaviors (`bind_m0` / `bind_m1`).
+
+| Environment | `m0` | `m1` | `bind m0 k` | `bind m1 k` |
+|---|---|---|---|---|
+| `false` | `false` | `false` | `false` | `false` |
+| `true` | `false` | `true` | `true` | `false` |
+
+Their observation orders hold before sequencing but fail afterward:
+
+| Observation | Order before bind | Comparison that fails after bind | Witness precondition; result |
+|---|---|---|---|
+| DSP | `dspOf m0 ⊑ dspOf m1` | `dspOf (bind m0 k) ⊑ dspOf (bind m1 k)` | `fun r => r = false`; `false` |
+| ASLP | `aslpOf m1 ⊑ aslpOf m0` | `aslpOf (bind m1 k) ⊑ aslpOf (bind m0 k)` | `fun r => r = true`; `false` |
+
+For DSP, `ask` has only predecessor `false` for result `false`, while the
+constant reader also has predecessor `true`, violating the universal condition.
+For ASLP, the constant reader reaches `false` from the permitted environment
+`true`, while `ask` has only predecessor `false`, so neither ASLP disjunct holds.
+
+The module's
+[`dsp_counterexample`](EffectObservations/SP/ReaderSPBindOrderCounterexample.v#L84) /
+[`aslp_counterexample`](EffectObservations/SP/ReaderSPBindOrderCounterexample.v#L103)
+give the witnesses;
+[`dsp_bind_not_monotone`](EffectObservations/SP/ReaderSPBindOrderCounterexample.v#L118) /
+[`aslp_bind_not_monotone`](EffectObservations/SP/ReaderSPBindOrderCounterexample.v#L127)
+refute first-argument bind monotonicity with the continuation fixed. All four
+proofs are axiom-free.
+They concern the order induced by the coupled observations of ordinary readers;
+the pointwise `DSPRd` / `ASLPRd` orders are covered by the positive lemmas above.
 
 ### In-monad characterizations
 

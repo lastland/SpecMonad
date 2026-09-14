@@ -1455,3 +1455,24 @@ Section RdASLPMonad.
 End RdASLPMonad.
 
 Arguments getASLPRd {_} {_}.
+
+(** The pointwise reader lift inherits bind monotonicity from [ASLPSP]:
+    refinement of the prefix at every environment, together with pointwise
+    refinement of the continuation at every environment, gives refinement
+    of the [Monad__ASLPRd] bind. *)
+Lemma bindASLPRd_mono R A B
+  (m n : ASLPRd R A) (f g : A -> ASLPRd R B) :
+  ordASLPRd R m n ->
+  (forall a, ordASLPRd R (f a) (g a)) ->
+  ordASLPRd R
+    (@bind (ASLPRd R) (Monad__ASLPRd R) A B m f)
+    (@bind (ASLPRd R) (Monad__ASLPRd R) A B n g).
+Proof.
+  intros Hmn Hfg r.
+  change (ordASLPSP
+    (bindASLP (runReaderT m r) (fun a => runReaderT (f a) r))
+    (bindASLP (runReaderT n r) (fun a => runReaderT (g a) r))).
+  apply (bindASLP_mono A B).
+  - exact (Hmn r).
+  - intro a; exact (Hfg a r).
+Qed.

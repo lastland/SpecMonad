@@ -1627,3 +1627,24 @@ Section RdDSPMonad.
 End RdDSPMonad.
 
 Arguments getDSPRd {_} {_}.
+
+(** The pointwise reader lift inherits bind monotonicity from [DSPSP]:
+    refinement of the prefix at every environment, together with pointwise
+    refinement of the continuation at every environment, gives refinement
+    of the [Monad__DSPRd] bind. *)
+Lemma bindDSPRd_mono R A B
+  (m n : DSPRd R A) (f g : A -> DSPRd R B) :
+  ordDSPRd R m n ->
+  (forall a, ordDSPRd R (f a) (g a)) ->
+  ordDSPRd R
+    (@bind (DSPRd R) (Monad__DSPRd R) A B m f)
+    (@bind (DSPRd R) (Monad__DSPRd R) A B n g).
+Proof.
+  intros Hmn Hfg r.
+  change (ordDSPSP
+    (bindDSP (runReaderT m r) (fun a => runReaderT (f a) r))
+    (bindDSP (runReaderT n r) (fun a => runReaderT (g a) r))).
+  apply (bindDSP_mono A B).
+  - exact (Hmn r).
+  - intro a; exact (Hfg a r).
+Qed.
