@@ -95,6 +95,17 @@ Section PureASLPMonad.
   Definition ordASLPSPAt {A} (pre : Prop) (m1 m2 : ASLPSP A) : Prop :=
     forall a, getASLP m1 pre a -> getASLP m2 pre a.
 
+  Lemma ordASLPSP_refl A (m : ASLPSP A) : ordASLPSP m m.
+  Proof. intros p a H. exact H. Qed.
+  Lemma bindASLP_mono A B (m n : ASLPSP A) (f g : A -> ASLPSP B) :
+    ordASLPSP m n -> (forall a, ordASLPSP (f a) (g a)) ->
+    ordASLPSP (bindASLP m f) (bindASLP n g).
+  Proof.
+    intros Hmn Hfg p b Hb a. apply Hfg.
+    apply (getMSP_mono (aslp_to_dslp (f a)) (getASLP m p a) (getASLP n p a) b).
+    - exact (Hmn p a).
+    - exact (Hb a).
+  Qed.
 End PureASLPMonad.
 
 Local Lemma aslp_recov_gen (S O : Type) (R : S -> O -> Prop) (s : S) (r : O) :

@@ -81,6 +81,7 @@ on.
 | `stdivnd S A` | `stateT S (optionT SetM) A` | `ComputationMonads/StDivNonDet.v` | state, nondeterminism, **divergence** |
 | `stdivexcnd S A` | `stateT S (optionT (optionT SetM)) A` | `ComputationMonads/StDivExcNonDet.v` | state, nondeterminism, exceptions **and** divergence |
 | `divnd A` | `optionT SetM A` | `ComputationMonads/DivNonDet.v` | nondeterminism, **divergence** (no state) |
+| `divexcnd A` | `optionT (optionT SetM) A` | `ComputationMonads/DivExcNonDet.v` | nondeterminism, exceptions **and explicit divergence** (no state) |
 | `rddivnd R A` | `readerT R divnd A` | `ComputationMonads/RdDivNonDet.v` | environment, nondeterminism, **divergence** |
 
 `stexcnd` and `stdivnd` share a carrier and differ only in the *reading* of the
@@ -272,6 +273,25 @@ initial states. For an inhabited inverse image, requiring every predecessor
 to satisfy that proposition is equivalent to requiring some predecessor to do
 so. This is why DSP collapses to ASP and ASLP to DSLP in the pure observation.
 
+The pure binds are monotone in both arguments: `bindDSP_mono` and
+`bindASLP_mono` transport a refinement of the prefix and a pointwise refinement
+of the continuation to a refinement of the composite.
+
+[`DivExcSP.v`](BaseSpecMonads/DivExcSP.v) lifts these carriers through two
+`optionT` layers, yielding `DSPDivExc` and `ASLPDivExc`. The precondition remains
+`Prop`; only the outcome type changes to `option (option A)`.
+`bindDSPDivExc_mono` and `bindASLPDivExc_mono` lift the pure monotonicity results
+twice using `TransformerLaws.bind_optionT_mono`. Their monad laws also follow
+from the existing transformer laws.
+
+The [full-outcome observation](EffectObservations/SP/DivExcNonDet_SPDivExc.v)
+preserves return and bind from stateless `divexcnd`, retaining successful
+returns (`Some (Some a)`), exceptions (`Some None`), and divergence (`None`).
+DSP reads `p /\ outcomes m o`; ASLP reads `p \/ ~ outcomes m o`. Thus DSP at
+`True` expresses reachability, while ASLP at `False` expresses unreachability.
+The checked `mixed_DSP_outcomes` and `mixed_ASLP_outcomes` examples show a
+nondeterministic choice between returning `0`, raising, and diverging.
+
 ### The reader-indexed variants
 
 Each SP monad file also defines `readerT R` over its pure variant, next to the
@@ -420,12 +440,14 @@ through `getNE`; the non-empty carrier does not need another raw bind proof.
 | `StDivNonDet_SPStExc.v` | `stdivnd` | `SPStExc` | **yes** — `None` is an ordinary outcome | `FullOutcomeObs` |
 | `StDivNonDet_SPSt.v` | `stdivnd` | `SPSt` | **no** — reads the terminating slice | `TermSliceObs` |
 | `DivNonDet_SPPure.v` | `divnd` | `SPPure` | **no** — reads the terminating slice | `PureObs` |
+| `DivExcNonDet_SPDivExc.v` | `divexcnd` | `DSPDivExc` / `ASLPDivExc` | **yes** — retains both failure tokens | — |
 | `RdDivNonDet_RdSPPure.v` | `rddivnd` | `ASPRd` / `DSLPRd` / `DSPRd` / `ASLPRd` | **no** — reads the terminating slice | `RdPureObs` |
 
-Each row supplies four well-formed observations and their return/bind laws.
-The first four rows name the raw outcome indexing; the actual targets are the
-corresponding ASP, DSLP, DSP, and ASLP subsets. Note the contrast in divergence
-visibility:
+Each row supplies well-formed observations and their return/bind laws.
+`DivExcNonDet_SPDivExc.v` supplies DSP and ASLP; the other rows supply all four
+readings. The first four rows name the raw outcome indexing; their actual
+targets are the corresponding ASP, DSLP, DSP, and ASLP subsets. Note the
+contrast in divergence visibility:
 
 - `StDivExcNonDet_SPStExc.v` reads
   `unOptionT (unOptionT (runStateT m s)) (Some r)`; the outer `Some` discards
@@ -438,6 +460,9 @@ visibility:
 - `StDivNonDet_SPSt.v` observes the same monad into the `A * S`-indexed spec
   monads, so divergence is projected away again: `divergeD` satisfies every
   ASP `Over` triple vacuously. Its DSLP reading, by contrast, is always true.
+- `DivExcNonDet_SPDivExc.v` retains every raw outcome of stateless `divexcnd`:
+  `Some (Some a)` for return, `Some None` for exception, and `None` for
+  divergence. Its double-option specification binds preserve pointwise order.
 
 The two modules exist because `StDivNonDet_SPStExc.v` and `StDivNonDet_SPSt.v`
 observe the same computation monad into differently-indexed targets, so their
@@ -448,9 +473,11 @@ sibling observation file. That is the intended shape for a new observation.
 
 `FullOutcomeObs` uses the shared `StExcNonDet.outcomes_ret` / `outcomes_bind`
 directly. `TermSliceObs` derives its return/bind and absence-of-divergence
-facts by selecting `Some r` from the full raw laws. The double-option SP
-observations similarly use `StDivExcNonDet` laws at `Some r`, retaining the
-inner exception outcome while omitting outer divergence.
+facts by selecting `Some r` from the full raw laws. The stateful double-option
+observation in `StDivExcNonDet_SPStExc.v` similarly uses `StDivExcNonDet` laws
+at `Some r`, retaining the inner exception outcome while omitting outer
+divergence. The stateless `DivExcNonDet_SPDivExc.v` instead uses
+`DivExcNonDet` laws at every raw outcome, retaining both failure tokens.
 
 `RdDivNonDet_RdSPPure.v` threads the reader through the observation rather than
 absorbing it: the target is the *same* transformer applied to the specification

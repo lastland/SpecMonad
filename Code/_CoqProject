@@ -79,12 +79,14 @@ Taxonomy/EffectObservations/WP/StDivITree_WStExc.v
 Taxonomy/EffectObservations/WP/StExcNonDet_WStExc.v
 Taxonomy/ComputationMonads/StDivNonDet.v
 Taxonomy/ComputationMonads/DivNonDet.v
+Taxonomy/ComputationMonads/DivExcNonDet.v
 Taxonomy/ComputationMonads/RdDivNonDet.v
 Taxonomy/BaseSpecMonads/SPStBindComparisons.v
 Taxonomy/BaseSpecMonads/OldMonads/ASPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/DSLPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/ASLPMonad.v
+Taxonomy/BaseSpecMonads/DivExcSP.v
 Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v
 Taxonomy/BaseSpecMonads/SpecificationMonads.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
@@ -95,6 +97,7 @@ Taxonomy/EffectObservations/SP/StDivNonDet_SPStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivNonDet_StExc.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPSt.v
 Taxonomy/EffectObservations/SP/DivNonDet_SPPure.v
+Taxonomy/EffectObservations/SP/DivExcNonDet_SPDivExc.v
 Taxonomy/EffectObservations/SP/RdDivNonDet_RdSPPure.v
 Taxonomy/ExampleProgramDefs.v
 Taxonomy/EffectObservations/SP/StDivExcNonDet_SPStExc.v

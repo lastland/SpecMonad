@@ -22,6 +22,19 @@ SPPredicateTransformers defines raw SPPure, shared-precondition SPSt, and
 option-indexed SPStExc. Their earlier well-formed monads live in OldMonads,
 not the new top-level modules with the same names. Import/qualify deliberately.
 
+- [`DSPDivExc` / `ASLPDivExc`](DivExcSP.v) stack two `optionT` layers over
+  pure `DSPSP` / `ASLPSP`. Their runners take `Prop` preconditions and
+  `option (option A)` outcomes; the full-outcome observation assigns separate
+  indices to successful return, exception, and divergence. `bindDSP_mono` /
+  `bindASLP_mono` prove pure bind monotonicity in both arguments;
+  `bindDSPDivExc_mono` / `bindASLPDivExc_mono` lift it through both layers.
+- [`WPureT` / `WPure`](WPureMonad.v) distinguish the raw WP transformer
+  from its monotone subset. `WSt` and `WStExc` stack state and optional
+  exceptions over `WPure`; `getWPure` exposes application.
+- [`NewGaloisConnections.v`](NewGaloisConnections.v) supplies `Over`/`Under`
+  targets and generic triple characterizations. Its `StSP` and `PureSP`
+  modules adapt these to state-only and pure outcomes.
+
 Old ASP uses SingletonProg (strict/disjunctive); DSLP uses MSingletonProg
 (top-preserving/conjunctive). Old DSP is strict/conjunctive; ASLP is
 top-preserving/disjunctive. Nonempty indexed families are intentional.

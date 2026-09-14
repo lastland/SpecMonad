@@ -11,7 +11,7 @@ and `Check`; its output concerns only the named declarations.
 
 The selected reports cover:
 
-- All 13 [computation-owned raw outcome laws](../Taxonomy/ComputationMonads/CONTEXT.md#raw-outcome-law-interface):
+- The 13 stateful [computation-owned raw outcome laws](../Taxonomy/ComputationMonads/CONTEXT.md#raw-outcome-law-interface):
   five single-option return/bind and primitive laws in
   [StExcNonDet.v](../Taxonomy/ComputationMonads/StExcNonDet.v), `outcomes_diverge`
   in [StDivNonDet.v](../Taxonomy/ComputationMonads/StDivNonDet.v), and seven
@@ -39,6 +39,13 @@ The selected reports cover:
 - DSP/ASLP ordered-bind counterexamples, non-monotonicity theorems, and
   arbitrary-bind impossibility theorems for Boolean state in
   [SPBindOrderCounterexample.v](../Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v).
+
+The audit also reports the four pure and double-option DSP/ASLP bind
+monotonicity theorems, the generic option-order lift, and the double-option
+specification monad laws. For the stateless full-outcome model, it reports
+the five raw laws and computation monad laws in `DivExcNonDet.v`, both
+observations' return/bind laws, and their mixed-outcome examples in
+`DivExcNonDet_SPDivExc.v`. These retain explicit divergence and exceptions.
 
 ## Semantic regressions versus audit commands
 

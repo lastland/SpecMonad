@@ -35,6 +35,10 @@ order's bind monotonicity. Use the manifest for active source membership.
 - [`stdivexcnd`](StDivExcNonDet.v) uses two option layers. Its raw outcomes
   are `Some (Some (a, s'))` for return, `Some None` for exception, and
   outer `None` for divergence. `spinP` selects the divergent outcome.
+- [`divexcnd`](DivExcNonDet.v) removes the state layer from the double-option
+  stack: `optionT (optionT SetM)`. Its outcomes are `Some (Some a)` for return,
+  `Some None` for exception, and `None` for divergence. `orP` is raw union,
+  not the option transformer's left-biased choice.
 - [`stdivitree`](StDivITree.v) uses `stateT S (optionT (itree void1))`.
   Returning `None` is an exception; divergence belongs to the underlying
   ITree behavior. Its base equality is `eutt eq`.
@@ -46,15 +50,16 @@ order's bind monotonicity. Use the manifest for active source membership.
 
 ## Raw outcome-law interface
 
-The stateful nondeterministic modules own the following full-outcome laws.
-Each is a constructive pointwise `<->` statement at an initial state and raw
-outcome, rather than an equality of computations.
+The nondeterministic modules own the following full-outcome laws.
+Each is a constructive pointwise `<->` statement at a raw outcome (and an
+initial state for stateful models), rather than an equality of computations.
 
 | Module | Laws | Scope |
 |---|---|---|
 | [StExcNonDet.v](StExcNonDet.v) | `outcomes_ret`, `outcomes_bind`, `outcomes_get`, `outcomes_put`, `outcomes_raise` | Shared single-option return/bind; state and exception primitives |
 | [StDivNonDet.v](StDivNonDet.v) | `outcomes_diverge` | `divergeD` has exactly the outcome `None` |
 | [StDivExcNonDet.v](StDivExcNonDet.v) | `outcomes_ret`, `outcomes_bind`, `outcomes_get`, `outcomes_put`, `outcomes_raise`, `outcomes_pickP`, `outcomes_spin` | Double-option return/bind and primitives |
+| [DivExcNonDet.v](DivExcNonDet.v) | `outcomes_ret`, `outcomes_bind`, `outcomes_raise`, `outcomes_spin`, `outcomes_orP` | Stateless double-option return/bind, failure tokens, and raw union |
 
 `StExcNonDet.outcomes_ret` / `outcomes_bind` name the shared raw dictionaries
 of `stateT S (optionT SetM)`. The single-option `retP` / `bindP` and
@@ -69,6 +74,8 @@ these laws without choosing the same reading of `None`.
   and reader transformer laws from base `MonadLawsE` assumptions. It names
   no concrete computation monad, so [base specifications](../BaseSpecMonads/CONTEXT.md)
   can import it without depending on a concrete computation.
+  Its `ord_optionT` and `bind_optionT_mono` separately lift an explicit
+  reflexive order and simultaneous bind monotonicity through `optionT`.
 - Observation-specific readings and triples belong in
   [SP](../EffectObservations/SP/CONTEXT.md) or [WP](../EffectObservations/WP/CONTEXT.md).
   Their slice and non-empty-carrier adapters derive from computation-owned
@@ -94,6 +101,8 @@ these laws without choosing the same reading of `None`.
 
 The examples beside the computation laws check the raw semantics:
 
+- [DivExcNonDet.v](DivExcNonDet.v): `success_continuation`,
+  `raise_survives_empty`, `spin_survives_empty`, and `mixed_outcomes`.
 - [StExcNonDet.v](StExcNonDet.v): `empty_prefix_blocks` and `raise_survives_empty`.
 - [StDivNonDet.v](StDivNonDet.v): `diverge_survives_empty`.
 - [StDivExcNonDet.v](StDivExcNonDet.v): `blockP_bind_blocks`, `raiseP_bind_empty`,
