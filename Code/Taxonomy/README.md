@@ -678,14 +678,18 @@ the generic return/bind operations for `arr I` and proves their monad laws;
 `ArrowApplyFacts.v` supplies the shared algebraic application and arrow
 extensionality lemmas used by the monad and option-transformer proofs.
 `ArrowMorphism.v` proves operation-preserving maps and their option/state lifts.
-`RelArrowCoherence.v` proves application coherence for arrows with faithful
-relational presentations. Its `rel_state_option_pure` and
+`RelArrowCoherence.v` derives complete core, choice, and application law
+packages from relational operation contracts and `RelArrowEq`, which connects
+the chosen arrow equivalence to pointwise relation equivalence. Its
+relational-only helpers do not require equality reflection.
+The retained `rel_state_option_pure` and
 `rel_state_option_bind` theorems also normalize the actual arrow-derived
 return and bind of a state-over-option stack at any fixed input type `I`.
 Bind keeps the input, threads the intermediate state, and propagates `None`.
-The SP monads instantiate the relational contract with `ASP_rel_presentation`
-and `DSLP_rel_presentation`; concrete proofs retain the assumptions used to
-establish those presentations.
+The SP monads use `rel_state_option_bind_fields` with their operation facts;
+`ASP_rel_presentation` and `DSLP_rel_presentation` also expose the bundled
+exact-equality interface. Concrete proofs retain the assumptions used to
+establish their relational readings.
 SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
 
 ### Arrow-derived monad laws
@@ -751,7 +755,10 @@ canonical equalities support automatic law resolution.
 resolution checks: the `optionRel` laws, the monad-view `progRelM` /
 `nditRelM` stacks, the coupled option and state-over-option dictionaries
 (registered nowhere, resolved through the generic transformers), and the
-double-option application-law witnesses.
+double-option application-law witnesses. It also checks the definition of
+property-only pointwise equality, automatic base core/choice/application law
+resolution, and semantic `app_ext` and bind-continuation congruence for both
+ASP and DSLP.
 Both test modules are in `_CoqProject`, so the normal build checks them.
 They register no helper instances. Explicit generic applications check
 specialization; `:= _` checks automatic resolution. The two named SP-stack
@@ -777,7 +784,9 @@ PureDSLPostArr A B :=
   { w : (A -> Prop) -> B -> Prop | TerminatingArr w /\ ConjunctiveArr w }.
 ```
 
-The accessors are `getASP` and `getDSLP`. Composition forwards the precondition:
+The accessors are `getASP` and `getDSLP`. `arrASP` / `arrDSLP` lift functions;
+`arrASP_spec` / `arrDSLP_spec` expose their direct and universal images.
+Composition forwards the precondition:
 `comp f g P = g (f P)`. Application also works directly on transformers:
 
 ```text
@@ -791,23 +800,38 @@ The existing option/state transformers lift these laws, including to
 has input `A * S` and output `option (B * S)`: `None` propagates without a final
 state. `ASPostArr S B` and `DSLPostArr S B` fix the arrow input to `unit`.
 
-The core SP modules use faithful relational presentations from
-`Classes/RelArrowCoherence.v` to prove the base application laws.
-The generic transformers preserve these laws algebraically; their concrete
-equations are projections of `ArrowApplyLaws`.
+Property-only `arrow_eq f g` means pointwise transformer iff:
+`forall P b, getASP f P b <-> getASP g P b`, and likewise for DSLP.
+`Proper_getASP` / `Proper_getDSLP` support rewriting through accessors.
+Composition, first, choice, application, and arrow-derived bind respect this
+equivalence, including pointwise-equivalent continuations.
+
+`SPostArr.v` groups the recovered relations `ASP_rel` / `DSLP_rel` with
+`relASP` / `relDSLP`, their round trips, and normal-form rewrite consequences.
+Their operation-preservation facts use the existing operators in `Rel.v`.
+Both SP presentations instantiate the shared `RelArrow`, `RelArrowChoice`,
+`RelArrowApply`, and `RelArrowEq` contracts in `Classes/RelArrowCoherence.v`.
+Those contracts supply the complete core/choice/application law packages;
+the coupled presentation retains its Leibniz equality. The generic
+transformers preserve the laws algebraically.
 
 `SPostArrEquiv.v` provides `asp_to_coupled` / `asp_from_coupled` and their DSLP
 counterparts, with both round trips and preservation of all five operations.
 The `option_*` and `state_option_*` conversions lift this equivalence
 through the transformers. State-only lifts use `state_arrow_map` and
 `state_arrow_morphism` directly. `morphism_app` explicitly converts the arrow stored
-in the application's input. The coupled carriers are `PureRelASPPairArr` and
+in the application's input. This morphism API uses exact equalities;
+the property-only lifts pass explicit `ArrowLaws_*_leibniz` and
+`ArrowChoiceLaws_*_leibniz` dictionaries from `SPostArr.v`, derived through
+the generic semantic-to-Leibniz bridge. The coupled carriers are `PureRelASPPairArr` and
 `PureRelDSLPPairArr`; the property-only carriers are `PureASPostArr` and
 `PureDSLPostArr`. Qualify `SPostArr` or `RelSPPairArr` for shared names such as
 `ASPostArr` and `DSLPostArr` when using both.
 
-The normal-form proofs use functional and propositional extensionality, and
-bundled equality additionally uses proof irrelevance. Checked clients live in
+The normal-form proofs use functional and propositional extensionality.
+`PureASPostArr_eq` / `PureDSLPostArr_eq` recover bundled equality separately,
+using proof irrelevance as well; pointwise equality does not require clients
+to invoke these bridges. Checked clients live in
 `Arrows/Examples/SPostArrExamples.v`; monad and transformer instantiation
 checks live in `Arrows/Tests/`.
 

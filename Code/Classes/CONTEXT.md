@@ -24,18 +24,22 @@ bind semantics from faithful relational presentations; it does not add
 well-formedness fields to concrete carriers. Loop has its own laws; neither
 transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 
-- [RelArrowCoherence.v](RelArrowCoherence.v) proves the 16 structural equations
-  of `ArrowLaws` and `ArrowChoiceLaws` as ordinary equality lemmas named
-  `rel_<equation>_fields`. Each takes a relation reading, only the individual
-  operation facts it uses, and faithfulness (`rel_ext`), which turns pointwise
-  relation equivalence into arrow equality. Core equations need neither choice
-  nor application; choice equations need no application. Concrete SP modules
-  own the law instances that specialize these lemmas.
-  The same module supplies base application coherence and state-over-option
-  relation formulas, including `rel_state_option_bind_fields`. Relational-only
-  lemmas do not use faithfulness. `RelArrowPresentation` and the existing
-  wrappers retain the bundled interface, including `rel_state_option_bind`;
-  transformer application-law instances come from the generic transformer modules.
+- [RelArrowCoherence.v](RelArrowCoherence.v) separates relational operation
+  contracts (`RelArrow`, `RelArrowChoice`, `RelArrowApply`) from `RelArrowEq`,
+  which identifies the chosen `arrow_eq` with pointwise relation equivalence.
+  The shared `rel_arrow_laws`, `rel_arrow_choice_laws`, and
+  `rel_arrow_apply_laws` instances supply complete law packages, including
+  `Proper` fields and `app_ext`. Core laws need neither choice nor application;
+  choice laws need no application. Concrete SP modules instantiate these
+  contracts with recovered or stored relations.
+  Relational-only `rel_<equation>_iff` lemmas and state-over-option formulas,
+  including `rel_state_option_bind_fields`, do not require faithfulness.
+  The exact-equality `rel_<equation>_fields` helpers and `RelArrowPresentation`
+  wrappers remain available. `rel_arrow_*_laws_leibniz` transports semantic
+  laws when equivalence reflects into ordinary equality; exact morphism
+  clients use explicit transported dictionaries rather than changing the
+  carrier's selected equality. Transformer laws remain in the generic
+  option/state modules.
 
 [Galois.v](Galois.v) relates two ordered binary carriers via alpha/gamma,
 preorders, and the adjunction. [OrderedMonad.v](OrderedMonad.v) concerns unary

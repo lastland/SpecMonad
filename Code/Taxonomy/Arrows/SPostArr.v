@@ -4,11 +4,11 @@
     All operations act directly on transformers.  Canonical normal forms are
     derived below for reasoning; no relation is stored in either carrier. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality.
+From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Morphisms.
 From Hammer Require Import Tactics.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Classes Require Export ArrowMonad.
-From Incorrectness.Classes Require RelArrowCoherence.
+From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT ArrowMorphism RelArrowCoherence.
+From Incorrectness.Taxonomy.Arrows Require Import Rel.
 From Incorrectness.Taxonomy.Arrows Require Export PredicateTransformerProperties.
 
 Definition PureASPostArr (A B : Type) : Type :=
@@ -90,22 +90,6 @@ Proof.
     intros a Ha. apply H. intros Q HQ. exact (Ha (exist _ Q HQ)).
 Qed.
 
-(** Existentially packaged normal forms are convenient for repeated rewriting
-    without unfolding the canonical singleton/intersection predicates. *)
-Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
-  exists R : A -> B -> Prop,
-    forall P b, getASP f P b <-> exists a, P a /\ R a b.
-Proof.
-  exists (fun a b => getASP f (eq a) b). apply ASP_normal_form.
-Qed.
-
-Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
-  exists R : A -> B -> Prop,
-    forall P b, getDSLP f P b <-> forall a, R a b -> P a.
-Proof.
-  exists (fun a b => forall Q, getDSLP f Q b -> Q a). apply DSLP_normal_form.
-Qed.
-
 Lemma PureASPostArr_eq {A B} (f g : PureASPostArr A B) :
   (forall P b, getASP f P b <-> getASP g P b) -> f = g.
 Proof.
@@ -128,7 +112,7 @@ Qed.
 
 Local Obligation Tactic := idtac.
 
-#[program] Definition pureASP {A B} (h : A -> B) : PureASPostArr A B :=
+#[program] Definition arrASP {A B} (h : A -> B) : PureASPostArr A B :=
   fun P b => exists a, P a /\ h a = b.
 Next Obligation.
   intros A B h. split.
@@ -185,7 +169,7 @@ Next Obligation.
       exists i. exact H.
 Qed.
 
-#[program] Definition pureDSLP {A B} (h : A -> B) : PureDSLPostArr A B :=
+#[program] Definition arrDSLP {A B} (h : A -> B) : PureDSLPostArr A B :=
   fun P b => forall a, h a = b -> P a.
 Next Obligation.
   intros A B h. split.
@@ -242,11 +226,11 @@ Next Obligation.
 Qed.
 
 #[global] Instance Arrow_PureASPostArr : Arrow PureASPostArr := {
-  arr_pure := @pureASP; arr_comp := @compASP; arr_first := @firstASP
+  arr_pure := @arrASP; arr_comp := @compASP; arr_first := @firstASP
 }.
 
 #[global] Instance Arrow_PureDSLPostArr : Arrow PureDSLPostArr := {
-  arr_pure := @pureDSLP; arr_comp := @compDSLP; arr_first := @firstDSLP
+  arr_pure := @arrDSLP; arr_comp := @compDSLP; arr_first := @firstDSLP
 }.
 
 #[global] Instance ArrowChoice_PureASPostArr :
@@ -261,22 +245,58 @@ Qed.
 #[global] Instance ArrowApply_PureDSLPostArr :
   @ArrowApply PureDSLPostArr Arrow_PureDSLPostArr := { arr_app := @appDSLP }.
 
+Definition arrow_eq_ASP {A B} (f g : PureASPostArr A B) : Prop :=
+  forall P b, getASP f P b <-> getASP g P b.
+
+Lemma arrow_eq_ASP_equiv A B : Equivalence (@arrow_eq_ASP A B).
+Proof.
+  constructor.
+  - intros f P b. reflexivity.
+  - intros f g H P b. symmetry. apply H.
+  - intros f g h H1 H2 P b. etransitivity; [apply H1 | apply H2].
+Qed.
+
 #[global] Instance ArrowEq_PureASPostArr : ArrowEq PureASPostArr := {
-  arrow_eq := fun A B => @eq (PureASPostArr A B)
+  arrow_eq := @arrow_eq_ASP;
+  arrow_eq_equiv := arrow_eq_ASP_equiv
 }.
 
+Definition arrow_eq_DSLP {A B} (f g : PureDSLPostArr A B) : Prop :=
+  forall P b, getDSLP f P b <-> getDSLP g P b.
+
+Lemma arrow_eq_DSLP_equiv A B : Equivalence (@arrow_eq_DSLP A B).
+Proof.
+  constructor.
+  - intros f P b. reflexivity.
+  - intros f g H P b. symmetry. apply H.
+  - intros f g h H1 H2 P b. etransitivity; [apply H1 | apply H2].
+Qed.
+
 #[global] Instance ArrowEq_PureDSLPostArr : ArrowEq PureDSLPostArr := {
-  arrow_eq := fun A B => @eq (PureDSLPostArr A B)
+  arrow_eq := @arrow_eq_DSLP;
+  arrow_eq_equiv := arrow_eq_DSLP_equiv
 }.
+
+#[global] Instance Proper_getASP {A B} :
+  Proper (arrow_eq ==> eq ==> eq ==> iff) (@getASP A B).
+Proof.
+  intros f g H P ? <- b ? <-. apply H.
+Qed.
+
+#[global] Instance Proper_getDSLP {A B} :
+  Proper (arrow_eq ==> eq ==> eq ==> iff) (@getDSLP A B).
+Proof.
+  intros f g H P ? <- b ? <-. apply H.
+Qed.
 
 (** Public computational seams: lifting a function is its direct or
     universal image, and composition is transformer composition. *)
-Lemma pureASP_spec {A B} (h : A -> B) P b :
-  getASP (pureASP h) P b <-> exists a, P a /\ h a = b.
+Lemma arrASP_spec {A B} (h : A -> B) P b :
+  getASP (arrASP h) P b <-> exists a, P a /\ h a = b.
 Proof. reflexivity. Qed.
 
-Lemma pureDSLP_spec {A B} (h : A -> B) P b :
-  getDSLP (pureDSLP h) P b <-> forall a, h a = b -> P a.
+Lemma arrDSLP_spec {A B} (h : A -> B) P b :
+  getDSLP (arrDSLP h) P b <-> forall a, h a = b -> P a.
 Proof. reflexivity. Qed.
 
 Lemma compASP_spec {A B C} (f : PureASPostArr A B) (g : PureASPostArr B C) P c :
@@ -313,16 +333,53 @@ Lemma appDSLP_spec {A B} (P : PureDSLPostArr A B * A -> Prop) b :
   getDSLP appDSLP P b <-> forall f, getDSLP f (fun a => P (f, a)) b.
 Proof. reflexivity. Qed.
 
-(** ** Recovered relations and faithfulness
+(** ** Recovered relations, constructors, and round trips
 
-    These derived witnesses let the core law instances reuse relational
-    application coherence without changing the property-only carriers. *)
+    These derived witnesses and relation constructors allow the property-only
+    arrows to interface with relational descriptions, existential rewrite normal
+    forms, and generic semantic coherence packages. *)
 
 Definition ASP_rel {A B} (f : PureASPostArr A B) a b : Prop :=
   getASP f (eq a) b.
 
 Definition DSLP_rel {A B} (f : PureDSLPostArr A B) a b : Prop :=
   forall Q, getDSLP f Q b -> Q a.
+
+#[program] Definition relASP {A B} (R : A -> B -> Prop) : PureASPostArr A B :=
+  fun P b => exists a, P a /\ R a b.
+Next Obligation.
+  intros A B R. split.
+  - intros b [a [HF _]]. exact HF.
+  - intros I HI p b. split.
+    + intros [a [[i H] HR]]. exists i, a. auto.
+    + intros [i [a [H HR]]]. exists a. split; [exists i; exact H | exact HR].
+Qed.
+
+#[program] Definition relDSLP {A B} (R : A -> B -> Prop) : PureDSLPostArr A B :=
+  fun P b => forall a, R a b -> P a.
+Next Obligation.
+  intros A B R. split.
+  - intros b a _. exact I.
+  - intros I HI p b. split.
+    + intros H i a Heq. exact (H a Heq i).
+    + intros H a Heq i. exact (H i a Heq).
+Qed.
+
+Lemma getASP_relASP {A B} (R : A -> B -> Prop) P b :
+  getASP (relASP R) P b <-> exists a, P a /\ R a b.
+Proof. reflexivity. Qed.
+
+Lemma getDSLP_relDSLP {A B} (R : A -> B -> Prop) P b :
+  getDSLP (relDSLP R) P b <-> forall a, R a b -> P a.
+Proof. reflexivity. Qed.
+
+Lemma ASP_rel_relASP {A B} (R : A -> B -> Prop) a b :
+  ASP_rel (relASP R) a b <-> R a b.
+Proof.
+  unfold ASP_rel. rewrite getASP_relASP. split.
+  - intros [a' [Heq HR]]. subst a'. exact HR.
+  - intro HR. exists a. split; [reflexivity | exact HR].
+Qed.
 
 (** Any universal relational representation recovers its relation
     constructively: the forward direction chooses [Q := R (_, b)]. *)
@@ -334,6 +391,76 @@ Proof.
   unfold DSLP_rel. split.
   - intro H. apply (H (fun a' => R a' b)). apply HR. auto.
   - intros Hab Q HQ. exact (proj1 (HR Q b) HQ a Hab).
+Qed.
+
+Lemma DSLP_rel_relDSLP {A B} (R : A -> B -> Prop) a b :
+  DSLP_rel (relDSLP R) a b <-> R a b.
+Proof.
+  apply (DSLP_rel_of_representation _ R).
+  exact (getDSLP_relDSLP R).
+Qed.
+
+Lemma relASP_ASP_rel {A B} (f : PureASPostArr A B) :
+  relASP (ASP_rel f) = f.
+Proof.
+  apply PureASPostArr_eq. intros P b.
+  rewrite getASP_relASP. symmetry. apply ASP_normal_form.
+Qed.
+
+Lemma arrow_eq_relASP_ASP_rel {A B} (f : PureASPostArr A B) :
+  arrow_eq (relASP (ASP_rel f)) f.
+Proof.
+  intros P b. rewrite getASP_relASP. symmetry. apply ASP_normal_form.
+Qed.
+
+Lemma relDSLP_DSLP_rel {A B} (f : PureDSLPostArr A B) :
+  relDSLP (DSLP_rel f) = f.
+Proof.
+  apply PureDSLPostArr_eq. intros P b.
+  rewrite getDSLP_relDSLP. symmetry. apply DSLP_normal_form.
+Qed.
+
+Lemma arrow_eq_relDSLP_DSLP_rel {A B} (f : PureDSLPostArr A B) :
+  arrow_eq (relDSLP (DSLP_rel f)) f.
+Proof.
+  intros P b. rewrite getDSLP_relDSLP. symmetry. apply DSLP_normal_form.
+Qed.
+
+(** Existentially packaged normal forms are convenient for repeated rewriting
+    without unfolding the canonical singleton/intersection predicates. *)
+Lemma IsASP_rewrite {A B} (f : PureASPostArr A B) :
+  exists R : A -> B -> Prop,
+    forall P b, getASP f P b <-> exists a, P a /\ R a b.
+Proof.
+  exists (ASP_rel f). apply ASP_normal_form.
+Qed.
+
+Lemma IsDSLP_rewrite {A B} (f : PureDSLPostArr A B) :
+  exists R : A -> B -> Prop,
+    forall P b, getDSLP f P b <-> forall a, R a b -> P a.
+Proof.
+  exists (DSLP_rel f). apply DSLP_normal_form.
+Qed.
+
+Lemma ASP_arrow_eq_rel {A B} (f g : PureASPostArr A B) :
+  arrow_eq f g <-> (forall a b, ASP_rel f a b <-> ASP_rel g a b).
+Proof.
+  split.
+  - intros H a b. apply (H (eq a) b).
+  - intros Hrel P b.
+    rewrite (ASP_normal_form f), (ASP_normal_form g).
+    split; intros [a [HP Hr]]; exists a; split; [exact HP | apply Hrel, Hr | exact HP | apply Hrel, Hr].
+Qed.
+
+Lemma DSLP_arrow_eq_rel {A B} (f g : PureDSLPostArr A B) :
+  arrow_eq f g <-> (forall a b, DSLP_rel f a b <-> DSLP_rel g a b).
+Proof.
+  split.
+  - intros H a b. unfold DSLP_rel.
+    split; intros HQ Q Hq; apply HQ; [apply H | apply H]; exact Hq.
+  - intros Hrel P b.
+    rewrite (DSLP_normal_form f), (DSLP_normal_form g).
+    split; intros H a Hr; apply H; apply Hrel; exact Hr.
 Qed.
 
 Lemma ASP_rel_ext {A B} (f g : PureASPostArr A B) :
@@ -362,16 +489,16 @@ Qed.
     form, then [DSLP_rel_of_representation] recovers that relation. *)
 
 Lemma DSLP_rel_pure {A B} (h : A -> B) a b :
-  DSLP_rel (pureDSLP h) a b <-> h a = b.
+  DSLP_rel (arrDSLP h) a b <-> @arr_pure Rel Arrow_Rel _ _ h a b.
 Proof.
-  apply (DSLP_rel_of_representation (pureDSLP h) (fun a b => h a = b)).
-  intros Q b'. apply pureDSLP_spec.
+  apply (DSLP_rel_of_representation (arrDSLP h) (fun a b => h a = b)).
+  intros Q b'. apply arrDSLP_spec.
 Qed.
 
 Lemma DSLP_rel_comp {A B C}
   (f : PureDSLPostArr A B) (g : PureDSLPostArr B C) a c :
   DSLP_rel (compDSLP f g) a c <->
-  exists b, DSLP_rel f a b /\ DSLP_rel g b c.
+  @arr_comp Rel Arrow_Rel _ _ _ (DSLP_rel f) (DSLP_rel g) a c.
 Proof.
   apply (DSLP_rel_of_representation (compDSLP f g)
     (fun a c => exists b, DSLP_rel f a b /\ DSLP_rel g b c)).
@@ -383,7 +510,8 @@ Proof.
 Qed.
 
 Lemma DSLP_rel_first {A B C} (f : PureDSLPostArr A B) a (c : C) b d :
-  DSLP_rel (firstDSLP f) (a, c) (b, d) <-> DSLP_rel f a b /\ c = d.
+  DSLP_rel (firstDSLP f) (a, c) (b, d) <->
+  @arr_first Rel Arrow_Rel _ _ _ (DSLP_rel f) (a, c) (b, d).
 Proof.
   apply (DSLP_rel_of_representation (firstDSLP f)
     (fun '(a, c) '(b, d) => DSLP_rel f a b /\ c = d))
@@ -397,11 +525,7 @@ Qed.
 Lemma DSLP_rel_left {A B C} (f : PureDSLPostArr A B)
   (x : A + C) (y : B + C) :
   DSLP_rel (leftDSLP f) x y <->
-  match x, y with
-  | inl a, inl b => DSLP_rel f a b
-  | inr c, inr d => c = d
-  | _, _ => False
-  end.
+  @arr_left Rel Arrow_Rel ArrowChoice_Rel _ _ _ (DSLP_rel f) x y.
 Proof.
   apply (DSLP_rel_of_representation (leftDSLP f)
     (fun x y => match x, y with
@@ -432,9 +556,9 @@ Qed.
 (** ** Angelic relation semantics *)
 
 Lemma ASP_rel_pure {A B} (h : A -> B) a b :
-  ASP_rel (pureASP h) a b <-> h a = b.
+  ASP_rel (arrASP h) a b <-> @arr_pure Rel Arrow_Rel _ _ h a b.
 Proof.
-  unfold ASP_rel. rewrite pureASP_spec. split.
+  unfold ASP_rel. rewrite arrASP_spec. split.
   - intros [a' [<- Hh]]. exact Hh.
   - intro Hh. exists a. split; [reflexivity | exact Hh].
 Qed.
@@ -442,14 +566,15 @@ Qed.
 Lemma ASP_rel_comp {A B C}
   (f : PureASPostArr A B) (g : PureASPostArr B C) a c :
   ASP_rel (compASP f g) a c <->
-  exists b, ASP_rel f a b /\ ASP_rel g b c.
+  @arr_comp Rel Arrow_Rel _ _ _ (ASP_rel f) (ASP_rel g) a c.
 Proof.
   unfold ASP_rel. rewrite compASP_spec, (ASP_normal_form g).
   reflexivity.
 Qed.
 
 Lemma ASP_rel_first {A B C} (f : PureASPostArr A B) a (c : C) b d :
-  ASP_rel (firstASP f) (a, c) (b, d) <-> ASP_rel f a b /\ c = d.
+  ASP_rel (firstASP f) (a, c) (b, d) <->
+  @arr_first Rel Arrow_Rel _ _ _ (ASP_rel f) (a, c) (b, d).
 Proof.
   unfold ASP_rel. rewrite firstASP_spec, (ASP_normal_form f).
   split.
@@ -460,11 +585,7 @@ Qed.
 Lemma ASP_rel_left {A B C} (f : PureASPostArr A B)
   (x : A + C) (y : B + C) :
   ASP_rel (leftASP f) x y <->
-  match x, y with
-  | inl a, inl b => ASP_rel f a b
-  | inr c, inr d => c = d
-  | _, _ => False
-  end.
+  @arr_left Rel Arrow_Rel ArrowChoice_Rel _ _ _ (ASP_rel f) x y.
 Proof.
   unfold ASP_rel. destruct x as [a|c], y as [b|d];
     rewrite leftASP_spec; cbn.
@@ -490,7 +611,95 @@ Proof.
     exists a. split; [reflexivity | exact Hr].
 Qed.
 
-(** ** Derived proof packages for the existing property-only carriers *)
+(** ** Generic semantic instances and derived law packages *)
+
+#[global] Instance RelArrow_PureASPostArr : RelArrow PureASPostArr := {
+  rel_reading := @ASP_rel;
+  rel_pure := @ASP_rel_pure;
+  rel_comp := @ASP_rel_comp;
+  rel_first := @ASP_rel_first;
+}.
+
+#[global] Instance RelArrowChoice_PureASPostArr :
+  RelArrowChoice PureASPostArr := {
+  rel_left := @ASP_rel_left;
+}.
+
+#[global] Instance RelArrowApply_PureASPostArr :
+  RelArrowApply PureASPostArr := {
+  rel_app := @ASP_rel_app;
+}.
+
+#[global] Instance RelArrowEq_PureASPostArr :
+  RelArrowEq PureASPostArr := {|
+  rel_arrow_eq := @ASP_arrow_eq_rel;
+|}.
+
+#[global] Instance ArrowLaws_PureASPostArr :
+  ArrowLaws PureASPostArr := rel_arrow_laws.
+
+#[global] Instance ArrowChoiceLaws_PureASPostArr :
+  ArrowChoiceLaws PureASPostArr := rel_arrow_choice_laws.
+
+#[global] Instance ArrowApplyLaws_PureASPostArr :
+  ArrowApplyLaws PureASPostArr := rel_arrow_apply_laws.
+
+#[global] Instance RelArrow_PureDSLPostArr : RelArrow PureDSLPostArr := {
+  rel_reading := @DSLP_rel;
+  rel_pure := @DSLP_rel_pure;
+  rel_comp := @DSLP_rel_comp;
+  rel_first := @DSLP_rel_first;
+}.
+
+#[global] Instance RelArrowChoice_PureDSLPostArr :
+  RelArrowChoice PureDSLPostArr := {
+  rel_left := @DSLP_rel_left;
+}.
+
+#[global] Instance RelArrowApply_PureDSLPostArr :
+  RelArrowApply PureDSLPostArr := {
+  rel_app := @DSLP_rel_app;
+}.
+
+#[global] Instance RelArrowEq_PureDSLPostArr :
+  RelArrowEq PureDSLPostArr := {|
+  rel_arrow_eq := @DSLP_arrow_eq_rel;
+|}.
+
+#[global] Instance ArrowLaws_PureDSLPostArr :
+  ArrowLaws PureDSLPostArr := rel_arrow_laws.
+
+#[global] Instance ArrowChoiceLaws_PureDSLPostArr :
+  ArrowChoiceLaws PureDSLPostArr := rel_arrow_choice_laws.
+
+#[global] Instance ArrowApplyLaws_PureDSLPostArr :
+  ArrowApplyLaws PureDSLPostArr := rel_arrow_apply_laws.
+
+Lemma ArrowLaws_PureASPostArr_leibniz :
+  @ArrowLaws PureASPostArr Arrow_PureASPostArr (ArrowEq_leibniz PureASPostArr).
+Proof.
+  exact (rel_arrow_laws_leibniz (fun A B f g H => @PureASPostArr_eq A B f g H) ArrowLaws_PureASPostArr).
+Qed.
+
+Lemma ArrowChoiceLaws_PureASPostArr_leibniz :
+  @ArrowChoiceLaws PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr
+    (ArrowEq_leibniz PureASPostArr).
+Proof.
+  exact (rel_arrow_choice_laws_leibniz (fun A B f g H => @PureASPostArr_eq A B f g H) ArrowChoiceLaws_PureASPostArr).
+Qed.
+
+Lemma ArrowLaws_PureDSLPostArr_leibniz :
+  @ArrowLaws PureDSLPostArr Arrow_PureDSLPostArr (ArrowEq_leibniz PureDSLPostArr).
+Proof.
+  exact (rel_arrow_laws_leibniz (fun A B f g H => @PureDSLPostArr_eq A B f g H) ArrowLaws_PureDSLPostArr).
+Qed.
+
+Lemma ArrowChoiceLaws_PureDSLPostArr_leibniz :
+  @ArrowChoiceLaws PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+    (ArrowEq_leibniz PureDSLPostArr).
+Proof.
+  exact (rel_arrow_choice_laws_leibniz (fun A B f g H => @PureDSLPostArr_eq A B f g H) ArrowChoiceLaws_PureDSLPostArr).
+Qed.
 
 Definition ASP_rel_presentation :
   RelArrowCoherence.RelArrowPresentation PureASPostArr
@@ -517,207 +726,6 @@ Definition DSLP_rel_presentation :
   RelArrowCoherence.present_left := @DSLP_rel_left;
   RelArrowCoherence.present_app := @DSLP_rel_app
 |}.
-
-(** ** Angelic arrow laws *)
-
-(** The structural equations are specializations of the generic relational
-    coherence lemmas through the direct [ASP_rel_*] facts; the two Proper
-    fields remain direct equality substitutions. *)
-
-#[global] Instance ArrowLaws_PureASPostArr :
-  @ArrowLaws PureASPostArr Arrow_PureASPostArr ArrowEq_PureASPostArr.
-Proof.
-  constructor; intros.
-  - exact (@RelArrowCoherence.rel_comp_id_l_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-      (@ASP_rel_ext) A B f).
-  - exact (@RelArrowCoherence.rel_comp_id_r_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-      (@ASP_rel_ext) A B f).
-  - exact (@RelArrowCoherence.rel_comp_assoc_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_comp)
-      (@ASP_rel_ext) A B C D f g h).
-  - exact (@RelArrowCoherence.rel_pure_comp_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-      (@ASP_rel_ext) A B C f g).
-  - exact (@RelArrowCoherence.rel_first_pure_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_first)
-      (@ASP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_first_comp_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_comp) (@ASP_rel_first)
-      (@ASP_rel_ext) A B C D f g).
-  - exact (@RelArrowCoherence.rel_first_fst_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-      (@ASP_rel_first) (@ASP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_first_assoc_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-      (@ASP_rel_first) (@ASP_rel_ext) A B C D f).
-  - intros x y -> z w ->. reflexivity.
-  - intros x y ->. reflexivity.
-  - exact (@RelArrowCoherence.rel_first_natural_fields PureASPostArr
-      Arrow_PureASPostArr (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-      (@ASP_rel_first) (@ASP_rel_ext) A B C D f g).
-Qed.
-
-#[global] Instance ArrowChoiceLaws_PureASPostArr :
-  @ArrowChoiceLaws PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowEq_PureASPostArr.
-Proof.
-  constructor; intros.
-  - exact (@RelArrowCoherence.rel_left_pure_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_left) (@ASP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_left_comp_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_comp) (@ASP_rel_left) (@ASP_rel_ext)
-      A B C D f g).
-  - exact (@RelArrowCoherence.rel_left_inl_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
-      (@ASP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_left_assoc_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
-      (@ASP_rel_ext) A B C D f).
-  - exact (@RelArrowCoherence.rel_left_inr_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
-      (@ASP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_left_natural_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_left)
-      (@ASP_rel_ext) A B C D f g).
-  - exact (@RelArrowCoherence.rel_first_left_dist_fields PureASPostArr
-      Arrow_PureASPostArr ArrowChoice_PureASPostArr
-      (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp) (@ASP_rel_first)
-      (@ASP_rel_left) (@ASP_rel_ext) A B C D f).
-  - intros x y ->. reflexivity.
-Qed.
-
-(** ** Demonic arrow laws *)
-
-(** As in the angelic case, the structural equations specialize the
-    generic coherence lemmas through the direct [DSLP_rel_*] facts. *)
-
-#[global] Instance ArrowLaws_PureDSLPostArr :
-  @ArrowLaws PureDSLPostArr Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr.
-Proof.
-  constructor; intros.
-  - exact (@RelArrowCoherence.rel_comp_id_l_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-      (@DSLP_rel_ext) A B f).
-  - exact (@RelArrowCoherence.rel_comp_id_r_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-      (@DSLP_rel_ext) A B f).
-  - exact (@RelArrowCoherence.rel_comp_assoc_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_comp)
-      (@DSLP_rel_ext) A B C D f g h).
-  - exact (@RelArrowCoherence.rel_pure_comp_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-      (@DSLP_rel_ext) A B C f g).
-  - exact (@RelArrowCoherence.rel_first_pure_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_first)
-      (@DSLP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_first_comp_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_comp) (@DSLP_rel_first)
-      (@DSLP_rel_ext) A B C D f g).
-  - exact (@RelArrowCoherence.rel_first_fst_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-      (@DSLP_rel_first) (@DSLP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_first_assoc_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-      (@DSLP_rel_first) (@DSLP_rel_ext) A B C D f).
-  - intros x y -> z w ->. reflexivity.
-  - intros x y ->. reflexivity.
-  - exact (@RelArrowCoherence.rel_first_natural_fields PureDSLPostArr
-      Arrow_PureDSLPostArr (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-      (@DSLP_rel_first) (@DSLP_rel_ext) A B C D f g).
-Qed.
-
-#[global] Instance ArrowChoiceLaws_PureDSLPostArr :
-  @ArrowChoiceLaws PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowEq_PureDSLPostArr.
-Proof.
-  constructor; intros.
-  - exact (@RelArrowCoherence.rel_left_pure_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_left) (@DSLP_rel_ext)
-      A B C f).
-  - exact (@RelArrowCoherence.rel_left_comp_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_comp) (@DSLP_rel_left) (@DSLP_rel_ext)
-      A B C D f g).
-  - exact (@RelArrowCoherence.rel_left_inl_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
-      (@DSLP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_left_assoc_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
-      (@DSLP_rel_ext) A B C D f).
-  - exact (@RelArrowCoherence.rel_left_inr_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
-      (@DSLP_rel_ext) A B C f).
-  - exact (@RelArrowCoherence.rel_left_natural_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_left)
-      (@DSLP_rel_ext) A B C D f g).
-  - exact (@RelArrowCoherence.rel_first_left_dist_fields PureDSLPostArr
-      Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
-      (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp) (@DSLP_rel_first)
-      (@DSLP_rel_left) (@DSLP_rel_ext) A B C D f).
-  - intros x y ->. reflexivity.
-Qed.
-
-(** ** Application laws *)
-
-#[global] Instance ArrowApplyLaws_PureASPostArr :
-  @ArrowApplyLaws PureASPostArr Arrow_PureASPostArr
-    ArrowApply_PureASPostArr ArrowEq_PureASPostArr.
-Proof.
-  constructor.
-  - intros A B f. apply PureASPostArr_eq; intros P b. cbn.
-    split.
-    + intros [f0 H]. destruct (IsASP_rewrite f0) as [R HR].
-      rewrite HR in H. destruct H as [a [[a0 [HP Heq]] Ha]].
-      injection Heq as Hf Heq. subst f0 a0.
-      rewrite HR. exists a. auto.
-    + intro H. exists f. eapply ASP_monotone; [|exact H].
-      intros a HP. exists a. auto.
-  - exact (RelArrowCoherence.rel_app_unit ASP_rel_presentation).
-  - intros A B C g. exact (RelArrowCoherence.rel_app_precompose ASP_rel_presentation g).
-  - intros A B C h. exact (RelArrowCoherence.rel_app_postcompose ASP_rel_presentation h).
-  - intros X A B u v H.
-    assert (Heq : u = v).
-    { extensionality x. specialize (H x).
-      destruct (u x) as [f a], (v x) as [g b].
-      cbn in H. destruct H as [-> ->]. reflexivity. }
-    subst v. reflexivity.
-Qed.
-
-#[global] Instance ArrowApplyLaws_PureDSLPostArr :
-  @ArrowApplyLaws PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowApply_PureDSLPostArr ArrowEq_PureDSLPostArr.
-Proof.
-  constructor.
-  - intros A B f. apply PureDSLPostArr_eq; intros P b. cbn.
-    split.
-    + intro H. eapply DSLP_monotone; [|exact (H f)].
-      intros a Ha. exact (Ha a eq_refl).
-    + intros H f0. destruct (IsDSLP_rewrite f0) as [R HR].
-      rewrite HR. intros a Ha a0 Heq. injection Heq as Hf Heq. subst f0 a0.
-      rewrite HR in H. exact (H a Ha).
-  - exact (RelArrowCoherence.rel_app_unit DSLP_rel_presentation).
-  - intros A B C g. exact (RelArrowCoherence.rel_app_precompose DSLP_rel_presentation g).
-  - intros A B C h. exact (RelArrowCoherence.rel_app_postcompose DSLP_rel_presentation h).
-  - intros X A B u v H.
-    assert (Heq : u = v).
-    { extensionality x. specialize (H x).
-      destruct (u x) as [f a], (v x) as [g b].
-      cbn in H. destruct H as [-> ->]. reflexivity. }
-    subst v. reflexivity.
-Qed.
 
 (** ** Option and state stacks
 

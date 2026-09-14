@@ -16,6 +16,11 @@ state-over-option layers with non-unit inputs. The named stacks from
 the monad-view `progRelM` / `nditRelM` stacks, coupled option/state stacks, and
 double-option application laws. It depends on the generic arrow transformers
 and [TransformerLaws.v](../../ComputationMonads/TransformerLaws.v).
+Its `PropertyEquality` module checks that property-only equality is
+definitionally pointwise transformer iff, resolves all three base law packages,
+and exercises `app_ext` and `Proper_bind` with semantic hypotheses for ASP and
+DSLP. The double-option exact equalities use the explicit bundled-equality
+bridges after applying the semantic application law.
 Plain definitions register no helper instances: `:= _` checks automatic
 resolution; explicit generic applications check specialization.
 

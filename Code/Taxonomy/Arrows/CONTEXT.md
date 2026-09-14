@@ -21,29 +21,48 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
 
 ## SP presentations and monads
 
-SPostArr contains only transformers and well-formedness proofs: PureASPostArr
-is strict/disjunctive; PureDSLPostArr is terminating/conjunctive. Their direct
-operations have constructive existential/universal normal forms. Unreachable
-outputs make ASP false and DSLP true. Equality is Leibniz on bundles.
+- [PredicateTransformerProperties.v](PredicateTransformerProperties.v) defines
+  `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, and `ConjunctiveArr` for forward
+  transformers `(A -> Prop) -> B -> Prop`. The latter two preserve arbitrary
+  **nonempty indexed families**; strictness supplies the empty join and termination
+  the empty meet. `TerminatingArr` means **top preservation** here. See
+  [PROPERTY_TERMINOLOGY.md](PROPERTY_TERMINOLOGY.md) for its semantic interpretation.
+- [SPostArr.v](SPostArr.v) is the **property-only** presentation:
+  `PureASPostArr` bundles strictness and disjunctivity; `PureDSLPostArr` bundles
+  termination and conjunctivity. `getASP` / `getDSLP` expose the transformer;
+  operations act directly on it. `ASP_normal_form` / `DSLP_normal_form` recover
+  relational readings without storing a relation in the carrier.
+  `arrASP` / `arrDSLP` lift functions, with `arrASP_spec` / `arrDSLP_spec`
+  exposing direct/universal images. `ASP_rel` / `DSLP_rel`, constructors
+  `relASP` / `relDSLP`, their round trips, and relational rewrite facts all
+  live in this arrow layer. `arrow_eq` is pointwise transformer iff;
+  `PureASPostArr_eq` / `PureDSLPostArr_eq` separately recover bundled equality.
+- [RelSPPairArr.v](RelSPPairArr.v) is the **coupled** presentation:
+  `RelSPPair` stores `spost` and `rel`; `PureRelASPPairArr` / `PureRelDSLPPairArr`
+  require their agreement with `asp` / `dslp`. ASP asks for some predecessor in
+  the precondition; DSLP requires every predecessor to satisfy it. At an
+  unreachable output ASP is false and DSLP is vacuously true. Determinism alone
+  does not identify these readings: a many-to-one function can distinguish them.
+- [SPostArrEquiv.v](SPostArrEquiv.v) proves both round trips for
+  `asp_to_coupled` / `asp_from_coupled` and the DSLP counterparts. These maps
+  preserve the transformer and all five operations: pure, composition, first,
+  choice (`left`), and application. Application preservation also converts the
+  arrow stored in the input. [ArrowMorphism.v](../../Classes/ArrowMorphism.v)
+  supplies the exact option/state lifts, using explicit `*_leibniz` law
+  dictionaries from `SPostArr.v`. Qualify shared names such as `ASPostArr`
+  with `SPostArr` or `RelSPPairArr` when both presentations are imported.
 
-RelSPPairArr couples spost and rel in RelSPPair. PureRelASPPairArr /
-PureRelDSLPPairArr require agreement with the ASP/DSLP reading. Constructors
-mkASP/mkDSLP package relations; bundled equality recovers both components.
-SPostArrEquiv proves operation-preserving equivalence with the property-only
-presentation. Qualify shared stack names when importing both.
-
-Both SP presentations provide `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`.
-`SPostArr.v` and `RelSPPairArr.v` own the eight core/choice instances for the four
-property-only and coupled ASP/DSLP carriers.
-[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v) supplies the 16 shared
-structural equations for specialization in those instances. The property-only
-instances pass `ASP_rel` / `DSLP_rel` and their individual operation facts to
-`rel_<equation>_fields`. For coupled carriers, the relation is `rel (proj1_sig f)`
-and the operation facts are `iff_refl`. Both presentations supply their own
-`ASP_rel_ext` / `DSLP_rel_ext` for faithfulness. The three `Proper` fields
-(`comp_proper`, `first_proper`, `left_proper`) remain concrete equality
-substitutions. Sharing these proofs leaves carriers, operations, dictionaries,
-and semantics unchanged.
+Both SP presentations provide `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`
+by instantiating the shared semantic packages in
+[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v).
+`RelArrow`, `RelArrowChoice`, and `RelArrowApply` describe operation preservation;
+`RelArrowEq` connects the chosen equality to pointwise relation equivalence.
+The property-only reading is `ASP_rel` / `DSLP_rel`, with operation facts phrased
+using the existing operators in `Rel.v`. The coupled reading is
+`rel (proj1_sig f)`, with definitional operation facts and its existing Leibniz
+equality. Shared proofs supply composition/first/choice congruence and `app_ext`,
+including replacement of semantically equivalent arrows stored in inputs.
+Relational-only helpers remain independent of equality reflection.
 
 `RelArrowCoherence.v` also supplies base application coherence and the
 state-over-option relational bind formula. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
@@ -60,8 +79,9 @@ RelArrowCoherence derives application coherence from relational operation
 semantics. Transformer law proofs are generic, not concrete carrier inspections.
 
 Main's ASPArr/DSLPArr/DSPArr/ASLPArr in BaseSpecMonads are retained distinct
-public bundles; their equality is transformer iff, not the property-only
-bundle's Leibniz equality. Canonical-carrier consolidation is not yet done.
+public bundles. ASP/DSLP and the property-only presentation now select
+transformer iff, but the bundles are not definitionally equal because their
+proof fields differ. Canonical-carrier consolidation is not yet done.
 [OptionLoop.v](OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
 `ArrowLoop` for the existing `optionRel` operations and pointwise equivalence
 when feedback ranges over all types, including `Empty_set`. Empty feedback hides
@@ -69,6 +89,8 @@ the difference between an empty prefix and one returning `None`, while option
 composition outside the loop distinguishes them. `SPostArrEquiv.v` transports
 this obstruction to property-only option ASP and DSLP arrows. Its scope is this
 unrestricted law and these operations, rather than every possible feedback design.
+The no-lawful-loop corollaries bridge pointwise laws to the exact equalities
+used by the transport theorem with `PureASPostArr_eq` / `PureDSLPostArr_eq`.
 
 ## Orders, boundaries, and clients
 

@@ -11,6 +11,67 @@ From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr SPostArr.
 
+(** Pointwise transformer equivalence is the public equality, including
+    for arrows selected at runtime and pointwise-related continuations. *)
+Module PropertyEquality.
+
+  Definition asp_core : ArrowLaws PureASPostArr := _.
+  Definition asp_choice : ArrowChoiceLaws PureASPostArr := _.
+  Definition asp_apply : ArrowApplyLaws PureASPostArr := _.
+  Definition dslp_core : ArrowLaws PureDSLPostArr := _.
+  Definition dslp_choice : ArrowChoiceLaws PureDSLPostArr := _.
+  Definition dslp_apply : ArrowApplyLaws PureDSLPostArr := _.
+
+  Example asp_pointwise {A B} (f g : PureASPostArr A B) :
+    arrow_eq f g <-> (forall P b, getASP f P b <-> getASP g P b).
+  Proof. reflexivity. Qed.
+
+  Example dslp_pointwise {A B} (f g : PureDSLPostArr A B) :
+    arrow_eq f g <-> (forall P b, getDSLP f P b <-> getDSLP g P b).
+  Proof. reflexivity. Qed.
+
+  Example asp_dynamic_application {X A B}
+    (u v : X -> PureASPostArr A B * A)
+    (H : forall x, (forall P b,
+      getASP (fst (u x)) P b <-> getASP (fst (v x)) P b) /\
+      snd (u x) = snd (v x)) :
+    arrow_eq (compASP (arrASP u) appASP) (compASP (arrASP v) appASP).
+  Proof.
+    exact (@app_ext PureASPostArr _ _ ArrowEq_PureASPostArr _ X A B u v H).
+  Qed.
+
+  Example dslp_dynamic_application {X A B}
+    (u v : X -> PureDSLPostArr A B * A)
+    (H : forall x, (forall P b,
+      getDSLP (fst (u x)) P b <-> getDSLP (fst (v x)) P b) /\
+      snd (u x) = snd (v x)) :
+    arrow_eq (compDSLP (arrDSLP u) appDSLP) (compDSLP (arrDSLP v) appDSLP).
+  Proof.
+    exact (@app_ext PureDSLPostArr _ _ ArrowEq_PureDSLPostArr _ X A B u v H).
+  Qed.
+
+  Example asp_continuation_congruence {I A B}
+    (m n : PureASPostArr I A) (k l : A -> PureASPostArr I B)
+    (Hmn : forall P a, getASP m P a <-> getASP n P a)
+    (Hkl : forall a P b, getASP (k a) P b <-> getASP (l a) P b) :
+    arrow_eq (bind_arrow PureASPostArr I m k) (bind_arrow PureASPostArr I n l).
+  Proof.
+    exact (@Proper_bind _ (Eq1_Arrow ArrowEq_PureASPostArr I)
+      (Monad_Arrow PureASPostArr I) _ A B m n Hmn k l Hkl).
+  Qed.
+
+  Example dslp_continuation_congruence {I A B}
+    (m n : PureDSLPostArr I A) (k l : A -> PureDSLPostArr I B)
+    (Hmn : forall P a, getDSLP m P a <-> getDSLP n P a)
+    (Hkl : forall a P b, getDSLP (k a) P b <-> getDSLP (l a) P b) :
+    arrow_eq (bind_arrow PureDSLPostArr I m k) (bind_arrow PureDSLPostArr I n l).
+  Proof.
+    exact (@Proper_bind _ (Eq1_Arrow ArrowEq_PureDSLPostArr I)
+      (Monad_Arrow PureDSLPostArr I) _ A B m n Hmn k l Hkl).
+  Qed.
+
+End PropertyEquality.
+
 (* ================================================================= *)
 (** ** [optionRel]: generic option-transformer laws, specialized      *)
 (* ================================================================= *)
@@ -128,8 +189,9 @@ Example nested_optionASP_apply_law {A B}
     (@arr_app (optionArrT SPostArr.optionASPArr) _
       (@ArrowApply_optionArrT SPostArr.optionASPArr
         SPostArr.Arrow_optionASPArr SPostArr.ArrowChoice_optionASPArr
-        SPostArr.ArrowApply_optionASPArr) _ _) = f.
+         SPostArr.ArrowApply_optionASPArr) _ _) = f.
 Proof.
+  apply SPostArr.PureASPostArr_eq.
   exact (@app_law _ _ _ _
     (@ArrowApplyLaws_optionArrT SPostArr.optionASPArr
       SPostArr.Arrow_optionASPArr SPostArr.ArrowChoice_optionASPArr
@@ -152,8 +214,9 @@ Example nested_optionDSLP_apply_law {A B}
     (@arr_app (optionArrT SPostArr.optionDSLPArr) _
       (@ArrowApply_optionArrT SPostArr.optionDSLPArr
         SPostArr.Arrow_optionDSLPArr SPostArr.ArrowChoice_optionDSLPArr
-        SPostArr.ArrowApply_optionDSLPArr) _ _) = f.
+         SPostArr.ArrowApply_optionDSLPArr) _ _) = f.
 Proof.
+  apply SPostArr.PureDSLPostArr_eq.
   exact (@app_law _ _ _ _
     (@ArrowApplyLaws_optionArrT SPostArr.optionDSLPArr
       SPostArr.Arrow_optionDSLPArr SPostArr.ArrowChoice_optionDSLPArr
