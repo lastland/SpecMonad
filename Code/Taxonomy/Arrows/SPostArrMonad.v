@@ -15,52 +15,7 @@ From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 Import MonadNotation.
 
-(** ** Relation constructors *)
-
 Local Obligation Tactic := idtac.
-
-#[program] Definition relASP {A B} (R : A -> B -> Prop) : PureASPostArr A B :=
-  fun P b => exists a, P a /\ R a b.
-Next Obligation.
-  intros A B R. split.
-  - intros b [a [HF _]]. exact HF.
-  - intros I HI p b. split.
-    + intros [a [[i H] HR]]. exists i, a. auto.
-    + intros [i [a [H HR]]]. exists a. split; [exists i; exact H | exact HR].
-Qed.
-
-#[program] Definition relDSLP {A B} (R : A -> B -> Prop) : PureDSLPostArr A B :=
-  fun P b => forall a, R a b -> P a.
-Next Obligation.
-  intros A B R. split.
-  - intros b a _. exact I.
-  - intros I HI p b. split.
-    + intros H i a Heq. exact (H a Heq i).
-    + intros H a Heq i. exact (H i a Heq).
-Qed.
-
-Lemma getASP_relASP {A B} (R : A -> B -> Prop) P b :
-  getASP (relASP R) P b <-> exists a, P a /\ R a b.
-Proof. reflexivity. Qed.
-
-Lemma getDSLP_relDSLP {A B} (R : A -> B -> Prop) P b :
-  getDSLP (relDSLP R) P b <-> forall a, R a b -> P a.
-Proof. reflexivity. Qed.
-
-Lemma ASP_rel_relASP {A B} (R : A -> B -> Prop) a b :
-  ASP_rel (relASP R) a b <-> R a b.
-Proof.
-  unfold ASP_rel. rewrite getASP_relASP. split.
-  - intros [a' [Heq HR]]. subst a'. exact HR.
-  - intro HR. exists a. split; [reflexivity | exact HR].
-Qed.
-
-Lemma DSLP_rel_relDSLP {A B} (R : A -> B -> Prop) a b :
-  DSLP_rel (relDSLP R) a b <-> R a b.
-Proof.
-  apply (DSLP_rel_of_representation _ R).
-  exact (getDSLP_relDSLP R).
-Qed.
 
 (** ** Angelic-to-demonic conversion *)
 

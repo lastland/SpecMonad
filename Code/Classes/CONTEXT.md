@@ -34,18 +34,22 @@ The pre/post-order classes in [Common](../Common/CONTEXT.md) are a separate API.
   with explicit dictionaries and Leibniz-equality preservation equations.
   Application preservation maps the embedded arrow in the input too.
   Inverse morphisms and option/state lifts reuse this record.
-- [RelArrowCoherence.v](RelArrowCoherence.v) proves the 16 structural equations
-  of `ArrowLaws` and `ArrowChoiceLaws` as ordinary equality lemmas named
-  `rel_<equation>_fields`. Each takes a relation reading, only the individual
-  operation facts it uses, and faithfulness (`rel_ext`), which turns pointwise
-  relation equivalence into arrow equality. Core equations need neither choice
-  nor application; choice equations need no application. Concrete SP modules
-  own the law instances that specialize these lemmas.
-  The same module supplies base application coherence and state-over-option
-  relation formulas, including `rel_state_option_bind_fields`. Relational-only
-  lemmas do not use faithfulness. `RelArrowPresentation` and the existing
-  wrappers retain the bundled interface, including `rel_state_option_bind`;
-  transformer application-law instances come from the generic transformer modules.
+- [RelArrowCoherence.v](RelArrowCoherence.v) separates relational operation
+  contracts (`RelArrow`, `RelArrowChoice`, `RelArrowApply`) from `RelArrowEq`,
+  which identifies the chosen `arrow_eq` with pointwise relation equivalence.
+  The shared `rel_arrow_laws`, `rel_arrow_choice_laws`, and
+  `rel_arrow_apply_laws` instances supply complete law packages, including
+  `Proper` fields and `app_ext`. Core laws need neither choice nor application;
+  choice laws need no application. Concrete SP modules instantiate these
+  contracts with recovered or stored relations.
+  Relational-only `rel_<equation>_iff` lemmas and state-over-option formulas,
+  including `rel_state_option_bind_fields`, do not require faithfulness.
+  The exact-equality `rel_<equation>_fields` helpers and `RelArrowPresentation`
+  wrappers remain available. `rel_arrow_*_laws_leibniz` transports semantic
+  laws when equivalence reflects into ordinary equality; exact morphism
+  clients use explicit transported dictionaries rather than changing the
+  carrier's selected equality. Transformer laws remain in the generic
+  option/state modules.
 - [Galois.v](Galois.v) indexes `Galois` by both binary constructors and their
   orders, allowing different orders for the same carriers. It supplies the
   adjunction and derived monotonicity/inflation/deflation lemmas.

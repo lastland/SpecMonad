@@ -23,6 +23,11 @@ belong to `Classes/`; computation-specific interpretations belong to observation
   termination and conjunctivity. `getASP` / `getDSLP` expose the transformer;
   operations act directly on it. `ASP_normal_form` / `DSLP_normal_form` recover
   relational readings without storing a relation in the carrier.
+  `arrASP` / `arrDSLP` lift functions, with `arrASP_spec` / `arrDSLP_spec`
+  exposing direct/universal images. `ASP_rel` / `DSLP_rel`, constructors
+  `relASP` / `relDSLP`, their round trips, and relational rewrite facts all
+  live in this arrow layer. `arrow_eq` is pointwise transformer iff;
+  `PureASPostArr_eq` / `PureDSLPostArr_eq` separately recover bundled equality.
 - [RelSPPairArr.v](RelSPPairArr.v) is the **coupled** presentation:
   `RelSPPair` stores `spost` and `rel`; `PureRelASPPairArr` / `PureRelDSLPPairArr`
   require their agreement with `asp` / `dslp`. ASP asks for some predecessor in
@@ -34,23 +39,23 @@ belong to `Classes/`; computation-specific interpretations belong to observation
   preserve the transformer and all five operations: pure, composition, first,
   choice (`left`), and application. Application preservation also converts the
   arrow stored in the input. [ArrowMorphism.v](../../Classes/ArrowMorphism.v)
-  supplies the option/state lifts. Qualify shared names such as `ASPostArr`
+  supplies the exact option/state lifts, using explicit `*_leibniz` law
+  dictionaries from `SPostArr.v`. Qualify shared names such as `ASPostArr`
   with `SPostArr` or `RelSPPairArr` when both presentations are imported.
 
 ## Laws, stacks, and monads
 
-Both SP presentations provide `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`.
-`SPostArr.v` and `RelSPPairArr.v` own the eight core/choice instances for the four
-property-only and coupled ASP/DSLP carriers.
-[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v) supplies the 16 shared
-structural equations for specialization in those instances. The property-only
-instances pass `ASP_rel` / `DSLP_rel` and their individual operation facts to
-`rel_<equation>_fields`. For coupled carriers, the relation is `rel (proj1_sig f)`
-and the operation facts are `iff_refl`. Both presentations supply their own
-`ASP_rel_ext` / `DSLP_rel_ext` for faithfulness. The three `Proper` fields
-(`comp_proper`, `first_proper`, `left_proper`) remain concrete equality
-substitutions. Sharing these proofs leaves carriers, operations, dictionaries,
-and semantics unchanged.
+Both SP presentations provide `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`
+by instantiating the shared semantic packages in
+[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v).
+`RelArrow`, `RelArrowChoice`, and `RelArrowApply` describe operation preservation;
+`RelArrowEq` connects the chosen equality to pointwise relation equivalence.
+The property-only reading is `ASP_rel` / `DSLP_rel`, with operation facts phrased
+using the existing operators in `Rel.v`. The coupled reading is
+`rel (proj1_sig f)`, with definitional operation facts and its existing Leibniz
+equality. Shared proofs supply composition/first/choice congruence and `app_ext`,
+including replacement of semantically equivalent arrows stored in inputs.
+Relational-only helpers remain independent of equality reflection.
 
 `RelArrowCoherence.v` also supplies base application coherence and the
 state-over-option relational bind formula. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
@@ -73,6 +78,8 @@ the difference between an empty prefix and one returning `None`, while option
 composition outside the loop distinguishes them. `SPostArrEquiv.v` transports
 this obstruction to property-only option ASP and DSLP arrows. Its scope is this
 unrestricted law and these operations, rather than every possible feedback design.
+The no-lawful-loop corollaries bridge pointwise laws to the exact equalities
+used by the transport theorem with `PureASPostArr_eq` / `PureDSLPostArr_eq`.
 
 ## Reading entrypoints
 

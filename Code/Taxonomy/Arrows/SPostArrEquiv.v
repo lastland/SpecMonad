@@ -103,7 +103,7 @@ Local Notation CAA := CoupledSP.ArrowApply_PureRelASPPairArr.
 Local Notation CDA := CoupledSP.ArrowApply_PureRelDSLPPairArr.
 
 Theorem asp_to_coupled_pure {A B} (h : A -> B) :
-  asp_to_coupled (PropertySP.pureASP h) = @arr_pure _ CA A B h.
+  asp_to_coupled (PropertySP.arrASP h) = @arr_pure _ CA A B h.
 Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P b. reflexivity. Qed.
 
 Theorem asp_to_coupled_comp {A B C}
@@ -138,7 +138,7 @@ Proof.
 Qed.
 
 Theorem dslp_to_coupled_pure {A B} (h : A -> B) :
-  dslp_to_coupled (PropertySP.pureDSLP h) = @arr_pure _ CD A B h.
+  dslp_to_coupled (PropertySP.arrDSLP h) = @arr_pure _ CD A B h.
 Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. reflexivity. Qed.
 
 Theorem dslp_to_coupled_comp {A B C}
@@ -330,7 +330,7 @@ Theorem option_asp_from_coupled_morphism :
     (@option_asp_from_coupled).
 Proof.
   exact (option_arrow_morphism (@asp_from_coupled) asp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureASPostArr PropertySP.ArrowChoiceLaws_PureASPostArr).
+    PropertySP.ArrowLaws_PureASPostArr_leibniz PropertySP.ArrowChoiceLaws_PureASPostArr_leibniz).
 Qed.
 
 Theorem option_dslp_to_coupled_morphism :
@@ -347,7 +347,7 @@ Theorem option_dslp_from_coupled_morphism :
     (@option_dslp_from_coupled).
 Proof.
   exact (option_arrow_morphism (@dslp_from_coupled) dslp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureDSLPostArr PropertySP.ArrowChoiceLaws_PureDSLPostArr).
+    PropertySP.ArrowLaws_PureDSLPostArr_leibniz PropertySP.ArrowChoiceLaws_PureDSLPostArr_leibniz).
 Qed.
 
 Theorem state_option_asp_to_coupled_morphism (S : Type) :
@@ -371,7 +371,7 @@ Theorem state_option_asp_from_coupled_morphism (S : Type) :
     (@state_option_asp_from_coupled S).
 Proof.
   exact (state_option_arrow_morphism (@asp_from_coupled) asp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureASPostArr S PropertySP.ArrowChoiceLaws_PureASPostArr).
+    PropertySP.ArrowLaws_PureASPostArr_leibniz S PropertySP.ArrowChoiceLaws_PureASPostArr_leibniz).
 Qed.
 
 Theorem state_option_dslp_to_coupled_morphism (S : Type) :
@@ -395,7 +395,7 @@ Theorem state_option_dslp_from_coupled_morphism (S : Type) :
     (@state_option_dslp_from_coupled S).
 Proof.
   exact (state_option_arrow_morphism (@dslp_from_coupled) dslp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureDSLPostArr S PropertySP.ArrowChoiceLaws_PureDSLPostArr).
+    PropertySP.ArrowLaws_PureDSLPostArr_leibniz S PropertySP.ArrowChoiceLaws_PureDSLPostArr_leibniz).
 Qed.
 
 (** ** Transport of the option-loop obstruction
@@ -515,7 +515,8 @@ Corollary optionASP_no_lawful_ArrowLoop :
       PropertySP.ArrowEq_optionASPArr.
 Proof.
   intros [L HL]. apply (optionASP_no_left_tightening L).
-  exact (@loop_left_tightening _ _ L _ HL).
+  intros A B C D h f. apply PropertySP.PureASPostArr_eq.
+  exact (@loop_left_tightening _ _ L _ HL A B C D h f).
 Qed.
 
 Corollary optionDSLP_no_lawful_ArrowLoop :
@@ -524,5 +525,6 @@ Corollary optionDSLP_no_lawful_ArrowLoop :
       PropertySP.ArrowEq_optionDSLPArr.
 Proof.
   intros [L HL]. apply (optionDSLP_no_left_tightening L).
-  exact (@loop_left_tightening _ _ L _ HL).
+  intros A B C D h f. apply PropertySP.PureDSLPostArr_eq.
+  exact (@loop_left_tightening _ _ L _ HL A B C D h f).
 Qed.

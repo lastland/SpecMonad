@@ -10,13 +10,19 @@
       first (pure (fun f => f >>> h)) >>> app = app >>> h
     ]]
 
+    The generic semantic typeclass machinery ([RelArrow], [RelArrowChoice],
+    [RelArrowApply], [RelArrowEq]) derives complete [ArrowLaws],
+    [ArrowChoiceLaws], and [ArrowApplyLaws] packages through [rel_arrow_laws],
+    [rel_arrow_choice_laws], and [rel_arrow_apply_laws].  Crucially, [Proper]
+    and [app_ext] respect semantic equivalence directly, without routing all
+    laws through Leibniz extensionality.
+
     The core section below takes the relation reading [R] and its
     per-operation laws as explicit hypotheses; the structural and application
     equations additionally consume a faithful equality principle [rel_ext],
     which no relational statement uses.  [RelArrowPresentation] packages the
-    same fields, and the closing wrappers keep its original theorem
-    interfaces; both SP presentations reuse them in their base
-    [ArrowApplyLaws] instances.
+    same fields with faithfulness, and the closing wrappers keep its original
+    theorem interfaces as extensionality bridges.
 
     The later sections describe relation semantics for option and
     state-over-option operations.  In particular,
@@ -28,7 +34,7 @@
     from new concrete proofs here. *)
 
 From Coq Require Import Classes.Morphisms_Prop.
-From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import Arrow ArrowMonad ArrowMorphism OptionArrowT StateArrowT.
 
 (** This ordinary record packages only the relation semantics needed by
     these proofs.  In particular, [present_app] evaluates the relation
@@ -150,20 +156,38 @@ Section RelationalCoherence.
       + rewrite rel_app. exact Hk.
   Qed.
 
+  Lemma rel_app_law_iff {A B} (f : arr A B) a b :
+    R (comp (pure (fun a => (f, a))) app) a b <-> R f a b.
+  Proof.
+    rewrite rel_pure_comp. cbn. apply rel_app.
+  Qed.
+
+  Lemma rel_app_law_fields {A B} (f : arr A B) :
+    comp (pure (fun a => (f, a))) app = f.
+  Proof.
+    apply rel_ext. intros a b. apply rel_app_law_iff.
+  Qed.
+
+  Lemma rel_app_unit_iff (A B : Type) p q :
+    R (comp (first (pure (fun x : A => pure (fun y : B => (x, y))))) app) p q <->
+    R (@arr_id arr HA (A * B)) p q.
+  Proof.
+    destruct p as [a b]. rewrite rel_first_pure_app. unfold arr_id.
+    rewrite ! rel_pure. reflexivity.
+  Qed.
+
   Lemma rel_app_unit_fields (A B : Type) :
     comp (first (pure (fun x : A => pure (fun y : B => (x, y)))))
       app = @arr_id arr HA (A * B).
   Proof.
-    apply rel_ext. intros [a b] q.
-    rewrite rel_first_pure_app. unfold arr_id.
-    rewrite ! rel_pure. reflexivity.
+    apply rel_ext. intros [a b] q. apply rel_app_unit_iff.
   Qed.
 
-  Lemma rel_app_precompose_fields {A B C} (g : arr A B) :
-    comp (first (pure (fun f : arr B C => comp g f)))
-      app = comp (second g) app.
+  Lemma rel_app_precompose_iff {A B C} (g : arr A B) p c :
+    R (comp (first (pure (fun f : arr B C => comp g f))) app) p c <->
+    R (comp (second g) app) p c.
   Proof.
-    apply rel_ext. intros [f a] c.
+    destruct p as [f a].
     rewrite rel_first_pure_app, ! rel_comp. split.
     - intros [b [Hg Hf]]. exists (f, b). split.
       + apply rel_second. auto.
@@ -173,11 +197,18 @@ Section RelationalCoherence.
       rewrite rel_app in Hf. exact Hf.
   Qed.
 
-  Lemma rel_app_postcompose_fields {A B C} (h : arr B C) :
-    comp (first (pure (fun f : arr A B => comp f h)))
-      app = comp app h.
+  Lemma rel_app_precompose_fields {A B C} (g : arr A B) :
+    comp (first (pure (fun f : arr B C => comp g f)))
+      app = comp (second g) app.
   Proof.
-    apply rel_ext. intros [f a] c.
+    apply rel_ext. intros [f a] c. apply rel_app_precompose_iff.
+  Qed.
+
+  Lemma rel_app_postcompose_iff {A B C} (h : arr B C) p c :
+    R (comp (first (pure (fun f : arr A B => comp f h))) app) p c <->
+    R (comp app h) p c.
+  Proof.
+    destruct p as [f a].
     rewrite rel_first_pure_app, ! rel_comp.
     split; intros [b [Hf Hh]]; exists b; split.
     - rewrite rel_app. exact Hf.
@@ -186,33 +217,50 @@ Section RelationalCoherence.
     - exact Hh.
   Qed.
 
+  Lemma rel_app_postcompose_fields {A B C} (h : arr B C) :
+    comp (first (pure (fun f : arr A B => comp f h)))
+      app = comp app h.
+  Proof.
+    apply rel_ext. intros [f a] c. apply rel_app_postcompose_iff.
+  Qed.
+
   (** ** Structural law fields
 
       Each equation uses only its per-operation relational laws and
       faithfulness.  The core arrow equations require neither choice nor
       application; the choice equations require no application. *)
 
+  Lemma rel_comp_id_l_iff {A B} (f : arr A B) a b :
+    R (comp (@arr_id arr HA A) f) a b <-> R f a b.
+  Proof.
+    unfold arr_id. rewrite rel_pure_comp. reflexivity.
+  Qed.
+
   Lemma rel_comp_id_l_fields {A B} (f : arr A B) :
     comp (@arr_id arr HA A) f = f.
   Proof.
-    apply rel_ext. intros a b. unfold arr_id.
-    rewrite rel_pure_comp. reflexivity.
+    apply rel_ext. intros a b. apply rel_comp_id_l_iff.
+  Qed.
+
+  Lemma rel_comp_id_r_iff {A B} (f : arr A B) a b :
+    R (comp f (@arr_id arr HA B)) a b <-> R f a b.
+  Proof.
+    unfold arr_id. rewrite rel_comp_pure. split.
+    - intros [b' [Hf ->]]. exact Hf.
+    - intro Hf. exists b. auto.
   Qed.
 
   Lemma rel_comp_id_r_fields {A B} (f : arr A B) :
     comp f (@arr_id arr HA B) = f.
   Proof.
-    apply rel_ext. intros a b. unfold arr_id.
-    rewrite rel_comp_pure. split.
-    - intros [b' [Hf ->]]. exact Hf.
-    - intro Hf. exists b. auto.
+    apply rel_ext. intros a b. apply rel_comp_id_r_iff.
   Qed.
 
-  Lemma rel_comp_assoc_fields {A B C D}
-      (f : arr A B) (g : arr B C) (h : arr C D) :
-    comp (comp f g) h = comp f (comp g h).
+  Lemma rel_comp_assoc_iff {A B C D}
+      (f : arr A B) (g : arr B C) (h : arr C D) a d :
+    R (comp (comp f g) h) a d <-> R (comp f (comp g h)) a d.
   Proof.
-    apply rel_ext. intros a d. rewrite !rel_comp. split.
+    rewrite !rel_comp. split.
     - intros [c [Hfg Hh]]. apply rel_comp in Hfg.
       destruct Hfg as [b [Hf Hg]]. exists b. split; [exact Hf |].
       apply rel_comp. exists c. auto.
@@ -221,23 +269,44 @@ Section RelationalCoherence.
       apply rel_comp. exists b. auto.
   Qed.
 
+  Lemma rel_comp_assoc_fields {A B C D}
+      (f : arr A B) (g : arr B C) (h : arr C D) :
+    comp (comp f g) h = comp f (comp g h).
+  Proof.
+    apply rel_ext. intros a d. apply rel_comp_assoc_iff.
+  Qed.
+
+  Lemma rel_pure_comp_iff {A B C} (f : A -> B) (g : B -> C) a c :
+    R (comp (pure f) (pure g)) a c <-> R (pure (fun a => g (f a))) a c.
+  Proof.
+    rewrite rel_pure_comp, !rel_pure. reflexivity.
+  Qed.
+
   Lemma rel_pure_comp_fields {A B C} (f : A -> B) (g : B -> C) :
     comp (pure f) (pure g) = pure (fun a => g (f a)).
   Proof.
-    apply rel_ext. intros a c. rewrite rel_pure_comp, !rel_pure. reflexivity.
+    apply rel_ext. intros a c. apply rel_pure_comp_iff.
+  Qed.
+
+  Lemma rel_first_pure_iff {A B C} (f : A -> B) (p : A * C) (q : B * C) :
+    R (@arr_first arr HA A B C (pure f)) p q <->
+    R (pure (fun '(a, c) => (f a, c))) p q.
+  Proof.
+    destruct p as [a c]. rewrite rel_first_pure, rel_pure. reflexivity.
   Qed.
 
   Lemma rel_first_pure_fields {A B C} (f : A -> B) :
     @arr_first arr HA A B C (pure f) =
     pure (fun '(a, c) => (f a, c)).
   Proof.
-    apply rel_ext. intros [a c] q. rewrite rel_first_pure, rel_pure. reflexivity.
+    apply rel_ext. intros [a c] q. apply rel_first_pure_iff.
   Qed.
 
-  Lemma rel_first_comp_fields {A B C D} (f : arr A B) (g : arr B C) :
-    @arr_first arr HA A C D (comp f g) = comp (first f) (first g).
+  Lemma rel_first_comp_iff {A B C D} (f : arr A B) (g : arr B C) (p : A * D) (q : C * D) :
+    R (@arr_first arr HA A C D (comp f g)) p q <->
+    R (comp (first f) (first g)) p q.
   Proof.
-    apply rel_ext. intros [a d] [c d']. rewrite rel_first, !rel_comp. split.
+    destruct p as [a d], q as [c d']. rewrite rel_first, !rel_comp. split.
     - intros [[b [Hf Hg]] <-]. exists (b, d). split;
         apply rel_first; auto.
     - intros [[b d0] [Hf Hg]]. apply rel_first in Hf, Hg.
@@ -245,12 +314,18 @@ Section RelationalCoherence.
       exists b. auto.
   Qed.
 
-  Lemma rel_first_assoc_fields {A B C D} (f : arr A B) :
-    comp (@arr_first arr HA _ _ D (@arr_first arr HA A B C f))
-      (pure assoc_prod) =
-    comp (pure assoc_prod) (@arr_first arr HA A B (C * D)%type f).
+  Lemma rel_first_comp_fields {A B C D} (f : arr A B) (g : arr B C) :
+    @arr_first arr HA A C D (comp f g) = comp (first f) (first g).
   Proof.
-    apply rel_ext. intros [[a c] d] [b [c' d']].
+    apply rel_ext. intros [a d] [c d']. apply rel_first_comp_iff.
+  Qed.
+
+  Lemma rel_first_assoc_iff {A B C D} (f : arr A B) (p : (A * C) * D) (q : B * (C * D)) :
+    R (comp (@arr_first arr HA _ _ D (@arr_first arr HA A B C f))
+      (pure assoc_prod)) p q <->
+    R (comp (pure assoc_prod) (@arr_first arr HA A B (C * D)%type f)) p q.
+  Proof.
+    destruct p as [[a c] d], q as [b [c' d']].
     rewrite rel_comp_pure, rel_pure_comp. cbn [assoc_prod].
     rewrite rel_first. split.
     - intros [[[b0 c0] d0] [Hf Heq]].
@@ -262,11 +337,19 @@ Section RelationalCoherence.
       apply rel_first. split; [apply rel_first; auto | reflexivity].
   Qed.
 
-  Lemma rel_first_natural_fields {A B C D} (f : arr A B) (g : C -> D) :
-    comp (first f) (pure (fun '(b, c) => (b, g c))) =
-    comp (pure (fun '(a, c) => (a, g c))) (first f).
+  Lemma rel_first_assoc_fields {A B C D} (f : arr A B) :
+    comp (@arr_first arr HA _ _ D (@arr_first arr HA A B C f))
+      (pure assoc_prod) =
+    comp (pure assoc_prod) (@arr_first arr HA A B (C * D)%type f).
   Proof.
-    apply rel_ext. intros [a c] [b d].
+    apply rel_ext. intros [[a c] d] [b [c' d']]. apply rel_first_assoc_iff.
+  Qed.
+
+  Lemma rel_first_natural_iff {A B C D} (f : arr A B) (g : C -> D) (p : A * C) (q : B * D) :
+    R (comp (first f) (pure (fun '(b, c) => (b, g c)))) p q <->
+    R (comp (pure (fun '(a, c) => (a, g c))) (first f)) p q.
+  Proof.
+    destruct p as [a c], q as [b d].
     rewrite rel_comp_pure, rel_pure_comp, rel_first. split.
     - intros [[b0 c0] [Hf Heq]]. apply rel_first in Hf.
       destruct Hf as [Hf <-]. injection Heq as <- <-. auto.
@@ -275,21 +358,34 @@ Section RelationalCoherence.
       + reflexivity.
   Qed.
 
-  Lemma rel_first_fst_fields {A B C} (f : arr A B) :
-    comp (@arr_first arr HA A B C f) (pure fst) = comp (pure fst) f.
+  Lemma rel_first_natural_fields {A B C D} (f : arr A B) (g : C -> D) :
+    comp (first f) (pure (fun '(b, c) => (b, g c))) =
+    comp (pure (fun '(a, c) => (a, g c))) (first f).
   Proof.
-    apply rel_ext. intros [a c] b.
+    apply rel_ext. intros [a c] [b d]. apply rel_first_natural_iff.
+  Qed.
+
+  Lemma rel_first_fst_iff {A B C} (f : arr A B) (p : A * C) (b : B) :
+    R (comp (@arr_first arr HA A B C f) (pure fst)) p b <->
+    R (comp (pure fst) f) p b.
+  Proof.
+    destruct p as [a c].
     rewrite rel_comp_pure, rel_pure_comp. cbn [fst]. split.
     - intros [[b0 c0] [Hf Heq]]. apply rel_first in Hf.
       cbn in Heq. subst b0. exact (proj1 Hf).
     - intro Hf. exists (b, c). split; [apply rel_first; auto | reflexivity].
   Qed.
 
-  Lemma rel_left_pure_fields {A B C} (f : A -> B) :
-    @arr_left arr HA HC A B C (pure f) =
-    pure (fun x => sum_bimap f (fun c : C => c) x).
+  Lemma rel_first_fst_fields {A B C} (f : arr A B) :
+    comp (@arr_first arr HA A B C f) (pure fst) = comp (pure fst) f.
   Proof.
-    apply rel_ext. intros x y.
+    apply rel_ext. intros [a c] b. apply rel_first_fst_iff.
+  Qed.
+
+  Lemma rel_left_pure_iff {A B C} (f : A -> B) (x : A + C) (y : B + C) :
+    R (@arr_left arr HA HC A B C (pure f)) x y <->
+    R (pure (fun x => sum_bimap f (fun c : C => c) x)) x y.
+  Proof.
     rewrite rel_left, rel_pure.
     destruct x as [a|c], y as [b|d]; cbn [sum_bimap].
     - rewrite rel_pure. split; intro H; [subst; reflexivity | injection H; auto].
@@ -298,11 +394,17 @@ Section RelationalCoherence.
     - split; intro H; [subst; reflexivity | injection H; auto].
   Qed.
 
-  Lemma rel_left_comp_fields {A B C D} (f : arr A B) (g : arr B C) :
-    @arr_left arr HA HC A C D (comp f g) =
-    comp (@arr_left arr HA HC A B D f) (@arr_left arr HA HC B C D g).
+  Lemma rel_left_pure_fields {A B C} (f : A -> B) :
+    @arr_left arr HA HC A B C (pure f) =
+    pure (fun x => sum_bimap f (fun c : C => c) x).
   Proof.
-    apply rel_ext. intros x y.
+    apply rel_ext. intros x y. apply rel_left_pure_iff.
+  Qed.
+
+  Lemma rel_left_comp_iff {A B C D} (f : arr A B) (g : arr B C) (x : A + D) (y : C + D) :
+    R (@arr_left arr HA HC A C D (comp f g)) x y <->
+    R (comp (@arr_left arr HA HC A B D f) (@arr_left arr HA HC B C D g)) x y.
+  Proof.
     rewrite !rel_comp, rel_left.
     destruct x as [a|d], y as [c|d']; cbn.
     - rewrite rel_comp. split.
@@ -328,11 +430,17 @@ Section RelationalCoherence.
           exact (eq_trans Hf Hg).
   Qed.
 
-  Lemma rel_left_inl_fields {A B C} (f : arr A B) :
-    comp f (pure (@inl B C)) =
-    comp (pure (@inl A C)) (@arr_left arr HA HC A B C f).
+  Lemma rel_left_comp_fields {A B C D} (f : arr A B) (g : arr B C) :
+    @arr_left arr HA HC A C D (comp f g) =
+    comp (@arr_left arr HA HC A B D f) (@arr_left arr HA HC B C D g).
   Proof.
-    apply rel_ext. intros a x.
+    apply rel_ext. intros x y. apply rel_left_comp_iff.
+  Qed.
+
+  Lemma rel_left_inl_iff {A B C} (f : arr A B) (a : A) (x : B + C) :
+    R (comp f (pure (@inl B C))) a x <->
+    R (comp (pure (@inl A C)) (@arr_left arr HA HC A B C f)) a x.
+  Proof.
     rewrite rel_comp_pure, rel_pure_comp, rel_left.
     destruct x as [b|d]; cbn; split; intro H.
     - destruct H as [b' [Hf Heq]]. injection Heq as Heq. subst b'. exact Hf.
@@ -341,12 +449,18 @@ Section RelationalCoherence.
     - contradiction.
   Qed.
 
-  Lemma rel_left_assoc_fields {A B C D} (f : arr A B) :
-    comp (@arr_left arr HA HC _ _ D (@arr_left arr HA HC A B C f))
-      (pure assoc_sum) =
-    comp (pure assoc_sum) (@arr_left arr HA HC A B (C + D)%type f).
+  Lemma rel_left_inl_fields {A B C} (f : arr A B) :
+    comp f (pure (@inl B C)) =
+    comp (pure (@inl A C)) (@arr_left arr HA HC A B C f).
   Proof.
-    apply rel_ext. intros x y.
+    apply rel_ext. intros a x. apply rel_left_inl_iff.
+  Qed.
+
+  Lemma rel_left_assoc_iff {A B C D} (f : arr A B) (x : (A + C) + D) (y : B + (C + D)) :
+    R (comp (@arr_left arr HA HC _ _ D (@arr_left arr HA HC A B C f))
+      (pure assoc_sum)) x y <->
+    R (comp (pure assoc_sum) (@arr_left arr HA HC A B (C + D)%type f)) x y.
+  Proof.
     rewrite rel_comp_pure, rel_pure_comp.
     destruct x as [[a|c]|d], y as [b|[c'|d']];
       cbn [assoc_sum]; rewrite !rel_left;
@@ -380,13 +494,20 @@ Section RelationalCoherence.
         apply rel_left. reflexivity.
   Qed.
 
-  Lemma rel_left_natural_fields {A B C D} (f : arr A B) (g : C -> D) :
-    comp (@arr_left arr HA HC A B C f)
-      (pure (fun x => sum_bimap (fun b : B => b) g x)) =
-    comp (pure (fun x => sum_bimap (fun a : A => a) g x))
-      (@arr_left arr HA HC A B D f).
+  Lemma rel_left_assoc_fields {A B C D} (f : arr A B) :
+    comp (@arr_left arr HA HC _ _ D (@arr_left arr HA HC A B C f))
+      (pure assoc_sum) =
+    comp (pure assoc_sum) (@arr_left arr HA HC A B (C + D)%type f).
   Proof.
-    apply rel_ext. intros x y.
+    apply rel_ext. intros x y. apply rel_left_assoc_iff.
+  Qed.
+
+  Lemma rel_left_natural_iff {A B C D} (f : arr A B) (g : C -> D) (x : A + C) (y : B + D) :
+    R (comp (@arr_left arr HA HC A B C f)
+      (pure (fun x => sum_bimap (fun b : B => b) g x))) x y <->
+    R (comp (pure (fun x => sum_bimap (fun a : A => a) g x))
+      (@arr_left arr HA HC A B D f)) x y.
+  Proof.
     rewrite rel_comp_pure, rel_pure_comp.
     destruct x as [a|c], y as [b|d]; cbn [sum_bimap]; rewrite !rel_left;
       try solve [
@@ -406,11 +527,19 @@ Section RelationalCoherence.
       + intros <-. exists (inr c). split; [rewrite rel_left; reflexivity | reflexivity].
   Qed.
 
-  Lemma rel_left_inr_fields {A B C} (f : arr A B) :
-    comp (pure (@inr A C)) (@arr_left arr HA HC A B C f) =
-    pure (@inr B C).
+  Lemma rel_left_natural_fields {A B C D} (f : arr A B) (g : C -> D) :
+    comp (@arr_left arr HA HC A B C f)
+      (pure (fun x => sum_bimap (fun b : B => b) g x)) =
+    comp (pure (fun x => sum_bimap (fun a : A => a) g x))
+      (@arr_left arr HA HC A B D f).
   Proof.
-    apply rel_ext; intros c y.
+    apply rel_ext. intros x y. apply rel_left_natural_iff.
+  Qed.
+
+  Lemma rel_left_inr_iff {A B C} (f : arr A B) (c : C) (y : B + C) :
+    R (comp (pure (@inr A C)) (@arr_left arr HA HC A B C f)) c y <->
+    R (pure (@inr B C)) c y.
+  Proof.
     rewrite rel_pure_comp, rel_left, rel_pure.
     destruct y as [b|d]; cbn; split; intro H.
     - contradiction.
@@ -419,13 +548,20 @@ Section RelationalCoherence.
     - injection H; auto.
   Qed.
 
-  Lemma rel_first_left_dist_fields {A B C D} (f : arr A B) :
-    comp (@arr_first arr HA _ _ D (@arr_left arr HA HC A B C f))
-      (pure sum_prod_dist) =
-    comp (pure sum_prod_dist)
-      (@arr_left arr HA HC _ _ (C * D)%type (first f)).
+  Lemma rel_left_inr_fields {A B C} (f : arr A B) :
+    comp (pure (@inr A C)) (@arr_left arr HA HC A B C f) =
+    pure (@inr B C).
   Proof.
-    apply rel_ext. intros [ac d] q.
+    apply rel_ext; intros c y. apply rel_left_inr_iff.
+  Qed.
+
+  Lemma rel_first_left_dist_iff {A B C D} (f : arr A B) (p : (A + C) * D) (q : (B * D) + (C * D)) :
+    R (comp (@arr_first arr HA _ _ D (@arr_left arr HA HC A B C f))
+      (pure sum_prod_dist)) p q <->
+    R (comp (pure sum_prod_dist)
+      (@arr_left arr HA HC _ _ (C * D)%type (first f))) p q.
+  Proof.
+    destruct p as [ac d].
     rewrite rel_comp_pure, rel_pure_comp.
     destruct ac as [a|c], q as [[b d']|[c' d']];
       cbn [sum_prod_dist]; rewrite rel_left;
@@ -453,6 +589,15 @@ Section RelationalCoherence.
       + intro Heq. injection Heq as <- <-. exists (inr c, d).
         split; [|reflexivity]. apply rel_first.
         split; [rewrite rel_left; reflexivity | reflexivity].
+  Qed.
+
+  Lemma rel_first_left_dist_fields {A B C D} (f : arr A B) :
+    comp (@arr_first arr HA _ _ D (@arr_left arr HA HC A B C f))
+      (pure sum_prod_dist) =
+    comp (pure sum_prod_dist)
+      (@arr_left arr HA HC _ _ (C * D)%type (first f)).
+  Proof.
+    apply rel_ext. intros [ac d] q. apply rel_first_left_dist_iff.
   Qed.
 
   (** ** Option operation semantics
@@ -766,6 +911,12 @@ Section PresentationCoherence.
       ext_law h).
   Qed.
 
+  Lemma rel_app_law {A B} (f : arr A B) :
+    comp (pure (fun a => (f, a))) app = f.
+  Proof.
+    exact (rel_app_law_fields Rof pure_law comp_law app_law ext_law f).
+  Qed.
+
   Section StateOptionPresentation.
     Variable S : Type.
 
@@ -798,3 +949,214 @@ Section PresentationCoherence.
   End StateOptionPresentation.
 
 End PresentationCoherence.
+
+(** ** Generic semantic typeclass machinery
+
+    Arrows whose operations have relational semantics and whose [arrow_eq]
+    is equivalent to relational equivalence derive complete [ArrowLaws],
+    [ArrowChoiceLaws], and [ArrowApplyLaws] packages.
+    Crucially, [Proper] and [app_ext] respect semantic equivalence directly
+    without routing through Leibniz extensionality. *)
+
+Class RelArrow (arr : Type -> Type -> Type) `{HA : Arrow arr} := {
+  rel_reading : forall {A B}, arr A B -> A -> B -> Prop;
+  rel_pure : forall {A B} (f : A -> B) a b,
+    rel_reading (@arr_pure arr HA A B f) a b <-> f a = b;
+  rel_comp : forall {A B C} (f : arr A B) (g : arr B C) a c,
+    rel_reading (@arr_comp arr HA A B C f g) a c <->
+    exists b, rel_reading f a b /\ rel_reading g b c;
+  rel_first : forall {A B C} (f : arr A B) a c b d,
+    rel_reading (@arr_first arr HA A B C f) (a, c) (b, d) <->
+    rel_reading f a b /\ c = d
+}.
+
+Arguments rel_reading {arr HA} {_ A B} _ _ _.
+Arguments rel_pure {arr HA} {_ A B} _ _ _.
+Arguments rel_comp {arr HA} {_ A B C} _ _ _ _.
+Arguments rel_first {arr HA} {_ A B C} _ _ _ _ _.
+
+Class RelArrowChoice (arr : Type -> Type -> Type)
+  `{HA : Arrow arr} {HC : @ArrowChoice arr HA} {HRA : RelArrow arr} := {
+  rel_left : forall {A B C} (f : arr A B) x y,
+    rel_reading (@arr_left arr HA HC A B C f) x y <->
+    match x with
+    | inl a => match y with inl b => rel_reading f a b | inr _ => False end
+    | inr c => match y with inl _ => False | inr d => c = d end
+    end
+}.
+
+Arguments rel_left {arr HA HC HRA} {_ A B C} _ _ _.
+
+Class RelArrowApply (arr : Type -> Type -> Type)
+  `{HA : Arrow arr} {HAA : @ArrowApply arr HA} {HRA : RelArrow arr} := {
+  rel_app : forall {A B} (f : arr A B) a b,
+    rel_reading (@arr_app arr HA HAA A B) (f, a) b <-> rel_reading f a b
+}.
+
+Arguments rel_app {arr HA HAA HRA} {_ A B} _ _ _.
+
+Class RelArrowEq (arr : Type -> Type -> Type)
+  `{HA : Arrow arr} {HE : ArrowEq arr} {HRA : RelArrow arr} := {
+  rel_arrow_eq : forall {A B} (f g : arr A B),
+    arrow_eq f g <-> (forall a b, rel_reading f a b <-> rel_reading g a b)
+}.
+
+Arguments rel_arrow_eq {arr HA HE HRA} {_ A B} _ _.
+
+Definition relArrowEq_leibniz {arr : Type -> Type -> Type}
+  {HA : Arrow arr} (HE : ArrowEq arr) {HRA : RelArrow arr}
+  (Hleib : forall {A B} (f g : arr A B), arrow_eq f g <-> f = g)
+  (ext : forall {A B} (f g : arr A B),
+    (forall a b, rel_reading f a b <-> rel_reading g a b) -> f = g) :
+  RelArrowEq arr := {|
+  rel_arrow_eq := fun A B f g =>
+    conj (fun H a b => match proj1 (@Hleib A B f g) H with eq_refl => iff_refl _ end)
+         (fun H => proj2 (@Hleib A B f g) (@ext A B f g H))
+|}.
+
+Section SemanticLaws.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HE : ArrowEq arr}
+    {HRA : RelArrow arr} {HRE : RelArrowEq arr}.
+
+  #[global] Instance rel_arrow_laws : ArrowLaws arr.
+  Proof.
+    constructor; intros.
+    - apply rel_arrow_eq. intros a b.
+      apply (rel_comp_id_l_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA)).
+    - apply rel_arrow_eq. intros a b.
+      apply (rel_comp_id_r_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA)).
+    - apply rel_arrow_eq. intros a d.
+      apply (rel_comp_assoc_iff _ (@rel_comp arr HA HRA)).
+    - apply rel_arrow_eq. intros a c.
+      apply (rel_pure_comp_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA)).
+    - apply rel_arrow_eq. intros [a c] q.
+      apply (rel_first_pure_iff _ (@rel_pure arr HA HRA) (@rel_first arr HA HRA)).
+    - apply rel_arrow_eq. intros [a d] [c d'].
+      apply (rel_first_comp_iff _ (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+    - apply rel_arrow_eq. intros [a c] b.
+      apply (rel_first_fst_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+    - apply rel_arrow_eq. intros [[a c] d] [b [c' d']].
+      apply (rel_first_assoc_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+    - intros f1 f2 Hf g1 g2 Hg.
+      apply rel_arrow_eq. intros a c.
+      rewrite !rel_comp.
+      pose proof (proj1 (rel_arrow_eq f1 f2) Hf) as Hf_rel.
+      pose proof (proj1 (rel_arrow_eq g1 g2) Hg) as Hg_rel.
+      split; intros [b [H1 H2]]; exists b; (split; [apply Hf_rel, H1 | apply Hg_rel, H2]).
+    - intros f g H.
+      apply rel_arrow_eq. intros [a c] [b d].
+      rewrite !rel_first.
+      pose proof (proj1 (rel_arrow_eq f g) H) as H_rel.
+      split; intros [H1 H2]; (split; [apply H_rel, H1 | exact H2]).
+    - apply rel_arrow_eq. intros [a c] [b d].
+      apply (rel_first_natural_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+  Qed.
+
+  Section SemanticChoiceLaws.
+    Context {HC : @ArrowChoice arr HA} {HRAC : RelArrowChoice arr}.
+
+    #[global] Instance rel_arrow_choice_laws : ArrowChoiceLaws arr.
+    Proof.
+      constructor; intros.
+      - apply rel_arrow_eq. intros x y.
+        apply (rel_left_pure_iff _ (@rel_pure arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - apply rel_arrow_eq. intros x y.
+        apply (rel_left_comp_iff _ (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - apply rel_arrow_eq. intros a x.
+        apply (rel_left_inl_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - apply rel_arrow_eq. intros x y.
+        apply (rel_left_assoc_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - apply rel_arrow_eq. intros c y.
+        apply (rel_left_inr_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - apply rel_arrow_eq. intros x y.
+        apply (rel_left_natural_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - apply rel_arrow_eq. intros [ac d] q.
+        apply (rel_first_left_dist_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      - intros f g H.
+        apply rel_arrow_eq. intros x y.
+        rewrite !rel_left.
+        pose proof (proj1 (rel_arrow_eq f g) H) as H_rel.
+        destruct x as [a|c], y as [b|d]; try reflexivity; apply H_rel.
+    Qed.
+  End SemanticChoiceLaws.
+
+  Section SemanticApplyLaws.
+    Context {HAA : @ArrowApply arr HA} {HRAA : RelArrowApply arr}.
+
+    #[global] Instance rel_arrow_apply_laws : ArrowApplyLaws arr.
+    Proof.
+      constructor; intros.
+      - apply rel_arrow_eq. intros a b.
+        apply (rel_app_law_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_app arr HA HAA HRA HRAA)).
+      - apply rel_arrow_eq. intros [a b] q.
+        apply (rel_app_unit_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA) (@rel_app arr HA HAA HRA HRAA)).
+      - apply rel_arrow_eq. intros [f a] c.
+        apply (rel_app_precompose_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA) (@rel_app arr HA HAA HRA HRAA)).
+      - apply rel_arrow_eq. intros [f a] c.
+        apply (rel_app_postcompose_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA) (@rel_app arr HA HAA HRA HRAA)).
+      - apply rel_arrow_eq. intros x b.
+        rewrite !rel_comp.
+        destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
+        destruct (H x) as [Harr Hsnd].
+        rewrite Hu, Hv in Harr, Hsnd. cbn in Harr, Hsnd.
+        subst av.
+        split; intros [y [Hp Ha]].
+        + apply rel_pure in Hp. rewrite Hu in Hp. subst y.
+          rewrite rel_app in Ha.
+          exists (fv, au). split.
+          * apply rel_pure. rewrite Hv. reflexivity.
+          * rewrite rel_app.
+            pose proof (proj1 (rel_arrow_eq fu fv) Harr) as Harr_rel.
+            apply Harr_rel. exact Ha.
+        + apply rel_pure in Hp. rewrite Hv in Hp. subst y.
+          rewrite rel_app in Ha.
+          exists (fu, au). split.
+          * apply rel_pure. rewrite Hu. reflexivity.
+          * rewrite rel_app.
+            pose proof (proj1 (rel_arrow_eq fu fv) Harr) as Harr_rel.
+            apply Harr_rel. exact Ha.
+    Qed.
+  End SemanticApplyLaws.
+
+End SemanticLaws.
+
+Section LeibnizBridge.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HE : ArrowEq arr}.
+  Variable rel_ext : forall {A B} (f g : arr A B), arrow_eq f g -> f = g.
+
+  Lemma rel_arrow_laws_leibniz
+    (HL : @ArrowLaws arr HA HE) :
+    @ArrowLaws arr HA (ArrowEq_leibniz arr).
+  Proof.
+    constructor; intros.
+    - apply rel_ext. apply (@comp_id_l arr HA HE HL).
+    - apply rel_ext. apply (@comp_id_r arr HA HE HL).
+    - apply rel_ext. apply (@comp_assoc arr HA HE HL).
+    - apply rel_ext. apply (@pure_comp arr HA HE HL).
+    - apply rel_ext. apply (@first_pure arr HA HE HL).
+    - apply rel_ext. apply (@first_comp arr HA HE HL).
+    - apply rel_ext. apply (@first_fst arr HA HE HL).
+    - apply rel_ext. apply (@first_assoc arr HA HE HL).
+    - intros x y -> z w ->. reflexivity.
+    - intros x y ->. reflexivity.
+    - apply rel_ext. apply (@first_natural arr HA HE HL).
+  Qed.
+
+  Lemma rel_arrow_choice_laws_leibniz
+    {HC : @ArrowChoice arr HA}
+    (HCL : @ArrowChoiceLaws arr HA HC HE) :
+    @ArrowChoiceLaws arr HA HC (ArrowEq_leibniz arr).
+  Proof.
+    constructor; intros.
+    - apply rel_ext. apply (@left_pure arr HA HC HE HCL).
+    - apply rel_ext. apply (@left_comp arr HA HC HE HCL).
+    - apply rel_ext. apply (@left_inl arr HA HC HE HCL).
+    - apply rel_ext. apply (@left_assoc arr HA HC HE HCL).
+    - apply rel_ext. apply (@left_inr arr HA HC HE HCL).
+    - apply rel_ext. apply (@left_natural arr HA HC HE HCL).
+    - apply rel_ext. apply (@first_left_dist arr HA HC HE HCL).
+    - intros x y ->. reflexivity.
+  Qed.
+End LeibnizBridge.

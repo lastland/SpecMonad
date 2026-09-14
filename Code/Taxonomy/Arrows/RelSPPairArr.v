@@ -545,159 +545,40 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowLaws_PureRelASPPairArr : ArrowLaws PureRelASPPairArr.
-Proof.
-  constructor; intros.
-
-  - (* comp_id_l *)
-    exact (@rel_comp_id_l_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (@ASP_rel_ext) A B f).
-
-  - (* comp_id_r *)
-    exact (@rel_comp_id_r_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (@ASP_rel_ext) A B f).
-
-  - (* comp_assoc *)
-    exact (@rel_comp_assoc_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B C f g a c => iff_refl _)
-      (@ASP_rel_ext) A B C D f g h).
-
-  - (* pure_comp *)
-    exact (@rel_pure_comp_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (@ASP_rel_ext) A B C f g).
-
-  - (* first_pure *)
-    exact (@rel_first_pure_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@ASP_rel_ext) A B C f).
-
-  - (* first_comp *)
-    exact (@rel_first_comp_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@ASP_rel_ext) A B C D f g).
-
-  - (* first_fst *)
-    exact (@rel_first_fst_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@ASP_rel_ext) A B C f).
-
-  - (* first_assoc *)
-    exact (@rel_first_assoc_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@ASP_rel_ext) A B C D f).
-
-  - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
-      intros; subst; reflexivity.
-
-  - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
-      intros; subst; reflexivity.
-
-  - (* first_natural *)
-    exact (@rel_first_natural_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@ASP_rel_ext) A B C D f g).
-Qed.
-
-(* ================================================================= *)
-(** ** [ArrowChoiceLaws] for [PureRelASPPairArr]                           *)
-(* ================================================================= *)
+Instance RelArrow_PureRelASPPairArr : RelArrow PureRelASPPairArr := {
+  rel_reading := fun A B f => rel (proj1_sig f);
+  rel_pure := fun _ _ _ _ _ => iff_refl _;
+  rel_comp := fun _ _ _ _ _ _ _ => iff_refl _;
+  rel_first := fun _ _ _ _ _ _ _ _ => iff_refl _;
+}.
 
 #[global]
-Instance ArrowChoiceLaws_PureRelASPPairArr : ArrowChoiceLaws PureRelASPPairArr.
-Proof.
-  constructor; intros.
+Instance RelArrowChoice_PureRelASPPairArr : RelArrowChoice PureRelASPPairArr := {
+  rel_left := fun _ _ _ _ _ _ => iff_refl _;
+}.
 
-  - (* left_pure *)
-    exact (@rel_left_pure_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C f).
+#[global]
+Instance RelArrowApply_PureRelASPPairArr : RelArrowApply PureRelASPPairArr := {
+  rel_app := fun _ _ _ _ _ => iff_refl _;
+}.
 
-  - (* left_comp *)
-    exact (@rel_left_comp_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C D f g).
+#[global]
+Instance RelArrowEq_PureRelASPPairArr : RelArrowEq PureRelASPPairArr :=
+  relArrowEq_leibniz ArrowEq_PureRelASPPairArr
+    (fun _ _ _ _ => iff_refl _) (@ASP_rel_ext).
 
-  - (* left_inl *)
-    exact (@rel_left_inl_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C f).
+#[global]
+Instance ArrowLaws_PureRelASPPairArr : ArrowLaws PureRelASPPairArr :=
+  rel_arrow_laws.
 
-  - (* left_assoc *)
-    exact (@rel_left_assoc_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C D f).
+#[global]
+Instance ArrowChoiceLaws_PureRelASPPairArr : ArrowChoiceLaws PureRelASPPairArr :=
+  rel_arrow_choice_laws.
 
-  - (* left_inr *)
-    exact (@rel_left_inr_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C f).
+#[global]
+Instance ArrowApplyLaws_PureRelASPPairArr : ArrowApplyLaws PureRelASPPairArr :=
+  rel_arrow_apply_laws.
 
-  - (* left_natural *)
-    exact (@rel_left_natural_fields PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C D f g).
-
-  - (* first_left_dist *)
-    exact (@rel_first_left_dist_fields PureRelASPPairArr
-      Arrow_PureRelASPPairArr ArrowChoice_PureRelASPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@ASP_rel_ext) A B C D f).
-
-  - (* left_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelASPPairArr;
-      intros; subst; reflexivity.
-Qed.
 (* ================================================================= *)
 (** ** Utilities for [PureRelDSLPPairArr]                                   *)
 (* ================================================================= *)
@@ -781,214 +662,39 @@ Proof.
 Qed.
 
 #[global]
-Instance ArrowLaws_PureRelDSLPPairArr : ArrowLaws PureRelDSLPPairArr.
-Proof.
-  constructor; intros.
-
-  - (* comp_id_l *)
-    exact (@rel_comp_id_l_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (@DSLP_rel_ext) A B f).
-
-  - (* comp_id_r *)
-    exact (@rel_comp_id_r_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (@DSLP_rel_ext) A B f).
-
-  - (* comp_assoc *)
-    exact (@rel_comp_assoc_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B C f g a c => iff_refl _)
-      (@DSLP_rel_ext) A B C D f g h).
-
-  - (* pure_comp *)
-    exact (@rel_pure_comp_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (@DSLP_rel_ext) A B C f g).
-
-  - (* first_pure *)
-    exact (@rel_first_pure_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@DSLP_rel_ext) A B C f).
-
-  - (* first_comp *)
-    exact (@rel_first_comp_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@DSLP_rel_ext) A B C D f g).
-
-  - (* first_fst *)
-    exact (@rel_first_fst_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@DSLP_rel_ext) A B C f).
-
-  - (* first_assoc *)
-    exact (@rel_first_assoc_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@DSLP_rel_ext) A B C D f).
-
-  - (* comp_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
-      intros; subst; reflexivity.
-
-  - (* first_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
-      intros; subst; reflexivity.
-
-  - (* first_natural *)
-    exact (@rel_first_natural_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (@DSLP_rel_ext) A B C D f g).
-Qed.
-
-(* ================================================================= *)
-(** ** [ArrowChoiceLaws] for [PureRelDSLPPairArr]                          *)
-(* ================================================================= *)
+Instance RelArrow_PureRelDSLPPairArr : RelArrow PureRelDSLPPairArr := {
+  rel_reading := fun A B f => rel (proj1_sig f);
+  rel_pure := fun _ _ _ _ _ => iff_refl _;
+  rel_comp := fun _ _ _ _ _ _ _ => iff_refl _;
+  rel_first := fun _ _ _ _ _ _ _ _ => iff_refl _;
+}.
 
 #[global]
-Instance ArrowChoiceLaws_PureRelDSLPPairArr : ArrowChoiceLaws PureRelDSLPPairArr.
-Proof.
-  constructor; intros.
-
-  - (* left_pure *)
-    exact (@rel_left_pure_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C f).
-
-  - (* left_comp *)
-    exact (@rel_left_comp_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C D f g).
-
-  - (* left_inl *)
-    exact (@rel_left_inl_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C f).
-
-  - (* left_assoc *)
-    exact (@rel_left_assoc_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C D f).
-
-  - (* left_inr *)
-    exact (@rel_left_inr_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C f).
-
-  - (* left_natural *)
-    exact (@rel_left_natural_fields PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C D f g).
-
-  - (* first_left_dist *)
-    exact (@rel_first_left_dist_fields PureRelDSLPPairArr
-      Arrow_PureRelDSLPPairArr ArrowChoice_PureRelDSLPPairArr
-      (fun A B f => @rel A B (proj1_sig f))
-      (fun A B f a b => iff_refl _)
-      (fun A B C f g a c => iff_refl _)
-      (fun A B C f a c b d => iff_refl _)
-      (fun A B C f x y => iff_refl _)
-      (@DSLP_rel_ext) A B C D f).
-
-  - (* left_proper *)
-    unfold Proper, respectful, arrow_eq, ArrowEq_PureRelDSLPPairArr;
-      intros; subst; reflexivity.
-Qed.
-
-
-(* ================================================================= *)
-(** ** [ArrowApplyLaws] for [PureRelASPPairArr] and [PureRelDSLPPairArr]       *)
-(* ================================================================= *)
+Instance RelArrowChoice_PureRelDSLPPairArr : RelArrowChoice PureRelDSLPPairArr := {
+  rel_left := fun _ _ _ _ _ _ => iff_refl _;
+}.
 
 #[global]
-Instance ArrowApplyLaws_PureRelASPPairArr : ArrowApplyLaws PureRelASPPairArr.
-Proof.
-  constructor.
-  - intros A B f. apply PureRelASPPairArr_eq; intros pre b. cbn.
-    split.
-    + (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ rel f0 a b) → spost f pre b *)
-      intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
-      inversion Hpair; subst f0 a.
-      apply (proj2_sig f). unfold asp. exists a'. auto.
-    + (* Backward: spost f pre b → ... *)
-      intros Hfb.
-      apply (proj2_sig f) in Hfb. unfold asp in Hfb.
-      destruct Hfb as [a [Hpre Hra]].
-      exists f, a. split; [exists a; auto | exact Hra].
-  - exact (rel_app_unit ASP_rel_presentation).
-  - intros A B C g. exact (rel_app_precompose ASP_rel_presentation g).
-  - intros A B C h. exact (rel_app_postcompose ASP_rel_presentation h).
-  - intros X A B u v H.
-    assert (Heq : u = v).
-    { extensionality x. specialize (H x).
-      destruct (u x) as [f a], (v x) as [g b].
-      cbn in H. destruct H as [-> ->]. reflexivity. }
-    subst v. reflexivity.
-Qed.
+Instance RelArrowApply_PureRelDSLPPairArr : RelArrowApply PureRelDSLPPairArr := {
+  rel_app := fun _ _ _ _ _ => iff_refl _;
+}.
 
 #[global]
-Instance ArrowApplyLaws_PureRelDSLPPairArr : ArrowApplyLaws PureRelDSLPPairArr.
-Proof.
-  constructor.
-  - intros A B f. apply PureRelDSLPPairArr_eq; intros pre b. cbn.
-    split.
-    + (* Forward: (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) → spost (proj1_sig f) pre b *)
-      intros H. apply (proj2_sig f). intros a Hra.
-      exact (H f a Hra a eq_refl).
-    + (* Backward: spost (proj1_sig f) pre b → (∀f0 a, rel (proj1_sig f0) a b → pre (f, a)) *)
-      intros Hfb f0 a0 Hrel a' Heq.
-      injection Heq as Hfeq Haeq. subst a' f0.
-      apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
-  - exact (rel_app_unit DSLP_rel_presentation).
-  - intros A B C g. exact (rel_app_precompose DSLP_rel_presentation g).
-  - intros A B C h. exact (rel_app_postcompose DSLP_rel_presentation h).
-  - intros X A B u v H.
-    assert (Heq : u = v).
-    { extensionality x. specialize (H x).
-      destruct (u x) as [f a], (v x) as [g b].
-      cbn in H. destruct H as [-> ->]. reflexivity. }
-    subst v. reflexivity.
-Qed.
+Instance RelArrowEq_PureRelDSLPPairArr : RelArrowEq PureRelDSLPPairArr :=
+  relArrowEq_leibniz ArrowEq_PureRelDSLPPairArr
+    (fun _ _ _ _ => iff_refl _) (@DSLP_rel_ext).
+
+#[global]
+Instance ArrowLaws_PureRelDSLPPairArr : ArrowLaws PureRelDSLPPairArr :=
+  rel_arrow_laws.
+
+#[global]
+Instance ArrowChoiceLaws_PureRelDSLPPairArr : ArrowChoiceLaws PureRelDSLPPairArr :=
+  rel_arrow_choice_laws.
+
+#[global]
+Instance ArrowApplyLaws_PureRelDSLPPairArr : ArrowApplyLaws PureRelDSLPPairArr :=
+  rel_arrow_apply_laws.
 
 (* ================================================================= *)
 (** ** Monad from ArrowApply (general construction)                   *)
