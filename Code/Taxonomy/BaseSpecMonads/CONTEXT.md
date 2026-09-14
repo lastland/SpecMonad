@@ -61,6 +61,15 @@ five-operation RelDenote contract; rel_bind/relS_bind/relE_bind describe the
 chosen bind through relations. Preserve these APIs alongside property-only
 SPostArr; the equivalent bundles are not definitionally the same carrier.
 
+- [`SPBindOrderCounterexample.v`](SPBindOrderCounterexample.v) refutes ordered
+  bind for `StDSP.DSPSt` / `StASLP.ASLPSt` under their global pointwise orders.
+  Monad laws and monotonicity in a fixed transformer's precondition still hold.
+  Its `dsp_arbitrary_bind_impossible` and `aslp_arbitrary_bind_impossible`
+  strengthen this result for Boolean state: any candidate Boolean-to-unit bind
+  with the current return and pointwise order cannot satisfy both left identity
+  and first-argument monotonicity. The contradiction uses well-formedness of
+  the candidate's output, independently of the existing bind.
+
 ## Orders and comparisons
 
 ASP's transformer order follows relation inclusion; DSLP reverses it. Their
