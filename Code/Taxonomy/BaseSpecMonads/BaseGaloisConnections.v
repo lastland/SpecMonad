@@ -21,7 +21,7 @@
 
 From Coq Require Import Morphisms RelationClasses Classical_Prop.
 From ExtLib Require Import Monad.
-From ITree Require Import Basics.Monad.
+From ITree Require Import Basics.Monad Extra.Dijkstra.DijkstraMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad.
 
@@ -74,6 +74,85 @@ Proof.
   constructor; unfold MR_le.
   - intros x p post H. exact H.
   - intros x y z H1 H2 p post H. exact (H1 p post (H2 p post H)).
+Qed.
+
+(* ================================================================= *)
+(** ** Ordered-monad structure on [PrePost]                          *)
+(* ================================================================= *)
+
+(** The existing unconditional Hoare order [PP_le] is already a joint
+    bind monotonicity: sequencing respects it in BOTH arguments, with the
+    post component covariant without any precondition guard.  Hence the
+    base specification monad [PPM.PrePost] carries concrete ITree
+    [OrderM] / [OrderedMonad] dictionaries, built from the existing
+    [Monad_PrePost] — no new carrier, no new order. *)
+
+Lemma PP_le_refl {A} (m : PPM.PrePost A) : PP_le m m.
+Proof. unfold PP_le. split; intros; assumption. Qed.
+
+Lemma PP_le_trans {A} (m n o : PPM.PrePost A) :
+  PP_le m n -> PP_le n o -> PP_le m o.
+Proof.
+  unfold PP_le in *. intros [H1p H1q] [H2p H2q]. split.
+  - intro h. exact (H1p (H2p h)).
+  - intros a h. exact (H2q a (H1q a h)).
+Qed.
+
+Theorem bindPP_mono {A B} (m n : PPM.PrePost A) (f g : A -> PPM.PrePost B) :
+  PP_le m n -> (forall a, PP_le (f a) (g a)) ->
+  PP_le (PPM.bindPP m f) (PPM.bindPP n g).
+Proof.
+  intros Hmn Hfg. unfold PP_le in Hmn, Hfg.
+  destruct Hmn as [Hpre Hpost].
+  unfold PP_le, PPM.bindPP, PPM.pre, PPM.post; cbn. split.
+  - intros [Hn Hcont]. split.
+    + apply Hpre. exact Hn.
+    + intros a Ha. apply (proj1 (Hfg a)).
+      apply Hcont. apply Hpost. exact Ha.
+  - intros b [a [Ha Hb]]. exists a. split.
+    + apply Hpost. exact Ha.
+    + apply (proj2 (Hfg a) b). exact Hb.
+Qed.
+
+(** [PP_le] is compatible with the existing [Eq1] on [PrePost]:
+    equivalences on either side transport through the order. *)
+Theorem PP_le_Proper {A} :
+  Proper (@eq1 PPM.PrePost PPM.Eq1_PrePost A ==>
+          @eq1 PPM.PrePost PPM.Eq1_PrePost A ==> iff) (@PP_le A).
+Proof.
+  intros m1 m2 Hm n1 n2 Hn.
+  unfold eq1, PPM.Eq1_PrePost in Hm, Hn.
+  destruct Hm as [Hmp Hmq]. destruct Hn as [Hnp Hnq].
+  split; intros [Hpre Hpost]; unfold PP_le; split.
+  - intros h. exact (proj1 Hmp (Hpre (proj2 Hnp h))).
+  - intros a Ha. exact (proj1 (Hnq a) (Hpost a (proj2 (Hmq a) Ha))).
+  - intros h. exact (proj2 Hmp (Hpre (proj1 Hnp h))).
+  - intros a Ha. exact (proj2 (Hnq a) (Hpost a (proj1 (Hmq a) Ha))).
+Qed.
+
+(** Mutual [PP_le] refinement is exactly the existing [Eq1]. *)
+Theorem PP_le_eq1 {A} (m n : PPM.PrePost A) :
+  (PP_le m n /\ PP_le n m) <-> eq1 m n.
+Proof.
+  unfold PP_le, eq1, PPM.Eq1_PrePost. cbn.
+  split.
+  - intros [[H1p H1q] [H2p H2q]]. split.
+    + split; [ exact H2p | exact H1p ].
+    + intro a. split; [ exact (H1q a) | exact (H2q a) ].
+  - intros [Hp Hq]. split.
+    + split; [ exact (proj2 Hp) | exact (fun a Ha => proj1 (Hq a) Ha) ].
+    + split; [ exact (proj1 Hp) | exact (fun a Ha => proj2 (Hq a) Ha) ].
+Qed.
+
+#[global] Instance OrderM_PP : OrderM PPM.PrePost := @PP_le.
+
+#[global] Instance OrderedMonad_PP :
+  @OrderedMonad PPM.PrePost PPM.Monad_PrePost OrderM_PP.
+Proof.
+  constructor.
+  - intros A w. apply PP_le_refl.
+  - intros A w1 w2 w3 H12 H23. exact (PP_le_trans w1 w2 w3 H12 H23).
+  - intros A B m n f g Hmn Hfg. apply bindPP_mono; assumption.
 Qed.
 
 (* ================================================================= *)

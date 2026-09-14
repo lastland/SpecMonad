@@ -891,7 +891,8 @@ Arguments getDSPStExc {_} {_}.
 (* ================================================================= *)
 
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From ITree Require Import Basics.Monad Extra.Dijkstra.DijkstraMonad.
+Require Import Coq.Classes.Morphisms.
 Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
@@ -1550,16 +1551,139 @@ Arguments getDSPSt {_} {_}.
 
 (* ---- order and monotonicity ---- *)
 
+(** The order below compares the RECOVERED relations of the two
+    computations.  Probing [w] at [fun _ => True] and at the
+    co-singleton of [s] recovers the underlying relation at [s]
+    (lemma [dsp_recov]); the order is FORWARD inclusion of the
+    so-recovered relations:
+
+      [ordDSPSt m1 m2  :=  forall s r, relDSPSt m1 s r -> relDSPSt m2 s r].
+
+    The historical raw transformer order — pointwise implication
+    [forall pre r, w1 pre r -> w2 pre r] over the transformers
+    themselves — remains available as [StTrans.ordSPSt] applied to the
+    [getDSPSt] projections; the obstruction theorems in
+    [SPBindOrderCounterexample.v] are stated against that raw order. *)
+
 Section StDSPOrders.
   Variable S : Type.
+
+  (** The recovered relation: the pair of probes from [dsp_recov]. *)
+  Definition relDSPSt {A} (w : DSPSt S A) (s : S) (r : A * S) : Prop :=
+    getDSPSt w (fun _ => True) r /\ ~ getDSPSt w (fun t => t <> s) r.
+
+  (** Forward inclusion of the recovered relations. *)
   Definition ordDSPSt {A} (m1 m2 : DSPSt S A) : Prop :=
-    forall pre r, getDSPSt m1 pre r -> getDSPSt m2 pre r.
+    forall s r, relDSPSt m1 s r -> relDSPSt m2 s r.
+
+  (** Precondition monotonicity of a well-formed transformer, unchanged. *)
   Lemma dspMono {A} (w : DSPSt S A) (P Q : S -> Prop) (r : (A * S)) :
     (forall s, P s -> Q s) -> getDSPSt w P r -> getDSPSt w Q r.
   Proof.
     exact (conjunctive_implies_monotone S (getDSPSt w) (proj2 (proj2_sig w)) P Q r).
   Qed.
+
+  (** ** Basic laws of the recovered-relation order *)
+
+  Lemma ordDSPSt_refl {A} (m : DSPSt S A) : ordDSPSt m m.
+  Proof. intros s r H; exact H. Qed.
+
+  Lemma ordDSPSt_trans {A} (m1 m2 m3 : DSPSt S A) :
+    ordDSPSt m1 m2 -> ordDSPSt m2 m3 -> ordDSPSt m1 m3.
+  Proof. intros H12 H23 s r H; exact (H23 s r (H12 s r H)). Qed.
+
+  Theorem ordDSPSt_PreOrder {A} : PreOrder (@ordDSPSt A).
+  Proof. constructor; [ exact (ordDSPSt_refl (A := A)) | exact ordDSPSt_trans ]. Qed.
+
+  (** Eq1 transports the recovered relation. *)
+  Lemma relDSPSt_eq1 {A} (m n : DSPSt S A) :
+    @eq1 (DSPSt S) (Eq1__DSPSt S) A m n ->
+    forall s r, relDSPSt m s r <-> relDSPSt n s r.
+  Proof.
+    intros H s r. exact (dsp_rec_ext S (getDSPSt m) (getDSPSt n) H s r).
+  Qed.
+
+  Theorem ordDSPSt_Proper {A} :
+    Proper (@eq1 (DSPSt S) (Eq1__DSPSt S) A
+            ==> @eq1 (DSPSt S) (Eq1__DSPSt S) A ==> iff)
+           (@ordDSPSt A).
+  Proof.
+    intros m1 m2 Hm n1 n2 Hn. split; intros H s r Hrel.
+    - apply (proj1 (relDSPSt_eq1 n1 n2 Hn s r)).
+      apply H.
+      apply (proj2 (relDSPSt_eq1 m1 m2 Hm s r)). exact Hrel.
+    - apply (proj2 (relDSPSt_eq1 n1 n2 Hn s r)).
+      apply H.
+      apply (proj1 (relDSPSt_eq1 m1 m2 Hm s r)). exact Hrel.
+  Qed.
+
+  (** Mutual forward inclusion coincides with [Eq1]: the carrier of a
+      [DSPSt] is the DSP transformer of its own recovered relation
+      ([getProgDSP_carrier]), so inclusion both ways recovers pointwise
+      equivalence of the transformers. *)
+  Theorem ordDSPSt_eq1 {A} (m n : DSPSt S A) :
+    (ordDSPSt m n /\ ordDSPSt n m) <-> @eq1 (DSPSt S) (Eq1__DSPSt S) A m n.
+  Proof.
+    split.
+    - intros [Hmn Hnm] pre r.
+      assert (Hc : forall s r, relDSPSt m s r <-> relDSPSt n s r).
+      { intros s r'. split; intro H; [ apply Hmn | apply Hnm ]; exact H. }
+      refine (iff_trans (getProgDSP_carrier S m pre r) _).
+      refine (iff_trans (dsp_cong S (relDSPSt m) (relDSPSt n) Hc pre r) _).
+      exact (iff_sym (getProgDSP_carrier S n pre r)).
+    - intro H. split.
+      + intros s r Hrel. exact (proj1 (relDSPSt_eq1 m n H s r) Hrel).
+      + intros s r Hrel. exact (proj2 (relDSPSt_eq1 m n H s r) Hrel).
+  Qed.
+
+  (** ** Joint bind monotonicity *)
+
+  (** The recovered relation of a bind is relational composition through
+      an intermediate state ([rec_bindDSPProg]); forward inclusion of
+      both factors gives forward inclusion of the composite. *)
+  Theorem bindDSPSt_mono {A B} (m n : DSPSt S A) (f g : A -> DSPSt S B) :
+    ordDSPSt m n -> (forall a, ordDSPSt (f a) (g a)) ->
+    ordDSPSt (bindDSPSt m f) (bindDSPSt n g).
+  Proof.
+    intros Hmn Hfg s r [Htop Hsing].
+    destruct (proj1 (rec_bindDSPProg S m f s r) (conj Htop Hsing))
+      as [a [smid [Hm Hf]]].
+    apply (proj2 (rec_bindDSPProg S n g s r)).
+    exists a, smid. split.
+    - exact (Hmn s (a, smid) Hm).
+    - exact (Hfg a smid r Hf).
+  Qed.
+
+  (** ** Reading the order back on shape transformers *)
+
+  (** The recovered relation of a transformer already exhibiting the DSP
+      shape of [R] is [R] itself.  Together with [dsp_shape_wf] this is
+      the interface for packaging relations and reading orders back. *)
+  Lemma relDSPSt_of_shape {A} (R : S -> (A * S) -> Prop)
+    (w : DSPSt S A)
+    (Hw : forall (pre : S -> Prop) (r : A * S),
+            getDSPSt w pre r <->
+              ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))) :
+    forall s r, relDSPSt w s r <-> R s r.
+  Proof.
+    intros s r. unfold relDSPSt.
+    rewrite (Hw (fun _ => True) r), (Hw (fun t => t <> s) r).
+    exact (dsp_recov S R s r).
+  Qed.
+
+  (** ** Concrete ordered-monad dictionaries *)
+
+  #[global] Instance OrderM__DSPSt : OrderM (DSPSt S) :=
+    fun A (m n : DSPSt S A) => @ordDSPSt A m n.
+
+  #[global] Instance OrderedMonad__DSPSt
+    : @OrderedMonad (DSPSt S) (Monad__DSPSt S) OrderM__DSPSt :=
+    {| reflex := fun A (w : DSPSt S A) => ordDSPSt_refl w;
+       trans := fun A (w1 w2 w3 : DSPSt S A) => ordDSPSt_trans w1 w2 w3;
+       monot := fun A B (m n : DSPSt S A) (f g : A -> DSPSt S B) =>
+                  bindDSPSt_mono m n f g |}.
 End StDSPOrders.
+Arguments relDSPSt {_} {_}.
 Arguments ordDSPSt {_} {_}.
 End StDSP.
 

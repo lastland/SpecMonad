@@ -775,7 +775,8 @@ Arguments getASLPStExc {_} {_}.
 (* ================================================================= *)
 
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From ITree Require Import Basics.Monad Extra.Dijkstra.DijkstraMonad.
+Require Import Coq.Classes.Morphisms.
 Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
@@ -1380,16 +1381,139 @@ Arguments getASLPSt {_} {_}.
 
 (* ---- order and monotonicity ---- *)
 
+(** The order below compares the RECOVERED relations of the two
+    computations.  Probing [w] at [fun _ => False] and at the singleton
+    of [s] recovers the underlying relation at [s] (lemma [aslp_recov]);
+    the order is FORWARD inclusion of the so-recovered relations — the
+    SAME direction as [StDSP.ordDSPSt], not the dual:
+
+      [ordASLPSt m1 m2  :=  forall s r, relASLPSt m1 s r -> relASLPSt m2 s r].
+
+    The historical raw transformer order — pointwise implication
+    [forall pre r, w1 pre r -> w2 pre r] over the transformers
+    themselves — remains available as [StTrans.ordSPSt] applied to the
+    [getASLPSt] projections; the obstruction theorems in
+    [SPBindOrderCounterexample.v] are stated against that raw order. *)
+
 Section StASLPOrders.
   Variable S : Type.
+
+  (** The recovered relation: the pair of probes from [aslp_recov]. *)
+  Definition relASLPSt {A} (w : ASLPSt S A) (s : S) (r : A * S) : Prop :=
+    ~ getASLPSt w (fun _ => False) r /\ getASLPSt w (fun t => t = s) r.
+
+  (** Forward inclusion of the recovered relations. *)
   Definition ordASLPSt {A} (m1 m2 : ASLPSt S A) : Prop :=
-    forall pre r, getASLPSt m1 pre r -> getASLPSt m2 pre r.
+    forall s r, relASLPSt m1 s r -> relASLPSt m2 s r.
+
+  (** Precondition monotonicity of a well-formed transformer, unchanged. *)
   Lemma aslpMono {A} (w : ASLPSt S A) (P Q : S -> Prop) (r : (A * S)) :
     (forall s, P s -> Q s) -> getASLPSt w P r -> getASLPSt w Q r.
   Proof.
     exact (disjunctive_implies_monotone S (getASLPSt w) (proj2 (proj2_sig w)) P Q r).
   Qed.
+
+  (** ** Basic laws of the recovered-relation order *)
+
+  Lemma ordASLPSt_refl {A} (m : ASLPSt S A) : ordASLPSt m m.
+  Proof. intros s r H; exact H. Qed.
+
+  Lemma ordASLPSt_trans {A} (m1 m2 m3 : ASLPSt S A) :
+    ordASLPSt m1 m2 -> ordASLPSt m2 m3 -> ordASLPSt m1 m3.
+  Proof. intros H12 H23 s r H; exact (H23 s r (H12 s r H)). Qed.
+
+  Theorem ordASLPSt_PreOrder {A} : PreOrder (@ordASLPSt A).
+  Proof. constructor; [ exact (ordASLPSt_refl (A := A)) | exact ordASLPSt_trans ]. Qed.
+
+  (** Eq1 transports the recovered relation. *)
+  Lemma relASLPSt_eq1 {A} (m n : ASLPSt S A) :
+    @eq1 (ASLPSt S) (Eq1__ASLPSt S) A m n ->
+    forall s r, relASLPSt m s r <-> relASLPSt n s r.
+  Proof.
+    intros H s r. exact (aslp_rec_ext S (getASLPSt m) (getASLPSt n) H s r).
+  Qed.
+
+  Theorem ordASLPSt_Proper {A} :
+    Proper (@eq1 (ASLPSt S) (Eq1__ASLPSt S) A
+            ==> @eq1 (ASLPSt S) (Eq1__ASLPSt S) A ==> iff)
+           (@ordASLPSt A).
+  Proof.
+    intros m1 m2 Hm n1 n2 Hn. split; intros H s r Hrel.
+    - apply (proj1 (relASLPSt_eq1 n1 n2 Hn s r)).
+      apply H.
+      apply (proj2 (relASLPSt_eq1 m1 m2 Hm s r)). exact Hrel.
+    - apply (proj2 (relASLPSt_eq1 n1 n2 Hn s r)).
+      apply H.
+      apply (proj1 (relASLPSt_eq1 m1 m2 Hm s r)). exact Hrel.
+  Qed.
+
+  (** Mutual forward inclusion coincides with [Eq1]: the carrier of an
+      [ASLPSt] is the ASLP transformer of its own recovered relation
+      ([getProgASLP_carrier]), so inclusion both ways recovers pointwise
+      equivalence of the transformers. *)
+  Theorem ordASLPSt_eq1 {A} (m n : ASLPSt S A) :
+    (ordASLPSt m n /\ ordASLPSt n m) <-> @eq1 (ASLPSt S) (Eq1__ASLPSt S) A m n.
+  Proof.
+    split.
+    - intros [Hmn Hnm] pre r.
+      assert (Hc : forall s r, relASLPSt m s r <-> relASLPSt n s r).
+      { intros s r'. split; intro H; [ apply Hmn | apply Hnm ]; exact H. }
+      refine (iff_trans (getProgASLP_carrier S m pre r) _).
+      refine (iff_trans (aslp_cong S (relASLPSt m) (relASLPSt n) Hc pre r) _).
+      exact (iff_sym (getProgASLP_carrier S n pre r)).
+    - intro H. split.
+      + intros s r Hrel. exact (proj1 (relASLPSt_eq1 m n H s r) Hrel).
+      + intros s r Hrel. exact (proj2 (relASLPSt_eq1 m n H s r) Hrel).
+  Qed.
+
+  (** ** Joint bind monotonicity *)
+
+  (** The recovered relation of a bind is relational composition through
+      an intermediate state ([rec_bindASLPProg]); forward inclusion of
+      both factors gives forward inclusion of the composite. *)
+  Theorem bindASLPSt_mono {A B} (m n : ASLPSt S A) (f g : A -> ASLPSt S B) :
+    ordASLPSt m n -> (forall a, ordASLPSt (f a) (g a)) ->
+    ordASLPSt (bindASLPSt m f) (bindASLPSt n g).
+  Proof.
+    intros Hmn Hfg s r [Hnbot Hsing].
+    destruct (proj1 (rec_bindASLPProg S m f s r) (conj Hnbot Hsing))
+      as [a [smid [Hm Hf]]].
+    apply (proj2 (rec_bindASLPProg S n g s r)).
+    exists a, smid. split.
+    - exact (Hmn s (a, smid) Hm).
+    - exact (Hfg a smid r Hf).
+  Qed.
+
+  (** ** Reading the order back on shape transformers *)
+
+  (** The recovered relation of a transformer already exhibiting the ASLP
+      shape of [R] is [R] itself.  Together with [aslp_shape_wf] this is
+      the interface for packaging relations and reading orders back. *)
+  Lemma relASLPSt_of_shape {A} (R : S -> (A * S) -> Prop)
+    (w : ASLPSt S A)
+    (Hw : forall (pre : S -> Prop) (r : A * S),
+            getASLPSt w pre r <->
+              ((exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s))) :
+    forall s r, relASLPSt w s r <-> R s r.
+  Proof.
+    intros s r. unfold relASLPSt.
+    rewrite (Hw (fun _ => False) r), (Hw (fun t => t = s) r).
+    exact (aslp_recov S R s r).
+  Qed.
+
+  (** ** Concrete ordered-monad dictionaries *)
+
+  #[global] Instance OrderM__ASLPSt : OrderM (ASLPSt S) :=
+    fun A (m n : ASLPSt S A) => @ordASLPSt A m n.
+
+  #[global] Instance OrderedMonad__ASLPSt
+    : @OrderedMonad (ASLPSt S) (Monad__ASLPSt S) OrderM__ASLPSt :=
+    {| reflex := fun A (w : ASLPSt S A) => ordASLPSt_refl w;
+       trans := fun A (w1 w2 w3 : ASLPSt S A) => ordASLPSt_trans w1 w2 w3;
+       monot := fun A B (m n : ASLPSt S A) (f g : A -> ASLPSt S B) =>
+                  bindASLPSt_mono m n f g |}.
 End StASLPOrders.
+Arguments relASLPSt {_} {_}.
 Arguments ordASLPSt {_} {_}.
 End StASLP.
 

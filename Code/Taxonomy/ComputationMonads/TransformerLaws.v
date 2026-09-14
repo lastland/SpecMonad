@@ -184,6 +184,56 @@ Section StateT.
 End StateT.
 
 (* ================================================================= *)
+(** ** Generic order lifting for ExtLib's [stateT]                   *)
+(* ================================================================= *)
+
+(** Like [OptionTOrder]: the base order [leM] is an EXPLICIT parameter
+    rather than a typeclass, so stacked [stateT] layers can never trigger
+    recursive instance search.  Reflexivity, transitivity and joint bind
+    monotonicity lift once, parametrically in the base monad; the concrete
+    stateful specification monads instantiate these lemmas at their base
+    orders (see [StatePrePostMonad]). *)
+
+Section StateTOrder.
+
+  Variable St : Type.
+  Variable M : Type -> Type.
+  Context {MonadM : Monad M}.
+  Variable leM : forall A, M A -> M A -> Prop.
+  Hypothesis leM_refl : forall A (m : M A), leM A m m.
+  Hypothesis leM_trans : forall A (m n o : M A),
+    leM A m n -> leM A n o -> leM A m o.
+  Hypothesis bind_mono : forall A B (m n : M A) (f g : A -> M B),
+    leM A m n -> (forall a, leM B (f a) (g a)) ->
+    leM B (bind m f) (bind n g).
+
+  #[local] Existing Instance Monad_stateT.
+
+  Definition ord_stateT {A} (m n : stateT St M A) : Prop :=
+    forall s, leM (A * St)%type (runStateT m s) (runStateT n s).
+
+  Lemma ord_stateT_refl {A} (m : stateT St M A) : ord_stateT m m.
+  Proof. intro s. apply leM_refl. Qed.
+
+  Lemma ord_stateT_trans {A} (m n o : stateT St M A) :
+    ord_stateT m n -> ord_stateT n o -> ord_stateT m o.
+  Proof.
+    intros Hmn Hno s. eapply leM_trans; [ apply Hmn | apply Hno ].
+  Qed.
+
+  Lemma bind_stateT_mono {A B} (m n : stateT St M A)
+      (f g : A -> stateT St M B) :
+    ord_stateT m n -> (forall a, ord_stateT (f a) (g a)) ->
+    ord_stateT (bind m f) (bind n g).
+  Proof.
+    intros Hmn Hfg s. cbn. apply bind_mono.
+    - apply Hmn.
+    - intros [a smid]. apply Hfg.
+  Qed.
+
+End StateTOrder.
+
+(* ================================================================= *)
 (** ** Generic [Eq1] and [MonadLawsE] for ExtLib's [readerT]         *)
 (* ================================================================= *)
 

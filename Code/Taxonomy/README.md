@@ -33,6 +33,8 @@ Taxonomy/
                          SPPredicateTransformers     -- SP carriers + healthiness
                          ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
                          BaseGaloisConnections, NewGaloisConnections
+                         StatePrePostMonad           -- ordered stateT S PPM.PrePost
+                         StateSPPrePostConnections   -- stateful DSP/ASLP adjunctions
   Arrows/                PredArr, PrePostArr, RelPrePostArr, SPostArr, WPArr,
                          GaloisArr                   -- binary carriers
   EffectObservations/
@@ -109,6 +111,12 @@ the base monad (`Monad` / `Eq1` / `Eq1Equivalence` / `MonadLawsE` taken as a
 without depending on any computation monad — which is what keeps the
 organising principle at the top of this file literally true.
 
+The same file lifts explicit base orders through `optionT` and `stateT`:
+`ord_optionT` / `bind_optionT_mono` and `ord_stateT` / `bind_stateT_mono`.
+The state lift compares `runStateT` results at each initial state and also lifts
+reflexivity and transitivity. These lemmas take the base order and laws as
+parameters, avoiding recursive ordered-transformer instance search.
+
 The `readerT` instances are simpler than the `stateT` ones: the environment is
 threaded but never returned, so no pairing has to be destructed in the law
 proofs.
@@ -165,22 +173,40 @@ an ASP is monotone in the relation and as a DSLP antitone, so those two orders
 *are* relation inclusion. DSP and ASLP are neither monotone nor antitone
 (`dspOf_not_monotone` / `dspOf_not_antitone` and duals), so their `bind` cannot
 be a forward pass over the precondition. It instead **recovers** each argument's
-relation by probing at two constant preconditions, composes the relations, and
-re-reads — see `dsp_recov` / `aslp_recov` and the `*_carrier` bridges. Both
+relation with constant and singleton/co-singleton probes, composes the relations,
+and re-reads — see `dsp_recov` / `aslp_recov` and the `*_carrier` bridges. Both
 carriers are stated as healthiness conditions; `dsp_carrier` / `aslp_carrier`
 prove these equivalent to the fixed-point form the proofs use.
 
-**Ordered bind is a separate requirement.**
+**Stateful ordered bind (GH3).** The existing `StDSP.DSPSt` and
+`StASLP.ASLPSt` monads now use **forward recovered-relation inclusion**:
+
+```coq
+StDSP.ordDSPSt m n := forall s r, StDSP.relDSPSt m s r -> StDSP.relDSPSt n s r
+StASLP.ordASLPSt m n := forall s r, StASLP.relASLPSt m s r -> StASLP.relASLPSt n s r
+```
+
+Both orders point in the same direction. `StDSP.bindDSPSt_mono` and
+`StASLP.bindASLPSt_mono` prove joint monotonicity of the existing binds by
+relational composition. Each module supplies `OrderM_*St` / `OrderedMonad_*St`,
+`ord*St_PreOrder`, `ord*St_Proper`, and `ord*St_eq1`: mutual refinement is
+exactly the existing `Eq1`. The carriers, return, bind, and precondition
+monotonicity (`dspMono` / `aslpMono`) retain their definitions.
+
 [`SPBindOrderCounterexample.v`](BaseSpecMonads/SPBindOrderCounterexample.v)
-proves that the state-only `StDSP.DSPSt` and `StASLP.ASLPSt` binds do not
-preserve their global pointwise implication orders, even with the same
-continuation on both sides. The Boolean-state example uses the existing
-directly defined binds: one command returns only from `false`, another preserves
-both states, and their common continuation resets the state to `false`. The
-resulting nonmonotonicity blocks an `OrderedMonad` instance using these binds
-and orders together, as required by the standard Dijkstra bind construction.
-Their `MonadLawsE` instances and `dspMono` / `aslpMono` precondition-monotonicity
-lemmas remain valid; the counterexample does not depend on arrow-derived bind.
+preserves the historical counterexamples against **raw pointwise implication**,
+stated explicitly as `StTrans.ordSPSt` on `getDSPSt` / `getASLPSt` projections.
+Its `dsp_counterexample` / `aslp_counterexample`, `*_bind_not_monotone`, and
+`*_arbitrary_bind_impossible` concern that historical order. The Boolean
+witnesses compare `R0` (returns only from `false`) and `R1` (preserves both
+states), then sequence with `K` (resets to `false`). Under the new orders,
+`dsp_order_rel` and `aslp_order_rel` both establish `R0 <= R1`, and
+`dsp_sequenced` / `aslp_sequenced` preserve that comparison through ITree's
+`monot` field. Under the historical raw order, ASLP instead compares `R1 <= R0`.
+
+This order change covers the stateful `A * S` slice. Its PrePost connections
+are described in §7; the raw `SPM.SPost`, exception, and reader developments
+have their own orders.
 The [coupled reader counterexamples](#coupled-reader-observations) below show
 that a shared precondition over read-only environments can also induce a
 nonmonotone bind order. The existing pointwise reader lifts have monotone binds.
@@ -344,8 +370,9 @@ the pointwise `DSPRd` / `ASLPRd` orders are covered by the positive lemmas above
 
 ### In-monad characterizations
 
-Only two of the eight triple directions are relation inclusions, and only those
-work with the global order and no side condition:
+For the existing `StExc` characterizations in `NewGaloisConnections.v`, only
+two of the eight triple directions work with the global order and no side
+condition:
 
 | | `Over` | `Under` |
 |---|---|---|
@@ -356,8 +383,10 @@ work with the global order and no side condition:
 `Over` always compares `obs ⊑ target`, `Under` always `target ⊑ obs`. The two
 side conditions are forced by the healthiness conditions themselves (`asp_bot`:
 every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at `⊤`) and are
-not removable. DSP and ASLP have no in-monad target in either direction, because
-their orders are not relation inclusion at all.
+not removable. The `StExc` DSP/ASLP orders here are raw transformer implication,
+and the table supplies no in-monad targets for them. The new stateful
+recovered-relation orders and adjunctions establish ordered sequencing, not
+additional `Over` / `Under` Hoare-triple equivalences.
 
 ## 4. The WP specification monads
 
@@ -574,6 +603,11 @@ at reflexivity (`pp2sp_sp2pp_loop` / `sp2pp_pp2sp_loop` are DM4all's).
 
 `WP_le` and `MR_le` are *reversed* — a weaker demand is lower.
 
+`PP_le m n` means `(PPM.pre n -> PPM.pre m)` together with unconditional
+inclusion `PPM.post m ⊆ PPM.post n`. `bindPP_mono` proves joint bind
+monotonicity; `OrderM_PP` / `OrderedMonad_PP` install the concrete ITree
+dictionaries. `PP_le_Proper` and `PP_le_eq1` relate this order to `Eq1`.
+
 Four of the five right/left adjoints are formulas. `pp2sp` is not: the obvious
 candidate `pp2sp0 pp = fun p a => p /\ (pre pp -> post pp a)` is only a lax
 inverse, so the real right adjoint is the impredicative **intersection** of every
@@ -623,6 +657,63 @@ The `gen_*` theorems are stated for an **arbitrary** `w` in the relevant monad;
 each observation file obtains its own version by `exact`, since e.g.
 `tripleASP m Over pre post` is *definitionally* the left-hand side.
 
+### Stateful PrePost and recovered-relation SP connections
+
+[`StatePrePostMonad.v`](BaseSpecMonads/StatePrePostMonad.v) uses the exact
+ExtLib record transformer `stateT S PPM.PrePost`, with outcomes `A * S`:
+
+```coq
+PPSt_le p q := forall s, PP_le (runStateT p s) (runStateT q s).
+```
+
+`PPSt_le_ord_stateT` identifies it with the generic state-order lift.
+`bindPPSt_mono`, `PPSt_le_Proper`, and `PPSt_le_eq1` give joint bind
+monotonicity, equality compatibility, and mutual refinement iff `Eq1`.
+`OrderM__PPSt` / `OrderedMonad__PPSt` use the explicit `Monad__PPSt`,
+`Eq1__PPSt`, and `MonadLawsE__PPSt` dictionaries.
+
+[`StateSPPrePostConnections.v`](BaseSpecMonads/StateSPPrePostConnections.v)
+connects each stateful SP monad to this transformer:
+
+| SP monad | Left map `L` | Right map `G` | Adjunction theorem |
+|---|---|---|---|
+| `StDSP.DSPSt` | `dspSt2ppSt` | `ppSt2dspSt` | `dsp_pp_adjunction` |
+| `StASLP.ASLPSt` | `aslpSt2ppSt` | `ppSt2aslpSt` | `aslp_pp_adjunction` |
+
+At each initial state, `L w` pairs `True` with the recovered relation of `w`.
+`G p` packages `PPM.post (runStateT p s) r` in the DSP or ASLP shape and
+ignores the PP precondition at every state. The recovery lemmas
+`relDSPSt_ppSt2dspSt` / `relASLPSt_ppSt2aslpSt` identify that relation exactly.
+For either pair of maps, the laws are:
+
+```text
+L ⊣ G:  PPSt_le (L w) p <-> ord w (G p)
+        G (L w) ≈ w
+        L (G p) <= p
+```
+
+Here `≈` is `Eq1`. The round-trip theorems are
+`ppSt2dspSt_dspSt2ppSt` / `dspSt2ppSt_ppSt2dspSt` and
+`ppSt2aslpSt_aslpSt2ppSt` / `aslpSt2ppSt_ppSt2aslpSt`.
+All four maps respect equality and order (`*_Proper_eq1`, `*_mono`) and
+preserve return and bind up to `Eq1` (`*_ret`, `*_bind`, with each map name
+as prefix). PP bind composes post-relations independently of preconditions,
+which lets both right maps preserve bind as well as both left maps.
+
+These orders identify DSP and ASLP with the relation-only fragment of stateful
+PrePost whose precondition is `True` at every state, up to `Eq1`. This is an
+order-defined comparison of the existing healthy carriers. General stateful PP
+also carries an independently varying precondition at each initial state;
+`G` forgets it, so `LG <= id` need not be equality. The construction concerns
+the stateful `A * S` monads, separately from the `SPM.SPost` adjunction and the
+pure/exception Hoare embeddings above.
+
+The Boolean examples exercise the connections: `dsp_embedded_order` /
+`aslp_embedded_order` transport the positive comparisons, and
+`dsp_embedded_sequenced` / `aslp_embedded_sequenced` use ITree's `monot` with
+`OrderedMonad__PPSt`. The `*_embedded_sequenced_iff` theorems use bind
+preservation to relate embedding after sequencing to sequencing after embedding.
+
 ### Relation to `Arrows/GaloisArr.v`
 
 `GaloisArr.v` ports the same DM4all connections to this development's **binary
@@ -668,10 +759,11 @@ and `bind` is identical: making it an alias would put two `Eq1` instances on one
 type constructor (pointwise iff for `PredM`, Leibniz `eq` for the stack), and
 each is load-bearing for its own laws.
 
-**`PrePost` is strictly bigger than every SP monad.** `snd` composed with any SP
-reading is a monad morphism, but it forgets the precondition and no injective
-map exists (proved for the pure case). What does hold is a Galois connection
-with each SP monad; for ASP it is order-preserving and for DSLP order-reversing.
+`PrePost` carries an independent precondition that a relation-only SP reading
+forgets. In the pure case, this prevents an injective map from `PrePost` into
+the SP monads. In the stateful construction of §7, `L` embeds DSP/ASLP into
+PrePost up to `Eq1`, while `G` forgets the PP preconditions; both maps are
+order-preserving under recovered-relation inclusion.
 
 ## 9. Example programs
 
@@ -747,6 +839,11 @@ classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /
 `FunctionalExtensionality`. Run `Print Assumptions` on a specific result if you
 need its exact footprint.
+
+The new base PP ordered-monad results, generic state-order lift, and concrete
+`StatePrePostMonad.v` order results are axiom-free. The stateful SP recovery
+and connection results inherit classical logic (`classic`), propositional
+extensionality, and dependent functional extensionality from the SP proofs.
 
 Not in the build, deliberately:
 
