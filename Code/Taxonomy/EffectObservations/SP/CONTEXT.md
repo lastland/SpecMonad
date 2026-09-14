@@ -37,6 +37,12 @@ ASP/DSLP presentation. Cross-observation taxonomy lives in the parent directory.
   Full-outcome clients use these laws directly; slice clients derive adapters.
 - [SPostArrObservation.v](SPostArrObservation.v) depends only on specification
   arrows, even though it lives in this directory.
+- [DivExcNonDet_SPDivExc.v](DivExcNonDet_SPDivExc.v) observes the full raw
+  outcomes of stateless `divexcnd` into `DSPDivExc` / `ASLPDivExc`.
+  `obsDSP` reads `p /\ outcomes m o`; `obsASLP` reads `p \/ ~ outcomes m o`.
+  Both preserve return and bind. The specification binds are monotone in both
+  arguments. Divergence (`None`) and exceptions (`Some None`) remain distinct;
+  raw-union choice gives DSP disjunction and ASLP conjunction.
 - [RdPureObs](RdDivNonDet_RdSPPure.v) reuses [PureObs](DivNonDet_SPPure.v)
   environment by environment. Comparisons of the stateful readings belong to
   the [parent taxonomy layer](../CONTEXT.md).

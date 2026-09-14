@@ -102,6 +102,38 @@ Section PureDSPMonad.
   Definition ordDSPSPAt {A} (pre : Prop) (m1 m2 : DSPSP A) : Prop :=
     forall a, getDSP m1 pre a -> getDSP m2 pre a.
 
+  (** Well-formedness makes the transformer monotone in its precondition:
+      [Singleton] factors the precondition out of the transformer, so a
+      stronger precondition can always be weakened.  Pure analogue of
+      [getMSP_mono] in [DSLPMonad.v]. *)
+  Lemma getDSP_mono {A} (w : DSPSP A) (p q : Prop) (a : A) :
+    (p -> q) -> getDSP w p a -> getDSP w q a.
+  Proof.
+    intros Hpq Hw.
+    pose proof (proj1 (strict_conj_iff_singleton (getDSP w)) (proj2_sig w) p a) as Hsp.
+    pose proof (proj1 (strict_conj_iff_singleton (getDSP w)) (proj2_sig w) q a) as Hsq.
+    apply (proj2 Hsq). split.
+    - exact (Hpq (proj1 (proj1 Hsp Hw))).
+    - exact (proj2 (proj1 Hsp Hw)).
+  Qed.
+
+  (** The refinement order is reflexive, and [bindDSP] is simultaneously
+      monotone in its first argument and in its pointwise continuation.
+      This pair is exactly the base contract that the generic [optionT]
+      order lift in [TransformerLaws.v] consumes. *)
+  Lemma ordDSPSP_refl A (m : DSPSP A) : ordDSPSP m m.
+  Proof. intros p a H. exact H. Qed.
+
+  Lemma bindDSP_mono A B (m n : DSPSP A) (f g : A -> DSPSP B) :
+    ordDSPSP m n -> (forall a, ordDSPSP (f a) (g a)) ->
+    ordDSPSP (bindDSP m f) (bindDSP n g).
+  Proof.
+    intros Hmn Hfg p b [a H]. exists a. apply Hfg.
+    apply (getDSP_mono (f a) (getDSP m p a) (getDSP n p a) b).
+    - exact (Hmn p a).
+    - exact H.
+  Qed.
+
 End PureDSPMonad.
 
 (* ================================================================= *)

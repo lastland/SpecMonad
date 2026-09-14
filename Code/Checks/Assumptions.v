@@ -8,6 +8,7 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPBindOrderCounterexam
 From Incorrectness.Taxonomy.ComputationMonads Require Import
   StExcNonDet StDivNonDet StDivExcNonDet.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
+From Incorrectness.Taxonomy.EffectObservations.SP Require Import DivExcNonDet_SPDivExc.
 
 (** Computation-owned raw outcome laws use pointwise equivalence and are
     closed under the global context. *)
@@ -129,3 +130,29 @@ Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrde
 
 Print Assumptions Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.dsp_arbitrary_bind_impossible.
 Print Assumptions Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.aslp_arbitrary_bind_impossible.
+
+(** Stateless ordered binds, with both exceptions and divergence retained. *)
+Check DSPMonad.bindDSP_mono.
+Check ASLPMonad.bindASLP_mono.
+Check DivExcSP.bindDSPDivExc_mono.
+Check DivExcSP.bindASLPDivExc_mono.
+Print Assumptions DSPMonad.bindDSP_mono.
+Print Assumptions ASLPMonad.bindASLP_mono.
+Print Assumptions TransformerLaws.bind_optionT_mono.
+Print Assumptions DivExcSP.bindDSPDivExc_mono.
+Print Assumptions DivExcSP.bindASLPDivExc_mono.
+Print Assumptions DivExcSP.MonadLawsE__DSPDivExc.
+Print Assumptions DivExcSP.MonadLawsE__ASLPDivExc.
+
+Print Assumptions DivExcNonDet.outcomes_ret.
+Print Assumptions DivExcNonDet.outcomes_bind.
+Print Assumptions DivExcNonDet.outcomes_raise.
+Print Assumptions DivExcNonDet.outcomes_spin.
+Print Assumptions DivExcNonDet.outcomes_orP.
+Print Assumptions DivExcNonDet.MonadLawsE__divexcnd.
+Print Assumptions DivExcNonDet_SPDivExc.obsDSP_ret.
+Print Assumptions DivExcNonDet_SPDivExc.obsASLP_ret.
+Print Assumptions DivExcNonDet_SPDivExc.obsDSP_bind.
+Print Assumptions DivExcNonDet_SPDivExc.obsASLP_bind.
+Print Assumptions DivExcNonDet_SPDivExc.mixed_DSP_outcomes.
+Print Assumptions DivExcNonDet_SPDivExc.mixed_ASLP_outcomes.

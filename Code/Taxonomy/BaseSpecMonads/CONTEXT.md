@@ -21,6 +21,12 @@ do not mention a concrete computation monad.
   [`DSLPStExc`](DSLPMonad.v) uses `MSingletonProg`, equivalent to termination
   plus conjunctivity. [`DSPStExc`](DSPMonad.v) is strict conjunctive;
   [`ASLPStExc`](ASLPMonad.v) is terminating disjunctive.
+- [`DSPDivExc` / `ASLPDivExc`](DivExcSP.v) stack two `optionT` layers over
+  pure `DSPSP` / `ASLPSP`. Their runners take `Prop` preconditions and
+  `option (option A)` outcomes; the full-outcome observation assigns separate
+  indices to successful return, exception, and divergence. `bindDSP_mono` /
+  `bindASLP_mono` prove pure bind monotonicity in both arguments;
+  `bindDSPDivExc_mono` / `bindASLPDivExc_mono` lift it through both layers.
 - [`WPureT` / `WPure`](WPureMonad.v) distinguish the raw WP transformer
   from its monotone subset. `WSt` and `WStExc` stack state and optional
   exceptions over `WPure`; `runWPure` exposes application.
