@@ -708,6 +708,14 @@ also carries an independently varying precondition at each initial state;
 the stateful `A * S` monads, separately from the `SPM.SPost` adjunction and the
 pure/exception Hoare embeddings above.
 
+The unit-state witnesses `ppStPreTrue` and `ppStPreFalse` have the same
+post-relation but preconditions `True` and `False`. `PPSt_le` distinguishes them
+strictly (`ppStPreTrue_le_ppStPreFalse` / `ppStPreFalse_not_le_ppStPreTrue`),
+while both right maps identify them up to `Eq1`
+(`dspSt_eq1_preTrue_preFalse` / `aslpSt_eq1_preTrue_preFalse`). The
+`*counit_strict_ppStPreFalse` and `ppStPreFalse_not_in_*St_image` theorems make
+the strict counit and missing precondition information explicit.
+
 The Boolean examples exercise the connections: `dsp_embedded_order` /
 `aslp_embedded_order` transport the positive comparisons, and
 `dsp_embedded_sequenced` / `aslp_embedded_sequenced` use ITree's `monot` with

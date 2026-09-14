@@ -531,3 +531,224 @@ Section EmbeddedExamples.
   Qed.
 
 End EmbeddedExamples.
+
+(* ================================================================= *)
+(** ** Strictness example: the recovered orders forget the           *)
+(**     PrePost precondition                                         *)
+(* ================================================================= *)
+
+(** The right maps [ppSt2dspSt] / [ppSt2aslpSt] read only
+    [PPM.post (runStateT p s)], so the independently varying PrePost
+    precondition never enters their images; the left maps
+    [dspSt2ppSt] / [aslpSt2ppSt] always equip their result with the
+    trivial precondition [True].  On [S = A = unit] with the single
+    post-relation [unitStatePost], the two computations [ppStPreTrue]
+    (precondition [True]) and [ppStPreFalse] (precondition [False])
+    witness all of this:
+
+    - stateful PrePost separates them strictly: [PPSt_le] orders
+      [ppStPreTrue <= ppStPreFalse] but not conversely (the
+      directions are fixed by
+      [PP_le m n := (pre n -> pre m) /\ post m [subset] post n]), and
+      [Eq1__PPSt] distinguishes them;
+    - both right maps forget the distinction: the recovered
+      relations of the two images coincide, so the recovered-order
+      comparisons hold in BOTH directions and the images are
+      [Eq1]-equivalent;
+    - both counits are strict at [ppStPreFalse]: the forward
+      inequality [L (G p) <= p] holds (existing counit instance),
+      but the converse fails, because [L (G p)] has precondition
+      [True] while [ppStPreFalse] has precondition [False];
+    - [ppStPreFalse] is not in either left-map image up to
+      [Eq1__PPSt], the most direct non-surjectivity witness.
+
+    This formalizes the loss of independently varying precondition
+    information under the connections above.  It makes NO claim about
+    the cardinality of the maps' images or about the raw pointwise SP
+    order.  The failure proofs are constructive: they need only the
+    conversion of [pre (runStateT p tt)] against [True] / [False] and
+    the trivial inhabitant [I] of [True].  The [Eq1] collapse
+    theorems inherit the classical recovery assumptions of
+    [ordDSPSt_eq1] / [ordASLPSt_eq1] (and, through the forward
+    counits, of [relDSPSt_of_shape] / [relASLPSt_of_shape]). *)
+
+Section StrictnessExample.
+
+  (** The single post-relation shared by both witnesses: the only
+      admitted outcome is [(tt, tt)]. *)
+  Definition unitStatePost (_ : unit) (r : unit * unit) : Prop :=
+    r = (tt, tt).
+
+  (** Precondition [True]: admitted from every initial state. *)
+  Definition ppStPreTrue : stateT unit PPM.PrePost unit :=
+    mkStateT (fun s => (True, unitStatePost s)).
+
+  (** Precondition [False]: admitted from no initial state. *)
+  Definition ppStPreFalse : stateT unit PPM.PrePost unit :=
+    mkStateT (fun s => (False, unitStatePost s)).
+
+  (** ** 1. PrePost separates the witnesses strictly *)
+
+  Theorem ppStPreTrue_le_ppStPreFalse :
+    PPSt_le ppStPreTrue ppStPreFalse.
+  Proof.
+    intro s. split.
+    - intros [].
+    - intros r Hr. exact Hr.
+  Qed.
+
+  Theorem ppStPreFalse_not_le_ppStPreTrue :
+    ~ PPSt_le ppStPreFalse ppStPreTrue.
+  Proof.
+    intros H. exact (proj1 (H tt) I).
+  Qed.
+
+  Theorem ppStPreTrue_not_eq1_ppStPreFalse :
+    ~ @eq1 (stateT unit PPM.PrePost) (Eq1__PPSt unit) unit
+        ppStPreTrue ppStPreFalse.
+  Proof.
+    intros H. exact (proj1 (proj1 (H tt)) I).
+  Qed.
+
+  (** ** 2. The DSP right map forgets the distinction *)
+
+  Theorem dspSt_order_preTrue_preFalse :
+    StDSP.ordDSPSt (ppSt2dspSt ppStPreTrue) (ppSt2dspSt ppStPreFalse).
+  Proof.
+    intros s r H.
+    apply (proj2 (relDSPSt_ppSt2dspSt unit ppStPreFalse s r)).
+    apply (proj1 (relDSPSt_ppSt2dspSt unit ppStPreTrue s r)).
+    exact H.
+  Qed.
+
+  Theorem dspSt_order_preFalse_preTrue :
+    StDSP.ordDSPSt (ppSt2dspSt ppStPreFalse) (ppSt2dspSt ppStPreTrue).
+  Proof.
+    intros s r H.
+    apply (proj2 (relDSPSt_ppSt2dspSt unit ppStPreTrue s r)).
+    apply (proj1 (relDSPSt_ppSt2dspSt unit ppStPreFalse s r)).
+    exact H.
+  Qed.
+
+  (** Mutual recovered-order comparison gives the Eq1 collapse. *)
+  Theorem dspSt_eq1_preTrue_preFalse :
+    @eq1 (StDSP.DSPSt unit) (StDSP.Eq1__DSPSt unit) unit
+      (ppSt2dspSt ppStPreTrue) (ppSt2dspSt ppStPreFalse).
+  Proof.
+    apply (proj1 (@StDSP.ordDSPSt_eq1 unit unit _ _)).
+    split.
+    - exact dspSt_order_preTrue_preFalse.
+    - exact dspSt_order_preFalse_preTrue.
+  Qed.
+
+  (** ** 3. The ASLP right map forgets the distinction *)
+
+  Theorem aslpSt_order_preTrue_preFalse :
+    StASLP.ordASLPSt (ppSt2aslpSt ppStPreTrue) (ppSt2aslpSt ppStPreFalse).
+  Proof.
+    intros s r H.
+    apply (proj2 (relASLPSt_ppSt2aslpSt unit ppStPreFalse s r)).
+    apply (proj1 (relASLPSt_ppSt2aslpSt unit ppStPreTrue s r)).
+    exact H.
+  Qed.
+
+  Theorem aslpSt_order_preFalse_preTrue :
+    StASLP.ordASLPSt (ppSt2aslpSt ppStPreFalse) (ppSt2aslpSt ppStPreTrue).
+  Proof.
+    intros s r H.
+    apply (proj2 (relASLPSt_ppSt2aslpSt unit ppStPreTrue s r)).
+    apply (proj1 (relASLPSt_ppSt2aslpSt unit ppStPreFalse s r)).
+    exact H.
+  Qed.
+
+  (** Mutual recovered-order comparison gives the Eq1 collapse. *)
+  Theorem aslpSt_eq1_preTrue_preFalse :
+    @eq1 (StASLP.ASLPSt unit) (StASLP.Eq1__ASLPSt unit) unit
+      (ppSt2aslpSt ppStPreTrue) (ppSt2aslpSt ppStPreFalse).
+  Proof.
+    apply (proj1 (@StASLP.ordASLPSt_eq1 unit unit _ _)).
+    split.
+    - exact aslpSt_order_preTrue_preFalse.
+    - exact aslpSt_order_preFalse_preTrue.
+  Qed.
+
+  (** ** 4. Both counits are strict at [ppStPreFalse]
+
+      The converse of each counit fails: at state [tt] it demands
+      [True -> False], which [proj1 (H tt) I] refutes
+      constructively.  Each pair below combines the existing forward
+      counit [L (G p) <= p] with the corresponding named converse
+      failure. *)
+
+  Theorem dspSt_counit_converse_fails_ppStPreFalse :
+    ~ PPSt_le ppStPreFalse (dspSt2ppSt (ppSt2dspSt ppStPreFalse)).
+  Proof.
+    intros H. exact (proj1 (H tt) I).
+  Qed.
+
+  Theorem aslpSt_counit_converse_fails_ppStPreFalse :
+    ~ PPSt_le ppStPreFalse (aslpSt2ppSt (ppSt2aslpSt ppStPreFalse)).
+  Proof.
+    intros H. exact (proj1 (H tt) I).
+  Qed.
+
+  Theorem dspSt_counit_strict_ppStPreFalse :
+    PPSt_le (dspSt2ppSt (ppSt2dspSt ppStPreFalse)) ppStPreFalse /\
+    ~ PPSt_le ppStPreFalse (dspSt2ppSt (ppSt2dspSt ppStPreFalse)).
+  Proof.
+    split.
+    - exact (dspSt2ppSt_ppSt2dspSt unit ppStPreFalse).
+    - exact dspSt_counit_converse_fails_ppStPreFalse.
+  Qed.
+
+  Theorem aslpSt_counit_strict_ppStPreFalse :
+    PPSt_le (aslpSt2ppSt (ppSt2aslpSt ppStPreFalse)) ppStPreFalse /\
+    ~ PPSt_le ppStPreFalse (aslpSt2ppSt (ppSt2aslpSt ppStPreFalse)).
+  Proof.
+    split.
+    - exact (aslpSt2ppSt_ppSt2aslpSt unit ppStPreFalse).
+    - exact aslpSt_counit_converse_fails_ppStPreFalse.
+  Qed.
+
+  (** ** 5. [ppStPreFalse] is not in either left-map image up to Eq1
+
+      Whatever [w] is, [dspSt2ppSt w] / [aslpSt2ppSt w] carry the
+      precondition [True], so neither can be [Eq1]-equivalent to
+      [ppStPreFalse]. *)
+
+  Theorem ppStPreFalse_not_in_dspSt_image :
+    ~ (exists w : StDSP.DSPSt unit unit,
+         @eq1 (stateT unit PPM.PrePost) (Eq1__PPSt unit) unit
+           (dspSt2ppSt w) ppStPreFalse).
+  Proof.
+    intros [w H]. exact (proj1 (proj1 (H tt)) I).
+  Qed.
+
+  Theorem ppStPreFalse_not_in_aslpSt_image :
+    ~ (exists w : StASLP.ASLPSt unit unit,
+         @eq1 (stateT unit PPM.PrePost) (Eq1__PPSt unit) unit
+           (aslpSt2ppSt w) ppStPreFalse).
+  Proof.
+    intros [w H]. exact (proj1 (proj1 (H tt)) I).
+  Qed.
+
+End StrictnessExample.
+
+(** Assumption audits.  The constructive PrePost strictness results are
+    closed under the global context.  The converse-failure lemmas have
+    constructive proof terms ([proj1 (H tt) I] only), but their
+    statements mention [ppSt2dspSt] / [ppSt2aslpSt], whose definitions
+    embed the classical obligation proofs of [dsp_shape_wf] /
+    [aslp_shape_wf]; their audits therefore report the same three
+    axioms (propositional and functional extensionality, [classic])
+    as the Eq1 collapses and the paired counit theorems. *)
+Print Assumptions ppStPreFalse_not_le_ppStPreTrue.
+Print Assumptions ppStPreTrue_not_eq1_ppStPreFalse.
+Print Assumptions ppStPreFalse_not_in_dspSt_image.
+Print Assumptions ppStPreFalse_not_in_aslpSt_image.
+Print Assumptions dspSt_counit_converse_fails_ppStPreFalse.
+Print Assumptions aslpSt_counit_converse_fails_ppStPreFalse.
+Print Assumptions dspSt_eq1_preTrue_preFalse.
+Print Assumptions aslpSt_eq1_preTrue_preFalse.
+Print Assumptions dspSt_counit_strict_ppStPreFalse.
+Print Assumptions aslpSt_counit_strict_ppStPreFalse.
