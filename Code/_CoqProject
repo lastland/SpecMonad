@@ -56,6 +56,7 @@ Taxonomy/Arrows/PrePostArr.v
 Taxonomy/Arrows/WPArr.v
 Taxonomy/Arrows/RelPrePostArr.v
 Taxonomy/Arrows/GaloisArr.v
+Taxonomy/Arrows/PrePostOrder.v
 Taxonomy/Arrows/Tests/ArrowMonadInstances.v
 Taxonomy/Arrows/Tests/ArrowTransformerInstances.v
 Taxonomy/BaseSpecMonads/BaseGaloisConnections.v
@@ -72,6 +73,8 @@ Taxonomy/BaseSpecMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/ASLPMonad.v
 Taxonomy/BaseSpecMonads/DivExcSP.v
 Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v
+Taxonomy/BaseSpecMonads/SPRelationOrder.v
+Taxonomy/BaseSpecMonads/Tests/SPRelationOrderTests.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v

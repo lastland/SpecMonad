@@ -48,6 +48,7 @@ linked source definitions determine exact types and theorem statements.
 | [Taxonomy](Code/Taxonomy/CONTEXT.md) | Computation/specification separation and observation taxonomy |
 | [Taxonomy/ComputationMonads](Code/Taxonomy/ComputationMonads/CONTEXT.md) | Effect stacks and their outcome semantics |
 | [Taxonomy/BaseSpecMonads](Code/Taxonomy/BaseSpecMonads/CONTEXT.md) | Unary SP/WP specifications, well-formedness, and orders |
+| [Taxonomy/BaseSpecMonads/Tests](Code/Taxonomy/BaseSpecMonads/Tests/CONTEXT.md) | Counterexamples separating relation inclusion from pointwise order |
 | [Taxonomy/Arrows](Code/Taxonomy/Arrows/CONTEXT.md) | Binary specifications and SP presentation equivalence |
 | [Taxonomy/Arrows/Examples](Code/Taxonomy/Arrows/Examples/CONTEXT.md) | Checked SP-arrow clients |
 | [Taxonomy/Arrows/Tests](Code/Taxonomy/Arrows/Tests/CONTEXT.md) | Concrete monad and transformer instances |

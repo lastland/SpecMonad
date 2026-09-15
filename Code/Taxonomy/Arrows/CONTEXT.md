@@ -93,3 +93,10 @@ arrow equality compares `project_wp` behavior.
 [WPArr.v](WPArr.v) uses raw `WPureT`, not the monotone `WPure` subset.
 [GaloisArr.v](GaloisArr.v) is the entrypoint for their refinement orders,
 restricted adjunctions, and binary-arrow counterexamples.
+
+[PrePostOrder.v](PrePostOrder.v) proves that `PrePost_le` is preserved by
+composition, `first`, `left`, and the exact arrow-derived bind. It also
+identifies relation inclusion with `PrePost_le` on `(True, R)` images,
+including the four stateful DSP/ASLP orders from
+[SPRelationOrder.v](../BaseSpecMonads/SPRelationOrder.v). This order comparison
+does not identify the fixed-input PrePost bind with state-threading bind.

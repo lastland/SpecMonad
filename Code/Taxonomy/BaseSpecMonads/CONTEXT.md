@@ -68,6 +68,14 @@ use `StDSP.comp_cong` and their specialized recovery lemmas directly.
   That choice belongs to the observation, not the well-formedness predicate.
 - Stateful DSP/ASLP bind recovers and composes relations before re-reading them.
   See `dsp_recov` / `aslp_recov`; a simple forward pass is insufficient.
+- [SPRelationOrder.v](SPRelationOrder.v) orders the pair- and option-outcome
+  DSP/ASLP carriers by inclusion of their extracted relations. Its four
+  `bind*Rel_mono` lemmas prove joint monotonicity of the existing binds.
+  These orders induce the existing `eq1` equivalences but differ from the
+  pointwise orders. [Tests/SPRelationOrderTests.v](Tests/SPRelationOrderTests.v)
+  proves that relation inclusion need not preserve DSP/ASLP judgments.
+  [PrePostOrder.v](../Arrows/PrePostOrder.v) identifies these comparisons with
+  `PrePost_le` after mapping each relation `R` to `(True, R)`.
 - [`SPBindOrderCounterexample.v`](SPBindOrderCounterexample.v) refutes ordered
   bind for `StDSP.DSPSt` / `StASLP.ASLPSt` under their global pointwise orders.
   Monad laws and monotonicity in a fixed transformer's precondition still hold.
