@@ -438,6 +438,7 @@ equivalences. Comparisons between observations are *not* here — see §6.
 | `StExcNonDet_WStExc.v` | `stexcnd` | `WStExc` | `obsDWP`, `obsAWP` only | — |
 | `StDivExcNonDet_WStExc.v` | `stdivexcnd` | `WStExc` | all four | — |
 | `StDivNonDet_WSt.v` | `stdivndNE` | `WSt` | all four | `TermSliceObsWP` |
+| `StDivNonDet_WPHealthy.v` | `stdivndNE` | `stateT S {AWP,DWLP,DWP,AWLP}.W` | one per monad | `HealthyObsWP` |
 
 The four readings are `obsDWP` (demonic total), `obsDWLP` (demonic liberal),
 `obsAWP` (angelic total), `obsAWLP` (angelic liberal). `StExcNonDet_WStExc.v`
@@ -446,12 +447,14 @@ definable there. `StDivITree_WStExc.v` is the deterministic case and is the only
 built file with `obsWPCollapse` / `obsWLPCollapse`, the angelic–demonic
 collapse.
 
-`StDivNonDet_WPHealthy.v` refines that file's four observations into the four
-healthy monads of §5, and shares work on the observation side too: all four
-factor as one definition `obsGen q k` with two independent parameters — `q`
-picks the quantifier, `k` picks how the divergent outcome is scored. Since each
-healthiness condition depends on only ONE axis, there are four healthiness
-proofs rather than eight.
+`StDivNonDet_WPHealthy.v` defines four effect observations, one into each
+healthy monad of §5: `obsAWP` into `stateT S AWP.W`, `obsDWLP` into
+`stateT S DWLP.W`, `obsDWP` into `stateT S DWP.W`, `obsAWLP` into
+`stateT S AWLP.W`. Each target's healthiness condition is an obligation of the
+definition, each observation is a monad morphism (`obs*_ret` / `obs*_bind`), and
+`obs*_run` shows it has the same transformer as the corresponding `WSt`
+observation below. Non-emptiness of the source is used only for `Strict` of
+`obsDWP` and `Terminating` of `obsAWLP`.
 
 `StDivNonDet_WSt.v` targets `WSt`, whose postconditions range over `A * S`, so
 divergence is visible to the *observation* but not to the *postcondition*: the

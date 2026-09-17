@@ -1,31 +1,24 @@
-(** * The [stdivnd] WP observations, valued in the four healthy monads
+(** * Effect observations of [stdivndNE] into the four healthy WP monads
 
-    [WP/StDivNonDet_WSt.v] defines [obsDWP] / [obsDWLP] / [obsAWP] / [obsAWLP]
-    into [WSt S = stateT S WPure], whose only carrier condition is
-    monotonicity.  This file refines them to land in the four monads of
-    [BaseSpecMonads/WPHealthyMonads.v], which are cut out by the SAME four
-    pairings as the SP monads.
+    Four monad morphisms, one per monad of [BaseSpecMonads/WPHealthyMonads.v]:
 
-    Two levels of sharing are in play.
+      [obsAWP]   : stdivndNE S -> stateT S AWP.W    angelic total
+      [obsDWLP]  : stdivndNE S -> stateT S DWLP.W   demonic liberal
+      [obsDWP]   : stdivndNE S -> stateT S DWP.W    demonic total
+      [obsAWLP]  : stdivndNE S -> stateT S AWLP.W   angelic liberal
 
-    - **One observation, not four.**  All four factor as
+    Postconditions range over [A * S], so divergence is visible to the
+    observation but not to the postcondition: the total observations reject a
+    divergent outcome, the liberal ones accept it.
 
-        [obsGen q k m s post  =  Q oa in reach, ext k post oa]
+    The healthiness condition of each target is an obligation of the
+    definition.  Non-emptiness of the outcome set is needed for exactly two of
+    the eight components — [Strict] for [obsDWP] and [Terminating] for
+    [obsAWLP] — which is why the source is [stdivndNE] rather than [stdivnd].
 
-      with [q] choosing the quantifier ([Dem] = [forall], [Ang] = [exists])
-      and [k] choosing how the DIVERGENT outcome is scored ([Total] = [False],
-      [Liberal] = [True]).  The two axes are independent, so there is one
-      definition with two parameters rather than four definitions.
-      [obsGen_DWP] … [obsGen_AWLP] identify it with the four originals.
-
-    - **Four healthiness proofs, not eight.**  Each condition depends on only
-      ONE of the two axes: the quantifier fixes conjunctive vs disjunctive, the
-      scoring fixes strict vs terminating.  So [obsGen_conjunctive] is proved
-      once for both [k], [obsGen_strict] once for both [q], and so on.
-
-    Non-emptiness of the outcome set is needed for exactly two of the four
-    laws — [Strict] at [Dem] and [Terminating] at [Ang] — which is what the
-    [stdivndNE] carrier supplies. *)
+    Each observation has the same transformer as its counterpart in
+    [WP/StDivNonDet_WSt.v] ([obsAWP_run] &c.); what is new here is the
+    healthier carrier, and that each observation is a monad morphism into it. *)
 
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
@@ -33,182 +26,206 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNo
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   Healthiness WPureMonad WPHealthyMonads.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivNonDet_WSt.
-Import TermSliceObsWP.
+
+Import MonadNotation.
+Open Scope monad_scope.
 
 Module HealthyObsWP.
 
 Section HealthyObs.
   Variable S : Type.
 
-  (** The two axes. *)
-  Inductive mode  := Ang | Dem.
-  Inductive scope := Total | Liberal.
+  #[local] Existing Instance Monad_stateT.
 
-  Definition reach {A} (m : stdivndNE S A) (s : S) (oa : option (A * S)) : Prop :=
-    unOptionT (runStateT (getNE m) s) oa.
+  (* ---------------- the four observations ---------------- *)
 
-  (** The liberal/total axis is a modification of the POSTCONDITION: it only
-      says how the divergent outcome is scored. *)
-  Definition ext {A} (k : scope) (post : A * S -> Prop) (oa : option (A * S)) : Prop :=
-    match oa with
-    | Some r => post r
-    | None   => match k with Total => False | Liberal => True end
-    end.
-
-  Definition obsGen {A} (q : mode) (k : scope)
-    (m : stdivndNE S A) (s : S) : PT (A * S) :=
-    fun post =>
-      match q with
-      | Dem => forall oa, reach m s oa -> ext k post oa
-      | Ang => exists oa, reach m s oa /\ ext k post oa
-      end.
-
-  (* ---------------- the four originals, recovered ---------------- *)
-
-  Theorem obsGen_DWP {A} (m : stdivndNE S A) s post :
-    obsGen Dem Total m s post <-> runStateT (obsDWP m) s post.
-  Proof. symmetry. exact (obsDWP_unfold m s post). Qed.
-
-  Theorem obsGen_DWLP {A} (m : stdivndNE S A) s post :
-    obsGen Dem Liberal m s post <-> runStateT (obsDWLP m) s post.
-  Proof. symmetry. exact (obsDWLP_unfold m s post). Qed.
-
-  Theorem obsGen_AWP {A} (m : stdivndNE S A) s post :
-    obsGen Ang Total m s post <-> runStateT (obsAWP m) s post.
-  Proof.
-    rewrite obsAWP_unfold. split.
-    - intros [[r|] [Ho Hp]]; [ exists r; exact (conj Ho Hp) | destruct Hp ].
-    - intros [r [Ho Hp]]. exists (Some r). exact (conj Ho Hp).
-  Qed.
-
-  Theorem obsGen_AWLP {A} (m : stdivndNE S A) s post :
-    obsGen Ang Liberal m s post <-> runStateT (obsAWLP m) s post.
-  Proof.
-    rewrite obsAWLP_unfold. split.
-    - intros [[r|] [Ho Hp]];
-        [ left; exists r; exact (conj Ho Hp) | right; exact Ho ].
-    - intros [[r [Ho Hp]] | Hd];
-        [ exists (Some r); exact (conj Ho Hp) | exists None; exact (conj Hd I) ].
-  Qed.
-
-  (* ---------------- healthiness, once per axis ---------------- *)
-
-  (** The QUANTIFIER decides conjunctive vs disjunctive — for either scoring. *)
-
-  Theorem obsGen_conjunctive {A} (k : scope) (m : stdivndNE S A) s :
-    Conjunctive (obsGen Dem k m s).
-  Proof.
-    intros K [k0] p. cbn. split.
-    - intros H j oa Ho. specialize (H oa Ho).
-      destruct oa as [r|]; [ exact (H j) | destruct k; [ destruct H | exact I ] ].
-    - intros H oa Ho. destruct oa as [r|].
-      + intro j. exact (H j (Some r) Ho).
-      + destruct k; [ exact (H k0 None Ho) | exact I ].
-  Qed.
-
-  Theorem obsGen_disjunctive {A} (k : scope) (m : stdivndNE S A) s :
-    Disjunctive (obsGen Ang k m s).
-  Proof.
-    intros K [k0] p. cbn. split.
-    - intros [oa [Ho Hp]]. destruct oa as [r|].
-      + destruct Hp as [j Hj]. exists j, (Some r). exact (conj Ho Hj).
-      + destruct k; [ destruct Hp | exists k0, None; exact (conj Ho I) ].
-    - intros [j [oa [Ho Hp]]]. exists oa. split; [ exact Ho |].
-      destruct oa as [r|]; [ exists j; exact Hp | exact Hp ].
-  Qed.
-
-  (** The SCORING decides strict vs terminating — for either quantifier.
-      Each needs non-emptiness in exactly one of the two cases. *)
-
-  Theorem obsGen_strict {A} (q : mode) (m : stdivndNE S A) s :
-    Strict (obsGen q Total m s).
-  Proof.
-    destruct q; cbn; intro H.
-    - destruct H as [oa [Ho Hp]]. destruct oa as [r|]; exact Hp.
-    - destruct (getNE_nonEmpty S m s) as [oa Ho].
-      specialize (H oa Ho). destruct oa as [r|]; exact H.
-  Qed.
-
-  Theorem obsGen_terminating {A} (q : mode) (m : stdivndNE S A) s :
-    Terminating (obsGen q Liberal m s).
-  Proof.
-    destruct q; cbn.
-    - destruct (getNE_nonEmpty S m s) as [oa Ho].
-      exists oa. split; [ exact Ho | destruct oa as [r|]; exact I ].
-    - intros oa _. destruct oa as [r|]; exact I.
-  Qed.
-
-  (* ---------------- the four pairings, assembled ---------------- *)
-
-  Theorem obsGen_AngelicTotal {A} (m : stdivndNE S A) s :
-    AngelicTotal (obsGen Ang Total m s).
-  Proof. exact (conj (obsGen_strict Ang m s) (obsGen_disjunctive Total m s)). Qed.
-
-  Theorem obsGen_DemonicLiberal {A} (m : stdivndNE S A) s :
-    DemonicLiberal (obsGen Dem Liberal m s).
-  Proof. exact (conj (obsGen_terminating Dem m s) (obsGen_conjunctive Liberal m s)). Qed.
-
-  Theorem obsGen_DemonicTotal {A} (m : stdivndNE S A) s :
-    DemonicTotal (obsGen Dem Total m s).
-  Proof. exact (conj (obsGen_strict Dem m s) (obsGen_conjunctive Total m s)). Qed.
-
-  Theorem obsGen_AngelicLiberal {A} (m : stdivndNE S A) s :
-    AngelicLiberal (obsGen Ang Liberal m s).
-  Proof. exact (conj (obsGen_terminating Ang m s) (obsGen_disjunctive Liberal m s)). Qed.
-
-  (* ---------------- monad-valued observations ---------------- *)
-
-  (** Each is [obsGen] at its corner, packaged with the matching pairing.
-      Monotonicity comes from the pairing, so nothing extra is proved. *)
-
-  Definition obsAWPh {A} (m : stdivndNE S A) : stateT S AWP.W A :=
+  #[program] Definition obsAWP {A} (m : stdivndNE S A) : stateT S AWP.W A :=
     mkStateT (fun s =>
-      exist _ (mkWPure (obsGen Ang Total m s)
-                 (AngelicTotal_mono _ (obsGen_AngelicTotal m s)))
-              (obsGen_AngelicTotal m s)).
+      (fun (post : A * S -> Prop) =>
+         exists r, unOptionT (runStateT (getNE m) s) (Some r) /\ post r)).
+  Next Obligation.
+    intros p q Hpq [r [Ho Hp]]. exists r. exact (conj Ho (Hpq r Hp)).
+  Qed.
+  Next Obligation.
+    split.
+    - intros [r [_ []]].
+    - intros K [k0] p. cbn. split.
+      + intros [r [Ho [j Hj]]]. exists j, r. exact (conj Ho Hj).
+      + intros [j [r [Ho Hj]]]. exists r. split; [ exact Ho | exists j; exact Hj ].
+  Qed.
 
-  Definition obsDWLPh {A} (m : stdivndNE S A) : stateT S DWLP.W A :=
+  #[program] Definition obsDWLP {A} (m : stdivndNE S A) : stateT S DWLP.W A :=
     mkStateT (fun s =>
-      exist _ (mkWPure (obsGen Dem Liberal m s)
-                 (DemonicLiberal_mono _ (obsGen_DemonicLiberal m s)))
-              (obsGen_DemonicLiberal m s)).
+      (fun (post : A * S -> Prop) =>
+         forall oa, unOptionT (runStateT (getNE m) s) oa ->
+           match oa with Some r => post r | None => True end)).
+  Next Obligation.
+    intros p q Hpq H oa Ho. specialize (H oa Ho).
+    destruct oa as [r|]; [ exact (Hpq r H) | exact I ].
+  Qed.
+  Next Obligation.
+    split.
+    - intros [r|] _; exact I.
+    - intros K [k0] p. cbn. split.
+      + intros H j oa Ho. specialize (H oa Ho).
+        destruct oa as [r|]; [ exact (H j) | exact I ].
+      + intros H oa Ho. destruct oa as [r|]; [ intro j; exact (H j _ Ho) | exact I ].
+  Qed.
 
-  Definition obsDWPh {A} (m : stdivndNE S A) : stateT S DWP.W A :=
+  #[program] Definition obsDWP {A} (m : stdivndNE S A) : stateT S DWP.W A :=
     mkStateT (fun s =>
-      exist _ (mkWPure (obsGen Dem Total m s)
-                 (DemonicTotal_mono _ (obsGen_DemonicTotal m s)))
-              (obsGen_DemonicTotal m s)).
+      (fun (post : A * S -> Prop) =>
+         forall oa, unOptionT (runStateT (getNE m) s) oa ->
+           match oa with Some r => post r | None => False end)).
+  Next Obligation.
+    intros p q Hpq H oa Ho. specialize (H oa Ho).
+    destruct oa as [r|]; [ exact (Hpq r H) | exact H ].
+  Qed.
+  Next Obligation.
+    split.
+    - intro H. destruct (getNE_nonEmpty S m s) as [oa Ho].
+      specialize (H oa Ho). destruct oa; exact H.
+    - intros K [k0] p. cbn. split.
+      + intros H j oa Ho. specialize (H oa Ho).
+        destruct oa as [r|]; [ exact (H j) | destruct H ].
+      + intros H oa Ho. destruct oa as [r|];
+          [ intro j; exact (H j _ Ho) | exact (H k0 None Ho) ].
+  Qed.
 
-  Definition obsAWLPh {A} (m : stdivndNE S A) : stateT S AWLP.W A :=
+  #[program] Definition obsAWLP {A} (m : stdivndNE S A) : stateT S AWLP.W A :=
     mkStateT (fun s =>
-      exist _ (mkWPure (obsGen Ang Liberal m s)
-                 (AngelicLiberal_mono _ (obsGen_AngelicLiberal m s)))
-              (obsGen_AngelicLiberal m s)).
+      (fun (post : A * S -> Prop) =>
+         (exists r, unOptionT (runStateT (getNE m) s) (Some r) /\ post r)
+         \/ unOptionT (runStateT (getNE m) s) None)).
+  Next Obligation.
+    intros p q Hpq [[r [Ho Hp]] | Hd];
+      [ left; exists r; exact (conj Ho (Hpq r Hp)) | right; exact Hd ].
+  Qed.
+  Next Obligation.
+    split.
+    - destruct (getNE_nonEmpty S m s) as [[r|] Ho];
+        [ left; exists r; exact (conj Ho I) | right; exact Ho ].
+    - intros K [k0] p. cbn. split.
+      + intros [[r [Ho [j Hj]]] | Hd];
+          [ exists j; left; exists r; exact (conj Ho Hj)
+          | exists k0; right; exact Hd ].
+      + intros [j [[r [Ho Hj]] | Hd]];
+          [ left; exists r; split; [ exact Ho | exists j; exact Hj ]
+          | right; exact Hd ].
+  Qed.
 
-  (** Each refines the corresponding observation of [StDivNonDet_WSt.v]:
-      same transformer, stronger carrier. *)
+  (* ---------------- each is a monad morphism ---------------- *)
 
-  Theorem obsAWPh_run {A} (m : stdivndNE S A) s post :
-    AWP.runW (runStateT (obsAWPh m) s) post <-> runStateT (obsAWP m) s post.
-  Proof. exact (obsGen_AWP m s post). Qed.
+  Theorem obsAWP_ret {A} (a : A) : eq1 (obsAWP (ret a : stdivndNE S A)) (ret a).
+  Proof.
+    intros s p. cbn. split.
+    - intros [r [Hr Hp]]. assert (E : r = (a, s)) by congruence. subst r. exact Hp.
+    - intro Hp. exists (a, s). split; [ reflexivity | exact Hp ].
+  Qed.
 
-  Theorem obsDWLPh_run {A} (m : stdivndNE S A) s post :
-    DWLP.runW (runStateT (obsDWLPh m) s) post <-> runStateT (obsDWLP m) s post.
-  Proof. exact (obsGen_DWLP m s post). Qed.
+  Theorem obsAWP_bind {A B} (x : stdivndNE S A) (f : A -> stdivndNE S B) :
+    eq1 (obsAWP (x >>= f)) (obsAWP x >>= (fun a => obsAWP (f a))).
+  Proof.
+    intros s p. cbn. split.
+    - intros [rb [[[[a s']|] [Hx Hk]] Hp]]; [| discriminate Hk ].
+      exists (a, s'). split; [ exact Hx |]. exists rb. exact (conj Hk Hp).
+    - intros [[a s'] [Hx [rb [Hk Hp]]]].
+      exists rb. split; [| exact Hp ]. exists (Some (a, s')). exact (conj Hx Hk).
+  Qed.
 
-  Theorem obsDWPh_run {A} (m : stdivndNE S A) s post :
-    DWP.runW (runStateT (obsDWPh m) s) post <-> runStateT (obsDWP m) s post.
-  Proof. exact (obsGen_DWP m s post). Qed.
+  Theorem obsDWLP_ret {A} (a : A) : eq1 (obsDWLP (ret a : stdivndNE S A)) (ret a).
+  Proof.
+    intros s p. cbn. split.
+    - intro H. exact (H (Some (a, s)) eq_refl).
+    - intros Hp oa Heq. assert (E : oa = Some (a, s)) by congruence. subst oa. exact Hp.
+  Qed.
 
-  Theorem obsAWLPh_run {A} (m : stdivndNE S A) s post :
-    AWLP.runW (runStateT (obsAWLPh m) s) post <-> runStateT (obsAWLP m) s post.
-  Proof. exact (obsGen_AWLP m s post). Qed.
+  Theorem obsDWLP_bind {A B} (x : stdivndNE S A) (f : A -> stdivndNE S B) :
+    eq1 (obsDWLP (x >>= f)) (obsDWLP x >>= (fun a => obsDWLP (f a))).
+  Proof.
+    intros s p. cbn. split.
+    - intros H [[a s']|] Hx; [| exact I ].
+      intros ob Hk. exact (H ob (ex_intro _ (Some (a, s')) (conj Hx Hk))).
+    - intros H ob [[[a s']|] [Hx Hk]].
+      + exact (H (Some (a, s')) Hx ob Hk).
+      + assert (E : ob = None) by congruence. subst ob. exact I.
+  Qed.
+
+  Theorem obsDWP_ret {A} (a : A) : eq1 (obsDWP (ret a : stdivndNE S A)) (ret a).
+  Proof.
+    intros s p. cbn. split.
+    - intro H. exact (H (Some (a, s)) eq_refl).
+    - intros Hp oa Heq. assert (E : oa = Some (a, s)) by congruence. subst oa. exact Hp.
+  Qed.
+
+  Theorem obsDWP_bind {A B} (x : stdivndNE S A) (f : A -> stdivndNE S B) :
+    eq1 (obsDWP (x >>= f)) (obsDWP x >>= (fun a => obsDWP (f a))).
+  Proof.
+    intros s p. cbn. split.
+    - intros H [[a s']|] Hx.
+      + intros ob Hk. exact (H ob (ex_intro _ (Some (a, s')) (conj Hx Hk))).
+      + exact (H None (ex_intro _ None (conj Hx eq_refl))).
+    - intros H ob [[[a s']|] [Hx Hk]].
+      + exact (H (Some (a, s')) Hx ob Hk).
+      + destruct (H None Hx).
+  Qed.
+
+  Theorem obsAWLP_ret {A} (a : A) : eq1 (obsAWLP (ret a : stdivndNE S A)) (ret a).
+  Proof.
+    intros s p. cbn. split.
+    - intros [[r [Hr Hp]] | Hd]; [| discriminate Hd ].
+      assert (E : r = (a, s)) by congruence. subst r. exact Hp.
+    - intro Hp. left. exists (a, s). split; [ reflexivity | exact Hp ].
+  Qed.
+
+  Theorem obsAWLP_bind {A B} (x : stdivndNE S A) (f : A -> stdivndNE S B) :
+    eq1 (obsAWLP (x >>= f)) (obsAWLP x >>= (fun a => obsAWLP (f a))).
+  Proof.
+    intros s p. cbn. split.
+    - intros [[rb [[[[a s']|] [Hx Hk]] Hp]] | [[[a s']|] [Hx Hk]]].
+      + left. exists (a, s'). split; [ exact Hx |]. left. exists rb. exact (conj Hk Hp).
+      + discriminate Hk.
+      + left. exists (a, s'). split; [ exact Hx |]. right. exact Hk.
+      + right. exact Hx.
+    - intros [[[a s'] [Hx [[rb [Hk Hp]] | Hd]]] | Hd].
+      + left. exists rb. split; [| exact Hp ]. exists (Some (a, s')). exact (conj Hx Hk).
+      + right. exists (Some (a, s')). exact (conj Hx Hd).
+      + right. exists None. exact (conj Hd eq_refl).
+  Qed.
+
+  (* ---------------- same transformers as [StDivNonDet_WSt.v] ---------------- *)
+
+  Theorem obsAWP_run {A} (m : stdivndNE S A) s post :
+    AWP.runW (runStateT (obsAWP m) s) post
+    <-> runStateT (TermSliceObsWP.obsAWP m) s post.
+  Proof. symmetry. exact (TermSliceObsWP.obsAWP_unfold m s post). Qed.
+
+  Theorem obsDWLP_run {A} (m : stdivndNE S A) s post :
+    DWLP.runW (runStateT (obsDWLP m) s) post
+    <-> runStateT (TermSliceObsWP.obsDWLP m) s post.
+  Proof.
+    rewrite TermSliceObsWP.obsDWLP_unfold. cbn.
+    split; intros H oa Ho; specialize (H oa Ho); destruct oa; exact H.
+  Qed.
+
+  Theorem obsDWP_run {A} (m : stdivndNE S A) s post :
+    DWP.runW (runStateT (obsDWP m) s) post
+    <-> runStateT (TermSliceObsWP.obsDWP m) s post.
+  Proof.
+    rewrite TermSliceObsWP.obsDWP_unfold. cbn.
+    split; intros H oa Ho; specialize (H oa Ho); destruct oa; exact H.
+  Qed.
+
+  Theorem obsAWLP_run {A} (m : stdivndNE S A) s post :
+    AWLP.runW (runStateT (obsAWLP m) s) post
+    <-> runStateT (TermSliceObsWP.obsAWLP m) s post.
+  Proof. symmetry. exact (TermSliceObsWP.obsAWLP_unfold m s post). Qed.
 
 End HealthyObs.
 
-Arguments obsAWPh  {_} {_}.
-Arguments obsDWLPh {_} {_}.
-Arguments obsDWPh  {_} {_}.
-Arguments obsAWLPh {_} {_}.
+Arguments obsAWP  {_} {_}.
+Arguments obsDWLP {_} {_}.
+Arguments obsDWP  {_} {_}.
+Arguments obsAWLP {_} {_}.
 
 End HealthyObsWP.
