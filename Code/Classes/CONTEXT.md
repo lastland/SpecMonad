@@ -33,6 +33,10 @@ carriers belong to [Taxonomy arrows](../Taxonomy/Arrows/CONTEXT.md).
   satisfy `le_F A B (galois_alpha g) f <-> le_G A B g (galois_gamma f)`.
   The class includes preorders; derived lemmas give monotonicity,
   `galois_alpha_gamma_deflation`, and `galois_gamma_alpha_inflation`.
+- [OrderedMonad.v](OrderedMonad.v) states DM4All's specification-monad
+  criterion for unary monads: `OrderedMonad W le` asks for a preorder
+  containing `eq1` and a `bind` monotone in both arguments. Every monad is
+  ordered by `eq1` (`OrderedMonad_eq1`), so the criterion is relative to `le`.
 
 ## Transformers and boundaries
 

@@ -53,7 +53,8 @@ mean termination: `divergeNE` belongs to each fragment. The
 `stdivndNE` for their strictness/top-preservation and comparison results.
 
 [TransformerLaws.v](TransformerLaws.v) owns generic `Eq1`, `Eq1Equivalence`,
-and `MonadLawsE` instances for `optionT`, `stateT`, and `readerT`. Reuse those
+and `MonadLawsE` instances for `optionT`, `stateT`, and `readerT`, and lifts
+of `OrderedMonad` through each (`OrderedMonad_optionT` &c.). Reuse those
 contracts; the file depends on no concrete computation or specification monad.
 `DivNonDet.v` also gives pointwise `outcomes_bind`, `diverge_absorbing`, and
 `mayDiverge_bind`. On main, the stateful `outcomes_bind` lemmas used by SP/WP
