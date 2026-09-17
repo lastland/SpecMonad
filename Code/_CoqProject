@@ -69,6 +69,7 @@ Taxonomy/EffectObservations/SP/StDivNonDet_SPStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivNonDet_StExc.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPSt.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPStPair.v
+Taxonomy/DijkstraMonads/Dijkstra_StDivNonDet_SPStPair.v
 Taxonomy/EffectObservations/SP/DivNonDet_SPPure.v
 Taxonomy/EffectObservations/SP/RdDivNonDet_RdSPPure.v
 Taxonomy/ExampleProgramDefs.v
