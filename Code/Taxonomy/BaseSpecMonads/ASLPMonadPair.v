@@ -22,6 +22,7 @@
 From Coq Require Import RelationClasses Morphisms.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
+From Incorrectness.Classes Require Import OrderedMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   SPPredicateTransformers ASPMonad DSLPMonad ASLPMonad.
 
@@ -72,6 +73,57 @@ Section ASLPPair.
     intros [H1 H2] Hk. split.
     - apply ordASPSt_bind; [ exact H1 | intro a; exact (proj1 (Hk a)) ].
     - apply ordDSLPSt_bind; [ exact H2 | intro a; exact (proj2 (Hk a)) ].
+  Qed.
+
+  (** ** Equality and laws, componentwise *)
+
+  #[global] Instance Eq1__ASLPPair : Eq1 ASLPPair :=
+    fun A w1 w2 => eq1 (aspPart w1) (aspPart w2) /\ eq1 (dslpPart w1) (dslpPart w2).
+
+  #[global] Instance Eq1Equivalence__ASLPPair
+    : @Eq1Equivalence ASLPPair _ Eq1__ASLPPair.
+  Proof.
+    intro A. destruct (Eq1Equivalence__ASPSt S A) as [Ra Sa Ta].
+    destruct (Eq1Equivalence__DSLPSt S A) as [Rd Sd Td].
+    constructor.
+    - intro w. split; [ apply Ra | apply Rd ].
+    - intros w1 w2 [H1 H2]. split; [ exact (Sa _ _ H1) | exact (Sd _ _ H2) ].
+    - intros w1 w2 w3 [H1 H2] [H3 H4].
+      split; [ exact (Ta _ _ _ H1 H3) | exact (Td _ _ _ H2 H4) ].
+  Qed.
+
+  #[global] Instance MonadLawsE__ASLPPair
+    : @MonadLawsE ASLPPair Eq1__ASLPPair Monad__ASLPPair.
+  Proof.
+    destruct (MonadLawsE__ASPSt S) as [Abrl Abrr Abb Apb].
+    destruct (MonadLawsE__DSLPSt S) as [Dbrl Dbrr Dbb Dpb].
+    constructor.
+    - intros A B f x. split;
+        [ exact (Abrl A B (fun a => aspPart (f a)) x)
+        | exact (Dbrl A B (fun a => dslpPart (f a)) x) ].
+    - intros A x. split; [ exact (Abrr A (aspPart x)) | exact (Dbrr A (dslpPart x)) ].
+    - intros A B C x f g. split;
+        [ exact (Abb A B C (aspPart x) (fun a => aspPart (f a)) (fun b => aspPart (g b)))
+        | exact (Dbb A B C (dslpPart x) (fun a => dslpPart (f a)) (fun b => dslpPart (g b))) ].
+    - intros A B x y [Hx1 Hx2] f g Hfg. split;
+        [ exact (Apb A B (aspPart x) (aspPart y) Hx1
+                   (fun a => aspPart (f a)) (fun a => aspPart (g a))
+                   (fun a => proj1 (Hfg a)))
+        | exact (Dpb A B (dslpPart x) (dslpPart y) Hx2
+                   (fun a => dslpPart (f a)) (fun a => dslpPart (g a))
+                   (fun a => proj2 (Hfg a))) ].
+  Qed.
+
+  (** ** A specification monad *)
+
+  #[global] Instance OrderedMonad_ASLPPair : OrderedMonad ASLPPair (@ordASLPPair).
+  Proof.
+    constructor.
+    - intro A. exact ordASLPPair_PreOrder.
+    - intros A x y [H1 H2]. split;
+        [ intros pre r H; exact (proj1 (H1 pre r) H)
+        | intros pre r H; exact (proj1 (H2 pre r) H) ].
+    - intros A B w w' Hw k k' Hk. exact (ordASLPPair_bind w w' k k' Hw Hk).
   Qed.
 
   (** ** The ASLP reading: the DISJUNCTION of the two components *)
