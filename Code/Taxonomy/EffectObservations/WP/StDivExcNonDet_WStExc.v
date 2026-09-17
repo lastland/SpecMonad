@@ -5,12 +5,12 @@
     between the four observations live in
     [Taxonomy_StDivExcNonDet_StExc.v]. *)
 
-From Coq Require Import Lia Classical_Prop PeanoNat.
+From Coq Require Import Lia Classical_Prop PeanoNat Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
@@ -270,11 +270,13 @@ Section MonadMorphismLawsWP.
   - intros [oy [H1 H2]]. exists oy. split; [exact H1|]. destruct oy as [[[a s']|]|]; cbn in *; exact H2.
   Qed.
   
-  Lemma obsDWP_ret {A} (a : A) post s0 :
+  Lemma obsDWP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
     unOptionT (runStateT (obsDWP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP A a) s0) post.
+    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
   Proof.
-    split; sauto.
+    cbn. split.
+    - intro H. exact (H (Some (Some (a, s0))) eq_refl).
+    - intros H oa Hoa. subst oa. exact H.
   Qed.
 
   Lemma obsDWP_unfold {A} (m : stdivexcnd S A) s post :
@@ -307,11 +309,13 @@ Section MonadMorphismLawsWP.
     + cbn in Hk. subst oa. destruct HR.
   Qed.
 
-  Lemma obsDWLP_ret {A} (a : A) post s0 :
+  Lemma obsDWLP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
     unOptionT (runStateT (obsDWLP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP A a) s0) post.
+    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
   Proof.
-    split; sauto.
+    cbn. split.
+    - intro H. exact (H (Some (Some (a, s0))) eq_refl).
+    - intros H oa Hoa. subst oa. exact H.
   Qed.
 
   Lemma obsDWLP_unfold {A} (m : stdivexcnd S A) s post :
@@ -341,11 +345,13 @@ Section MonadMorphismLawsWP.
     + cbn in Hk. subst oa. exact I.
   Qed.
 
-  Lemma obsAWP_ret {A} (a : A) post s0 :
+  Lemma obsAWP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
     unOptionT (runStateT (obsAWP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP A a) s0) post.
+    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
   Proof.
-    split; sauto.
+    cbn. split.
+    - intros [r [Hr Hp]]. injection Hr as Hr. subst r. exact Hp.
+    - intro H. exists (Some (a, s0)). split; [ reflexivity | exact H ].
   Qed.
 
   Lemma obsAWP_unfold {A} (m : stdivexcnd S A) s post :
@@ -376,11 +382,14 @@ Section MonadMorphismLawsWP.
       exists (Some None). split; [exact Hrx | reflexivity].
   Qed.
 
-  Lemma obsAWLP_ret {A} (a : A) post s0 :
+  Lemma obsAWLP_ret {A} (a : A) (s0 : S) (post : option (A * S) -> Prop) :
     unOptionT (runStateT (obsAWLP (ret a)) s0) post <->
-    unOptionT (runStateT (Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad.retP A a) s0) post.
+    unOptionT (runStateT (WPureMonad.retP S a) s0) post.
   Proof.
-    split; sauto.
+    cbn. split.
+    - intros [[r [Hr Hp]] | Hd];
+        [ injection Hr as Hr; subst r; exact Hp | discriminate Hd ].
+    - intro H. left. exists (Some (a, s0)). split; [ reflexivity | exact H ].
   Qed.
 
   Lemma obsAWLP_unfold {A} (m : stdivexcnd S A) s post :
@@ -635,3 +644,35 @@ Proof.
   unfold postEq0 in Hwp. injection Hwp as Hs. exact Hs.
 Qed.
 
+(* ================================================================= *)
+(** ** The law of the excluded miracle                               *)
+(* ================================================================= *)
+
+(** [stdivexcnd] is bigger than the language: the everywhere-blocked
+    element has no outcomes at all, and [obsDWP] quantifies over the
+    outcome set, so it establishes every postcondition -- a MIRACLE.  The
+    non-empty fragment [stdivexcndNE] of [StDivExcNonDet.v] is exactly
+    what rules this out. *)
+
+Definition blockedP {S A} : stdivexcnd S A :=
+  mkStateT (fun _ => @mkOptionT (optionT SetM) _ (@mkOptionT SetM _ (fun _ => False))).
+
+Theorem blocked_is_miracle {S A} (s : S) :
+  unOptionT (runStateT (obsDWP (@blockedP S A)) s) (fun _ => False).
+Proof.
+  apply obsDWP_unfold. intros oa Hoa. destruct oa as [r|]; destruct Hoa.
+Qed.
+
+Theorem blocked_not_nonEmpty {S A} (s : S) : ~ @nonEmptyOutcomes S A blockedP.
+Proof. intro H. destruct (H s) as [oa Hoa]. destruct Hoa. Qed.
+
+(** On the non-empty fragment, [obsDWP] is strict: no program establishes
+    [False].  This is Dijkstra's first healthiness condition. *)
+Theorem obsDWP_excluded_miracle {S A} (m : stdivexcnd S A) (s : S) :
+  nonEmptyOutcomes m ->
+  ~ unOptionT (runStateT (obsDWP m) s) (fun _ => False).
+Proof.
+  intros Hne H. destruct (Hne s) as [oa Hoa].
+  pose proof (proj1 (obsDWP_unfold S m s (fun _ => False)) H oa Hoa) as Hc.
+  destruct oa as [r|]; exact Hc.
+Qed.
