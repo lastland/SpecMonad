@@ -657,6 +657,26 @@ Section StASPOrders.
     destruct (proj1 (getProg_singleton S w P r) Hw) as [s0 [Hp Hs]].
     apply getProg_singleton. exists s0. split; [ exact (Hsub s0 Hp) | exact Hs ].
   Qed.
+  #[global] Instance ordASPSt_PreOrder {A} : PreOrder (@ordASPSt A).
+  Proof.
+    constructor.
+    - intros w pre r H. exact H.
+    - intros w1 w2 w3 H1 H2 pre r H. exact (H2 pre r (H1 pre r H)).
+  Qed.
+  (** The [Pos]-enrichment: [bind] is monotone in BOTH arguments.  The first
+      argument sits in the PRECONDITION slot of the second, so monotonicity
+      there is [aspMono]. *)
+  Lemma ordASPSt_bind {A B} (m m' : ASPSt S A) (k k' : A -> ASPSt S B) :
+    ordASPSt m m' -> (forall a, ordASPSt (k a) (k' a)) ->
+    ordASPSt (bind m k) (bind m' k').
+  Proof.
+    intros Hm Hk pre r H. cbn in H |- *. destruct H as [a Ha].
+    exists a.
+    apply (aspMono (k' a) (fun s0 => getASPSt m pre (a, s0))
+                            (fun s0 => getASPSt m' pre (a, s0)) r).
+    - intros s0 Hs0. exact (Hm pre (a, s0) Hs0).
+    - exact (Hk a _ r Ha).
+  Qed.
 End StASPOrders.
 Arguments ordASPSt {_} {_}.
 Arguments ordASPStAt {_} {_}.

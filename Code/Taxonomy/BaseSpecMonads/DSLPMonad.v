@@ -759,6 +759,25 @@ Section StDSLPOrders.
   Lemma dslpMono {A} (w : DSLPSt S A) (P Q : S -> Prop) (r : (A * S)) :
     (forall s, P s -> Q s) -> getDSLPSt w P r -> getDSLPSt w Q r.
   Proof. exact (msingletonProg_mono S (getDSLPSt w) (proj2_sig w) P Q r). Qed.
+  #[global] Instance ordDSLPSt_PreOrder {A} : PreOrder (@ordDSLPSt A).
+  Proof.
+    constructor.
+    - intros w pre r H. exact H.
+    - intros w1 w2 w3 H1 H2 pre r H. exact (H2 pre r (H1 pre r H)).
+  Qed.
+  (** The [Pos]-enrichment, dually to [ordASPSt_bind]: the first argument
+      sits in the precondition slot of the second, so monotonicity there is
+      [dslpMono]. *)
+  Lemma ordDSLPSt_bind {A B} (m m' : DSLPSt S A) (k k' : A -> DSLPSt S B) :
+    ordDSLPSt m m' -> (forall a, ordDSLPSt (k a) (k' a)) ->
+    ordDSLPSt (bind m k) (bind m' k').
+  Proof.
+    intros Hm Hk pre r H. cbn in H |- *. intro a.
+    apply (dslpMono (k' a) (fun s0 => getDSLPSt m pre (a, s0))
+                           (fun s0 => getDSLPSt m' pre (a, s0)) r).
+    - intros s0 Hs0. exact (Hm pre (a, s0) Hs0).
+    - exact (Hk a _ r (H a)).
+  Qed.
 End StDSLPOrders.
 Arguments ordDSLPSt {_} {_}.
 Arguments ordDSLPStAt {_} {_}.

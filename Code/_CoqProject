@@ -56,6 +56,8 @@ Taxonomy/BaseSpecMonads/ASPMonad.v
 Taxonomy/BaseSpecMonads/DSLPMonad.v
 Taxonomy/BaseSpecMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/ASLPMonad.v
+Taxonomy/BaseSpecMonads/DSPMonadPair.v
+Taxonomy/BaseSpecMonads/ASLPMonadPair.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v
@@ -63,6 +65,7 @@ Taxonomy/EffectObservations/Taxonomy_StDivNonDet_St.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivNonDet_StExc.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPSt.v
+Taxonomy/EffectObservations/SP/StDivNonDet_SPStPair.v
 Taxonomy/EffectObservations/SP/DivNonDet_SPPure.v
 Taxonomy/EffectObservations/SP/RdDivNonDet_RdSPPure.v
 Taxonomy/ExampleProgramDefs.v
