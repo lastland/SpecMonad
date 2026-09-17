@@ -1369,8 +1369,15 @@ Section StASLPOrders.
   Proof.
     exact (disjunctive_implies_monotone S (getASLPSt w) (proj2 (proj2_sig w)) P Q r).
   Qed.
+  (** Inclusion of the recovered relation.  Unlike [ordASLPSt], [bind] is
+      monotone for it; see [SpecificationMonads.v]. *)
+  Definition ordASLPStRel {A} (m1 m2 : ASLPSt S A) : Prop :=
+    forall s r,
+      (~ getASLPSt m1 (fun _ => False) r /\ getASLPSt m1 (fun t => t = s) r) ->
+      (~ getASLPSt m2 (fun _ => False) r /\ getASLPSt m2 (fun t => t = s) r).
 End StASLPOrders.
 Arguments ordASLPSt {_} {_}.
+Arguments ordASLPStRel {_} {_}.
 End StASLP.
 
 (* ================================================================= *)
@@ -1386,9 +1393,16 @@ Section ASLPOrders.
   Proof.
     exact (disjunctive_implies_monotone S (getASLPStExc w) (proj2 (proj2_sig w)) P Q r).
   Qed.
+  (** Inclusion of the recovered relation.  Unlike [ordASLPStExc], [bind] is
+      monotone for it; see [SpecificationMonads.v]. *)
+  Definition ordASLPStExcRel {A} (m1 m2 : ASLPStExc S A) : Prop :=
+    forall s r,
+      (~ getASLPStExc m1 (fun _ => False) r /\ getASLPStExc m1 (fun t => t = s) r) ->
+      (~ getASLPStExc m2 (fun _ => False) r /\ getASLPStExc m2 (fun t => t = s) r).
 End ASLPOrders.
 
 Arguments ordASLPStExc {_} {_}.
+Arguments ordASLPStExcRel {_} {_}.
 
 (* ================================================================= *)
 (** ** The reader-indexed variant                                    *)

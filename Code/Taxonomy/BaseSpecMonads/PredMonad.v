@@ -192,3 +192,8 @@ Section PredStExc.
     MonadLawsE_stateT S (optionT Pred).
 
 End PredStExc.
+
+(** Refinement on [PredStExc]: pointwise inclusion of outcome sets, the
+    forward direction of [ordWStExc]. *)
+Definition ordPredStExc {S A} (m1 m2 : PredStExc S A) : Prop :=
+  forall s r, unOptionT (runStateT m1 s) r -> unOptionT (runStateT m2 s) r.

@@ -196,3 +196,82 @@ Section ReaderT.
   Qed.
 
 End ReaderT.
+
+(* ================================================================= *)
+(** ** Ordered lifts, for [Classes/OrderedMonad.v]                   *)
+(* ================================================================= *)
+
+(** Each transformer lifts an ordered monad pointwise.  Theorems, not
+    instances: they are recursive in the base monad. *)
+
+From Coq Require Import Relation_Definitions.
+From Incorrectness.Classes Require Import OrderedMonad.
+
+Section OrderedOptionT.
+  Context {M : Type -> Type} {MonadM : Monad M} {Eq1M : Eq1 M}.
+  Context (le : forall A, relation (M A)).
+
+  Definition le_optionT : forall A, relation (optionT M A) :=
+    fun A x y => le (option A) (unOptionT x) (unOptionT y).
+
+  Theorem OrderedMonad_optionT :
+    OrderedMonad M le ->
+    @OrderedMonad (optionT M) _ (@Eq1_optionT M Eq1M) le_optionT.
+  Proof.
+    intros [Hpre Heq Hbind]. constructor.
+    - intro A. destruct (Hpre (option A)) as [Hr Ht]. constructor.
+      + intro x. apply Hr.
+      + intros x y z. apply Ht.
+    - intros A x y H. exact (Heq _ _ _ H).
+    - intros A B m1 m2 Hm k1 k2 Hk. unfold le_optionT. cbn.
+      apply Hbind; [ exact Hm |].
+      intros [a|]; [ exact (Hk a) | apply (Hpre (option B)) ].
+  Qed.
+End OrderedOptionT.
+
+Section OrderedStateT.
+  Context {St : Type} {M : Type -> Type} {MonadM : Monad M} {Eq1M : Eq1 M}.
+  Context (le : forall A, relation (M A)).
+
+  #[local] Existing Instance Monad_stateT.
+
+  Definition le_stateT : forall A, relation (stateT St M A) :=
+    fun A x y => forall s, le (A * St)%type (runStateT x s) (runStateT y s).
+
+  Theorem OrderedMonad_stateT :
+    OrderedMonad M le ->
+    @OrderedMonad (stateT St M) _ (@Eq1_stateT St M Eq1M) le_stateT.
+  Proof.
+    intros [Hpre Heq Hbind]. constructor.
+    - intro A. destruct (Hpre (A * St)%type) as [Hr Ht]. constructor.
+      + intros x s. apply Hr.
+      + intros x y z H1 H2 s. exact (Ht _ _ _ (H1 s) (H2 s)).
+    - intros A x y H s. exact (Heq _ _ _ (H s)).
+    - intros A B m1 m2 Hm k1 k2 Hk s. cbn.
+      apply Hbind; [ exact (Hm s) |].
+      intros [a s']. exact (Hk a s').
+  Qed.
+End OrderedStateT.
+
+Section OrderedReaderT.
+  Context {R : Type} {M : Type -> Type} {MonadM : Monad M} {Eq1M : Eq1 M}.
+  Context (le : forall A, relation (M A)).
+
+  #[local] Existing Instance Monad_readerT.
+
+  Definition le_readerT : forall A, relation (readerT R M A) :=
+    fun A x y => forall r, le A (runReaderT x r) (runReaderT y r).
+
+  Theorem OrderedMonad_readerT :
+    OrderedMonad M le ->
+    @OrderedMonad (readerT R M) _ (@Eq1_readerT R M Eq1M) le_readerT.
+  Proof.
+    intros [Hpre Heq Hbind]. constructor.
+    - intro A. destruct (Hpre A) as [Hr Ht]. constructor.
+      + intros x r. apply Hr.
+      + intros x y z H1 H2 r. exact (Ht _ _ _ (H1 r) (H2 r)).
+    - intros A x y H r. exact (Heq _ _ _ (H r)).
+    - intros A B m1 m2 Hm k1 k2 Hk r. cbn.
+      apply Hbind; [ exact (Hm r) | intro a; exact (Hk a r) ].
+  Qed.
+End OrderedReaderT.

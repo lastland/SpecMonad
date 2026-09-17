@@ -191,7 +191,7 @@ Section SPPrePostEmbeddings.
   
   (** ** The in-monad comparison targets *)
 
-  #[program] Definition tASPover {A}
+  #[program] Definition pp2asp_over {A}
     (pre : S -> Prop) (post : (A * S) -> Prop) : ASPSt S A :=
     fun p r => exists s, p s /\ (pre s -> post r).
   Next Obligation.
@@ -211,7 +211,7 @@ Section SPPrePostEmbeddings.
     - intros [s0 [Hp [s [Heq Hc]]]]. subst s. exists s0. split; assumption.
   Qed.
 
-  #[program] Definition tDSLPunder {A}
+  #[program] Definition pp2dslp_under {A}
     (pre : S -> Prop) (post : (A * S) -> Prop) : DSLPSt S A :=
     fun p r => forall s, (post r -> pre s) -> p s.
   Next Obligation. exact (dslp_msingleton S (fun s r => post r -> pre s)). Qed.
@@ -259,7 +259,7 @@ Section SPPrePostEmbeddings.
 
   Theorem gen_asp_over {A} (w : ASPSt S A)
     (pre : S -> Prop) (post : (A * S) -> Prop) :
-    (forall r, getASPSt w pre r -> post r) <-> ordASPSt w (tASPover pre post).
+    (forall r, getASPSt w pre r -> post r) <-> ordASPSt w (pp2asp_over pre post).
   Proof.
     split.
     - intros H p r Hw.
@@ -283,7 +283,7 @@ Section SPPrePostEmbeddings.
   Theorem gen_dslp_under {A} (w : DSLPSt S A)
     (pre : S -> Prop) (post : (A * S) -> Prop) :
     (forall r, post r -> getDSLPSt w pre r)
-    <-> ordDSLPSt (tDSLPunder pre post) w.
+    <-> ordDSLPSt (pp2dslp_under pre post) w.
   Proof.
     split.
     - intros H p r Hd.
@@ -305,9 +305,9 @@ Section SPPrePostEmbeddings.
   Qed.
 End SPPrePostEmbeddings.
 
-Arguments tASPover {_} {_}.
+Arguments pp2asp_over {_} {_}.
 Arguments tASPunder {_} {_}.
-Arguments tDSLPunder {_} {_}.
+Arguments pp2dslp_under {_} {_}.
 Arguments tDSLPover {_} {_}.
 
 End StSP.

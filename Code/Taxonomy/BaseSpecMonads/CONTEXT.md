@@ -62,7 +62,8 @@ Pure `DSPSP` / `ASLPSP` instead transport the `ASPSP` / `DSLPSP` structures via
   [BaseGaloisConnections.v](BaseGaloisConnections.v) use reverse implication.
   `ordWSt` / `ordWStExc` use forward implication, not lifts of `WP_le`.
 - Each SP monad owns its global pointwise order and its `At` order at one
-  precondition, such as `ordASPStExc` / `ordASPStExcAt`.
+  precondition, such as `ordASPStExc` / `ordASPStExcAt`. The stateful DSP and
+  ASLP monads also own a recovered-relation order, such as `ordDSPStExcRel`.
 - `BaseGaloisConnections.v` relates the five unary monads.
   [NewGaloisConnections.v](NewGaloisConnections.v) adds `wp_pp_over_adjunction`
   and SP triple targets, including `StSP` and `PureSP` variants. ASP `Under`
@@ -71,6 +72,12 @@ Pure `DSPSP` / `ASLPSP` instead transport the `ASPSP` / `DSLPSP` structures via
 - [SPBindOrderCounterexample.v](SPBindOrderCounterexample.v) refutes ordered
   bind for `StDSP.DSPSt` and `StASLP.ASLPSt` under their existing global orders.
   This does not refute monad laws or monotonicity in the precondition.
+- [SpecificationMonads.v](SpecificationMonads.v) checks every monad here
+  against `OrderedMonad` under its own order. All pass except `DSPStExc`,
+  `ASLPStExc`, `StDSP.DSPSt`, and `StASLP.ASLPSt`, refuted at `S = bool`;
+  those four are ordered under inclusion of the recovered relation
+  (`ordDSPStExcRel` &c.). `PredStExc` is checked under `ordPredStExc`
+  from `PredMonad.v`.
 
 ## Reading order
 

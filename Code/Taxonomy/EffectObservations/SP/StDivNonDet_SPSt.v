@@ -295,9 +295,25 @@ Section StTriples.
     | Under => forall r, post r -> getDSLPSt (obsDSLP prog) pre r
     end.
 
+  Definition tripleDSP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getDSPSt (obsDSP prog) pre r -> post r
+    | Under => forall r, post r -> getDSPSt (obsDSP prog) pre r
+    end.
+
+  Definition tripleASLP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getASLPSt (obsASLP prog) pre r -> post r
+    | Under => forall r, post r -> getASLPSt (obsASLP prog) pre r
+    end.
+
   (** Two of the four (observation, direction) pairs have an IN-MONAD
-      comparison target: ASP/[Over] against [tASPover] and DSLP/[Under]
-      against [tDSLPunder], both exact and with no side condition
+      comparison target: ASP/[Over] against [pp2asp_over] and DSLP/[Under]
+      against [pp2dslp_under], both exact and with no side condition
       ([gen_asp_over], [gen_dslp_under]).  Those two are stated inside the
       specification monad, in its own order.
 
@@ -312,7 +328,7 @@ Section StTriples.
   Definition tripleASPspec {S A} (prog : stdivnd S A) (kind : approxKind)
     (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
     match kind with
-    | Over  => ordASPSt (obsASP prog) (tASPover pre post)
+    | Over  => ordASPSt (obsASP prog) (pp2asp_over pre post)
     | Under => ordSPSt (pp2_under pre post) (getASPSt (obsASP prog))
     end.
 
@@ -320,7 +336,7 @@ Section StTriples.
     (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
     match kind with
     | Over  => ordSPSt (getDSLPSt (obsDSLP prog)) (pp2_over pre post)
-    | Under => ordDSLPSt (tDSLPunder pre post) (obsDSLP prog)
+    | Under => ordDSLPSt (pp2dslp_under pre post) (obsDSLP prog)
     end.
 
   Theorem tripleASPDefEq {S A} (prog : stdivnd S A) kind pre post :
@@ -363,5 +379,7 @@ End StTriples.
 
 Arguments tripleASP {_} {_}.
 Arguments tripleDSLP {_} {_}.
+Arguments tripleDSP {_} {_}.
+Arguments tripleASLP {_} {_}.
 
 End TermSliceObs.

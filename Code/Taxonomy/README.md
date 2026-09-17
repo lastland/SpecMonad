@@ -510,8 +510,8 @@ adjunction (`wp_pp_over_adjunction`, over the *over* pair
 
 Two modules repeat the section at the other outcome types:
 
-- `Module StSP` — the terminating slice, where the targets keep the
-  `tASPover` / `tASPunder` / `tDSLPunder` / `tDSLPover` naming and land in
+- `Module StSP` — the terminating slice, where the targets are
+  `pp2asp_over` / `tASPunder` / `pp2dslp_under` / `tDSLPover` and land in
   `ASPSt` / `DSLPSt`.
 - `Module PureSP` — the state-free case, where the Hoare pair is a
   `PPM.PrePost A` (so `pre : Prop`, `post : A -> Prop`) and the targets land in

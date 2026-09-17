@@ -33,6 +33,7 @@ Classes/StateArrowT/ArrowChoiceLaws.v
 Classes/StateArrowT/ArrowApplyLaws.v
 Classes/StateArrowT.v
 Classes/Galois.v
+Classes/OrderedMonad.v
 Taxonomy/BaseSpecMonads/PredMonad.v
 Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
@@ -59,6 +60,7 @@ Taxonomy/BaseSpecMonads/ASLPMonad.v
 Taxonomy/BaseSpecMonads/DSPMonadPair.v
 Taxonomy/BaseSpecMonads/ASLPMonadPair.v
 Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v
+Taxonomy/BaseSpecMonads/SpecificationMonads.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v
