@@ -1527,8 +1527,15 @@ Section StDSPOrders.
   Proof.
     exact (conjunctive_implies_monotone S (getDSPSt w) (proj2 (proj2_sig w)) P Q r).
   Qed.
+  (** Inclusion of the recovered relation.  Unlike [ordDSPSt], [bind] is
+      monotone for it; see [SpecificationMonads.v]. *)
+  Definition ordDSPStRel {A} (m1 m2 : DSPSt S A) : Prop :=
+    forall s r,
+      (getDSPSt m1 (fun _ => True) r /\ ~ getDSPSt m1 (fun t => t <> s) r) ->
+      (getDSPSt m2 (fun _ => True) r /\ ~ getDSPSt m2 (fun t => t <> s) r).
 End StDSPOrders.
 Arguments ordDSPSt {_} {_}.
+Arguments ordDSPStRel {_} {_}.
 End StDSP.
 
 (* ================================================================= *)
@@ -1544,9 +1551,16 @@ Section DSPOrders.
   Proof.
     exact (conjunctive_implies_monotone S (getDSPStExc w) (proj2 (proj2_sig w)) P Q r).
   Qed.
+  (** Inclusion of the recovered relation.  Unlike [ordDSPStExc], [bind] is
+      monotone for it; see [SpecificationMonads.v]. *)
+  Definition ordDSPStExcRel {A} (m1 m2 : DSPStExc S A) : Prop :=
+    forall s r,
+      (getDSPStExc m1 (fun _ => True) r /\ ~ getDSPStExc m1 (fun t => t <> s) r) ->
+      (getDSPStExc m2 (fun _ => True) r /\ ~ getDSPStExc m2 (fun t => t <> s) r).
 End DSPOrders.
 
 Arguments ordDSPStExc {_} {_}.
+Arguments ordDSPStExcRel {_} {_}.
 
 (* ================================================================= *)
 (** ** The reader-indexed variant                                    *)
