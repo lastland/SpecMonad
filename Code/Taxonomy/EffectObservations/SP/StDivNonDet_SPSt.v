@@ -295,10 +295,24 @@ Section StTriples.
     | Under => forall r, post r -> getDSLPSt (obsDSLP prog) pre r
     end.
 
+  (** Two of the four (observation, direction) pairs have an IN-MONAD
+      comparison target: ASP/[Over] against [tASPover] and DSLP/[Under]
+      against [tDSLPunder], both exact and with no side condition
+      ([gen_asp_over], [gen_dslp_under]).  Those two are stated inside the
+      specification monad, in its own order.
+
+      The other two have no such target.  [tASPunder] and [tDSLPover]
+      characterise their triples only in the [At]-order and only under a
+      (co-)nonemptiness hypothesis, because [SingletonProg] makes every ASP
+      false at the empty precondition and [MSingletonProg] makes every DSLP
+      true at the full one.  So those comparisons are made in the ambient
+      [SPSt], where [pp2_under] / [pp2_over] live and no healthiness is
+      demanded of the target. *)
+
   Definition tripleASPspec {S A} (prog : stdivnd S A) (kind : approxKind)
     (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
     match kind with
-    | Over  => ordSPSt (getASPSt (obsASP prog)) (pp2_over pre post)
+    | Over  => ordASPSt (obsASP prog) (tASPover pre post)
     | Under => ordSPSt (pp2_under pre post) (getASPSt (obsASP prog))
     end.
 
@@ -306,32 +320,33 @@ Section StTriples.
     (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
     match kind with
     | Over  => ordSPSt (getDSLPSt (obsDSLP prog)) (pp2_over pre post)
-    | Under => ordSPSt (pp2_under pre post) (getDSLPSt (obsDSLP prog))
+    | Under => ordDSLPSt (tDSLPunder pre post) (obsDSLP prog)
     end.
 
   Theorem tripleASPDefEq {S A} (prog : stdivnd S A) kind pre post :
     tripleASP prog kind pre post <-> tripleASPspec prog kind pre post.
   Proof.
-    unfold tripleASP, tripleASPspec, ordSPSt, pp2_over, pp2_under.
-    destruct kind; split.
-    - intros H p r [Hsub Hpost]. destruct (H r Hpost) as [s [Hpre Hreach]].
-      exists s. split; [ exact (Hsub s Hpre) | exact Hreach ].
-    - intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
-    - intros H p r [s [Hp Hreach]] Hsub.
-      exact (H r (ex_intro _ s (conj (Hsub s Hp) Hreach))).
-    - intros H r Hobs. exact (H pre r Hobs (fun s Hs => Hs)).
+    destruct kind.
+    - (* [Under]: the ambient comparison, as no in-monad target exists *)
+      unfold tripleASP, tripleASPspec, ordSPSt, pp2_under. split.
+      + intros H p r [Hsub Hpost]. destruct (H r Hpost) as [s [Hpre Hreach]].
+        exists s. split; [ exact (Hsub s Hpre) | exact Hreach ].
+      + intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
+    - (* [Over]: in-monad, and exact *)
+      exact (gen_asp_over S (obsASP prog) pre post).
   Qed.
 
   Theorem tripleDSLPDefEq {S A} (prog : stdivnd S A) kind pre post :
     tripleDSLP prog kind pre post <-> tripleDSLPspec prog kind pre post.
   Proof.
-    unfold tripleDSLP, tripleDSLPspec, ordSPSt, pp2_over, pp2_under.
-    destruct kind; split.
-    - intros H p r [Hsub Hpost] s Hout. exact (Hsub s (H r Hpost s Hout)).
-    - intros H r Hpost. exact (H pre r (conj (fun s Hs => Hs) Hpost)).
-    - intros H p r Hdslp Hsub. apply (H r).
-      intros s Hout. exact (Hsub s (Hdslp s Hout)).
-    - intros H r Hdslp. exact (H pre r Hdslp (fun s Hs => Hs)).
+    destruct kind.
+    - (* [Under]: in-monad, and exact *)
+      exact (gen_dslp_under S (obsDSLP prog) pre post).
+    - (* [Over]: the ambient comparison *)
+      unfold tripleDSLP, tripleDSLPspec, ordSPSt, pp2_over. split.
+      + intros H p r Hdslp Hsub. apply (H r).
+        intros s Hout. exact (Hsub s (Hdslp s Hout)).
+      + intros H r Hdslp. exact (H pre r Hdslp (fun s Hs => Hs)).
   Qed.
 
   (** A [divergeD]-only program satisfies every [Over] triple and only the
