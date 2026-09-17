@@ -59,6 +59,7 @@ Taxonomy/BaseSpecMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/ASLPMonad.v
 Taxonomy/BaseSpecMonads/SPHealthyMonads.v
 Taxonomy/BaseSpecMonads/WPHealthyMonads.v
+Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v
@@ -71,6 +72,8 @@ Taxonomy/EffectObservations/SP/DivNonDet_SPPure.v
 Taxonomy/EffectObservations/SP/RdDivNonDet_RdSPPure.v
 Taxonomy/ExampleProgramDefs.v
 Taxonomy/EffectObservations/SP/StDivExcNonDet_SPStExc.v
+Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_WStExc.v
+Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_SPStExc.v
 Taxonomy/InCorrectnessPrinciples.v
 Taxonomy/OldSP/OldSPObservations.v
 Taxonomy/OldSP/OldIncorrectnessRewritingRules.v

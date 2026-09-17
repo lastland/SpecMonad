@@ -1,0 +1,79 @@
+# Base specification monads context (main)
+
+Parent: [Taxonomy context](../CONTEXT.md).
+Detailed semantics and naming: [Taxonomy README](../README.md).
+
+## Purpose and boundary
+
+These files define specification carriers, operations, healthiness, orders,
+and adjunctions without choosing a concrete computation. Effect-specific
+interpretations belong to [observations](../EffectObservations/CONTEXT.md).
+The imported [TransformerLaws.v](../ComputationMonads/TransformerLaws.v) is
+parametric in its base monad despite its directory name.
+
+## Unary specifications
+
+The five presentations associated with *Dijkstra Monads for All* are:
+
+| Source | Carrier and contract |
+|---|---|
+| [PredMonad.v](PredMonad.v) | `PredM.Pred A = A -> Prop`; also `PredStExc S = stateT S (optionT PredM.Pred)`. |
+| [PrePostMonad.v](PrePostMonad.v) | `PPM.PrePost A = Prop * (A -> Prop)`; bind checks continuation preconditions universally and collects results existentially. |
+| [SPostMonad.v](SPostMonad.v) | `SPM.SPost` bundles a monotone transformer into `SPM.Over p`, whose propositions imply `p`. |
+| [WPureMonad.v](WPureMonad.v) | `WPure` restricts raw `WPureT A = (A -> Prop) -> Prop` by `wpure_mono`; `runWPure` exposes it. |
+| [RelPrePostMonad.v](RelPrePostMonad.v) | `RPPM.RelPrePost` uses `Assuming p`, propositions `q` satisfying `q <-> (p -> q)`, and Hoare-order monotonicity. |
+
+Their `Eq1` contracts compare underlying propositions by iff. They are not
+the binary carriers of [Arrows](../Arrows/CONTEXT.md) with an input fixed.
+`WSt S = stateT S WPure`; `WStExc S = stateT S (optionT WPure)` additionally
+supports exceptions. Preserve the subset proofs rather than treating `WPure`
+as the raw continuation type used by `WPArr`.
+
+## SP carriers and healthiness
+
+[SPPredicateTransformers.v](SPPredicateTransformers.v) defines raw carriers:
+`SPPure A = Prop -> A -> Prop`, `@SPSt S A = (S -> Prop) -> (A * S) -> Prop`,
+and `@SPStExc S A = (S -> Prop) -> option (A * S) -> Prop`. The `@` exposes
+implicit `S`; the stateful carriers take a shared precondition, not one per state.
+
+| Source | Option-indexed monad | Carrier condition |
+|---|---|---|
+| [ASPMonad.v](ASPMonad.v) | `ASPStExc` | `SingletonProg`, equivalent to strictness plus disjunctivity. |
+| [DSLPMonad.v](DSLPMonad.v) | `DSLPStExc` | `MSingletonProg`, equivalent to top preservation plus conjunctivity. |
+| [DSPMonad.v](DSPMonad.v) | `DSPStExc` | `StrictProg` and `ConjunctiveProg`. |
+| [ASLPMonad.v](ASLPMonad.v) | `ASLPStExc` | `TerminatingProg` and `DisjunctiveProg`. |
+
+`Terminating` / `TerminatingProg` mean top preservation, not termination of a
+computation. Conjunctivity and disjunctivity here quantify over **nonempty**
+indexed families; strictness and top preservation supply the empty cases.
+`StTrans`, `StASP`, `StDSLP`, `StDSP`, and `StASLP` contain state-only variants.
+
+DSP/ASLP binds recover relations before composing them. `dsp_recov` probes at
+the full precondition and a co-singleton; `aslp_recov` probes at the empty
+precondition and a singleton. `dsp_carrier` / `aslp_carrier` connect recovery
+to healthiness. Do not replace these binds with simple forward composition.
+Pure `DSPSP` / `ASLPSP` instead transport the `ASPSP` / `DSLPSP` structures via
+`strict_conj_iff_singleton` / `term_disj_iff_msingleton`. The `ASPRd`, `DSLPRd`,
+`DSPRd`, and `ASLPRd` reader lifts inherit that collapse environment by environment.
+
+## Orders and adjunctions
+
+- `WP_le` in `WPureMonad.v` and `MR_le` in
+  [BaseGaloisConnections.v](BaseGaloisConnections.v) use reverse implication.
+  `ordWSt` / `ordWStExc` use forward implication, not lifts of `WP_le`.
+- Each SP monad owns its global pointwise order and its `At` order at one
+  precondition, such as `ordASPStExc` / `ordASPStExcAt`.
+- `BaseGaloisConnections.v` relates the five unary monads.
+  [NewGaloisConnections.v](NewGaloisConnections.v) adds `wp_pp_over_adjunction`
+  and SP triple targets, including `StSP` and `PureSP` variants. ASP `Under`
+  and DSLP `Over` in-monad characterizations use `At` orders with nonemptiness
+  conditions; raw `pp2_over` / `pp2_under` are not healthy targets.
+- [SPBindOrderCounterexample.v](SPBindOrderCounterexample.v) refutes ordered
+  bind for `StDSP.DSPSt` and `StASLP.ASLPSt` under their existing global orders.
+  This does not refute monad laws or monotonicity in the precondition.
+
+## Reading order
+
+Read the raw carrier, its healthiness condition, and its operations before the
+law proofs. For SP, follow ASP, DSLP, DSP, then ASLP; for triple embeddings,
+read the exact order and side conditions before following an observation client.
