@@ -295,6 +295,22 @@ Section StTriples.
     | Under => forall r, post r -> getDSLPSt (obsDSLP prog) pre r
     end.
 
+  Definition tripleDSP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getDSPSt (obsDSP prog) pre r -> post r
+    | Under => forall r, post r -> getDSPSt (obsDSP prog) pre r
+    end.
+
+  Definition tripleASLP {S A}
+    (prog : stdivnd S A) (kind : approxKind)
+    (pre : S -> Prop) (post : (A * S) -> Prop) : Prop :=
+    match kind with
+    | Over  => forall r, getASLPSt (obsASLP prog) pre r -> post r
+    | Under => forall r, post r -> getASLPSt (obsASLP prog) pre r
+    end.
+
   (** Two of the four (observation, direction) pairs have an IN-MONAD
       comparison target: ASP/[Over] against [pp2asp_over] and DSLP/[Under]
       against [pp2dslp_under], both exact and with no side condition
@@ -363,5 +379,7 @@ End StTriples.
 
 Arguments tripleASP {_} {_}.
 Arguments tripleDSLP {_} {_}.
+Arguments tripleDSP {_} {_}.
+Arguments tripleASLP {_} {_}.
 
 End TermSliceObs.
