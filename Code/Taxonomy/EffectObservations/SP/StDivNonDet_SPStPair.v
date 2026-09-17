@@ -8,9 +8,10 @@
 
     Splitting the two sides into two components fixes this.  This file
     observes [stdivnd] into [DSPPair] and [ASLPPair] -- both of them the
-    product [ASPSt x DSLPSt], differing only in how a pair is READ -- and
-    builds the Dijkstra monads [Ddsp] and [Daslp] over them.  The payoff is
-    that the triples are exactly the fibres:
+    product [ASPSt x DSLPSt], differing only in how a pair is READ.  The
+    Dijkstra monads over them are in
+    [DijkstraMonads/Dijkstra_StDivNonDet_SPStPair.v].  The triples are
+    exactly the fibres of the pair orders:
 
     - a DSP [Under] triple is a pair of an angelic WITNESS relation and a
       demonic pre/post bound ([tripleDSP_is_witnessed]);
@@ -98,65 +99,10 @@ Section PairObservations.
     - intros pre r H. apply (obsDSLP_bind S x f). exact H.
   Qed.
 
-  (* --------------------------------------------------------------- *)
-  (** ** The two Dijkstra monads, in the [Under] direction            *)
-  (* --------------------------------------------------------------- *)
-
-  Definition Ddsp {A} (w : StDSPPair.DSPPair S A) : Type :=
-    { m : stdivnd S A | StDSPPair.ordDSPPair w (obsDSPPair m) }.
-
-  #[program] Definition Ddsp_ret {A} (a : A) : Ddsp (StDSPPair.retDSPPair a) :=
-    @ret (stdivnd S) _ A a.
-  Next Obligation. apply obsDSPPair_ret. Qed.
-
-  #[program] Definition Ddsp_bind {A B} {w : StDSPPair.DSPPair S A}
-    {wf : A -> StDSPPair.DSPPair S B}
-    (m : Ddsp w) (f : forall a, Ddsp (wf a)) : Ddsp (StDSPPair.bindDSPPair w wf) :=
-    @bind (stdivnd S) _ A B (proj1_sig m) (fun a => proj1_sig (f a)).
-  Next Obligation.
-    etransitivity; [| apply obsDSPPair_bind ].
-    apply StDSPPair.ordDSPPair_bind;
-      [ exact (proj2_sig m) | intro a; exact (proj2_sig (f a)) ].
-  Qed.
-
-  #[program] Definition Ddsp_wkn {A} {w w' : StDSPPair.DSPPair S A}
-    (Hle : StDSPPair.ordDSPPair w' w) (m : Ddsp w) : Ddsp w' := proj1_sig m.
-  Next Obligation. etransitivity; [ exact Hle | exact (proj2_sig m) ]. Qed.
-
-  #[program] Definition Ddsp_lift {A} (m : stdivnd S A) : Ddsp (obsDSPPair m) := m.
-  Next Obligation. reflexivity. Qed.
-
-  Definition Daslp {A} (w : StASLPPair.ASLPPair S A) : Type :=
-    { m : stdivnd S A | StASLPPair.ordASLPPair w (obsASLPPair m) }.
-
-  #[program] Definition Daslp_ret {A} (a : A) : Daslp (StASLPPair.retASLPPair a) :=
-    @ret (stdivnd S) _ A a.
-  Next Obligation. apply obsASLPPair_ret. Qed.
-
-  #[program] Definition Daslp_bind {A B} {w : StASLPPair.ASLPPair S A}
-    {wf : A -> StASLPPair.ASLPPair S B}
-    (m : Daslp w) (f : forall a, Daslp (wf a))
-    : Daslp (StASLPPair.bindASLPPair w wf) :=
-    @bind (stdivnd S) _ A B (proj1_sig m) (fun a => proj1_sig (f a)).
-  Next Obligation.
-    etransitivity; [| apply obsASLPPair_bind ].
-    apply StASLPPair.ordASLPPair_bind;
-      [ exact (proj2_sig m) | intro a; exact (proj2_sig (f a)) ].
-  Qed.
-
-  #[program] Definition Daslp_wkn {A} {w w' : StASLPPair.ASLPPair S A}
-    (Hle : StASLPPair.ordASLPPair w' w) (m : Daslp w) : Daslp w' := proj1_sig m.
-  Next Obligation. etransitivity; [ exact Hle | exact (proj2_sig m) ]. Qed.
-
-  #[program] Definition Daslp_lift {A} (m : stdivnd S A) : Daslp (obsASLPPair m) := m.
-  Next Obligation. reflexivity. Qed.
-
 End PairObservations.
 
 Arguments obsDSPPair {_} {_}.
 Arguments obsASLPPair {_} {_}.
-Arguments Ddsp {_} {_}.
-Arguments Daslp {_} {_}.
 
 (* ================================================================= *)
 (** ** Triples, and the fibre theorems                               *)
@@ -212,7 +158,7 @@ Section PairTriples.
       (forall s r, W s r -> pre s)
       /\ (forall r, post r -> exists s, W s r)
       /\ StDSPPair.ordDSPPair
-           (StDSPPair.aspOfRel W, tDSLPunder pre post) (obsDSPPair m).
+           (StDSPPair.aspOfRel W, pp2dslp_under pre post) (obsDSPPair m).
   Proof.
     split.
     - intro H.
@@ -246,7 +192,7 @@ Section PairTriples.
       /\ (forall s r, W s r -> pre s)
       /\ (forall r, postA r -> exists s, W s r)
       /\ StASLPPair.ordASLPPair
-           (StASLPPair.aspOfRel W, tDSLPunder pre postD) (obsASLPPair m).
+           (StASLPPair.aspOfRel W, pp2dslp_under pre postD) (obsASLPPair m).
   Proof.
     split.
     - intro H.
@@ -304,7 +250,7 @@ Section PairTripleSpecs.
           (forall s r, W s r -> pre s)
           /\ (forall r, post r -> exists s, W s r)
           /\ StDSPPair.ordDSPPair
-               (StDSPPair.aspOfRel W, tDSLPunder pre post) (obsDSPPair prog)
+               (StDSPPair.aspOfRel W, pp2dslp_under pre post) (obsDSPPair prog)
     end.
 
   Theorem tripleDSPDefEq {A} (prog : stdivnd S A) kind pre post :
@@ -332,7 +278,7 @@ Section PairTripleSpecs.
           /\ (forall s r, W s r -> pre s)
           /\ (forall r, postA r -> exists s, W s r)
           /\ StASLPPair.ordASLPPair
-               (StASLPPair.aspOfRel W, tDSLPunder pre postD) (obsASLPPair prog)
+               (StASLPPair.aspOfRel W, pp2dslp_under pre postD) (obsASLPPair prog)
     end.
 
   Theorem tripleASLPDefEq {A} (prog : stdivnd S A) kind pre post :
@@ -395,7 +341,7 @@ Section PairExamples.
     split; [ apply reach_get; reflexivity | apply reach_put; reflexivity ].
   Qed.
 
-  Lemma incrD_dslp : ordDSLPSt (tDSLPunder pre0 post1) (obsDSLP incrD).
+  Lemma incrD_dslp : ordDSLPSt (pp2dslp_under pre0 post1) (obsDSLP incrD).
   Proof.
     apply (gen_dslp_under nat (obsDSLP incrD) pre0 post1).
     intros r Hpost. unfold post1 in Hpost. subst r.
@@ -406,17 +352,13 @@ Section PairExamples.
     apply reach_put in Hp. injection Hp as Hp. unfold pre0. lia.
   Qed.
 
-  Definition incrD_Ddsp
-    : Ddsp (StDSPPair.aspOfRel W_incr, tDSLPunder pre0 post1) :=
-    exist _ incrD (conj incrD_asp incrD_dslp).
-
   Corollary incrD_tripleDSP : tripleDSP incrD Under pre0 post1.
   Proof.
     apply tripleDSP_is_witnessed. exists W_incr. split.
     - intros s r [Hs _]. exact Hs.
     - split.
       + intros r ->. exists 0. split; reflexivity.
-      + exact (proj2_sig incrD_Ddsp).
+      + exact (conj incrD_asp incrD_dslp).
   Qed.
 
   (* ---- ASLP: the same data, plus a split of the postcondition ---- *)
@@ -430,7 +372,7 @@ Section PairExamples.
     apply reach_orD. left. apply reach_put. reflexivity.
   Qed.
 
-  Lemma twoD_dslp : ordDSLPSt (tDSLPunder pre0 post9) (obsDSLP twoD).
+  Lemma twoD_dslp : ordDSLPSt (pp2dslp_under pre0 post9) (obsDSLP twoD).
   Proof.
     apply (gen_dslp_under nat (obsDSLP twoD) pre0 post9).
     intros r Hpost. unfold post9 in Hpost. subst r.
@@ -439,17 +381,13 @@ Section PairExamples.
       discriminate H.
   Qed.
 
-  Definition twoD_Daslp
-    : Daslp (StASLPPair.aspOfRel W_incr, tDSLPunder pre0 post9) :=
-    exist _ twoD (conj twoD_asp twoD_dslp).
-
   Corollary twoD_tripleASLP : tripleASLP twoD Under pre0 post19.
   Proof.
     apply tripleASLP_is_split. exists W_incr, post1, post9. split.
     - intros r [-> | ->]; [ left; reflexivity | right; reflexivity ].
     - split; [ intros s r [Hs _]; exact Hs |]. split.
       + intros r ->. exists 0. split; reflexivity.
-      + exact (proj2_sig twoD_Daslp).
+      + exact (conj twoD_asp twoD_dslp).
   Qed.
 
   (** The same outcome is NOT a DSP triple for [twoD]: the demonic bound
