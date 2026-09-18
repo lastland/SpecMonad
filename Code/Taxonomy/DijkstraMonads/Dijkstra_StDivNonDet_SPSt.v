@@ -229,3 +229,243 @@ Section TripleBridges.
   Qed.
 
 End TripleBridges.
+
+(* ================================================================= *)
+(** ** Probes: programs cut out by a relation                        *)
+(* ================================================================= *)
+
+(** The counterexamples below need programs with a prescribed
+    reachability relation.  [ExampleProgramDefs.v]'s programs live over
+    [stdivexcnd], which has a second [option] layer, so these are the
+    terminating-slice analogues. *)
+
+Definition progOf {S A} (R : S -> A * S -> Prop) : stdivnd S A :=
+  mkStateT (fun s => @mkOptionT StExcNonDet.SetM _
+    (fun o => match o with Some r => R s r | None => False end)).
+
+Lemma progOf_outcomes {S A} (R : S -> A * S -> Prop) s r :
+  unOptionT (runStateT (progOf R) s) (Some r) <-> R s r.
+Proof. cbn. reflexivity. Qed.
+
+(* ================================================================= *)
+(** ** Membership in [Dasp_op] is a relation inclusion               *)
+(* ================================================================= *)
+
+(** Whatever the index [w] is, [DMop] membership compares [w]'s singleton
+    values, state by state, with the reachability relation of the
+    program: [SingletonProg] leaves the order nothing else to look at. *)
+Lemma Dasp_op_relational {S A} (w : ASPSt S A) (prog : stdivnd S A) :
+  ordASPSt w (obsASP prog)
+  <-> (forall s r, getASPSt w (fun t => t = s) r ->
+                   unOptionT (runStateT prog s) (Some r)).
+Proof.
+  split.
+  - intros H s r Hw.
+    destruct (proj1 (getProgASP_obsASP S prog (fun t => t = s) r)
+                (H (fun t => t = s) r Hw)) as [s' [Heq Hr]].
+    subst s'. exact Hr.
+  - intros Hrel p r Hw.
+    destruct (proj1 (StASP.getProg_singleton S w p r) Hw) as [s0 [Hp Hs]].
+    apply getProgASP_obsASP. exists s0. split; [ exact Hp | exact (Hrel s0 r Hs) ].
+Qed.
+
+(** The [Under] index one would like to use. *)
+#[program] Definition pp2asp_under {S A} (pre : S -> Prop) (post : A * S -> Prop)
+  : ASPSt S A :=
+  fun p r => exists s, p s /\ (pre s /\ post r).
+Next Obligation.
+  intros p r. split.
+  - intros [s [Hp H]]. exists s. split; [ exact Hp |].
+    exists s. split; [ reflexivity | exact H ].
+  - intros [s0 [Hp [s [Heq H]]]]. subst s.
+    exists s0. split; [ exact Hp | exact H ].
+Qed.
+
+(** Membership at that index is STRICTLY STRONGER than the triple: the
+    order quantifies over all preconditions, which forces EVERY
+    [pre]-state to reach EVERY [post]-outcome, where the triple asks only
+    that SOME [pre]-state does. *)
+Lemma Dasp_op_under_iff {S A} (prog : stdivnd S A)
+  (pre : S -> Prop) (post : A * S -> Prop) :
+  ordASPSt (pp2asp_under pre post) (obsASP prog)
+  <-> (forall s r, pre s -> post r -> unOptionT (runStateT prog s) (Some r)).
+Proof.
+  split.
+  - intros H s r Hpre Hpost.
+    destruct (proj1 (getProgASP_obsASP S prog (fun t => t = s) r)
+                (H (fun t => t = s) r
+                   (ex_intro _ s (conj eq_refl (conj Hpre Hpost)))))
+      as [s' [Heq Hr]].
+    subst s'. exact Hr.
+  - intros H p r [s [Hp [Hpre Hpost]]].
+    apply getProgASP_obsASP. exists s.
+    split; [ exact Hp | exact (H s r Hpre Hpost) ].
+Qed.
+
+(* ================================================================= *)
+(** ** No index at all represents an ASP [Under] triple              *)
+(* ================================================================= *)
+
+(** The three programs: [(tt, 0)] is reached from [0] by one, from [1] by
+    the other, and by neither in the third. *)
+Definition aspU1 : stdivnd nat unit :=
+  progOf (fun s (r : unit * nat) => s = 0 /\ r = (tt, 0)).
+Definition aspU2 : stdivnd nat unit :=
+  progOf (fun s (r : unit * nat) => s = 1 /\ r = (tt, 0)).
+Definition aspU0 : stdivnd nat unit :=
+  progOf (fun (_ : nat) (_ : unit * nat) => False).
+
+(** Membership is always a relation inclusion ([Dasp_op_relational]), so
+    the class of programs cut out by a fixed index is closed under
+    INTERSECTION of reachability relations.  The [Under] triple is not:
+    [aspU1] and [aspU2] both satisfy it, their intersection [aspU0] does
+    not.  So no [w] has the triple as its fibre -- a statement about the
+    ASP ORDER, not about the Dijkstra construction. *)
+Theorem no_asp_under_index :
+  ~ exists w : ASPSt nat unit,
+      forall prog : stdivnd nat unit,
+        ordASPSt w (obsASP prog) <->
+        tripleASP prog Under (fun _ => True) (fun r : unit * nat => r = (tt, 0)).
+Proof.
+  intros [w Hiff].
+  assert (H1 : ordASPSt w (obsASP aspU1)).
+  { apply Hiff. intros r ->. apply getProgASP_obsASP.
+    exists 0. split; [ exact I |]. apply progOf_outcomes. split; reflexivity. }
+  assert (H2 : ordASPSt w (obsASP aspU2)).
+  { apply Hiff. intros r ->. apply getProgASP_obsASP.
+    exists 1. split; [ exact I |]. apply progOf_outcomes. split; reflexivity. }
+  pose proof (proj1 (Dasp_op_relational w aspU1) H1) as R1.
+  pose proof (proj1 (Dasp_op_relational w aspU2) H2) as R2.
+  assert (H0 : ordASPSt w (obsASP aspU0)).
+  { apply Dasp_op_relational. intros s r Hw.
+    pose proof (proj1 (progOf_outcomes _ s r) (R1 s r Hw)) as [E1 _].
+    pose proof (proj1 (progOf_outcomes _ s r) (R2 s r Hw)) as [E2 _].
+    subst s. discriminate E2. }
+  destruct (proj1 (getProgASP_obsASP nat aspU0 (fun _ => True) (tt, 0))
+              (proj1 (Hiff aspU0) H0 (tt, 0) eq_refl)) as [s [_ Hr]].
+  exact (proj1 (progOf_outcomes _ s (tt, 0)) Hr).
+Qed.
+
+(* ================================================================= *)
+(** ** The [At]-order is not a [Pos]-enrichment                      *)
+(* ================================================================= *)
+
+(** Could a DIFFERENT order repair this?  The fibre of an index is a
+    principal up-set, so the question is whether the [Under] fibre can be
+    made principal.  It can -- by comparing only the IMAGES of the fixed
+    precondition, which is the [At]-order [gen_asp_under] uses.  But that
+    order is not a [Pos]-enrichment: [bind] re-binds the precondition
+    slot to the INTERMEDIATE states, so two continuations with the same
+    image from [pre] can still disagree once run at the states the first
+    argument actually produced. *)
+Definition aspK0 : unit -> stdivnd nat unit :=
+  fun _ => progOf (fun s (r : unit * nat) => s = 0 /\ r = (tt, 9)).
+Definition aspK1 : unit -> stdivnd nat unit :=
+  fun _ => progOf (fun s (r : unit * nat) => s = 1 /\ r = (tt, 9)).
+
+Theorem ordASPStAt_bind_not_mono :
+  ~ (forall A B (pre : nat -> Prop) (m : ASPSt nat A) (k k' : A -> ASPSt nat B),
+        (forall a, ordASPStAt pre (k a) (k' a)) ->
+        ordASPStAt pre (bind m k) (bind m k')).
+Proof.
+  intro Hmono.
+  assert (Hk : forall a, ordASPStAt (fun _ : nat => True)
+                           (obsASP (aspK0 a)) (obsASP (aspK1 a))).
+  { intros a r Hr. apply getProgASP_obsASP in Hr.
+    destruct Hr as [s [_ Hr]]. apply progOf_outcomes in Hr.
+    destruct Hr as [_ ->]. apply getProgASP_obsASP.
+    exists 1. split; [ exact I |]. apply progOf_outcomes. split; reflexivity. }
+  specialize (Hmono unit unit (fun _ => True) (obsASP aspU1)
+                (fun a => obsASP (aspK0 a)) (fun a => obsASP (aspK1 a)) Hk (tt, 9)).
+  assert (Hin : getASPSt (bind (obsASP aspU1) (fun a => obsASP (aspK0 a)))
+                  (fun _ => True) (tt, 9)).
+  { apply (obsASP_bind nat aspU1 aspK0). apply getProgASP_obsASP.
+    exists 0. split; [ exact I |]. apply (outcomes_bind nat).
+    exists tt, 0. split; apply progOf_outcomes; split; reflexivity. }
+  specialize (Hmono Hin).
+  apply (obsASP_bind nat aspU1 aspK1) in Hmono.
+  apply getProgASP_obsASP in Hmono. destruct Hmono as [s [_ Hr]].
+  apply (outcomes_bind nat) in Hr. destruct Hr as [a [s' [Hx Hk2]]].
+  apply progOf_outcomes in Hx. destruct Hx as [_ Heq].
+  injection Heq as Heq. subst s'.
+  apply progOf_outcomes in Hk2. destruct Hk2 as [Hn _]. discriminate Hn.
+Qed.
+
+(* ================================================================= *)
+(** ** Typeable and untypeable ASP examples                          *)
+(* ================================================================= *)
+
+(** [setTo n] overwrites the state from every initial state; [setIf0 n]
+    does so only from [0]. *)
+Definition setTo (n : nat) : stdivnd nat unit :=
+  progOf (fun (_ : nat) (r : unit * nat) => r = (tt, n)).
+Definition setIf0 (n : nat) : stdivnd nat unit :=
+  progOf (fun s (r : unit * nat) => s = 0 /\ r = (tt, n)).
+
+(** *** ASP / [Over]: an exact typing *)
+
+Theorem setTo42_over : tripleASP (setTo 42) Over (fun _ : nat => True)
+                         (fun r : unit * nat => snd r = 42).
+Proof.
+  intros r Hr. apply getProgASP_obsASP in Hr. destruct Hr as [s [_ Hr]].
+  apply progOf_outcomes in Hr. subst r. reflexivity.
+Qed.
+
+Definition setTo42_over_D :
+  Dasp (pp2asp_over (fun _ : nat => True) (fun r : unit * nat => snd r = 42)) :=
+  ofTripleASPOver nat (setTo 42) _ _ setTo42_over.
+
+(** *** ASP / [Under]: typeable when EVERY [pre]-state reaches EVERY
+    [post]-outcome *)
+
+#[program] Definition setTo42_under_Dop :
+  Dasp_op (pp2asp_under (fun _ : nat => True)
+             (fun r : unit * nat => r = (tt, 42))) := setTo 42.
+Next Obligation.
+  cbn beta. apply Dasp_op_under_iff. intros s r _ ->.
+  apply progOf_outcomes. reflexivity.
+Qed.
+
+(** The same holds for any [n], so a single program carries a whole
+    family of [Under] typings. *)
+#[program] Definition setTo43_under_Dop :
+  Dasp_op (pp2asp_under (fun _ : nat => True)
+             (fun r : unit * nat => r = (tt, 43))) := setTo 43.
+Next Obligation.
+  cbn beta. apply Dasp_op_under_iff. intros s r _ ->.
+  apply progOf_outcomes. reflexivity.
+Qed.
+
+(** *** ... and untypeable when only SOME [pre]-state does -- which is the
+    normal situation for an incorrectness triple *)
+
+Theorem setIf0_under_triple :
+  tripleASP (setIf0 1) Under (fun _ : nat => True) (fun r : unit * nat => r = (tt, 1)).
+Proof.
+  intros r ->. apply getProgASP_obsASP. exists 0.
+  split; [ exact I |]. apply progOf_outcomes. split; reflexivity.
+Qed.
+
+Theorem setIf0_under_not_Dasp_op :
+  forall d : Dasp_op (pp2asp_under (fun _ : nat => True)
+                        (fun r : unit * nat => r = (tt, 1))),
+    proj1_sig d <> setIf0 1.
+Proof.
+  intros [prog Hd] Heq. cbn in Heq. subst prog.
+  pose proof (proj1 (Dasp_op_under_iff (setIf0 1) _ _) Hd) as H.
+  pose proof (proj1 (progOf_outcomes _ 5 (tt, 1)) (H 5 (tt, 1) I eq_refl))
+    as [Hs _].
+  discriminate Hs.
+Qed.
+
+(** The identical postcondition IS typeable once [pre] is the singleton
+    [0]: there "some [pre]-state reaches it" and "every [pre]-state
+    reaches it" coincide.  Contrast [setIf0_under_not_Dasp_op], which is
+    the same program and outcome at [pre = True]. *)
+#[program] Definition setIf0_under_P0_Dop :
+  Dasp_op (pp2asp_under (fun s : nat => s = 0)
+             (fun r : unit * nat => r = (tt, 1))) := setIf0 1.
+Next Obligation.
+  cbn beta. apply Dasp_op_under_iff. intros s r Hpre ->. subst s.
+  apply progOf_outcomes. split; reflexivity.
+Qed.
