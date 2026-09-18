@@ -72,6 +72,7 @@ Taxonomy/ExampleProgramDefs.v
 Taxonomy/EffectObservations/SP/StDivExcNonDet_SPStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_WStExc.v
 Taxonomy/DijkstraMonads/Dijkstra_StDivExcNonDet_SPStExc.v
+Taxonomy/DijkstraMonads/Dijkstra_StDivNonDet_SPSt.v
 Taxonomy/InCorrectnessPrinciples.v
 Taxonomy/OldSP/OldSPObservations.v
 Taxonomy/OldSP/OldIncorrectnessRewritingRules.v
