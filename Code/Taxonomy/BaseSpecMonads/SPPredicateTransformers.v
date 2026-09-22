@@ -12,7 +12,7 @@ Section BasePredicateTransformers.
   Definition SPPure (A : Type) : Type := Prop -> A -> Prop.
 
   Variable S : Type.
-  
+
   Definition SPSt (A : Type) : Type := (S -> Prop) -> (A * S) -> Prop.
 
   Definition SPStExc (A : Type) : Type := (S -> Prop) -> option (A * S) -> Prop.
@@ -20,7 +20,7 @@ End BasePredicateTransformers.
 
 Arguments SPSt {_}.
 Arguments SPStExc {_}.
-                                                                
+
 Section PurePredicateTransformers.
   Definition Strict {A} (w : SPPure A) : Prop :=
     forall (a : A), ~ w False a.
@@ -193,3 +193,86 @@ Section SPOrders.
 End SPOrders.
 
 Arguments ordSPStExc {_} {_}.
+
+
+
+Section SPStMonotone.
+  Variable S : Type.
+
+  (* A stateful forward predicate transformer is monotone when it
+    is order-preserving as a map from (S -> Prop) to (A × S -> Prop)
+    (with pointwise order inherited from Prop) *)
+  Definition SPStMonotone  {A} `(sp : @SPSt S A) :=
+    forall (pre pre' : S -> Prop) r, (forall s, pre s -> pre' s) -> sp pre r -> sp pre' r.
+
+  (* The (angelic) monadic operations on stateful forward predicate
+    transformers (SPSt) lift to monotone forward predicate transformers *)
+  Definition SPStMon A := { sp : @SPSt S A | SPStMonotone sp }.
+
+  #[program]
+  Definition ret {A} (a : A) : SPStMon A := fun pre r => pre (snd r) /\ fst r = a.
+  Next Obligation. red. intuition. Qed.
+
+  #[program]
+  Definition bind {A B} (m : SPStMon A) (f : A -> SPStMon B) : SPStMon B :=
+    fun pre r => exists a si, m pre (a, si) /\ f a (fun s' => s' = si) r.
+  Next Obligation.
+    red. intros * ? (? & ? & ? & ?); eexists _, _; intuition eauto.
+    eapply (proj2_sig m); eassumption.
+  Qed.
+
+  (* We lift the usual pointwise order on forward predicate transformers to
+    monotone forward predicate transformers.
+    The bind operation is monotone in both arguments with respect to this order. *)
+  #[program]
+  Definition ordSPStMon {A} (m m' : SPStMon A) := forall pre r, m pre r -> m' pre r.
+  Notation "m ≦ m'" := (ordSPStMon m m') (at level 70).
+  Notation "m ≈ m'" := (ordSPStMon m m' /\ ordSPStMon m' m).
+
+  Lemma bind_monotone {A B} (m m' : SPStMon A) (f f' : A -> SPStMon B) :
+    m ≦ m' -> (forall a, f a ≦ f' a) -> bind m f ≦ bind m' f'.
+  Proof.
+    intros hm hf pre r (a&si&?&?); exists a, si; split.
+    1: now apply hm.
+    now apply hf.
+  Qed.
+
+  (* These operations satisfy the right unitality and associativity from the usual monadic laws,
+    but not the left unitality. In the latter case, we can however retain an inequation. *)
+
+  Lemma runit {A} (m : SPStMon A) : bind m ret ≈ m.
+  Proof.
+    split; intros ??; cbn.
+    - intros (?&?&?&?&?); subst; now rewrite surjective_pairing.
+    - intros ?. exists (fst r), (snd r). rewrite <-surjective_pairing.
+      easy.
+  Qed.
+
+  Lemma assoc {A B C} (m : SPStMon A) (f : A -> SPStMon B) (g : B -> SPStMon C) :
+    bind m (fun a => bind (f a) g) ≈ bind (bind m f) g.
+  Proof.
+    split; intros ??; cbn.
+    - intros (a & s1 & hm & b & s2 & hf & hg).
+      exists b, s2; split; [|assumption].
+      exists a, s1; now split.
+    - intros (b & s2 & (a & s1 & hm & hf) & hg).
+      exists a, s1; split; [assumption|].
+      exists b, s2; now split.
+  Qed.
+
+  Lemma lunit {A B} (a : A) (f : A -> SPStMon B) : bind (ret a) f ≦ f a.
+  Proof. intros ?? (?&?& [] &?); cbn in *; subst.
+    revert H1; apply (proj2_sig (f a)).
+    intros; subst; easy.
+  Qed.
+
+  Definition inhabited (X : Type) := exists x : X, True.
+
+  Lemma lunitStrictlyLax  : inhabited S -> exists A B (a : A) (f : A -> SPStMon B), ~(f a ≦ bind (ret a) f).
+  Proof.
+    intros [s0]. unshelve eexists unit, unit, tt, (fun _ => exist _ (fun _ _ => True) _).
+    - constructor.
+    - intros h. now destruct (h (fun _ => False) (tt, s0) I) as (?&?& [] & ?).
+  Qed.
+
+End SPStMonotone.
