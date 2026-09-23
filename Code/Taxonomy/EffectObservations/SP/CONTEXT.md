@@ -6,9 +6,9 @@ Related: [WP observations](../WP/CONTEXT.md).
 
 ## Purpose and scope
 
-These five files define strongest-postcondition observations into healthy
-base-monad values, return/bind preservation, and triples. They do not define
-a separate arrow-derived observation interface. The stateful taxonomy belongs
+The five hand-written files below define strongest-postcondition observations into healthy
+base-monad values, return/bind preservation, and triples. The relation-derived
+files are described under [From a relation](#from-a-relation). The stateful taxonomy belongs
 to the parent directory; pure/reader collapse results stay with their observations.
 
 ## Choose the outcome indexing first
@@ -70,6 +70,29 @@ order and `exists s, ~ pre s`. Do not erase those conditions.
 Base healthiness and operations remain in the specification layer. Main's
 double-option SP file nevertheless imports WP and arrow modules; the two
 stateful single-option files show a smaller source/target import boundary.
+
+## From a relation
+
+The `_Rel` files observe into the arrow monads of
+[BaseSpecMonads](../../BaseSpecMonads/CONTEXT.md) (`ASPMonad.v`, `DSLPMonad.v`,
+`DSPMonad.v`, `ASLPMonad.v`), not the `OldMonads/` carriers the files above use.
+Each supplies only the relation a computation denotes and its `ret` / `bind`
+laws, as an instance of `PureRel`, `StRel` or `StExcRel` from
+[SPRelDenote.v](../../BaseSpecMonads/SPRelDenote.v); all four observations and
+their morphism laws are then citations. They are the SP counterpart of the WP
+`_Algebra` files.
+
+| Source | Computation | Interface |
+|---|---|---|
+| [DivNonDet_SPure_Rel.v](DivNonDet_SPure_Rel.v) | `divnd` | `PureRel`; outcomes `A` |
+| [RdDivNonDet_RdSP_Rel.v](RdDivNonDet_RdSP_Rel.v) | `rddivnd` | `PureRel` environment by environment |
+| [StDivNonDet_SPSt_Rel.v](StDivNonDet_SPSt_Rel.v) | `stdivnd` | `StRel`; terminating slice `A * S` |
+| [StDivExcNonDet_SPStExc_Rel.v](StDivExcNonDet_SPStExc_Rel.v) | `stdivexcnd` | `StExcRel`; `option (A * S)`, divergence (`spinP`) dropped |
+
+The `_Tower` files go one step further for ASP and DSLP: the relation and its
+two laws are themselves DERIVED by stacking `optionT` / `stateT` steps over
+`SetM` ([SPRelTower.v](../../BaseSpecMonads/SPRelTower.v)), and each proves its
+observations definitionally equal to the matching `_Rel` ones.
 
 ## Reading order
 

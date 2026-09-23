@@ -114,6 +114,22 @@ refute it at `S = bool` in the first argument of `bind` alone, and
 readings at a client precondition (`getDSPSt`, `getDSPStExc`, `getDSPPure`,
 and their `_of` forms for elements built from a relation).
 
+## Relational denotations
+
+[SPRelDenote.v](SPRelDenote.v) is the SP counterpart of
+[MonadAlgebra.v](MonadAlgebra.v). Where a WP observation is induced by an
+algebra `M Prop -> Prop`, an SP observation is induced by the relation a
+computation denotes, since every SP arrow here IS a relation read four ways.
+The classes `PureRel`, `StRel` and `StExcRel` ask for that relation with its
+`ret` / `bind` laws; from them the four observations into `ASP`/`DSLP`/`DSP`/
+`ASLP` (at the pure, `St` and `StExc` levels) and all their morphism laws are
+proved once. DSP and ASLP laws go through faithfulness (`dspRel_faithful`) and
+`SPure.RelDenote`. [SPRelTower.v](SPRelTower.v) derives the relation and its
+laws for any `optionT` / `stateT` tower over `SetM`, for ASP and DSLP only; its
+`GRel_divnd_slice` step drops an option layer, the SP analogue of the WP side's
+handling of `None`. Clients are the `_Rel` / `_Tower` files in
+[EffectObservations/SP](../EffectObservations/SP/CONTEXT.md).
+
 ## Reading order
 
 Read the raw carrier, its healthiness condition, and its operations before the
