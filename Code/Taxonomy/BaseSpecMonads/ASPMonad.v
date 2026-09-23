@@ -1,745 +1,501 @@
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+(** * The ASP specification monads
+
+    Three specification monads, all at input [unit]:
+
+      [ASP]        = [ASPArr unit]                          (* SP        *)
+      [ASPSt S]    = [stateArrT S ASPArr unit]              (* SP^St     *)
+      [ASPStExc S] = [stateArrT S (optionArrT ASPArr) unit] (* SP^StExc  *)
+
+    Fixing the input at [unit] gives a SPECIFICATION MONAD in each case: a
+    monad ([MonadLawsE]) whose refinement order is a preorder for which
+    [bind] is monotone in both arguments ([OrderedMonad],
+    [Classes/OrderedMonad.v]).
+
+    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Arrows/SPostArr.v])
+    at the arrow and at its two transformer stacks.  The orders are not
+    generic -- [bind] monotonicity is proved below from [aspRel_incl].
+
+    The arrow itself is in [ASPArrowCore.v] and the relation it denotes in
+    [ASPArrowRel.v]; both are re-exported here, so a client still needs
+    only [Require Import ASPMonad]. *)
+
+From Coq Require Import Morphisms RelationClasses Setoid.
+From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-Require Import Coq.Logic.PropExtensionality.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Setoids.Setoid.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicateTransformers.
+From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Export ASPArrowCore ASPArrowRel.
+(* ================================================================= *)
+(** ** [ASP = ASPArr unit]: a specification monad                *)
+(* ================================================================= *)
 
-Import MonadNotation.
-Open Scope monad_scope.
+(** [ret_arrow] / [bind_arrow] ([SPostArr.v]) at input [unit], ordered by
+    pointwise implication. *)
 
-Section PureASPMonad.
-  Definition JoinPreserving {A} (w : SPPure A) : Prop :=
-    Strict w /\ Disjunctive w.
+Section ASP.
 
-  Definition Singleton {A} (w : SPPure A) : Prop :=    
-    forall (p : Prop) (a : A), w p a <-> p /\ w True a.
+  Definition ASP (A : Type) : Type := ASPArr unit A.
 
-  (** At [SPPure] the precondition is a [Prop], and under propositional
-      extensionality there are only two of those up to equality.  So [Strict]
-      already forces [Singleton]; [Disjunctive] is not needed here. *)
-  Lemma join_to_singleton {A} (w : SPPure A) :
-    JoinPreserving w -> Singleton w.
-  Proof.
-    intros [HS _] p a.
-    assert (HT : p -> p = True).
-    { intro Hp. apply propositional_extensionality.
-      split; [ intros _; exact I | intros _; exact Hp ]. }
-    split.
-    - intro Hw.
-      assert (Hp : p).
-      { apply NNPP. intro Hnp.
-        assert (HF : p = False)
-          by (apply propositional_extensionality; split; [ exact Hnp | intros [] ]).
-        rewrite HF in Hw. exact (HS a Hw). }
-      split; [ exact Hp |]. rewrite (HT Hp) in Hw. exact Hw.
-    - intros [Hp Hw]. rewrite (HT Hp). exact Hw.
-  Qed.
+  Definition retASP {A} (a : A) : ASP A := @ret_arrow ASPArr _ unit A a.
 
-  Lemma singleton_to_join {A} (w : SPPure A) :
-    Singleton w -> JoinPreserving w.
-  Proof.
-    intro H. split.
-    - intros a Hw. exact (proj1 (proj1 (H False a) Hw)).
-    - intros I i0 p a. split.
-      + intro Hw. destruct (proj1 (H (exists j, p j) a) Hw) as [[i Hpi] Htrue].
-        exists i. exact (proj2 (H (p i) a) (conj Hpi Htrue)).
-      + intros [i Hw]. destruct (proj1 (H (p i) a) Hw) as [Hpi Htrue].
-        exact (proj2 (H (exists j, p j) a) (conj (ex_intro _ i Hpi) Htrue)).
-  Qed.
+  Definition bindASP {A B} (m : ASP A) (k : A -> ASP B) : ASP B :=
+    @bind_arrow ASPArr _ _ unit A B m k.
 
-  (** [join_to_singleton] uses only its [Strict] half, so [Strict] alone
-      already forces [Singleton].  Stated separately because the DSP carrier
-      pairs [Strict] with [Conjunctive] rather than [Disjunctive]. *)
-  Lemma strict_to_singleton {A} (w : SPPure A) : Strict w -> Singleton w.
-  Proof.
-    intros HS p a. split.
-    - intro Hw.
-      assert (Hp : p).
-      { apply NNPP. intro Hnp.
-        assert (HF : p = False)
-          by (apply propositional_extensionality; split; [ exact Hnp | intros [] ]).
-        rewrite HF in Hw. exact (HS a Hw). }
-      assert (HT : p = True)
-        by (apply propositional_extensionality;
-            split; [ intros _; exact I | intros _; exact Hp ]).
-      rewrite HT in Hw. split; [ exact Hp | exact Hw ].
-    - intros [Hp Hw].
-      assert (HT : p = True)
-        by (apply propositional_extensionality;
-            split; [ intros _; exact I | intros _; exact Hp ]).
-      rewrite HT. exact Hw.
-  Qed.
+  #[global] Instance Monad_ASP : Monad ASP :=
+    {| ret := @retASP ; bind := @bindASP |}.
 
-  (** [Singleton] gives the OTHER connective too: an additive transformer
-      preserves non-empty meets as well as non-empty joins. *)
-  Lemma singleton_to_conjunctive {A} (w : SPPure A) :
-    Singleton w -> Conjunctive w.
-  Proof.
-    intros H I i0 p a. rewrite (H (forall i, p i) a). split.
-    - intros [Hall Ht] i. exact (proj2 (H (p i) a) (conj (Hall i) Ht)).
-    - intro Hi. split.
-      + intro i. exact (proj1 (proj1 (H (p i) a) (Hi i))).
-      + exact (proj2 (proj1 (H (p i0) a) (Hi i0))).
-  Qed.
-  
-  Theorem join_iff_singleton {A} (w : SPPure A) :
-    JoinPreserving w <-> Singleton w.
-  Proof. split; [apply join_to_singleton | apply singleton_to_join]. Qed.
+  #[global] Instance Eq1_ASP : Eq1 ASP := fun A => @ASPArr_eq unit A.
 
-  (* Equivalent to Kenji's formalization *)
-  
-  Theorem kenji_iff_singleton {A} (w : SPPure A) :
-    (Monotone w /\ Codomain w) <-> Singleton w.
-  Proof.
-    split.
-    - intros [Mon Cod] p a. split.
-      + intro H. split.
-        * exact (Cod p a H).
-        * exact (Mon p True a (fun _ => I) H).
-      + intros [hp hT].
-        exact (Mon True p a (fun _ => hp) hT).
-    - intro H. split.
-      + intros p q a hpq hw.
-        apply H. apply H in hw. destruct hw as [hp hT].
-        exact (conj (hpq hp) hT).
-      + intros p a hw. apply H in hw. exact (proj1 hw).
-  Qed.
+  #[global] Instance Eq1Equivalence_ASP : @Eq1Equivalence ASP _ Eq1_ASP :=
+    fun A => ASPArr_eq_Equivalence.
 
-  Definition ASPSP (A : Type) : Type := { w : SPPure A | Singleton w }.
+  (** The two operations, on relations. *)
 
-  Definition getASP {A} (w : ASPSP A) : SPPure A := proj1_sig w.
+  Lemma aspRel_retASP {A} (x : A) i a : aspRel (retASP x) i a <-> x = a.
+  Proof. apply aspRel_pure. Qed.
 
-  Lemma getASP_singleton {A} (w : ASPSP A) (p : Prop) (a : A) :
-    getASP w p a <-> (p /\ getASP w True a).
-  Proof. exact (proj2_sig w p a). Qed.
-  
-  (** Directed forms, used instead of [rewrite]: the pattern [getSP ?w ?p ?a]
-      is maximally general, so setoid-rewriting with it inside subset terms is
-      catastrophically slow (minutes vs. tenths of a second). *)
-  Definition getASP_split {A} (w : ASPSP A) (p : Prop) (a : A)
-    : getASP w p a -> (p /\ getASP w True a) := proj1 (getASP_singleton w p a).
-  Definition getASP_merge {A} (w : ASPSP A) (p : Prop) (a : A)
-    : (p /\ getASP w True a) -> getASP w p a := proj2 (getASP_singleton w p a).
-  
-  #[program] Definition retASP {A} (v : A) : ASPSP A :=
-    fun p a => p /\ a = v.
-  Next Obligation.
-  Proof. intros p a. tauto. Qed.
-  
-  #[program] Definition bindASP {A B} (m : ASPSP A) (k : A -> ASPSP B) : ASPSP B :=
-    fun p b => exists a, (k a) (m p a) b.
-  Next Obligation.
-  Proof.
-    intros p b. split.
-    - (* pull [p] out through [k a], then through [m], and rebuild at [True] *)
-      intros [a H].
-      destruct (proj1 (proj2_sig (k a) (proj1_sig m p a) b) H) as [Hmp Hk].
-      destruct (proj1 (proj2_sig m p a) Hmp) as [Hp HmT].
-      split; [ exact Hp |]. exists a.
-      exact (proj2 (proj2_sig (k a) (proj1_sig m True a) b) (conj HmT Hk)).
-    - intros [Hp [a H]].
-      destruct (proj1 (proj2_sig (k a) (proj1_sig m True a) b) H) as [HmT Hk].
-      exists a.
-      exact (proj2 (proj2_sig (k a) (proj1_sig m p a) b)
-               (conj (proj2 (proj2_sig m p a) (conj Hp HmT)) Hk)).
-  Qed.
-        
-  #[global] Instance Monad_ASPSP : Monad ASPSP :=
-    {| ret := fun _ => retASP ;
-      bind := fun _ _ => bindASP |}.
+  Lemma aspRel_bindASP {A B} (m : ASP A) (k : A -> ASP B) i b :
+    aspRel (bindASP m k) i b <-> exists a, aspRel m i a /\ aspRel (k a) i b.
+  Proof. apply aspRel_bind. Qed.
 
-  #[global] Instance Eq1_ASPSP : Eq1 ASPSP :=
-    fun A m n => forall p a, getASP m p a <-> getASP n p a.
+  #[global] Instance MonadLawsE_ASP : @MonadLawsE ASP Eq1_ASP _ :=
+    @MonadLawsE_Arrow ASPArr _ _ _ _ _.
 
-  #[global] Instance Eq1Equivalence_ASPSP
-    : @Eq1Equivalence ASPSP _ Eq1_ASPSP.
-  Proof.
-    intro A. constructor.
-    - intros x p a. tauto.
-    - intros x y H p a. specialize (H p a). tauto.
-    - intros x y z H1 H2 p a. specialize (H1 p a). specialize (H2 p a). tauto.
-  Qed.
+  (** Refinement: FORWARD pointwise implication, as for the SP monads. *)
+  Definition ordASP {A} (m1 m2 : ASP A) : Prop :=
+    forall P a, getASPArr m1 P a -> getASPArr m2 P a.
 
-  #[global] Instance MonadLawsE_ASPSP
-    : @MonadLawsE ASPSP Eq1_ASPSP _.
+  #[global] Instance ordASP_PreOrder {A} : PreOrder (@ordASP A).
   Proof.
     constructor.
-    - (* bind_ret_l *)
-      intros A B f x. unfold eq1, Eq1_ASPSP. intros p b. split.
-      + intros [a H]. destruct (getASP_split (f a) _ b H) as [[Hp Heq] Hk].
-        subst a. apply getASP_merge. split; assumption.
-      + intro H. destruct (getASP_split (f x) p b H) as [Hp Hk].
-        exists x. apply getASP_merge.
-        split; [split; [exact Hp | reflexivity] | exact Hk].
-    - (* bind_ret_r *)
-      intros A x. unfold eq1, Eq1_ASPSP. intros p a. split.
-      + intros [a0 [Hm Heq]]. subst a. exact Hm.
-      + intro H. exists a. split; [exact H | reflexivity].
-    - (* bind_bind *)
-      intros A B C x f g. unfold eq1, Eq1_ASPSP. intros p c. split.
-      + intros [b H]. destruct (getASP_split (g b) _ c H) as [[a Ha] Hg].
-        exists a, b. apply getASP_merge. split; [exact Ha | exact Hg].
-      + intros [a [b H]]. destruct (getASP_split (g b) _ c H) as [Hk Hg].
-        exists b. apply getASP_merge. split; [exists a; exact Hk | exact Hg].
-    - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg. unfold eq1, Eq1_ASPSP in *. intros p b.
-      split; intros [a H]; exists a;
-        destruct (getASP_split _ _ b H) as [Hm Hk]; apply getASP_merge; split.
-      + apply Hxy. exact Hm.
-      + apply Hfg. exact Hk.
-      + apply Hxy. exact Hm.
-      + apply Hfg. exact Hk.
-  Qed.
-End PureASPMonad.
-
-(* ================================================================= *)
-(** ** Orders on the pure variant                                     *)
-(* ================================================================= *)
-
-Section PureASPOrders.
-  Definition ordASPSP {A} (m1 m2 : ASPSP A) : Prop :=
-    forall p a, getASP m1 p a -> getASP m2 p a.
-  Definition ordASPSPAt {A} (pre : Prop) (m1 m2 : ASPSP A) : Prop :=
-    forall a, getASP m1 pre a -> getASP m2 pre a.
-
-  (** The degeneracy that forces the side condition on the [Under]
-      characterization: [Singleton] makes every ASP false at [False]. *)
-  Lemma asp_bot_pure {A} (w : ASPSP A) (a : A) : ~ getASP w False a.
-  Proof. intro Hc. exact (proj1 (getASP_split w False a Hc)). Qed.
-End PureASPOrders.
-
-Section ProgASPMonad.
-  Variable S : Type.
-
-  Definition JoinPreservingProg {A} (w : SPStExc A) : Prop :=
-    StrictProg S w /\ DisjunctiveProg S w.
-
-  Definition SingletonProg {A} (w : SPStExc A) : Prop :=
-    forall (pre : S -> Prop) (r : option (A * S)),
-      w pre r <-> exists s0, pre s0 /\ w (fun s => s = s0) r.
-
-  (** Index the join by the *subset* [{s0 | pre s0}] and take the singleton
-      [fun s => s = s0] at each index: the union of those singletons is
-      pointwise [pre], and the indexed join is literally the right-hand side
-      of [SingletonProg].  Rewriting "pointwise" to "equal" is what needs
-      [functional_extensionality] + [propositional_extensionality] here,
-      exactly as [join_to_singleton] needs [propositional_extensionality]. *)
-  Lemma join_to_singleton_prog {A} (w : SPStExc A) :
-    JoinPreservingProg w -> SingletonProg w.
-  Proof.
-    intros [HS HD] pre r.
-    assert (Hext : forall P Q : S -> Prop, (forall s, P s <-> Q s) -> P = Q).
-    { intros P Q HPQ. apply functional_extensionality. intro s.
-      apply propositional_extensionality. exact (HPQ s). }
-    destruct (classic (exists s1, pre s1)) as [[s1 Hs1] | Hno].
-    - pose proof (HD { s0 : S | pre s0 } (inhabits (exist (fun s0 => pre s0) s1 Hs1))
-                    (fun i s => s = proj1_sig i) r) as Hj.
-      cbv beta in Hj.
-      assert (Heq : (fun s => exists i : { s0 : S | pre s0 }, s = proj1_sig i) = pre).
-      { apply Hext. intro s. split.
-        - intros [i Heq]. rewrite Heq. exact (proj2_sig i).
-        - intro Hs. exists (exist (fun s0 => pre s0) s Hs). reflexivity. }
-      rewrite Heq in Hj. split.
-      + intro Hw. destruct (proj1 Hj Hw) as [i Hwi].
-        exists (proj1_sig i). split; [ exact (proj2_sig i) | exact Hwi ].
-      + intros [s0 [Hs0 Hw]]. apply Hj.
-        exists (exist (fun s0' => pre s0') s0 Hs0). exact Hw.
-    - assert (Heq : pre = (fun _ : S => False)).
-      { apply Hext. intro s. split;
-          [ intro Hs; exact (Hno (ex_intro _ s Hs)) | intros [] ]. }
-      rewrite Heq. split.
-      + intro Hw. destruct (HS r Hw).
-      + intros [s0 [[] _]].
+    - intros m P a H. exact H.
+    - intros m1 m2 m3 H1 H2 P a H. exact (H2 P a (H1 P a H)).
   Qed.
 
-  Lemma singleton_to_join_prog {A} (w : SPStExc A) :
-    SingletonProg w -> JoinPreservingProg w.
-  Proof.
-    intro H. split.
-    - intros r Hw. destruct (proj1 (H (fun _ => False) r) Hw) as [s0 [[] _]].
-    - intros I i0 p r. split.
-      + intro Hw. destruct (proj1 (H (fun s => exists i, p i s) r) Hw)
-          as [s0 [[i Hpi] Hw']].
-        exists i. apply (H (fun s => p i s) r).
-        exists s0. split; [ exact Hpi | exact Hw' ].
-      + intros [i Hw]. destruct (proj1 (H (fun s => p i s) r) Hw) as [s0 [Hpi Hw']].
-        apply (H (fun s => exists j, p j s) r).
-        exists s0. split; [ exists i; exact Hpi | exact Hw' ].
-  Qed.
-
-  Theorem join_iff_singleton_prog {A} (w : SPStExc A) :
-    JoinPreservingProg w <-> SingletonProg w.
-  Proof. split; [apply join_to_singleton_prog | apply singleton_to_join_prog ]. Qed.
-
-  Definition ASPStExc (A : Type) : Type := { w : SPStExc A | SingletonProg w }.
-
-  Definition getASPStExc {A} (w : ASPStExc A) : SPStExc A :=
-    proj1_sig w.
-
-  Lemma getProg_singleton {A} (w : ASPStExc A) (pre : S -> Prop) (r : option (A * S)) :
-    getASPStExc w pre r <-> exists s0, pre s0 /\ getASPStExc w (fun s => s = s0) r.
-  Proof. exact (proj2_sig w pre r). Qed.
-
-  (** [SingletonProg] supplies congruence in the precondition for free — which
-      is why the monad laws below need no extensionality axiom. *)
-  Lemma getProg_cong {A} (w : ASPStExc A) (P Q : S -> Prop) (r : option (A * S)) :
-    (forall s, P s <-> Q s) -> (getASPStExc w P r <-> getASPStExc w Q r).
-  Proof.
-    intro HPQ. split; intro H; apply getProg_singleton in H;
-      destruct H as [s0 [Hs Hw]]; apply getProg_singleton; exists s0.
-    - split; [exact (proj1 (HPQ s0) Hs) | exact Hw].
-    - split; [exact (proj2 (HPQ s0) Hs) | exact Hw].
-  Qed.
-
-  Lemma getProg_join {A} (w : ASPStExc A) (I : Type) (p : I -> (S -> Prop))
-    (r : option (A * S)) :
-    getASPStExc w (fun s => exists i, p i s) r <-> exists i, getASPStExc w (p i) r.
-  Proof.
-    split.
-    - intro H. apply getProg_singleton in H. destruct H as [s0 [[i Hpi] Hw]].
-      exists i. apply getProg_singleton. exists s0. split; [ exact Hpi | exact Hw ].
-    - intros [i H]. apply getProg_singleton in H. destruct H as [s0 [Hpi Hw]].
-      apply getProg_singleton. exists s0.
-      split; [ exists i; exact Hpi | exact Hw ].
-  Qed.
-
-  #[program] Definition retASPStExc {A} (a : A) : ASPStExc A :=
-    fun pre r => exists s0, pre s0 /\ r = Some (a, s0).
-  Next Obligation.
-    unfold SingletonProg. intros pre r. split.
-    - intros [s0 [Hp Heq]]. exists s0. split; [exact Hp |].
-      exists s0. split; [reflexivity | exact Heq].
-    - intros [s0 [Hp [s1 [Heq1 Heq2]]]]. subst s1.
-      exists s0. split; [exact Hp | exact Heq2].
-  Qed.
-
-  #[program] Definition bindASPStExc {A B}
-    (m : ASPStExc A) (k : A -> ASPStExc B) : ASPStExc B :=
-    fun pre r => (exists a, k a (fun s0 => m pre (Some (a, s0))) r) \/ (r = None /\ m pre None).
-  Next Obligation.
-    unfold ASPStExc. intros pre r.
-    pose proof (proj2_sig m) as Hm. unfold SingletonProg in Hm.
-    pose proof (fun a => proj2_sig (k a)) as Hk. unfold SingletonProg in Hk.
-    split.
-    - intros [[a Ha] | [Hr Hn]].
-      + destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hka]].
-        destruct (proj1 (Hm pre (Some (a, s1))) Hms) as [s0 [Hp Hm0]].
-        exists s0. split; [ exact Hp |]. left. exists a.
-        apply (Hk a). exists s1. split; [ exact Hm0 | exact Hka ].
-      + destruct (proj1 (Hm pre None) Hn) as [s0 [Hp Hm0]].
-        exists s0. split; [ exact Hp |]. right. split; [ exact Hr | exact Hm0 ].
-    - intros [s0 [Hp [[a Ha] | [Hr Hn]]]].
-      + destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hka]].
-        left. exists a. apply (Hk a). exists s1. split; [| exact Hka ].
-        apply (Hm pre (Some (a, s1))). exists s0. split; [ exact Hp | exact Hms ].
-      + right. split; [ exact Hr |].
-        apply (Hm pre None). exists s0. split; [ exact Hp | exact Hn ].
-  Qed.
-                                          
-  #[global]
-    Instance Monad__ASPStExc : Monad ASPStExc :=
-    {| ret := fun _ => @retASPStExc _ ;
-      bind := fun _ _ => @bindASPStExc _ _ |}.
-
-  #[global] Instance Eq1__ASPStExc : Eq1 ASPStExc :=
-    fun A m n => forall pre r, getASPStExc m pre r <-> getASPStExc n pre r.
-
-  #[global] Instance Eq1Equivalence__ASPStExc
-    : @Eq1Equivalence ASPStExc _ Eq1__ASPStExc.
-  Proof.
-    intro A. constructor.
-    - intros x pre r. tauto.
-    - intros x y H pre r. specialize (H pre r). tauto.
-    - intros x y z H1 H2 pre r. specialize (H1 pre r). specialize (H2 pre r). tauto.
-  Qed.
-
-  #[global] Instance MonadLawsE__ASPStExc
-    : @MonadLawsE ASPStExc Eq1__ASPStExc _.
+  #[global] Instance OrderedMonad_ASP : OrderedMonad ASP (@ordASP).
   Proof.
     constructor.
-    - (* bind_ret_l *)
-      intros A B f x. unfold eq1, Eq1__ASPStExc. intros pre r.
-      (* the intermediate precondition [fun s => ret x can produce (x, s)]
-         is pointwise [pre] *)
-      assert (Hcong : forall s, getASPStExc (retASPStExc x) pre (Some (x, s)) <-> pre s).
-      { intro s. split.
-        - intros [s1 [Hp Heq]]. assert (Hs : s = s1) by congruence. subst s. exact Hp.
-        - intro Hp. exists s. split; [exact Hp | reflexivity]. }
-      split.
-      + intros [[a Ha] | [_ Hn]].
-        * (* only [a = x] can fire: the [ret] outcome pins the value *)
-          assert (Hax : a = x).
-          { pose proof Ha as Ha'. apply getProg_singleton in Ha'.
-            destruct Ha' as [s0 [[s1 [_ Heq]] _]]. congruence. }
-          subst a. exact (proj1 (getProg_cong (f x) _ pre r Hcong) Ha).
-        * destruct Hn as [s0 [_ Heq]]. discriminate Heq.
-      + intro H. left. exists x.
-        exact (proj2 (getProg_cong (f x) _ pre r Hcong) H).
-    - (* bind_ret_r *)
-      intros A x. unfold eq1, Eq1__ASPStExc. intros pre r. split.
-      + intros [[a [s0 [Hm Heq]]] | [Hr Hn]]; subst r; assumption.
-      + intro H. destruct r as [[a s0]|].
-        * left. exists a, s0. split; [exact H | reflexivity].
-        * right. split; [reflexivity | exact H].
-    - (* bind_bind *)
-      intros A B C x f g. unfold eq1, Eq1__ASPStExc. intros pre r.
-      (* the [Some] outcomes of [bind x f] never come from its [None] branch *)
-      assert (Hsimp : forall b s1,
-        getASPStExc (bindASPStExc x f) pre (Some (b, s1)) <->
-        exists a, getASPStExc (f a)
-                    (fun s0 => getASPStExc x pre (Some (a, s0))) (Some (b, s1))).
-      { intros b s1. split.
-        - intros [H | [Hc _]]; [exact H | discriminate Hc].
-        - intro H. left. exact H. }
-      (* ... so the continuation's precondition is an [A]-indexed join, and
-         [g b] preserves it — this is the step [KenjiProgSP] cannot make *)
-      assert (Hg : forall b,
-        getASPStExc (g b) (fun s1 => getASPStExc (bindASPStExc x f) pre (Some (b, s1))) r <->
-        exists a, getASPStExc (g b)
-                    (fun s1 => getASPStExc (f a)
-                       (fun s0 => getASPStExc x pre (Some (a, s0))) (Some (b, s1))) r).
-      { intro b.
-        transitivity (getASPStExc (g b)
-          (fun s1 => exists a, getASPStExc (f a)
-             (fun s0 => getASPStExc x pre (Some (a, s0))) (Some (b, s1))) r).
-        - apply getProg_cong. exact (Hsimp b).
-        - exact (getProg_join (g b) A
-                   (fun a s1 => getASPStExc (f a)
-                      (fun s0 => getASPStExc x pre (Some (a, s0))) (Some (b, s1))) r). }
-      split.
-      + intros [[b Hb] | [Hr Hn]].
-        * destruct (proj1 (Hg b) Hb) as [a Ha]. left. exists a. left. exists b. exact Ha.
-        * destruct Hn as [[a Ha] | [_ Hx]].
-          -- left. exists a. right. split; [exact Hr | exact Ha].
-          -- right. split; [exact Hr | exact Hx].
-      + intros [[a [[b Hb] | [Hr Ha]]] | [Hr Hx]].
-        * left. exists b. apply (proj2 (Hg b)). exists a. exact Hb.
-        * right. split; [exact Hr | left; exists a; exact Ha].
-        * right. split; [exact Hr | right; split; [reflexivity | exact Hx]].
-    - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg. unfold eq1, Eq1__ASPStExc in *. intros pre r.
-      assert (Hstep : forall a,
-        getASPStExc (f a) (fun s0 => getASPStExc x pre (Some (a, s0))) r <->
-        getASPStExc (g a) (fun s0 => getASPStExc y pre (Some (a, s0))) r).
-      { intro a.
-        transitivity (getASPStExc (g a) (fun s0 => getASPStExc x pre (Some (a, s0))) r).
-        - exact (Hfg a _ r).
-        - apply getProg_cong. intro s0. exact (Hxy pre (Some (a, s0))). }
-      split.
-      + intros [[a Ha] | [Hr Hn]].
-        * left. exists a. exact (proj1 (Hstep a) Ha).
-        * right. split; [exact Hr | exact (proj1 (Hxy pre None) Hn)].
-      + intros [[a Ha] | [Hr Hn]].
-        * left. exists a. exact (proj2 (Hstep a) Ha).
-        * right. split; [exact Hr | exact (proj2 (Hxy pre None) Hn)].
+    - intro A. exact ordASP_PreOrder.
+    - intros A m1 m2 H P a. unfold eq1, Eq1_ASP, ASPArr_eq in H. apply H.
+    - intros A B m1 m2 Hm k1 k2 Hk.
+      pose proof (proj1 (aspRel_incl m1 m2) Hm) as Hm'.
+      unfold ordASP.
+      apply (proj2 (aspRel_incl (bindASP m1 k1) (bindASP m2 k2))).
+      intros i b. rewrite !aspRel_bindASP.
+      intros [a [H1 H2]]. exists a.
+      split; [ apply Hm', H1 | apply (proj1 (aspRel_incl (k1 a) (k2 a)) (Hk a)), H2 ].
   Qed.
-End ProgASPMonad.
-  
-Arguments retASPStExc {_} {_}.
-Arguments bindASPStExc {_} {_} {_}.
-Arguments getASPStExc {_} {_}.
+
+End ASP.
 
 (* ================================================================= *)
-(** * Terminating-slice variant (factored out of SPSimplerSpecMonads.v) *)
+(** ** [ASPSt S]: the state stack, again a specification monad   *)
 (* ================================================================= *)
 
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
-Require Import Coq.Logic.PropExtensionality.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Setoids.Setoid.
-
-Import MonadNotation.
-Open Scope monad_scope.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
-
-Module StASP.
-  Import StTrans.
-Section ProgASPMonad.
+Section ASPSt.
   Variable S : Type.
 
-  Definition JoinPreservingProg {A} (w : SPSt A) : Prop :=
-    StrictProg S w /\ DisjunctiveProg S w.
+  Definition ASPSt (A : Type) : Type := stateArrT S ASPArr unit A.
 
-  Definition SingletonProg {A} (w : SPSt A) : Prop :=
-    forall (pre : S -> Prop) (r : A * S),
-      w pre r <-> exists s0, pre s0 /\ w (fun s => s = s0) r.
+  Definition retASPSt {A} (a : A) : ASPSt A :=
+    @ret_arrow (stateArrT S ASPArr) _ unit A a.
 
-  Lemma join_to_singleton_prog {A} (w : SPSt A) :
-    JoinPreservingProg w -> SingletonProg w.
+  Definition bindASPSt {A B} (m : ASPSt A) (k : A -> ASPSt B) : ASPSt B :=
+    @bind_arrow (stateArrT S ASPArr) _ _ unit A B m k.
+
+  #[global] Instance Monad_ASPSt : Monad ASPSt :=
+    {| ret := @retASPSt ; bind := @bindASPSt |}.
+
+  #[global] Instance Eq1_ASPSt : Eq1 ASPSt := fun A => @ASPArr_eq (unit * S) (A * S).
+
+  #[global] Instance Eq1Equivalence_ASPSt : @Eq1Equivalence ASPSt _ Eq1_ASPSt :=
+    fun A => ASPArr_eq_Equivalence.
+
+  #[global] Instance MonadLawsE_ASPSt : @MonadLawsE ASPSt Eq1_ASPSt _ :=
+    @MonadLawsE_Arrow (stateArrT S ASPArr) _ _ _ _ _.
+
+  Definition ordASPSt {A} (m1 m2 : ASPSt A) : Prop :=
+    forall P r, getASPArr m1 P r -> getASPArr m2 P r.
+
+  #[global] Instance ordASPSt_PreOrder {A} : PreOrder (@ordASPSt A).
   Proof.
-    intros [HS HD] pre r.
-    assert (Hext : forall P Q : S -> Prop, (forall s, P s <-> Q s) -> P = Q).
-    { intros P Q HPQ. apply functional_extensionality. intro s.
-      apply propositional_extensionality. exact (HPQ s). }
-    destruct (classic (exists s1, pre s1)) as [[s1 Hs1] | Hno].
-    - pose proof (HD { s0 : S | pre s0 } (inhabits (exist (fun s0 => pre s0) s1 Hs1))
-                    (fun i s => s = proj1_sig i) r) as Hj.
-      cbv beta in Hj.
-      assert (Heq : (fun s => exists i : { s0 : S | pre s0 }, s = proj1_sig i) = pre).
-      { apply Hext. intro s. split.
-        - intros [i Heq]. rewrite Heq. exact (proj2_sig i).
-        - intro Hs. exists (exist (fun s0 => pre s0) s Hs). reflexivity. }
-      rewrite Heq in Hj. split.
-      + intro Hw. destruct (proj1 Hj Hw) as [i Hwi].
-        exists (proj1_sig i). split; [ exact (proj2_sig i) | exact Hwi ].
-      + intros [s0 [Hs0 Hw]]. apply Hj.
-        exists (exist (fun s0' => pre s0') s0 Hs0). exact Hw.
-    - assert (Heq : pre = (fun _ : S => False)).
-      { apply Hext. intro s. split;
-          [ intro Hs; exact (Hno (ex_intro _ s Hs)) | intros [] ]. }
-      rewrite Heq. split.
-      + intro Hw. destruct (HS r Hw).
-      + intros [s0 [[] _]].
+    constructor.
+    - intros m P r H. exact H.
+    - intros m1 m2 m3 H1 H2 P r H. exact (H2 P r (H1 P r H)).
   Qed.
 
-  Lemma singleton_to_join_prog {A} (w : SPSt A) :
-    SingletonProg w -> JoinPreservingProg w.
+  #[global] Instance OrderedMonad_ASPSt : OrderedMonad ASPSt (@ordASPSt).
   Proof.
-    intro H. split.
-    - intros r Hw. destruct (proj1 (H (fun _ => False) r) Hw) as [s0 [[] _]].
-    - intros I i0 p r. split.
-      + intro Hw. destruct (proj1 (H (fun s => exists i, p i s) r) Hw)
-          as [s0 [[i Hpi] Hw']].
-        exists i. apply (H (fun s => p i s) r).
-        exists s0. split; [ exact Hpi | exact Hw' ].
-      + intros [i Hw]. destruct (proj1 (H (fun s => p i s) r) Hw) as [s0 [Hpi Hw']].
-        apply (H (fun s => exists j, p j s) r).
-        exists s0. split; [ exists i; exact Hpi | exact Hw' ].
+    constructor.
+    - intro A. exact ordASPSt_PreOrder.
+    - intros A m1 m2 H P r. unfold eq1, Eq1_ASPSt, ASPArr_eq in H. apply H.
+    - intros A B m1 m2 Hm k1 k2 Hk.
+      pose proof (proj1 (aspRel_incl m1 m2) Hm) as Hm'.
+      unfold ordASPSt.
+      apply (proj2 (aspRel_incl (bindASPSt m1 k1) (bindASPSt m2 k2))).
+      intros [[] s] r. unfold bindASPSt. rewrite !aspRelS_bind.
+      intros [a [s' [H1 H2]]]. exists a, s'.
+      split; [ apply Hm', H1 | apply (proj1 (aspRel_incl (k1 a) (k2 a)) (Hk a)), H2 ].
   Qed.
 
-  Definition ASPSt (A : Type) : Type := { w : SPSt A | SingletonProg w }.
+End ASPSt.
 
-  Definition getASPSt {A} (w : ASPSt A) : SPSt A := proj1_sig w.
+(* ================================================================= *)
+(** ** [ASPStExc S]: the state-and-exception stack               *)
+(* ================================================================= *)
 
-  Lemma getProg_singleton {A} (w : ASPSt A) (pre : S -> Prop) (r : A * S) :
+Section ASPStExc.
+  Variable S : Type.
+
+  Definition ASPStExc (A : Type) : Type := stateArrT S (optionArrT ASPArr) unit A.
+
+  Definition retASPStExc {A} (a : A) : ASPStExc A :=
+    @ret_arrow (stateArrT S (optionArrT ASPArr)) _ unit A a.
+
+  Definition bindASPStExc {A B} (m : ASPStExc A) (k : A -> ASPStExc B)
+    : ASPStExc B :=
+    @bind_arrow (stateArrT S (optionArrT ASPArr)) _ _ unit A B m k.
+
+  #[global] Instance Monad_ASPStExc : Monad ASPStExc :=
+    {| ret := @retASPStExc ; bind := @bindASPStExc |}.
+
+  #[global] Instance Eq1_ASPStExc : Eq1 ASPStExc :=
+    fun A => @ASPArr_eq (unit * S) (option (A * S)).
+
+  #[global] Instance Eq1Equivalence_ASPStExc
+    : @Eq1Equivalence ASPStExc _ Eq1_ASPStExc :=
+    fun A => ASPArr_eq_Equivalence.
+
+  #[global] Instance MonadLawsE_ASPStExc
+    : @MonadLawsE ASPStExc Eq1_ASPStExc _ :=
+    @MonadLawsE_Arrow (stateArrT S (optionArrT ASPArr)) _ _ _ _ _.
+
+  Definition ordASPStExc {A} (m1 m2 : ASPStExc A) : Prop :=
+    forall P o, getASPArr m1 P o -> getASPArr m2 P o.
+
+  #[global] Instance ordASPStExc_PreOrder {A} : PreOrder (@ordASPStExc A).
+  Proof.
+    constructor.
+    - intros m P o H. exact H.
+    - intros m1 m2 m3 H1 H2 P o H. exact (H2 P o (H1 P o H)).
+  Qed.
+
+  #[global] Instance OrderedMonad_ASPStExc
+    : OrderedMonad ASPStExc (@ordASPStExc).
+  Proof.
+    constructor.
+    - intro A. exact ordASPStExc_PreOrder.
+    - intros A m1 m2 H P o. unfold eq1, Eq1_ASPStExc, ASPArr_eq in H. apply H.
+    - intros A B m1 m2 Hm k1 k2 Hk.
+      pose proof (proj1 (aspRel_incl m1 m2) Hm) as Hm'.
+      unfold ordASPStExc.
+      apply (proj2 (aspRel_incl (bindASPStExc m1 k1) (bindASPStExc m2 k2))).
+      intros [[] s] o. unfold bindASPStExc. rewrite !aspRelE_bind.
+      intros [o1 [H1 H2]]. exists o1. split; [ apply Hm', H1 |].
+      destruct o1 as [[a s']|]; [ apply (proj1 (aspRel_incl (k1 a) (k2 a)) (Hk a)), H2 | exact H2 ].
+  Qed.
+
+End ASPStExc.
+
+(* ================================================================= *)
+(** ** Reading the three monads at a SHARED precondition             *)
+(* ================================================================= *)
+
+(** The arrows take a precondition on their whole input, [unit] or
+    [unit * S]; the SP monads of this directory take one on [S] alone.  The
+    two agree, since [unit] has one element, and this section provides the
+    monad-shaped interface: a constructor from a relation, the reading
+    [getASP*] at a shared precondition, and the facts join preservation
+    supplies — singletons, congruence, monotonicity, strictness.  It is what
+    a client of [ASPMonad.v] needs in order to use these monads instead. *)
+
+Section Readings.
+
+  Definition getASP {A} (w : ASP A) (p : Prop) (a : A) : Prop :=
+    getASPArr w (fun _ => p) a.
+
+  Definition aspOfPred {A} (Q : A -> Prop) : ASP A :=
+    ofRelASPArr (fun _ => Q).
+
+  Lemma getASP_of {A} (Q : A -> Prop) p a : getASP (aspOfPred Q) p a <-> p /\ Q a.
+  Proof.
+    unfold getASP, aspOfPred, ofRelASPArr. cbn. split.
+    - intros [[] [Hp HQ]]. exact (conj Hp HQ).
+    - intros [Hp HQ]. exists tt. exact (conj Hp HQ).
+  Qed.
+
+  Lemma getASP_singleton {A} (w : ASP A) p a : getASP w p a <-> p /\ getASP w True a.
+  Proof.
+    unfold getASP. rewrite !get_aspRel. split.
+    - intros [[] [Hp Hr]]. split; [ exact Hp | exists tt; auto ].
+    - intros [Hp [[] [_ Hr]]]. exists tt. auto.
+  Qed.
+
+  Lemma getASP_mono {A} (w : ASP A) (p q : Prop) a : (p -> q) -> getASP w p a -> getASP w q a.
+  Proof.
+    intros Hpq H. apply getASP_singleton in H.
+    apply getASP_singleton. split; [ apply Hpq, (proj1 H) | exact (proj2 H) ].
+  Qed.
+
+  Lemma getASP_bot {A} (w : ASP A) a : ~ getASP w False a.
+  Proof. intro H. exact (proj1 (proj1 (getASP_singleton w False a) H)). Qed.
+
+  Lemma getASP_ret {A} (x : A) p a : getASP (retASP x) p a <-> p /\ x = a.
+  Proof.
+    unfold getASP. rewrite get_aspRel. split.
+    - intros [[] [Hp Hr]]. apply aspRel_retASP in Hr. auto.
+    - intros [Hp Hx]. exists tt. split; [ exact Hp | apply aspRel_retASP, Hx ].
+  Qed.
+
+  Lemma getASP_bind {A B} (m : ASP A) (k : A -> ASP B) p b :
+    getASP (bindASP m k) p b <-> exists a, getASP m p a /\ getASP (k a) True b.
+  Proof.
+    unfold getASP in *. split.
+    - intro H. apply (proj1 (get_aspRel _ _ _)) in H. destruct H as [[] [Hp H]].
+      apply aspRel_bindASP in H. destruct H as [a [Hm Hk]].
+      exists a. split; apply (proj2 (get_aspRel _ _ _)); exists tt; auto.
+    - intros [a [Hm Hk]].
+      apply (proj1 (get_aspRel _ _ _)) in Hm. destruct Hm as [[] [Hp Hm]].
+      apply (proj1 (get_aspRel _ _ _)) in Hk. destruct Hk as [[] [_ Hk]].
+      apply (proj2 (get_aspRel _ _ _)). exists tt. split; [ exact Hp |].
+      apply aspRel_bindASP. exists a. auto.
+  Qed.
+
+  Lemma eq1_ASP_get {A} (m n : ASP A) :
+    eq1 m n <-> (forall p a, getASP m p a <-> getASP n p a).
+  Proof.
+    split.
+    - intros H p a. apply H.
+    - intros H P a. unfold eq1, Eq1_ASP, ASPArr_eq.
+      transitivity (getASP m (P tt) a); [ apply getASPArr_ext_iff; intros []; reflexivity |].
+      rewrite H. apply getASPArr_ext_iff. intros []. reflexivity.
+  Qed.
+
+  Lemma ordASP_get {A} (m n : ASP A) :
+    ordASP m n <-> (forall p a, getASP m p a -> getASP n p a).
+  Proof.
+    split.
+    - intros H p a. apply H.
+    - intros H P a HP.
+      apply (getASPArr_ext n (fun _ => P tt) P a); [ intros []; reflexivity |].
+      apply (H (P tt)). apply (getASPArr_ext m P (fun _ => P tt) a);
+        [ intros []; reflexivity | exact HP ].
+  Qed.
+
+  (* ---- the state stack ---- *)
+
+  Variable S : Type.
+
+  Definition getASPSt {A} (w : ASPSt S A) (pre : S -> Prop) (r : A * S) : Prop :=
+    getASPArr w (fun p => pre (snd p)) r.
+
+  Definition aspOfRelSt {A} (R : S -> A * S -> Prop) : ASPSt S A :=
+    ofRelASPArr (fun p r => R (snd p) r).
+
+  Lemma getASPSt_of {A} (R : S -> A * S -> Prop) pre r :
+    getASPSt (aspOfRelSt R) pre r <-> exists s, pre s /\ R s r.
+  Proof.
+    unfold getASPSt, aspOfRelSt, ofRelASPArr. cbn. split.
+    - intros [[[] s] [Hp HR]]. exists s. exact (conj Hp HR).
+    - intros [s [Hp HR]]. exists (tt, s). exact (conj Hp HR).
+  Qed.
+
+  Lemma getASPSt_singleton {A} (w : ASPSt S A) pre r :
     getASPSt w pre r <-> exists s0, pre s0 /\ getASPSt w (fun s => s = s0) r.
-  Proof. exact (proj2_sig w pre r). Qed.
+  Proof.
+    unfold getASPSt. split.
+    - intro H. apply (proj1 (get_aspRel _ _ _)) in H. destruct H as [[[] s0] [Hp Hr]].
+      exists s0. split; [ exact Hp |]. apply (proj2 (get_aspRel _ _ _)).
+      exists (tt, s0). cbn. auto.
+    - intros [s0 [Hp H]]. apply (proj1 (get_aspRel _ _ _)) in H.
+      destruct H as [[[] s] [Hs Hr]]. cbn in Hs. subst s.
+      apply (proj2 (get_aspRel _ _ _)). exists (tt, s0). cbn. auto.
+  Qed.
 
-  Lemma getProg_cong {A} (w : ASPSt A) (P Q : S -> Prop) (r : A * S) :
+  Lemma getASPSt_cong {A} (w : ASPSt S A) (P Q : S -> Prop) r :
     (forall s, P s <-> Q s) -> (getASPSt w P r <-> getASPSt w Q r).
   Proof.
-    intro HPQ. split; intro H; apply getProg_singleton in H;
-      destruct H as [s0 [Hs Hw]]; apply getProg_singleton; exists s0.
-    - split; [ exact (proj1 (HPQ s0) Hs) | exact Hw ].
-    - split; [ exact (proj2 (HPQ s0) Hs) | exact Hw ].
+    intro H. unfold getASPSt. apply getASPArr_ext_iff. intros [[] s]. apply H.
   Qed.
 
-  Lemma getProg_join {A} (w : ASPSt A) (I : Type) (p : I -> (S -> Prop))
-    (r : A * S) :
-    getASPSt w (fun s => exists i, p i s) r <-> exists i, getASPSt w (p i) r.
-  Proof.
-    split.
-    - intro H. apply getProg_singleton in H. destruct H as [s0 [[i Hpi] Hw]].
-      exists i. apply getProg_singleton. exists s0. split; [ exact Hpi | exact Hw ].
-    - intros [i H]. apply getProg_singleton in H. destruct H as [s0 [Hpi Hw]].
-      apply getProg_singleton. exists s0.
-      split; [ exists i; exact Hpi | exact Hw ].
-  Qed.
-
-  (** [ret] and [bind].  Compare [SPSpecMonads]: there [bind] carried an extra
-      [\/ (r = None /\ m pre None)] disjunct for the exceptional outcome.  With
-      no such outcome the disjunct disappears. *)
-
-  #[program] Definition retASPSt {A} (a : A) : ASPSt A :=
-    fun pre r => exists s0, pre s0 /\ r = (a, s0).
-  Next Obligation.
-    unfold SingletonProg. intros pre r. split.
-    - intros [s0 [Hp Heq]]. exists s0. split; [ exact Hp |].
-      exists s0. split; [ reflexivity | exact Heq ].
-    - intros [s0 [Hp [s1 [Heq1 Heq2]]]]. subst s1.
-      exists s0. split; [ exact Hp | exact Heq2 ].
-  Qed.
-
-  #[program] Definition bindASPSt {A B}
-    (m : ASPSt A) (k : A -> ASPSt B) : ASPSt B :=
-    fun pre r => exists a, k a (fun s0 => m pre (a, s0)) r.
-  Next Obligation.
-    unfold SingletonProg. intros pre r.
-    pose proof (proj2_sig m) as Hm. unfold SingletonProg in Hm.
-    pose proof (fun a => proj2_sig (k a)) as Hk. unfold SingletonProg in Hk.
-    split.
-    - intros [a Ha].
-      destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hka]].
-      destruct (proj1 (Hm pre (a, s1)) Hms) as [s0 [Hp Hm0]].
-      exists s0. split; [ exact Hp |]. exists a.
-      apply (Hk a). exists s1. split; [ exact Hm0 | exact Hka ].
-    - intros [s0 [Hp [a Ha]]].
-      destruct (proj1 (Hk a _ r) Ha) as [s1 [Hms Hka]].
-      exists a. apply (Hk a). exists s1. split; [| exact Hka ].
-      apply (Hm pre (a, s1)). exists s0. split; [ exact Hp | exact Hms ].
-  Qed.
-
-  #[global] Instance Monad__ASPSt : Monad ASPSt :=
-    {| ret := fun _ => @retASPSt _ ;
-       bind := fun _ _ => @bindASPSt _ _ |}.
-
-  #[global] Instance Eq1__ASPSt : Eq1 ASPSt :=
-    fun A m n => forall pre r, getASPSt m pre r <-> getASPSt n pre r.
-
-  #[global] Instance Eq1Equivalence__ASPSt
-    : @Eq1Equivalence ASPSt _ Eq1__ASPSt.
-  Proof.
-    intro A. constructor.
-    - intros x pre r. tauto.
-    - intros x y H pre r. specialize (H pre r). tauto.
-    - intros x y z H1 H2 pre r. specialize (H1 pre r). specialize (H2 pre r). tauto.
-  Qed.
-
-  #[global] Instance MonadLawsE__ASPSt
-    : @MonadLawsE ASPSt Eq1__ASPSt _.
-  Proof.
-    constructor.
-    - (* bind_ret_l *)
-      intros A B f x. unfold eq1, Eq1__ASPSt. intros pre r. split.
-      + intros [a Ha].
-        destruct (proj1 (getProg_singleton (f a) _ r) Ha) as [s0 [[s1 [Hp Heq]] Hw]].
-        assert (Hax : a = x) by congruence. assert (Hss : s0 = s1) by congruence.
-        subst a. subst s1.
-        apply getProg_singleton. exists s0. split; [ exact Hp | exact Hw ].
-      + intro H. destruct (proj1 (getProg_singleton (f x) pre r) H) as [s0 [Hp Hw]].
-        exists x. apply getProg_singleton. exists s0. split; [| exact Hw ].
-        exists s0. split; [ exact Hp | reflexivity ].
-    - (* bind_ret_r *)
-      intros A m. unfold eq1, Eq1__ASPSt. intros pre r. split.
-      + intros [a [s0 [Hm Heq]]]. subst r. exact Hm.
-      + intro H. destruct r as [a s0]. exists a. exists s0.
-        split; [ exact H | reflexivity ].
-    - (* bind_bind *)
-      intros A B C x f g. unfold eq1, Eq1__ASPSt. intros pre r. split.
-      + intros [b Hb].
-        destruct (proj1 (getProg_join (g b) A
-                           (fun a s1 => getASPSt (f a)
-                                          (fun s0 => getASPSt x pre (a, s0)) (b, s1)) r)
-                    Hb) as [a Ha].
-        exists a. exists b. exact Ha.
-      + intros [a [b Hb]]. exists b.
-        apply (getProg_join (g b) A
-                 (fun a0 s1 => getASPSt (f a0)
-                                 (fun s0 => getASPSt x pre (a0, s0)) (b, s1)) r).
-        exists a. exact Hb.
-    - (* Proper_bind *)
-      intros A B x y Hxy f g Hfg. unfold eq1, Eq1__ASPSt in *. intros pre r.
-      split; intros [a Ha]; exists a.
-      + apply (getProg_cong (g a) (fun s0 => getASPSt x pre (a, s0)) _ r);
-          [ intro s0; exact (Hxy pre (a, s0)) | apply Hfg; exact Ha ].
-      + apply (getProg_cong (f a) (fun s0 => getASPSt y pre (a, s0)) _ r);
-          [ intro s0; symmetry; exact (Hxy pre (a, s0)) | apply Hfg; exact Ha ].
-  Qed.
-
-End ProgASPMonad.
-
-Arguments retASPSt {_} {_}.
-Arguments bindASPSt {_} {_} {_}.
-Arguments getASPSt {_} {_}.
-
-
-(* ---- order and monotonicity ---- *)
-
-Section StASPOrders.
-  Variable S : Type.
-  Definition ordASPSt {A} (m1 m2 : ASPSt S A) : Prop :=
-    forall pre r, getASPSt m1 pre r -> getASPSt m2 pre r.
-  Definition ordASPStAt {A} (pre : S -> Prop) (m1 m2 : ASPSt S A) : Prop :=
-    forall r, getASPSt m1 pre r -> getASPSt m2 pre r.
-  Lemma asp_bot {A} (w : ASPSt S A) (r : (A * S)) :
-    ~ getASPSt w (fun _ => False) r.
-  Proof.
-    intro Hc. destruct (proj1 (getProg_singleton S w _ r) Hc) as [s0 [[] _]].
-  Qed.
-  Lemma aspMono {A} (w : ASPSt S A) (P Q : S -> Prop) (r : (A * S)) :
+  Lemma getASPSt_mono {A} (w : ASPSt S A) (P Q : S -> Prop) r :
     (forall s, P s -> Q s) -> getASPSt w P r -> getASPSt w Q r.
   Proof.
-    intros Hsub Hw.
-    destruct (proj1 (getProg_singleton S w P r) Hw) as [s0 [Hp Hs]].
-    apply getProg_singleton. exists s0. split; [ exact (Hsub s0 Hp) | exact Hs ].
+    intros H Hw. apply getASPSt_singleton in Hw. destruct Hw as [s0 [Hp Hr]].
+    apply getASPSt_singleton. exists s0. split; [ apply H, Hp | exact Hr ].
   Qed.
-End StASPOrders.
-Arguments ordASPSt {_} {_}.
-Arguments ordASPStAt {_} {_}.
-End StASP.
 
-(* ================================================================= *)
-(** * Refinement order and monotonicity for ASP *)
-(* ================================================================= *)
-
-Section ASPOrders.
-  Variable S : Type.
-  Definition ordASPStExc {A} (m1 m2 : ASPStExc S A) : Prop :=
-    forall pre r, getASPStExc m1 pre r -> getASPStExc m2 pre r.
-  Definition ordASPStExcAt {A} (pre : S -> Prop) (m1 m2 : ASPStExc S A) : Prop :=
-    forall r, getASPStExc m1 pre r -> getASPStExc m2 pre r.
-  Lemma asp_bot {A} (w : ASPStExc S A) (r : option (A * S)) :
-    ~ getASPStExc w (fun _ => False) r.
+  Lemma getASPSt_bot {A} (w : ASPSt S A) r : ~ getASPSt w (fun _ => False) r.
   Proof.
-    intro Hc. destruct (proj1 (getProg_singleton S w _ r) Hc) as [s0 [[] _]].
+    intro H. apply getASPSt_singleton in H. destruct H as [s0 [[] _]].
   Qed.
-  Lemma aspMono {A} (w : ASPStExc S A) (P Q : S -> Prop) (r : option (A * S)) :
+
+  Lemma getASPSt_ret {A} (x : A) pre r :
+    getASPSt (retASPSt S x) pre r <-> exists s, pre s /\ r = (x, s).
+  Proof.
+    unfold getASPSt. rewrite get_aspRel. split.
+    - intros [[[] s] [Hp Hr]]. apply aspRelS_ret in Hr. exists s. auto.
+    - intros [s [Hp ->]]. exists (tt, s). split; [ exact Hp | apply aspRelS_ret; reflexivity ].
+  Qed.
+
+  Lemma getASPSt_bind {A B} (m : ASPSt S A) (k : A -> ASPSt S B) pre r :
+    getASPSt (bindASPSt S m k) pre r <->
+    exists a s', getASPSt m pre (a, s') /\ getASPSt (k a) (fun t => t = s') r.
+  Proof.
+    unfold getASPSt in *. split.
+    - intro H. apply (proj1 (get_aspRel _ _ _)) in H. destruct H as [[[] s] [Hp H]].
+      apply aspRelS_bind in H. destruct H as [a [s' [Hm Hk]]].
+      exists a, s'. split; apply (proj2 (get_aspRel _ _ _));
+        [ exists (tt, s) | exists (tt, s') ]; cbn; auto.
+    - intros [a [s' [Hm Hk]]].
+      apply (proj1 (get_aspRel _ _ _)) in Hm. destruct Hm as [[[] s] [Hp Hm]].
+      apply (proj1 (get_aspRel _ _ _)) in Hk. destruct Hk as [[[] s''] [Hs Hk]].
+      cbn in Hs. subst s''. apply (proj2 (get_aspRel _ _ _)).
+      exists (tt, s). split; [ exact Hp |]. apply aspRelS_bind. exists a, s'. auto.
+  Qed.
+
+  Lemma eq1_ASPSt_get {A} (m n : ASPSt S A) :
+    eq1 m n <-> (forall pre r, getASPSt m pre r <-> getASPSt n pre r).
+  Proof.
+    split.
+    - intros H pre r. apply H.
+    - intros H P r. unfold eq1, Eq1_ASPSt, ASPArr_eq.
+      transitivity (getASPSt m (fun s => P (tt, s)) r);
+        [ apply getASPArr_ext_iff; intros [[] s]; reflexivity |].
+      rewrite H. apply getASPArr_ext_iff. intros [[] s]. reflexivity.
+  Qed.
+
+  Definition ordASPStAt {A} (pre : S -> Prop) (m n : ASPSt S A) : Prop :=
+    forall r, getASPSt m pre r -> getASPSt n pre r.
+
+  Lemma ordASPSt_get {A} (m n : ASPSt S A) :
+    ordASPSt S m n <-> (forall pre r, getASPSt m pre r -> getASPSt n pre r).
+  Proof.
+    split.
+    - intros H pre r. apply H.
+    - intros H P r HP.
+      apply (getASPArr_ext n (fun p => P (tt, snd p)) P r);
+        [ intros [[] s]; reflexivity |].
+      apply (H (fun s => P (tt, s))). apply (getASPArr_ext m P (fun p => P (tt, snd p)) r);
+        [ intros [[] s]; reflexivity | exact HP ].
+  Qed.
+
+  (* ---- the state-and-exception stack ---- *)
+
+  Definition getASPStExc {A} (w : ASPStExc S A) (pre : S -> Prop) (r : option (A * S))
+    : Prop := getASPArr w (fun p => pre (snd p)) r.
+
+  Definition aspOfRelStExc {A} (R : S -> option (A * S) -> Prop) : ASPStExc S A :=
+    ofRelASPArr (fun p r => R (snd p) r).
+
+  Lemma getASPStExc_of {A} (R : S -> option (A * S) -> Prop) pre r :
+    getASPStExc (aspOfRelStExc R) pre r <-> exists s, pre s /\ R s r.
+  Proof.
+    unfold getASPStExc, aspOfRelStExc, ofRelASPArr. cbn. split.
+    - intros [[[] s] [Hp HR]]. exists s. exact (conj Hp HR).
+    - intros [s [Hp HR]]. exists (tt, s). exact (conj Hp HR).
+  Qed.
+
+  Lemma getASPStExc_singleton {A} (w : ASPStExc S A) pre r :
+    getASPStExc w pre r <-> exists s0, pre s0 /\ getASPStExc w (fun s => s = s0) r.
+  Proof.
+    unfold getASPStExc. split.
+    - intro H. apply (proj1 (get_aspRel _ _ _)) in H. destruct H as [[[] s0] [Hp Hr]].
+      exists s0. split; [ exact Hp |]. apply (proj2 (get_aspRel _ _ _)).
+      exists (tt, s0). cbn. auto.
+    - intros [s0 [Hp H]]. apply (proj1 (get_aspRel _ _ _)) in H.
+      destruct H as [[[] s] [Hs Hr]]. cbn in Hs. subst s.
+      apply (proj2 (get_aspRel _ _ _)). exists (tt, s0). cbn. auto.
+  Qed.
+
+  Lemma getASPStExc_cong {A} (w : ASPStExc S A) (P Q : S -> Prop) r :
+    (forall s, P s <-> Q s) -> (getASPStExc w P r <-> getASPStExc w Q r).
+  Proof.
+    intro H. unfold getASPStExc. apply getASPArr_ext_iff. intros [[] s]. apply H.
+  Qed.
+
+  Lemma getASPStExc_mono {A} (w : ASPStExc S A) (P Q : S -> Prop) r :
     (forall s, P s -> Q s) -> getASPStExc w P r -> getASPStExc w Q r.
   Proof.
-    intros Hsub Hw.
-    destruct (proj1 (getProg_singleton S w P r) Hw) as [s0 [Hp Hs]].
-    apply getProg_singleton. exists s0. split; [ exact (Hsub s0 Hp) | exact Hs ].
+    intros H Hw. apply getASPStExc_singleton in Hw. destruct Hw as [s0 [Hp Hr]].
+    apply getASPStExc_singleton. exists s0. split; [ apply H, Hp | exact Hr ].
   Qed.
-End ASPOrders.
 
-Arguments ordASPStExc {_} {_}.
-Arguments ordASPStExcAt {_} {_}.
+  Lemma getASPStExc_bot {A} (w : ASPStExc S A) r : ~ getASPStExc w (fun _ => False) r.
+  Proof.
+    intro H. apply getASPStExc_singleton in H. destruct H as [s0 [[] _]].
+  Qed.
 
-(* ================================================================= *)
-(** ** The reader-indexed variant                                    *)
-(* ================================================================= *)
+  Lemma getASPStExc_ret {A} (x : A) pre r :
+    getASPStExc (retASPStExc S x) pre r <-> exists s, pre s /\ r = Some (x, s).
+  Proof.
+    unfold getASPStExc. rewrite get_aspRel. split.
+    - intros [[[] s] [Hp Hr]]. apply aspRelE_ret in Hr. exists s. auto.
+    - intros [s [Hp ->]]. exists (tt, s).
+      split; [ exact Hp | apply aspRelE_ret; reflexivity ].
+  Qed.
 
-(** [ASPRd R A = readerT R ASPSP A]: one [ASPSP] per environment.  The
-    precondition slot stays a bare [Prop], so environments are specified
-    INDEPENDENTLY — this is the pointwise lift, not a shared [R -> Prop].
-    Since every fibre is [Singleton], an [ASPRd R A] is exactly a relation
-    [R -> A -> Prop]; [getASPRd_singleton] is that statement.
+  Lemma getASPStExc_bind {A B} (m : ASPStExc S A) (k : A -> ASPStExc S B) pre r :
+    getASPStExc (bindASPStExc S m k) pre r <->
+    (exists a s', getASPStExc m pre (Some (a, s')) /\
+                  getASPStExc (k a) (fun t => t = s') r)
+    \/ (r = None /\ getASPStExc m pre None).
+  Proof.
+    unfold getASPStExc in *. split.
+    - intro H. apply (proj1 (get_aspRel _ _ _)) in H. destruct H as [[[] s] [Hp H]].
+      apply aspRelE_bind in H. destruct H as [[[a s']|] [Hm Hk]].
+      + left. exists a, s'. split; apply (proj2 (get_aspRel _ _ _));
+          [ exists (tt, s) | exists (tt, s') ]; cbn; auto.
+      + right. split; [ exact Hk |]. apply (proj2 (get_aspRel _ _ _)).
+        exists (tt, s). cbn. auto.
+    - intros [[a [s' [Hm Hk]]] | [-> Hm]].
+      + apply (proj1 (get_aspRel _ _ _)) in Hm. destruct Hm as [[[] s] [Hp Hm]].
+        apply (proj1 (get_aspRel _ _ _)) in Hk. destruct Hk as [[[] s''] [Hs Hk]].
+        cbn in Hs. subst s''. apply (proj2 (get_aspRel _ _ _)).
+        exists (tt, s). split; [ exact Hp |].
+        apply aspRelE_bind. exists (Some (a, s')). auto.
+      + apply (proj1 (get_aspRel _ _ _)) in Hm. destruct Hm as [[[] s] [Hp Hm]].
+        apply (proj2 (get_aspRel _ _ _)). exists (tt, s). split; [ exact Hp |].
+        apply aspRelE_bind. exists None. auto.
+  Qed.
 
-    The [Monad] is ExtLib's [Monad_readerT] over [Monad_ASPSP], and the laws
-    come from the generic [readerT] instances in
-    [ComputationMonads/TransformerLaws.v] — the same route [WPureMonad.v] uses for
-    its own stacks. *)
+  Lemma eq1_ASPStExc_get {A} (m n : ASPStExc S A) :
+    eq1 m n <-> (forall pre r, getASPStExc m pre r <-> getASPStExc n pre r).
+  Proof.
+    split.
+    - intros H pre r. apply H.
+    - intros H P r. unfold eq1, Eq1_ASPStExc, ASPArr_eq.
+      transitivity (getASPStExc m (fun s => P (tt, s)) r);
+        [ apply getASPArr_ext_iff; intros [[] s]; reflexivity |].
+      rewrite H. apply getASPArr_ext_iff. intros [[] s]. reflexivity.
+  Qed.
 
-From ExtLib Require Import ReaderMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+  Definition ordASPStExcAt {A} (pre : S -> Prop) (m n : ASPStExc S A) : Prop :=
+    forall r, getASPStExc m pre r -> getASPStExc n pre r.
 
-Section RdASPMonad.
-  Variable R : Type.
+  Lemma ordASPStExc_get {A} (m n : ASPStExc S A) :
+    ordASPStExc S m n <-> (forall pre r, getASPStExc m pre r -> getASPStExc n pre r).
+  Proof.
+    split.
+    - intros H pre r. apply H.
+    - intros H P r HP.
+      apply (getASPArr_ext n (fun p => P (tt, snd p)) P r);
+        [ intros [[] s]; reflexivity |].
+      apply (H (fun s => P (tt, s))). apply (getASPArr_ext m P (fun p => P (tt, snd p)) r);
+        [ intros [[] s]; reflexivity | exact HP ].
+  Qed.
 
-  Definition ASPRd (A : Type) : Type := readerT R ASPSP A.
+End Readings.
 
-  Definition getASPRd {A} (w : ASPRd A) (r : R) : SPPure A :=
-    getASP (runReaderT w r).
-
-  Lemma getASPRd_singleton {A} (w : ASPRd A) (r : R) (p : Prop) (a : A) :
-    getASPRd w r p a <-> (p /\ getASPRd w r True a).
-  Proof. exact (getASP_singleton (runReaderT w r) p a). Qed.
-
-  #[global] Instance Monad__ASPRd : Monad ASPRd :=
-    @Monad_readerT R ASPSP Monad_ASPSP.
-
-  #[global] Instance Eq1__ASPRd : Eq1 ASPRd :=
-    Eq1_readerT R ASPSP.
-
-  #[global] Instance Eq1Equivalence__ASPRd
-    : @Eq1Equivalence ASPRd _ Eq1__ASPRd :=
-    Eq1Equivalence_readerT R ASPSP.
-
-  #[global] Instance MonadLawsE__ASPRd
-    : @MonadLawsE ASPRd Eq1__ASPRd Monad__ASPRd :=
-    MonadLawsE_readerT R ASPSP.
-
-  (** The precondition may vary with the environment; the order is read
-      pointwise, matching the pointwise lift. *)
-  Definition ordASPRd {A} (m1 m2 : ASPRd A) : Prop :=
-    forall r p a, getASPRd m1 r p a -> getASPRd m2 r p a.
-  Definition ordASPRdAt {A} (pre : R -> Prop) (m1 m2 : ASPRd A) : Prop :=
-    forall r a, getASPRd m1 r (pre r) a -> getASPRd m2 r (pre r) a.
-
-End RdASPMonad.
-
-Arguments getASPRd {_} {_}.
+Arguments getASPSt {S} {A}.
+Arguments getASPStExc {S} {A}.
+Arguments aspOfRelSt {S} {A}.
+Arguments aspOfRelStExc {S} {A}.
+Arguments ordASPSt {S} {A}.
+Arguments ordASPStExc {S} {A}.
+Arguments ordASPStAt {S} {A}.
+Arguments ordASPStExcAt {S} {A}.
+Arguments retASPSt {S} {A}.
+Arguments bindASPSt {S} {A} {B}.
+Arguments retASPStExc {S} {A}.
+Arguments bindASPStExc {S} {A} {B}.
