@@ -36,12 +36,19 @@ as the raw continuation type used by `WPArr`.
 and `@SPStExc S A = (S -> Prop) -> option (A * S) -> Prop`. The `@` exposes
 implicit `S`; the stateful carriers take a shared precondition, not one per state.
 
+The healthiness-carved presentation lives in `OldMonads/`; every current
+client in this tree still imports it from there. The files of the same
+names directly in this directory are the arrow presentation described in
+[SP arrows](#sp-arrows) below, and their names (`ASPStExc`, `retASP`,
+`ordASPStExc`, &c.) collide with these, so import only one of the two
+unqualified.
+
 | Source | Option-indexed monad | Carrier condition |
 |---|---|---|
-| [ASPMonad.v](ASPMonad.v) | `ASPStExc` | `SingletonProg`, equivalent to strictness plus disjunctivity. |
-| [DSLPMonad.v](DSLPMonad.v) | `DSLPStExc` | `MSingletonProg`, equivalent to top preservation plus conjunctivity. |
-| [DSPMonad.v](DSPMonad.v) | `DSPStExc` | `StrictProg` and `ConjunctiveProg`. |
-| [ASLPMonad.v](ASLPMonad.v) | `ASLPStExc` | `TerminatingProg` and `DisjunctiveProg`. |
+| [OldMonads/ASPMonad.v](OldMonads/ASPMonad.v) | `ASPStExc` | `SingletonProg`, equivalent to strictness plus disjunctivity. |
+| [OldMonads/DSLPMonad.v](OldMonads/DSLPMonad.v) | `DSLPStExc` | `MSingletonProg`, equivalent to top preservation plus conjunctivity. |
+| [OldMonads/DSPMonad.v](OldMonads/DSPMonad.v) | `DSPStExc` | `StrictProg` and `ConjunctiveProg`. |
+| [OldMonads/ASLPMonad.v](OldMonads/ASLPMonad.v) | `ASLPStExc` | `TerminatingProg` and `DisjunctiveProg`. |
 
 `Terminating` / `TerminatingProg` mean top preservation, not termination of a
 computation. Conjunctivity and disjunctivity here quantify over **nonempty**
@@ -79,8 +86,38 @@ Pure `DSPSP` / `ASLPSP` instead transport the `ASPSP` / `DSLPSP` structures via
   (`ordDSPStExcRel` &c.). `PredStExc` is checked under `ordPredStExc`
   from `PredMonad.v`.
 
+## SP arrows
+
+The arrow presentation builds each SP monad as a Hughes arrow with the input
+fixed at `unit`, on the arrows of [SPostArr.v](../Arrows/SPostArr.v) and the
+`stateArrT` / `optionArrT` transformers of [Classes](../../Classes/CONTEXT.md).
+Their `ret` / `bind` are `ret_arrow` / `bind_arrow`, and `MonadLawsE` is
+`MonadLawsE_Arrow`, so no monad law is proved per flavour.
+
+| Flavour | Files | Carrier and relation |
+|---|---|---|
+| ASP | [ASPArrowCore.v](ASPArrowCore.v), [ASPArrowRel.v](ASPArrowRel.v), [ASPMonad.v](ASPMonad.v) | `ASPArr`, join-preserving transformers; `aspRel` is a bijection with relations. |
+| DSLP | [DSLPArrowCore.v](DSLPArrowCore.v), [DSLPArrowRel.v](DSLPArrowRel.v), [DSLPMonad.v](DSLPMonad.v) | `DSLPArr`, meet-preserving; `dslpRel` reverses inclusion (`dslpRel_incl`). |
+| DSP | [DSPArrowCore.v](DSPArrowCore.v), [DSPArrowRel.v](DSPArrowRel.v), [DSPMonad.v](DSPMonad.v) | `DSPArr`, transformers that are the DSP of some relation; the relation is recovered by a classical probe (`dspRel`). |
+| ASLP | [ASLPArrowCore.v](ASLPArrowCore.v), [ASLPArrowRel.v](ASLPArrowRel.v), [ASLPMonad.v](ASLPMonad.v) | `ASLPArr`, likewise, recovered by `aslpRel`. |
+| shared | [SPure.v](SPure.v) | relations as the SP carrier, the four readings of one, `OrderedMonad_flip`, and `RelDenote` with `rel_bind` / `relS_bind` / `relE_bind`: `bind` as composition of denoted relations for any arrow whose operations denote the relational ones. |
+
+`ASPMonad.v` and `DSLPMonad.v` each give `ASP`, `ASPSt S`, `ASPStExc S` (resp.
+DSLP) an `OrderedMonad` instance for pointwise implication, proved from
+`aspRel_incl` / `dslpRel_incl`. `DSPMonad.v` and `ASLPMonad.v` give DSP and
+ASLP two orders each at every level: the relational order `ordDSPRel` &c.
+(inclusion of the denoted relation) carries the `OrderedMonad` instances,
+through `RelDenote_DSP` / `RelDenote_ASLP`; the reading's own order `ordDSP`
+&c. does not, and cannot: `not_OrderedMonad_DSPSt` / `not_OrderedMonad_ASLPSt`
+refute it at `S = bool` in the first argument of `bind` alone, and
+`dsp_order_diverges` shows the two orders differ. Each file also has the
+readings at a client precondition (`getDSPSt`, `getDSPStExc`, `getDSPPure`,
+and their `_of` forms for elements built from a relation).
+
 ## Reading order
 
 Read the raw carrier, its healthiness condition, and its operations before the
-law proofs. For SP, follow ASP, DSLP, DSP, then ASLP; for triple embeddings,
+law proofs. For SP, follow ASP, DSLP, DSP, then ASLP, in `OldMonads/` for the
+healthiness presentation or `*ArrowCore.v` then `*ArrowRel.v` then `*Monad.v`
+for the arrow one; for triple embeddings,
 read the exact order and side conditions before following an observation client.

@@ -39,10 +39,8 @@ From ExtLib Require Import Monad StateMonad OptionMonad ReaderMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import OrderedMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad
-  BaseGaloisConnections SPPredicateTransformers
-  ASPMonad DSLPMonad DSPMonad ASLPMonad SPBindOrderCounterexample.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad BaseGaloisConnections SPPredicateTransformers SPBindOrderCounterexample.
+From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 
 (* ================================================================= *)
 (** ** The five DM4All monads                                        *)
