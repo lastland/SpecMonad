@@ -8,7 +8,8 @@ From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad SPPredicateTransformers.
+From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.

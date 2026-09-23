@@ -176,8 +176,8 @@ End TaxonomyStDivNonDetWSt.
 (** * SP side: the terminating-slice observations of [stdivnd]          *)
 (* ==================================================================== *)
 
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
+From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import StDivNonDet_SPSt.
 
 Module TaxonomyStDivNonDetSPSt.

@@ -2,8 +2,8 @@ From ExtLib Require Import Monad MonadReader ReaderMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import
   StExcNonDet StDivITree DivNonDet RdDivNonDet.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
+From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import DivNonDet_SPPure.
 Require Import Coq.Logic.Classical_Prop.
 

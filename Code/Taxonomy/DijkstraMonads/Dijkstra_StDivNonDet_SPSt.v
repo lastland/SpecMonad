@@ -21,8 +21,8 @@ From ITree Require Import Basics.Monad.
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
 From Incorrectness.Classes Require Import OrderedMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  SPPredicateTransformers ASPMonad DSLPMonad SpecificationMonads.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers SpecificationMonads.
+From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   BaseGaloisConnections NewGaloisConnections.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import StDivNonDet_SPSt.

@@ -114,6 +114,13 @@ proofs.
 
 ## 3. The SP specification monads
 
+> The four files named below now live in `BaseSpecMonads/OldMonads/`, and
+> every client in this tree imports them from there. The files of the same
+> names directly in `BaseSpecMonads/` are the arrow presentation
+> (`*ArrowCore.v`, `*ArrowRel.v`, `*Monad.v`, `SPure.v`),
+> described in `BaseSpecMonads/CONTEXT.md`; the two sets of names collide,
+> so import only one unqualified.
+
 Predicate transformers `(S -> Prop) -> Outcome -> Prop`, carved into four
 monads by four healthiness conditions. **The bare transformer type is not a
 monad**; only these subsets are.
@@ -643,7 +650,7 @@ directory's only `Admitted` is in `Observation.v`.
 
 ## 11. Build status
 
-`_CoqProject` lists 71 files and builds **clean from scratch**, with **no
+`_CoqProject` lists 90 files and builds **clean from scratch**, with **no
 `Admitted`**. The five DM4all base monads and their adjunctions are axiom-free;
 classical reasoning enters on the multiplicative/demonic side
 (`Classical_Prop`), and several files also import `PropExtensionality` /

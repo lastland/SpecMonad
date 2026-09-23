@@ -23,7 +23,8 @@ Require Import Coq.Setoids.Setoid.
 Import MonadNotation.
 Open Scope monad_scope.
 
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
+From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import StDivExcNonDet_SPStExc.
 From Incorrectness.Taxonomy.DijkstraMonads Require Import Dijkstra_StDivExcNonDet_WStExc.
 
