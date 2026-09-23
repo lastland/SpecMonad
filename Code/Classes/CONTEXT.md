@@ -22,9 +22,18 @@ carriers belong to [Taxonomy arrows](../Taxonomy/Arrows/CONTEXT.md).
 - `ArrowChoice` supplies `arr_left` on sums; `ArrowChoiceLaws` includes
   branch, composition, naturality, and product-distribution laws.
 - `ArrowApply` supplies `arr_app : arr (arr A B * A) B`.
-  On main, `ArrowApplyLaws` contains only `app_law`:
-  `arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f`.
-  Do not assume additional application or extensionality fields.
+  `ArrowApplyLaws` has four fields: `app_law`
+  (`arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f`), Hughes'
+  `app_pair` (feeding `arr_app` the pairing arrow is the identity) and
+  `app_post` (postcomposition passes through `arr_app`), and `app_ext`
+  (`arr_app` sees its arrow argument only up to `arrow_eq`).
+  Hughes' remaining law, `first (arr (g >>>)) >>> app = second g >>> app`,
+  is deliberately absent: `optionArrT`'s composition wraps the continuation
+  in `arr_left`, and no arrow law relates `arr_app` to `arr_left` of its
+  arrow argument, so that transformer cannot prove it. Nothing needs it.
+  The applied forms `app_pair_at` / `app_post_at` / `app_ext_at` at the end
+  of the file are what clients use; they are the laws precomposed with a
+  pure pair-builder `fun x => (u x, t x)`.
 - `ArrowLoop` supplies feedback through `arr_loop`; `ArrowLoopLaws`
   states its tightening, sliding, vanishing, and superposing laws.
 - `ArrowT` supplies `arrowT_lift`; the class itself has no preservation laws.
