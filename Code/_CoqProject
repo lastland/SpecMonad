@@ -38,6 +38,7 @@ Taxonomy/BaseSpecMonads/PredMonad.v
 Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
 Taxonomy/BaseSpecMonads/WPureMonad.v
+Taxonomy/BaseSpecMonads/MonadAlgebra.v
 Taxonomy/BaseSpecMonads/RelPrePostMonad.v
 Taxonomy/Arrows/PredArr.v
 Taxonomy/Arrows/SPostArr.v
@@ -75,6 +76,10 @@ Taxonomy/BaseSpecMonads/SpecificationMonads.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v
+Taxonomy/EffectObservations/WP/DivNonDet_WPure_Algebra.v
+Taxonomy/EffectObservations/WP/RdDivNonDet_WRd_Algebra.v
+Taxonomy/EffectObservations/WP/StDivNonDet_WSt_Algebra.v
+Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc_Algebra.v
 Taxonomy/EffectObservations/Taxonomy_StDivNonDet_St.v
 Taxonomy/EffectObservations/SP/StDivNonDet_SPStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivNonDet_StExc.v
