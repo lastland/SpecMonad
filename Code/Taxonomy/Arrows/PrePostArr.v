@@ -313,7 +313,45 @@ Qed.
 #[global]
 Instance ArrowApplyLaws_PrePost : ArrowApplyLaws PrePostArr.
 Proof.
-  constructor; intros. split; cbn; sauto limit: 200.
+  constructor; intros.
+  - (* app_law *) split; cbn; sauto limit: 200.
+  - (* app_pair *)
+    split; cbn.
+    + intros [a b]. cbn. sauto limit: 200.
+    + intros [a b] [a' b']. cbn. split.
+      * intros [[k y] [[Hk Hy] Hr]]. cbn in *. subst k y. cbn in Hr. exact Hr.
+      * intros Heq. exists (arr_pure (fun y : B => (a, y)), b). cbn.
+        sauto limit: 200.
+  - (* app_post *)
+    split; cbn.
+    + intros [f a]. cbn. split.
+      * intros [_ Himp]. exact (Himp (arr_comp f h, a) (conj eq_refl eq_refl)).
+      * intros Hpre. split; [exact I |].
+        intros [g a'] [Hg Ha]. cbn in *. subst g a'. exact Hpre.
+    + intros [f a] c. cbn. split.
+      * intros [[g a'] [[Hg Ha] Hr]]. cbn in *. subst g a'. exact Hr.
+      * intros Hr. exists (arr_comp f h, a). cbn.
+        split; [split; reflexivity | exact Hr].
+  - (* app_ext *)
+    split; cbn.
+    + intros x. split.
+      * intros [_ Himp].
+        specialize (Himp (u x, t x) eq_refl). cbn in Himp.
+        destruct (H x) as [HP _]. split; [exact I |].
+        intros [w y] Heq. cbn in *.
+        inversion Heq; subst. cbn. apply HP. exact Himp.
+      * intros [_ Himp].
+        specialize (Himp (v x, t x) eq_refl). cbn in Himp.
+        destruct (H x) as [HP _]. split; [exact I |].
+        intros [w y] Heq. cbn in *.
+        inversion Heq; subst. cbn. apply HP. exact Himp.
+    + intros x b. split.
+      * intros [[w y] [Heq Hr]]. cbn in *. inversion Heq; subst. cbn in Hr.
+        exists (v x, t x). cbn. split; [reflexivity |].
+        destruct (H x) as [_ HR]. apply HR. exact Hr.
+      * intros [[w y] [Heq Hr]]. cbn in *. inversion Heq; subst. cbn in Hr.
+        exists (u x, t x). cbn. split; [reflexivity |].
+        destruct (H x) as [_ HR]. apply HR. exact Hr.
 Qed.
 
 (* ================================================================= *)

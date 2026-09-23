@@ -147,5 +147,15 @@ Qed.
 Instance ArrowApplyLaws_WPArr : ArrowApplyLaws WPArr.
 Proof.
   constructor; intros.
-  (* app_law *) reflexivity.
+  - (* app_law *) reflexivity.
+  - (* app_pair *)
+    apply functional_extensionality; intros [a b].
+    apply functional_extensionality; intros Q. reflexivity.
+  - (* app_post *)
+    apply functional_extensionality; intros [f a].
+    apply functional_extensionality; intros Q. reflexivity.
+  - (* app_ext *)
+    cbv [arrow_eq ArrowEq_WPArr] in *.
+    assert (Huv : u = v) by (apply functional_extensionality; exact H).
+    subst v. reflexivity.
 Qed.

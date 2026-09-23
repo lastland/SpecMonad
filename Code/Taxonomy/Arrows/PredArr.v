@@ -397,7 +397,29 @@ Qed.
 Instance ArrowApplyLaws_Pred : ArrowApplyLaws PredArr.
 Proof.
   constructor; intros.
-  intros a b; unfold_Pred_full. sauto limit: 200.
+  - (* app_law *)
+    intros a b; unfold_Pred_full. sauto limit: 200.
+  - (* app_pair *)
+    intros [a b0] q; unfold_Pred_full. split.
+    + intros [[g b1] [[Hg Hb] Happ]]. subst g. subst b1.
+      unfold_Pred_full. exact Happ.
+    + intros Heq. exists (arr_pure (fun y : B => (a, y)), b0).
+      unfold_Pred_full. auto.
+  - (* app_post *)
+    intros [f a] c; unfold_Pred_full. split.
+    + intros [[g a'] [[Hg Ha] Happ]]. subst g. subst a'.
+      unfold_Pred_full. exact Happ.
+    + intros [b [Hf Hh]]. exists (arr_comp f h, a).
+      unfold_Pred_full. eauto.
+  - (* app_ext *)
+    match goal with
+    | [ Hx : forall _, arrow_eq _ _ |- _ ] => rename Hx into Huv
+    end.
+    intros x b; unfold_Pred_full. split.
+    + intros [[g a] [Heq Happ]]. injection Heq as <- <-.
+      exists (v x, t x). unfold_Pred_full. split; [auto | apply Huv, Happ].
+    + intros [[g a] [Heq Happ]]. injection Heq as <- <-.
+      exists (u x, t x). unfold_Pred_full. split; [auto | apply Huv, Happ].
 Qed.
 
 #[global]

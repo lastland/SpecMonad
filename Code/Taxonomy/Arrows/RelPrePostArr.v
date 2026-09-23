@@ -484,11 +484,36 @@ Qed.
 Instance ArrowApplyLaws_RelPrePost : ArrowApplyLaws RelPrePostArr.
 Proof.
   constructor; intros.
-  (* app_law: arr_comp (arr_pure (fun a => (f, a))) arr_app ≡ f *)
-  intros a Q.
-  rewrite project_wp_arr_comp, project_wp_arr_pure.
-  rewrite project_wp_arr_app.
-  reflexivity.
+  - (* app_law: arr_comp (arr_pure (fun a => (f, a))) arr_app ≡ f *)
+    intros a Q.
+    rewrite project_wp_arr_comp, project_wp_arr_pure.
+    rewrite project_wp_arr_app.
+    reflexivity.
+  - (* app_pair: feeding [app] the pairing arrow is the identity *)
+    intros p Q. destruct p as [a b].
+    rewrite project_wp_arr_comp.
+    rewrite project_wp_arr_first_pair.
+    rewrite project_wp_arr_pure. cbv beta.
+    rewrite project_wp_arr_app. cbv beta iota.
+    rewrite project_wp_arr_pure.
+    unfold arr_id. rewrite project_wp_arr_pure.
+    reflexivity.
+  - (* app_post: postcomposition passes through [app] *)
+    intros p Q. destruct p as [f a].
+    rewrite project_wp_arr_comp.
+    rewrite project_wp_arr_first_pair.
+    rewrite project_wp_arr_pure. cbv beta.
+    rewrite project_wp_arr_app. cbv beta iota.
+    rewrite project_wp_arr_comp.
+    rewrite project_wp_arr_comp.
+    rewrite project_wp_arr_app. cbv beta iota.
+    reflexivity.
+  - (* app_ext: [app] only sees [project_wp] of its arrow argument *)
+    intros x Q.
+    rewrite !project_wp_arr_comp.
+    rewrite !project_wp_arr_pure. cbv beta.
+    rewrite !project_wp_arr_app. cbv beta iota.
+    apply H.
 Qed.
 
 (* ================================================================= *)

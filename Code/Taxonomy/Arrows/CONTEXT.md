@@ -51,6 +51,15 @@ the input to `unit`: their base input is `unit * S`, output `option (A * S)`.
 direct `Monad_PureASPostArr` / `Monad_PureDSLPostArr` dictionaries. Do not read
 these as a generic law theorem for every `Monad_Arrow` instance.
 
+`Section ArrowMonadLaws` that follows it IS the generic theorem, but only at
+input `unit`: `MonadLawsE_Arrow` proves `MonadLawsE` for `Monad_Arrow arr unit`
+from `ArrowLaws` + `ArrowApplyLaws`, with `Eq1_Arrow` = `arrow_eq`. The
+restriction to `unit` is what makes `bind_arrow`'s fanout collapse
+(`bind_arrow_unit`); at a general input the input must be threaded and the
+laws do not follow from the fields the class has. Specification monads
+presented as arrows at input `unit` (see `BaseSpecMonads/ASPArrow.v`) take
+their `MonadLawsE` from here rather than proving it by hand.
+
 ## Boundaries and comparison results
 
 - Generic option/state arrow laws live in [OptionArrowT.v](../../Classes/OptionArrowT.v)

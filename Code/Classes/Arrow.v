@@ -167,10 +167,41 @@ Class ArrowApply (arr : Type -> Type -> Type) `{Arrow arr} := {
   arr_app : forall {A B}, arr (arr A B * A)%type B
 }.
 
+(** Hughes' [ArrowApply] laws, in the two forms every instance here
+    supports: [app_pair] (feeding [app] the pairing arrow is the
+    identity) and [app_post] (postcomposition passes through [app]).
+    [app_law] is a consequence of them, kept because clients use it
+    directly.
+
+    Hughes' remaining law, [first (arr (g >>>)) >>> app = second g >>> app],
+    is NOT a field: proving it for [optionArrT] would need [arr_app]
+    related to [arr_left] of its (varying) arrow argument, since that
+    transformer's composition wraps the continuation in [arr_left], and
+    no arrow law connects the two.  It is also not needed for the monad
+    ([MonadLawsE_Arrow], [SPostArr.v]).
+
+    [app_ext] is not one of Hughes' laws -- it says [arr_app] sees its
+    arrow argument only up to [arrow_eq], which is what makes [bind] of
+    the induced monad respect [Eq1] in its continuation.  It holds in
+    every instance here because [arrow_eq] is always extensional. *)
 Class ArrowApplyLaws (arr : Type -> Type -> Type)
   `{ArrowApply arr} `{ArrowEq arr} := {
   app_law : forall {A B} (f : arr A B),
-    arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f
+    arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f ;
+  app_pair : forall {A B},
+    arrow_eq (arr_comp (@arr_first _ _ A (arr B (A * B)%type) B
+                          (arr_pure (fun x : A => arr_pure (fun y : B => (x, y)))))
+                       arr_app)
+             (@arr_id _ _ (A * B)%type) ;
+  app_post : forall {A B C} (h : arr B C),
+    arrow_eq (arr_comp (@arr_first _ _ (arr A B) (arr A C) A
+                          (arr_pure (fun f : arr A B => arr_comp f h)))
+                       arr_app)
+             (arr_comp arr_app h) ;
+  app_ext : forall {X A B} (u v : X -> arr A B) (t : X -> A),
+    (forall x, arrow_eq (u x) (v x)) ->
+    arrow_eq (arr_comp (arr_pure (fun x => (u x, t x))) arr_app)
+             (arr_comp (arr_pure (fun x => (v x, t x))) arr_app)
 }.
 
 (* ================================================================= *)
@@ -219,3 +250,74 @@ Class ArrowT (T : (Type -> Type -> Type) -> Type -> Type -> Type) := {
   arrowT_lift : forall {arr : Type -> Type -> Type} `{Arrow arr} {A B},
     arr A B -> T arr A B
 }.
+
+(* ================================================================= *)
+(** ** Applied forms of the [ArrowApply] laws                         *)
+(* ================================================================= *)
+
+(** Each law, precomposed with a pure pair-builder [fun x => (u x, t x)].
+    This is the shape every client meets: the arrow fed to [arr_app] is
+    computed from the input, never sitting alone on the left. *)
+
+Section ArrowApplyDerived.
+
+  Context {arr : Type -> Type -> Type}
+          `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
+          `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
+          `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
+
+  Lemma arr_pure_ext {A B} (f g : A -> B) :
+    (forall x, f x = g x) -> arrow_eq (arr_pure f) (arr_pure g).
+  Proof.
+    intro H. replace g with f by (extensionality x; apply H). reflexivity.
+  Qed.
+
+  (** [app_pair] applied: feeding [app] the pairing arrow returns the pair. *)
+  Lemma app_pair_at {X A B} (u : X -> A) (t : X -> B) :
+    arrow_eq (arr_comp (arr_pure (fun x => (arr_pure (fun v : B => (u x, v)), t x)))
+                       arr_app)
+             (arr_pure (fun x => (u x, t x))).
+  Proof.
+    transitivity
+      (arr_comp (arr_comp (arr_pure (fun x => (u x, t x)))
+                   (@arr_first _ _ A (arr B (A * B)%type) B
+                      (arr_pure (fun a : A => arr_pure (fun v : B => (a, v))))))
+                arr_app).
+    - apply comp_proper; [| reflexivity ].
+      symmetry.
+      etransitivity; [ apply comp_proper; [ reflexivity | apply first_pure ] |].
+      etransitivity; [ apply pure_comp |].
+      apply arr_pure_ext. intro x. reflexivity.
+    - etransitivity; [ apply comp_assoc |].
+      etransitivity; [ apply comp_proper; [ reflexivity | apply app_pair ] |].
+      apply comp_id_r.
+  Qed.
+
+  (** [app_post] applied: postcomposition passes through [app]. *)
+  Lemma app_post_at {X A B C} (u : X -> arr A B) (t : X -> A) (h : arr B C) :
+    arrow_eq (arr_comp (arr_pure (fun x => (arr_comp (u x) h, t x))) arr_app)
+             (arr_comp (arr_comp (arr_pure (fun x => (u x, t x))) arr_app) h).
+  Proof.
+    transitivity
+      (arr_comp (arr_comp (arr_pure (fun x => (u x, t x)))
+                   (@arr_first _ _ (arr A B) (arr A C) A
+                      (arr_pure (fun f : arr A B => arr_comp f h))))
+                arr_app).
+    - apply comp_proper; [| reflexivity ].
+      symmetry.
+      etransitivity; [ apply comp_proper; [ reflexivity | apply first_pure ] |].
+      etransitivity; [ apply pure_comp |].
+      apply arr_pure_ext. intro x. reflexivity.
+    - etransitivity; [ apply comp_assoc |].
+      etransitivity; [ apply comp_proper; [ reflexivity | apply app_post ] |].
+      symmetry. apply comp_assoc.
+  Qed.
+
+  (** [app_ext] applied: [app] sees its arrow argument up to [arrow_eq]. *)
+  Lemma app_ext_at {X A B} (u v : X -> arr A B) (t : X -> A) :
+    (forall x, arrow_eq (u x) (v x)) ->
+    arrow_eq (arr_comp (arr_pure (fun x => (u x, t x))) arr_app)
+             (arr_comp (arr_pure (fun x => (v x, t x))) arr_app).
+  Proof. apply app_ext. Qed.
+
+End ArrowApplyDerived.

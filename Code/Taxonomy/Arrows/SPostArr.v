@@ -951,32 +951,80 @@ Qed.
 Instance ArrowApplyLaws_PureASPostArr : ArrowApplyLaws PureASPostArr.
 Proof.
   constructor; intros.
-  apply PureASPostArr_eq; intros pre b. cbn.
-  split.
-  - (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ sp_rel f0 a b) → sp_pt f pre b *)
-    intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
-    inversion Hpair; subst f0 a.
-    apply (proj2_sig f). unfold asp. exists a'. auto.
-  - (* Backward: sp_pt f pre b → ... *)
-    intros Hfb.
-    apply (proj2_sig f) in Hfb. unfold asp in Hfb.
-    destruct Hfb as [a [Hpre Hra]].
-    exists f, a. split; [exists a; auto | exact Hra].
+  - (* app_law *)
+    apply PureASPostArr_eq; intros pre b. cbn.
+    split.
+    + (* Forward: (∃f0 a, (∃a', pre a' ∧ (f,a')=(f0,a)) ∧ sp_rel f0 a b) → sp_pt f pre b *)
+      intros [f0 [a [[a' [Hpre Hpair]] Hfa]]].
+      inversion Hpair; subst f0 a.
+      apply (proj2_sig f). unfold asp. exists a'. auto.
+    + (* Backward: sp_pt f pre b → ... *)
+      intros Hfb.
+      apply (proj2_sig f) in Hfb. unfold asp in Hfb.
+      destruct Hfb as [a [Hpre Hra]].
+      exists f, a. split; [exists a; auto | exact Hra].
+  - (* app_pair *)
+    apply PureASPostArr_eq; intros pre q. cbn. split.
+    + intros [f0 [y [[x [Hpre Hfx]] Hrel]]].
+      subst f0. cbn in Hrel. subst q.
+      exists (x, y). auto.
+    + intros [p [Hpre Heq]]. subst q. destruct p as [x y].
+      exists (@arr_pure PureASPostArr Arrow_PureASPostArr B (A * B)%type
+                (fun y' : B => (x, y'))), y.
+      split; [ exists x; cbn; auto | cbn; reflexivity ].
+  - (* app_post *)
+    apply PureASPostArr_eq; intros pre c. cbn. split.
+    + intros [g [a [[f [Hpre Hgf]] Hrel]]].
+      subst g. cbn in Hrel. destruct Hrel as [b [Hf Hh]].
+      apply (proj2_sig h). unfold asp.
+      exists b. split; [| exact Hh ]. exists f, a. auto.
+    + intros Hc. apply (proj2_sig h) in Hc. unfold asp in Hc.
+      destruct Hc as [b [[f [a [Hpre Hf]]] Hh]].
+      exists (arr_comp f h), a. split; [ exists f; cbn; auto |].
+      cbn. exists b. auto.
+  - (* app_ext *)
+    match goal with
+    | [ Hx : forall _, arrow_eq _ _ |- _ ] => rename Hx into Huv
+    end.
+    assert (Heq : u = v) by (extensionality x; exact (Huv x)).
+    subst v. reflexivity.
 Qed.
 
 #[global]
 Instance ArrowApplyLaws_PureDSLPostArr : ArrowApplyLaws PureDSLPostArr.
 Proof.
   constructor; intros.
-  apply PureDSLPostArr_eq; intros pre b. cbn.
-  split.
-  - (* Forward: (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) → sp_pt (proj1_sig f) pre b *)
-    intros H. apply (proj2_sig f). intros a Hra.
-    exact (H f a Hra a eq_refl).
-  - (* Backward: sp_pt (proj1_sig f) pre b → (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) *)
-    intros Hfb f0 a0 Hrel a' Heq.
-    injection Heq as Hfeq Haeq. subst a' f0.
-    apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
+  - (* app_law *)
+    apply PureDSLPostArr_eq; intros pre b. cbn.
+    split.
+    + (* Forward: (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) → sp_pt (proj1_sig f) pre b *)
+      intros H. apply (proj2_sig f). intros a Hra.
+      exact (H f a Hra a eq_refl).
+    + (* Backward: sp_pt (proj1_sig f) pre b → (∀f0 a, sp_rel (proj1_sig f0) a b → pre (f, a)) *)
+      intros Hfb f0 a0 Hrel a' Heq.
+      injection Heq as Hfeq Haeq. subst a' f0.
+      apply (proj2_sig f) in Hfb. exact (Hfb a0 Hrel).
+  - (* app_pair *)
+    apply PureDSLPostArr_eq; intros pre q. cbn. split.
+    + intros H p Hpq. subst q. destruct p as [x y].
+      refine (H (arr_pure (fun y' : B => (x, y'))) y _ x eq_refl).
+      cbn. reflexivity.
+    + intros H g a Hrel x Hgx. subst g. cbn in Hrel. subst q.
+      exact (H (x, a) eq_refl).
+  - (* app_post *)
+    apply PureDSLPostArr_eq; intros pre c. cbn. split.
+    + intros H. apply (proj2_sig h). intros b Hh f a Hf.
+      refine (H (arr_comp f h) a _ f eq_refl).
+      cbn. exists b. auto.
+    + intros H g a Hrel f Hgf. subst g. cbn in Hrel.
+      destruct Hrel as [b [Hf Hh]].
+      apply (proj2_sig h) in H. exact (H b Hh f a Hf).
+  - (* app_ext *)
+    match goal with
+    | [ Hx : forall _, arrow_eq _ _ |- _ ] => rename Hx into Huv
+    end.
+    assert (Heq : u = v) by (extensionality x; exact (Huv x)).
+    subst v. reflexivity.
 Qed.
 
 (* ================================================================= *)
@@ -1007,6 +1055,160 @@ Section ArrowMonad.
   }.
 
 End ArrowMonad.
+
+(* ================================================================= *)
+(** ** The arrow monad at input [unit] satisfies [MonadLawsE]         *)
+(* ================================================================= *)
+
+(** At [I = unit] the fanout in [bind_arrow] collapses -- the input is
+    [tt], so there is nothing to thread -- and [bind m k] is just [m]
+    followed by [k] applied through [arr_app].  The monad laws then come
+    from [ArrowApplyLaws] alone, so every specification monad presented
+    as an arrow at input [unit] gets them from here. *)
+
+Section ArrowMonadLaws.
+
+  Variable arr : Type -> Type -> Type.
+  Context `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
+          `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}
+          `{HAAL : @ArrowApplyLaws arr HA HAA HE}.
+
+  (** [arrow_eq] is the [Eq1] the laws hold up to. *)
+  Definition Eq1_Arrow : Eq1 (arr unit) := fun A => @arrow_eq arr HE unit A.
+
+  Definition Eq1Equivalence_Arrow
+    : @Eq1Equivalence (arr unit) (Monad_Arrow arr unit) Eq1_Arrow :=
+    fun A => arrow_eq_equiv unit A.
+
+  Local Lemma second_id {A C} :
+    arrow_eq (@arr_second arr HA A A C arr_id) arr_id.
+  Proof.
+    unfold arr_second, arr_id.
+    etransitivity.
+    { apply comp_proper; [ reflexivity |].
+      apply comp_proper; [ apply first_pure | reflexivity ]. }
+    etransitivity; [ apply comp_proper; [ reflexivity | apply pure_comp ] |].
+    etransitivity; [ apply pure_comp |].
+    apply arr_pure_ext. intros [c a]. reflexivity.
+  Qed.
+
+  Local Lemma fanout_id {A B} (m : arr A B) :
+    arrow_eq (arr_fanout m arr_id)
+             (arr_comp (arr_pure (fun a : A => (a, a))) (arr_first m)).
+  Proof.
+    unfold arr_fanout, arr_split.
+    apply comp_proper; [ reflexivity |].
+    etransitivity; [ apply comp_proper; [ reflexivity | apply second_id ] |].
+    apply comp_id_r.
+  Qed.
+
+  (** [bind] at [unit], with the fanout gone. *)
+  Lemma bind_arrow_unit {A B} (m : arr unit A) (k : A -> arr unit B) :
+    arrow_eq (bind_arrow arr unit m k)
+             (arr_comp m (arr_comp (arr_pure (fun a => (k a, tt))) arr_app)).
+  Proof.
+    unfold bind_arrow.
+    etransitivity; [ apply comp_proper; [ apply fanout_id | reflexivity ] |].
+    etransitivity; [ symmetry; apply comp_assoc |].
+    symmetry.
+    etransitivity; [ symmetry; apply comp_assoc |].
+    symmetry.
+    apply comp_proper; [| reflexivity ].
+    (* (pure dup >>> first m) >>> pure (fun '(a,i) => (k a,i)) == m >>> pure k' *)
+    etransitivity.
+    { apply comp_proper; [ reflexivity |].
+      apply (arr_pure_ext _ (fun p : A * unit => (k (fst p), tt))).
+      intros [a []]. reflexivity. }
+    etransitivity.
+    { apply comp_proper; [ reflexivity |]. symmetry.
+      apply (pure_comp (@fst A unit) (fun a => (k a, tt))). }
+    etransitivity; [ symmetry; apply comp_assoc |].
+    apply comp_proper; [| reflexivity ].
+    (* (pure dup >>> first m) >>> pure fst == m *)
+    etransitivity; [ apply comp_assoc |].
+    etransitivity; [ apply comp_proper; [ reflexivity | apply first_fst ] |].
+    etransitivity; [ symmetry; apply comp_assoc |].
+    etransitivity; [ apply comp_proper; [ apply pure_comp | reflexivity ] |].
+    etransitivity.
+    { apply comp_proper; [| reflexivity ].
+      apply (arr_pure_ext _ (fun x : unit => x)). intros []. reflexivity. }
+    apply comp_id_l.
+  Qed.
+
+  (** [ret] fed to [arr_app] is the identity: Hughes' pairing law. *)
+  Local Lemma ret_app_id {A} :
+    arrow_eq (arr_comp (arr_pure (fun a : A => (ret_arrow arr unit a, tt))) arr_app)
+             arr_id.
+  Proof.
+    unfold ret_arrow.
+    etransitivity.
+    { apply (app_ext_at
+               (fun a : A => arr_pure (fun _ : unit => a))
+               (fun a : A => arr_comp (arr_pure (fun v : unit => (a, v)))
+                                      (arr_pure (@fst A unit)))
+               (fun _ => tt)).
+      intro a. symmetry.
+      etransitivity; [ apply pure_comp |].
+      apply arr_pure_ext. intros []. reflexivity. }
+    etransitivity; [ apply app_post_at |].
+    etransitivity.
+    { apply comp_proper; [| reflexivity ].
+      apply (app_pair_at (fun a : A => a) (fun _ : A => tt)). }
+    etransitivity; [ apply pure_comp |].
+    unfold arr_id. apply arr_pure_ext. intro a. reflexivity.
+  Qed.
+
+  Definition MonadLawsE_Arrow
+    : @MonadLawsE (arr unit) Eq1_Arrow (Monad_Arrow arr unit).
+  Proof.
+    constructor; unfold eq1, Eq1_Arrow; cbn [ret bind Monad_Arrow].
+    - (* bind_ret_l *)
+      intros A B k x.
+      etransitivity; [ apply bind_arrow_unit |].
+      unfold ret_arrow.
+      etransitivity; [ symmetry; apply comp_assoc |].
+      etransitivity; [ apply comp_proper; [ apply pure_comp | reflexivity ] |].
+      etransitivity.
+      { apply comp_proper; [| reflexivity ].
+        apply (arr_pure_ext _ (fun u : unit => (k x, u))). intros []. reflexivity. }
+      apply app_law.
+    - (* bind_ret_r *)
+      intros A m.
+      etransitivity; [ apply bind_arrow_unit |].
+      etransitivity; [ apply comp_proper; [ reflexivity | apply ret_app_id ] |].
+      apply comp_id_r.
+    - (* bind_bind *)
+      intros A B C m f g.
+      etransitivity; [ apply bind_arrow_unit |].
+      etransitivity;
+        [ apply comp_proper; [ apply bind_arrow_unit | reflexivity ] |].
+      etransitivity; [ apply comp_assoc |].
+      symmetry.
+      etransitivity; [ apply bind_arrow_unit |].
+      apply comp_proper; [ reflexivity |].
+      etransitivity.
+      { apply (@app_ext_at arr HA HAA HE HAAL A unit C
+                 (fun a : A => bind_arrow arr unit (f a) g)
+                 (fun a : A => arr_comp (f a)
+                                 (arr_comp (arr_pure (fun b : B => (g b, tt))) arr_app))
+                 (fun _ : A => tt)).
+        intro a. apply bind_arrow_unit. }
+      apply (@app_post_at arr HA HAA HE HL HAAL A unit B C f (fun _ : A => tt)
+               (arr_comp (arr_pure (fun b : B => (g b, tt))) arr_app)).
+    - (* Proper_bind *)
+      intros A B m1 m2 Hm k1 k2 Hk.
+      etransitivity; [ apply bind_arrow_unit |].
+      symmetry.
+      etransitivity; [ apply bind_arrow_unit |].
+      symmetry.
+      apply comp_proper; [ exact Hm |].
+      apply app_ext_at. intro a. apply Hk.
+  Qed.
+
+End ArrowMonadLaws.
+
+Arguments Eq1_Arrow {_} {_} {_}.
+Arguments MonadLawsE_Arrow {_} {_} {_} {_} {_} {_}.
 
 (** For [ArrowApplyLaws] with Leibniz arrow equality, the arrow
     monad satisfies [MonadLawsE].  We prove this concretely for
