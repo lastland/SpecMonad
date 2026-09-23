@@ -7,18 +7,13 @@
       [WSt    S A]    = stateT S WPure A            (* W^St     *)
       [WStExc S A]    = stateT S (optionT WPure) A  (* W^StExc  *)
 
-    Monotonicity is part of the carrier, not a side condition: it is exactly
-    what the [PrePost -| WPure] adjunctions of [BaseGaloisConnections.v] need, and they
-    are false without it.
+    *)
 
-    Unfolded, [WSt S A = S -> (A * S -> Prop) -> Prop]: every outcome is a
-    normal return.  [WStExc S A = S -> (option (A * S) -> Prop) -> Prop]: the
-    extra outcome is the raised exception, so this is the stack that carries a
-    [MonadExc]. *)
-
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From Coq Require Import Morphisms RelationClasses Relation_Definitions.
+From ExtLib Require Import Monad MonadState MonadExc MonadReader
+  StateMonad OptionMonad ReaderMonad.
 From ITree Require Import Basics.Monad.
+From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** ** [WPure]                                                       *)
@@ -26,9 +21,6 @@ From ITree Require Import Basics.Monad.
 
 Section WPure.
 
-  (** The underlying, unrestricted transformer type.  The arrow presentation
-      in [Arrows/WPArr.v] uses this: its [ArrowEq] is Leibniz equality, which
-      a subset type cannot support without proof irrelevance. *)
   Definition WPureT (A : Type) : Type := (A -> Prop) -> Prop.
 
   Definition wpure_mono {A} (f : WPureT A) : Prop :=
@@ -36,11 +28,11 @@ Section WPure.
 
   Definition WPure (A : Type) : Type := { f : WPureT A | wpure_mono f }.
 
-  Definition runWPure {A} (w : WPure A) : (A -> Prop) -> Prop := proj1_sig w.
-  Coercion runWPure : WPure >-> Funclass.
+  Definition getWPure {A} (w : WPure A) : (A -> Prop) -> Prop := proj1_sig w.
+  Coercion getWPure : WPure >-> Funclass.
 
-  Lemma runWPure_mono {A} (w : WPure A) (p q : A -> Prop) :
-    (forall a, p a -> q a) -> runWPure w p -> runWPure w q.
+  Lemma getWPure_mono {A} (w : WPure A) (p q : A -> Prop) :
+    (forall a, p a -> q a) -> getWPure w p -> getWPure w q.
   Proof. exact (proj2_sig w p q). Qed.
 
   (** Build an element from a raw transformer and a monotonicity proof. *)
@@ -49,28 +41,26 @@ Section WPure.
 
   (** ret and bind *)
 
-  Lemma retWPure_mono {A} (a : A) : wpure_mono (fun p => p a).
-  Proof. intros p q Hpq H. exact (Hpq a H). Qed.
-
-  Definition retWPure {A} (a : A) : WPure A := mkWPure _ (retWPure_mono a).
-
-  Lemma bindWPure_mono {A B} (m : WPure A) (k : A -> WPure B) :
-    wpure_mono (fun p => runWPure m (fun a => runWPure (k a) p)).
-  Proof.
-    intros p q Hpq H.
-    apply (runWPure_mono m (fun a => runWPure (k a) p)); [| exact H ].
-    intros a Ha. exact (runWPure_mono (k a) p q Hpq Ha).
+  #[program] Definition retWPure {A} (a : A) : WPure A :=
+    fun p => p a.
+  Next Obligation.
+    intros p q Hpq H. exact (Hpq a H).
   Qed.
 
-  Definition bindWPure {A B} (m : WPure A) (k : A -> WPure B) : WPure B :=
-    mkWPure _ (bindWPure_mono m k).
+  #[program] Definition bindWPure {A B} (m : WPure A) (k : A -> WPure B) : WPure B :=
+    fun p => m (fun a => (k a) p).
+  Next Obligation.
+    intros p q Hpq H.
+    apply (getWPure_mono m (fun a => getWPure (k a) p)); [| exact H ].
+    intros a Ha. exact (getWPure_mono (k a) p q Hpq Ha).
+  Qed.
 
   #[global] Instance Monad_WPure : Monad WPure :=
     { ret := @retWPure ; bind := @bindWPure }.
 
   (** Pointwise logical equivalence of the underlying transformers. *)
   #[global] Instance Eq1_WPure : Eq1 WPure :=
-    fun A m1 m2 => forall p, runWPure m1 p <-> runWPure m2 p.
+    fun A m1 m2 => forall p, getWPure m1 p <-> getWPure m2 p.
 
   #[global] Instance Eq1Equivalence_WPure : @Eq1Equivalence WPure _ Eq1_WPure.
   Proof.
@@ -87,28 +77,24 @@ Section WPure.
     - intros A x p. split; intro H; exact H.
     - intros A B C x f g p. split; intro H; exact H.
     - intros A B x y Hxy f g Hfg p. cbn. split.
-      + intro H. apply (proj1 (Hxy (fun a => runWPure (g a) p))).
-        apply (runWPure_mono x (fun a => runWPure (f a) p)
-                               (fun a => runWPure (g a) p)
+      + intro H. apply (proj1 (Hxy (fun a => getWPure (g a) p))).
+        apply (getWPure_mono x (fun a => getWPure (f a) p)
+                               (fun a => getWPure (g a) p)
                                (fun a Ha => proj1 (Hfg a p) Ha)).
         exact H.
-      + intro H. apply (proj2 (Hxy (fun a => runWPure (f a) p))).
-        apply (runWPure_mono y (fun a => runWPure (g a) p)
-                               (fun a => runWPure (f a) p)
+      + intro H. apply (proj2 (Hxy (fun a => getWPure (f a) p))).
+        apply (getWPure_mono y (fun a => getWPure (g a) p)
+                               (fun a => getWPure (f a) p)
                                (fun a Ha => proj2 (Hfg a p) Ha)).
         exact H.
   Qed.
 
 End WPure.
 
-(** ** The refinement order on [WPure]
-
-    DM4all's order (§3.1): REVERSE pointwise implication — [w1] is below [w2]
-    when [w2]'s demand implies [w1]'s, i.e. a WEAKER precondition is lower.
-    Note the two stack orders below point the OTHER way; see the note there. *)
+(** ** The refinement order on [WPure] *)
 
 Definition WP_le {A} (w1 w2 : WPure A) : Prop :=
-  forall k, runWPure w2 k -> runWPure w1 k.
+  forall k, getWPure w2 k -> getWPure w1 k.
 
 #[global] Instance WP_le_PreOrder {A} : PreOrder (@WP_le A).
 Proof.
@@ -145,11 +131,9 @@ Section WSt.
 
 End WSt.
 
-(** Refinement on [WSt]: FORWARD pointwise implication, i.e. the opposite of
-    [WP_le]. This is the direction the triple characterisations in
-    [EffectObservations/] use. *)
-Definition ordWSt {S A} (w1 w2 : WSt S A) : Prop :=
-  forall s post, runStateT w1 s post -> runStateT w2 s post.
+(** Refinement on [WSt]: the generic [stateT] lift of [WP_le]. *)
+
+Definition ordWSt {S A} : relation (WSt S A) := le_stateT (@WP_le) A.
 
 (* ================================================================= *)
 (** ** [WStExc S] = [stateT S (optionT WPure)]                       *)
@@ -189,18 +173,57 @@ Section WStExc.
 
 End WStExc.
 
-(** Refinement on [WStExc], same forward direction as [ordWSt]. *)
-Definition ordWStExc {S A} (m1 m2 : WStExc S A) : Prop :=
-  forall s p, unOptionT (runStateT m1 s) p -> unOptionT (runStateT m2 s) p.
+(** Refinement on [WStExc]: the same lift, through [optionT]. *)
+
+Definition ordWStExc {S A} : relation (WStExc S A) :=
+  le_stateT (le_optionT (@WP_le)) A.
 
 (* ================================================================= *)
-(** ** Laws for the two stacks                                       *)
+(** ** [WRd R] = [readerT R WPure]                                   *)
+(* ================================================================= *)
+
+(** A read-only environment is THREADED rather than absorbed: it stays a
+    [readerT] on the specification side, exactly as the state does.  ExtLib's
+    [readerT] needs no [WPure]-specific work -- [Eq1], the laws and the order
+    lift are all generic ([TransformerLaws.v]). *)
+
+Section WRd.
+
+  Variable R : Type.
+
+  Definition WRd := readerT R WPure.
+
+  #[local] Existing Instance Monad_readerT.
+
+  Definition retPr {A} (a : A) : WRd A := @ret (readerT _ _) _ _ a.
+
+  Definition bindPr {A B} (m : WRd A) (k : A -> WRd B) : WRd B :=
+    @bind (readerT _ _) _ _ _ m k.
+
+  #[global]
+    Instance Monad__WRd : Monad WRd :=
+    {| ret := fun _ => @retPr _ ; bind := fun _ _ => @bindPr _ _ |}.
+
+  Definition askPr : WRd R := @ask R (readerT R WPure) _.
+  Definition localPr {A} (f : R -> R) (m : WRd A) : WRd A :=
+    @local R (readerT R WPure) _ A f m.
+
+  #[global]
+    Instance MonadReader__WRd : MonadReader R WRd :=
+    {| ask := askPr ; local := fun _ => localPr |}.
+
+End WRd.
+
+(** Refinement on [WRd]: the generic [readerT] lift of [WP_le]. *)
+
+Definition ordWRd {R A} : relation (WRd R A) := le_readerT (@WP_le) A.
+
+(* ================================================================= *)
+(** ** Laws for the three stacks                                     *)
 (* ================================================================= *)
 
 (** Both chain through the generic [optionT] / [stateT] instances, which are
     [Eq1]-generic, so [Eq1_WPure] (pointwise iff) serves throughout. *)
-
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section WStLaws.
   Variable S : Type.
@@ -218,3 +241,12 @@ Section WStExcLaws.
     : @MonadLawsE (WStExc S) _ (Monad__WStExc S) :=
     MonadLawsE_stateT S (optionT WPure).
 End WStExcLaws.
+
+Section WRdLaws.
+  Variable R : Type.
+  Definition Eq1__WRd : Eq1 (WRd R) := Eq1_readerT R WPure.
+  Definition Eq1Equivalence__WRd
+    : @Eq1Equivalence (WRd R) _ Eq1__WRd := Eq1Equivalence_readerT R WPure.
+  Definition MonadLawsE__WRd
+    : @MonadLawsE (WRd R) _ (Monad__WRd R) := MonadLawsE_readerT R WPure.
+End WRdLaws.

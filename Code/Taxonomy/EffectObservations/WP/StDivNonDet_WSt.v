@@ -310,8 +310,8 @@ Section NDWPTriples.
     (kind : approxKindWP)
     (post : A * S -> Prop) : Prop :=
     match kind with
-    | SubsetOf   => ordWSt (pp2wp_subset pre post) (obs prog)
-    | SupersetOf => ordWSt (obs prog) (pp2wp_superset pre post)
+    | SubsetOf   => ordWSt (obs prog) (pp2wp_subset pre post)
+    | SupersetOf => ordWSt (pp2wp_superset pre post) (obs prog)
     end.
 
   Theorem tripleWPDefEq {S A}

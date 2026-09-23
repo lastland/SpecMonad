@@ -60,7 +60,7 @@ Section WStExcFacts.
   Proof.
     constructor.
     - intros w s p H. exact H.
-    - intros w1 w2 w3 H1 H2 s p H. exact (H2 s p (H1 s p H)).
+    - intros w1 w2 w3 H1 H2 s p H. exact (H1 s p (H2 s p H)).
   Qed.
 
   Lemma ordWStExc_bindP {A B} (w w' : WStExc S A) (k k' : A -> WStExc S B) :
@@ -225,9 +225,9 @@ End WStExcLattice.
 
     with [ret] indexed by [ret^W], [bind] by [bind^W], and weakening along
     the refinement order.  Here [M = stdivexcnd S], [W = WStExc S], and
-    [theta] is any of the four WP observations; [ordWStExc] is DM4All's
-    order read backwards (it points from stronger demand to weaker), so
-    DM4All's [theta m <= w] is [ordWStExc w (obs m)] -- exactly the
+    [theta] is any of the four WP observations; [ordWStExc] is that same
+    refinement order, so DM4All's [theta m <= w] is [ordWStExc (obs m) w]
+    -- exactly the
     [tripleWPspec _ SubsetOf] side condition.
 
     The two hypotheses are precisely the monad morphism laws already
@@ -269,8 +269,8 @@ Section DijkstraOfObservation.
     ordWStExc (obs (x >>= f)) (WPureMonad.bindP S (obs x) (fun a => obs (f a))).
   Proof.
     split; intros s p H;
-      [ apply obs_bind; apply bindP_unfold; exact H
-      | apply bindP_unfold; apply obs_bind; exact H ].
+      [ apply bindP_unfold; apply obs_bind; exact H
+      | apply obs_bind; apply bindP_unfold; exact H ].
   Qed.
 
   (* --------------------------------------------------------------- *)
@@ -278,7 +278,7 @@ Section DijkstraOfObservation.
   (* --------------------------------------------------------------- *)
 
   Definition D {A} (w : WStExc S A) : Type :=
-    { m : stdivexcnd S A | ordWStExc w (obs m) }.
+    { m : stdivexcnd S A | ordWStExc (obs m) w }.
 
   #[program] Definition retD {A} (a : A) : D (WPureMonad.retP S a) :=
     @ret (stdivexcnd S) _ A a.
@@ -288,14 +288,14 @@ Section DijkstraOfObservation.
     (m : D w) (f : forall a, D (wf a)) : D (WPureMonad.bindP S w wf) :=
     @bind (stdivexcnd S) _ A B (proj1_sig m) (fun a => proj1_sig (f a)).
   Next Obligation.
-    etransitivity; [| apply obs_bind_eq ].
+    etransitivity; [ apply obs_bind_eq |].
     apply ordWStExc_bindP; [ exact (proj2_sig m) | intro a; exact (proj2_sig (f a)) ].
   Qed.
 
   (** Rule of consequence. *)
   #[program] Definition wknD {A} {w w' : WStExc S A}
-    (Hle : ordWStExc w' w) (m : D w) : D w' := proj1_sig m.
-  Next Obligation. etransitivity; [ exact Hle | exact (proj2_sig m) ]. Qed.
+    (Hle : ordWStExc w w') (m : D w) : D w' := proj1_sig m.
+  Next Obligation. etransitivity; [ exact (proj2_sig m) | exact Hle ]. Qed.
 
   (** Every computation meets its own observation -- DM4All's [lift]. *)
   #[program] Definition liftD {A} (m : stdivexcnd S A) : D (obs m) := m.
@@ -366,7 +366,7 @@ Section DijkstraOfObservation.
       orP _ (proj1_sig m1) (proj1_sig m2).
     Next Obligation.
       intros s p H. apply obs_or.
-      apply (comb_mono A w1 (obs (proj1_sig m1)) w2 (obs (proj1_sig m2)));
+      apply (comb_mono A (obs (proj1_sig m1)) w1 (obs (proj1_sig m2)) w2);
         [ exact (proj2_sig m1) | exact (proj2_sig m2) | exact H ].
     Qed.
 
@@ -382,7 +382,7 @@ Section DijkstraOfObservation.
       monotone in both arguments in EITHER direction. *)
 
   Definition Dop {A} (w : WStExc S A) : Type :=
-    { m : stdivexcnd S A | ordWStExc (obs m) w }.
+    { m : stdivexcnd S A | ordWStExc w (obs m) }.
 
   #[program] Definition retDop {A} (a : A) : Dop (WPureMonad.retP S a) :=
     @ret (stdivexcnd S) _ A a.
@@ -392,13 +392,13 @@ Section DijkstraOfObservation.
     (m : Dop w) (f : forall a, Dop (wf a)) : Dop (WPureMonad.bindP S w wf) :=
     @bind (stdivexcnd S) _ A B (proj1_sig m) (fun a => proj1_sig (f a)).
   Next Obligation.
-    etransitivity; [ apply obs_bind_eq |].
+    etransitivity; [| apply obs_bind_eq ].
     apply ordWStExc_bindP; [ exact (proj2_sig m) | intro a; exact (proj2_sig (f a)) ].
   Qed.
 
   #[program] Definition wknDop {A} {w w' : WStExc S A}
-    (Hle : ordWStExc w w') (m : Dop w) : Dop w' := proj1_sig m.
-  Next Obligation. etransitivity; [ exact (proj2_sig m) | exact Hle ]. Qed.
+    (Hle : ordWStExc w' w) (m : Dop w) : Dop w' := proj1_sig m.
+  Next Obligation. etransitivity; [ exact Hle | exact (proj2_sig m) ]. Qed.
 
   #[program] Definition liftDop {A} (m : stdivexcnd S A) : Dop (obs m) := m.
   Next Obligation. reflexivity. Qed.
@@ -477,7 +477,7 @@ Definition Ddwp_bind {S A B} {w : WStExc S A} {wf : A -> WStExc S B}
   (m : Ddwp w) (f : forall a, Ddwp (wf a)) : Ddwp (WPureMonad.bindP S w wf) :=
   bindD S (@obsDWP S) (@obsDWP_bind S) m f.
 Definition Ddwp_lift {S A} (m : stdivexcnd S A) : Ddwp (obsDWP m) := liftD S (@obsDWP S) m.
-Definition Ddwp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w' w) (m : Ddwp w) : Ddwp w' :=
+Definition Ddwp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w w') (m : Ddwp w) : Ddwp w' :=
   wknD S (@obsDWP S) H m.
 Definition Ddwp_or {S A} {w1 w2 : WStExc S A} (m1 : Ddwp w1) (m2 : Ddwp w2)
   : Ddwp (meetWStExc S w1 w2) :=
@@ -488,7 +488,7 @@ Definition Ddwlp_bind {S A B} {w : WStExc S A} {wf : A -> WStExc S B}
   (m : Ddwlp w) (f : forall a, Ddwlp (wf a)) : Ddwlp (WPureMonad.bindP S w wf) :=
   bindD S (@obsDWLP S) (@obsDWLP_bind S) m f.
 Definition Ddwlp_lift {S A} (m : stdivexcnd S A) : Ddwlp (obsDWLP m) := liftD S (@obsDWLP S) m.
-Definition Ddwlp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w' w) (m : Ddwlp w) : Ddwlp w' :=
+Definition Ddwlp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w w') (m : Ddwlp w) : Ddwlp w' :=
   wknD S (@obsDWLP S) H m.
 Definition Ddwlp_or {S A} {w1 w2 : WStExc S A} (m1 : Ddwlp w1) (m2 : Ddwlp w2)
   : Ddwlp (meetWStExc S w1 w2) :=
@@ -499,7 +499,7 @@ Definition Dawp_bind {S A B} {w : WStExc S A} {wf : A -> WStExc S B}
   (m : Dawp w) (f : forall a, Dawp (wf a)) : Dawp (WPureMonad.bindP S w wf) :=
   bindD S (@obsAWP S) (@obsAWP_bind S) m f.
 Definition Dawp_lift {S A} (m : stdivexcnd S A) : Dawp (obsAWP m) := liftD S (@obsAWP S) m.
-Definition Dawp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w' w) (m : Dawp w) : Dawp w' :=
+Definition Dawp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w w') (m : Dawp w) : Dawp w' :=
   wknD S (@obsAWP S) H m.
 Definition Dawp_or {S A} {w1 w2 : WStExc S A} (m1 : Dawp w1) (m2 : Dawp w2)
   : Dawp (joinWStExc S w1 w2) :=
@@ -510,7 +510,7 @@ Definition Dawlp_bind {S A B} {w : WStExc S A} {wf : A -> WStExc S B}
   (m : Dawlp w) (f : forall a, Dawlp (wf a)) : Dawlp (WPureMonad.bindP S w wf) :=
   bindD S (@obsAWLP S) (@obsAWLP_bind S) m f.
 Definition Dawlp_lift {S A} (m : stdivexcnd S A) : Dawlp (obsAWLP m) := liftD S (@obsAWLP S) m.
-Definition Dawlp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w' w) (m : Dawlp w) : Dawlp w' :=
+Definition Dawlp_wkn {S A} {w w' : WStExc S A} (H : ordWStExc w w') (m : Dawlp w) : Dawlp w' :=
   wknD S (@obsAWLP S) H m.
 Definition Dawlp_or {S A} {w1 w2 : WStExc S A} (m1 : Dawlp w1) (m2 : Dawlp w2)
   : Dawlp (joinWStExc S w1 w2) :=
@@ -600,10 +600,10 @@ Lemma progA_compositional_carrier : proj1_sig progA_compositional = progA.
 Proof. reflexivity. Qed.
 
 Lemma progA_compositional_le :
-  ordWStExc (pp2wp_subset (fun _ : nat => True) postGe42)
-            (WPureMonad.bindP nat (obsDWP (put 42)) (fun _ =>
+  ordWStExc (WPureMonad.bindP nat (obsDWP (put 42)) (fun _ =>
              WPureMonad.bindP nat (obsDWP get) (fun s : nat =>
-             meetWStExc nat (obsDWP (put s)) (obsDWP (put (s + 1)))))).
+             meetWStExc nat (obsDWP (put s)) (obsDWP (put (s + 1))))))
+            (pp2wp_subset (fun _ : nat => True) postGe42).
 Proof.
   intros s p [_ Hsub]. cbn.
   intros oa ->. cbn. intros ob ->. cbn. split; intros oc ->; apply Hsub; cbn; lia.
@@ -624,10 +624,10 @@ Lemma progB_compositional_dwlp_carrier : proj1_sig progB_compositional_dwlp = pr
 Proof. reflexivity. Qed.
 
 Lemma progB_compositional_dwlp_le :
-  ordWStExc (pp2wp_subset (fun _ : nat => True) postEq42)
-            (WPureMonad.bindP nat (obsDWLP (put 42)) (fun _ =>
+  ordWStExc (WPureMonad.bindP nat (obsDWLP (put 42)) (fun _ =>
              WPureMonad.bindP nat (obsDWLP get) (fun s : nat =>
-             meetWStExc nat (obsDWLP (put s)) (@topWStExc nat unit)))).
+             meetWStExc nat (obsDWLP (put s)) (@topWStExc nat unit))))
+            (pp2wp_subset (fun _ : nat => True) postEq42).
 Proof.
   intros s p [_ Hsub]. cbn.
   intros oa ->. cbn. intros ob ->. cbn. split; [| exact I ].
@@ -645,10 +645,10 @@ Definition progB_compositional_awlp : Dawlp _ :=
   Dawlp_or   (Dawlp_lift (put s)) Dawlp_spin)).
 
 Lemma progB_compositional_awlp_le :
-  ordWStExc (pp2wp_subset (fun _ : nat => True) (fun _ => False))
-            (WPureMonad.bindP nat (obsAWLP (put 42)) (fun _ =>
+  ordWStExc (WPureMonad.bindP nat (obsAWLP (put 42)) (fun _ =>
              WPureMonad.bindP nat (obsAWLP get) (fun s : nat =>
-             joinWStExc nat (obsAWLP (put s)) (@topWStExc nat unit)))).
+             joinWStExc nat (obsAWLP (put s)) (@topWStExc nat unit))))
+            (pp2wp_subset (fun _ : nat => True) (fun _ => False)).
 Proof.
   intros s p [_ _]. cbn. left. exists (Some (tt, 42)). split; [ reflexivity |].
   cbn. left. exists (Some (42, 42)). split; [ reflexivity |].

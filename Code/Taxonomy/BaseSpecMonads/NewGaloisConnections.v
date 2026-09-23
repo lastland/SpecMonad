@@ -8,8 +8,8 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections.
 
 (* Second adjunction between PrePost and MonoWP *)
 Definition wp2pp_over {A} (w : WPure A) : PPM.PrePost A :=
-  ( forall p, runWPure w p
-    , fun x => exists p, ~ (runWPure w p) /\ p x ).
+  ( forall p, getWPure w p
+    , fun x => exists p, ~ (getWPure w p) /\ p x ).
 
 #[program] Definition pp2wp_over {A} (pp : PPM.PrePost A) : WPure A :=
   fun post => (forall x, post x -> PPM.post pp x) -> PPM.pre pp.
@@ -21,7 +21,7 @@ Theorem wp_pp_over_adjunction {A} (pp : PPM.PrePost A) (w : WPure A) :
   PP_le (wp2pp_over w) pp <-> WP_le w (pp2wp_over pp).
 Proof.
   unfold PP_le, WP_le, wp2pp_over, pp2wp_over, PPM.pre, PPM.post,
-    runWPure, runWPure; cbn.
+    getWPure, getWPure; cbn.
   split.
   - intros [H1 H2] q Hq.
     destruct (classic (proj1_sig w q)) as [Hy | Hn]; [ exact Hy |].

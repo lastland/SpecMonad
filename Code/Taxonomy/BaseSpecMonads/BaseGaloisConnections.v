@@ -104,8 +104,8 @@ Qed.
     transformer of a Hoare pair. *)
 
 Definition wp2pp_under {A} (w : WPure A) : PPM.PrePost A :=
-  ( runWPure w (fun _ => True)
-    , fun x => forall p, runWPure w p -> p x ).
+  ( getWPure w (fun _ => True)
+    , fun x => forall p, getWPure w p -> p x ).
 
 #[program] Definition pp2wp_under {A} (pp : PPM.PrePost A) : WPure A :=
   fun post => PPM.pre pp /\ (forall x, PPM.post pp x -> post x).
@@ -118,10 +118,10 @@ Theorem wp_pp_under_adjunction {A} (pp : PPM.PrePost A) (w : WPure A) :
   PP_le pp (wp2pp_under w) <-> WP_le (pp2wp_under pp) w.
 Proof.
   unfold PP_le, WP_le, wp2pp_under, pp2wp_under, PPM.pre, PPM.post,
-         runWPure, runWPure; cbn.
+         getWPure, getWPure; cbn.
   split.
   - intros [Hpre Hpost] k Hw. split.
-    + apply Hpre. exact (runWPure_mono w k (fun _ => True) (fun _ _ => I) Hw).
+    + apply Hpre. exact (getWPure_mono w k (fun _ => True) (fun _ _ => I) Hw).
     + intros x Hx. exact (Hpost x Hx k Hw).
   - intro H. split.
     + intro Hw. exact (proj1 (H (fun _ => True) Hw)).
@@ -141,13 +141,13 @@ Definition assumingP (p : Prop) {A} (k : A -> Prop) (a : A) : RPPM.Assuming p :=
 
 Definition wp2mrT {A} (w : WPure A) : RPPM.RPPT A :=
   fun p post =>
-    exist _ (p -> runWPure w (fun a => RPPM.ab (post a)))
+    exist _ (p -> getWPure w (fun a => RPPM.ab (post a)))
             (conj (fun H _ => H) (fun H hp => H hp hp)).
 
 Lemma wp2mr_mono {A} (w : WPure A) : RPPM.rpp_mono (wp2mrT w).
 Proof.
   intros p1 p2 post1 post2 Hpre Hpost H hp1. cbn in *.
-  apply (runWPure_mono w (fun a => RPPM.ab (post2 a))
+  apply (getWPure_mono w (fun a => RPPM.ab (post2 a))
                           (fun a => RPPM.ab (post1 a)) Hpost).
   exact (H (Hpre hp1)).
 Qed.
@@ -174,7 +174,7 @@ Theorem wp_mr_adjunction {A} (w : WPure A) (r : RPPM.RelPrePost A) :
   WP_le w (mr2wp r) <-> MR_le (wp2mr w) r.
 Proof.
   unfold WP_le, MR_le, mr2wp, mr2wpT, wp2mr, wp2mrT,
-         runWPure, runWPure, RPPM.ab, RPPM.runRPP; cbn.
+         getWPure, getWPure, RPPM.ab, RPPM.runRPP; cbn.
   split.
   - intros H p post Hr hp.
     apply (H (fun a => proj1_sig (post a))).
@@ -184,7 +184,7 @@ Proof.
       [| exact Hr ].
     intros x Hx _. exact Hx.
   - intros H k [p [Hr Hp]].
-    apply (runWPure_mono w (fun a => p -> k a) k (fun x hx => hx Hp)).
+    apply (getWPure_mono w (fun a => p -> k a) k (fun x hx => hx Hp)).
     exact (H p (assumingP p k) Hr Hp).
 
 Qed.

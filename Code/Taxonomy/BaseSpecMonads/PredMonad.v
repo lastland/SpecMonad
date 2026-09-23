@@ -193,7 +193,7 @@ Section PredStExc.
 
 End PredStExc.
 
-(** Refinement on [PredStExc]: pointwise inclusion of outcome sets, the
-    forward direction of [ordWStExc]. *)
+(** Refinement on [PredStExc]: pointwise inclusion of outcome sets -- the
+    converse direction to [ordWStExc], which lifts [WP_le]. *)
 Definition ordPredStExc {S A} (m1 m2 : PredStExc S A) : Prop :=
   forall s r, unOptionT (runStateT m1 s) r -> unOptionT (runStateT m2 s) r.

@@ -185,9 +185,9 @@ Section WPTriples.
     :=
     match kind with
     | SubsetOf =>
-        ordWStExc (pp2wp_subset pre post) (obs prog)
+        ordWStExc (obs prog) (pp2wp_subset pre post)
     | SupersetOf =>
-        ordWStExc (obs prog) (pp2wp_superset pre post)
+        ordWStExc (pp2wp_superset pre post) (obs prog)
     end.
 
   Section tripleWPDefEq.

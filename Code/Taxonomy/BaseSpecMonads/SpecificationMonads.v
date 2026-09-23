@@ -23,8 +23,9 @@
     | [DSPStExc S] / [ASLPStExc S] | [ordDSPStExc] / [ordASLPStExc] | NO |
     | [StDSP.DSPSt S] / [StASLP.ASLPSt S] | [ordDSPSt] / [ordASLPSt] | NO |
 
-    [ordPredStExc] ([PredMonad.v]) is the pointwise lift of [Pred_le], in the
-    forward direction of [ordWStExc].
+    [ordPredStExc] ([PredMonad.v]) is the pointwise lift of [Pred_le]; it runs
+    FORWARD (more outcomes is bigger), where [ordWSt] / [ordWStExc] are the
+    lifts of [WP_le] and so run backward (a weaker precondition is bigger).
 
     The four failures are at [S = bool], and in the first argument of [bind]
     alone.  They are failures of the ORDER, not of the carrier: each of the
@@ -83,7 +84,7 @@ Proof.
   - intro A. exact WP_le_PreOrder.
   - intros A x y H k Hk. exact (proj2 (H k) Hk).
   - intros A B m1 m2 Hm k1 k2 Hk q H.
-    apply (runWPure_mono m1 (fun a => runWPure (k2 a) q)).
+    apply (getWPure_mono m1 (fun a => getWPure (k2 a) q)).
     + intros a Ha. exact (Hk a q Ha).
     + exact (Hm _ H).
 Qed.
@@ -117,21 +118,18 @@ Qed.
 
 Theorem OrderedMonad_WSt S :
   @OrderedMonad (WSt S) (Monad__WSt S) (Eq1__WSt S) (fun A => @ordWSt S A).
-Proof.
-  refine (OrderedMonad_iff (le_stateT (fun A x y => WP_le y x)) _ _
-            (OrderedMonad_stateT _ (OrderedMonad_flip _ OrderedMonad_WPure))).
-  intros A x y. split; intro H; exact H.
-Qed.
+Proof. exact (OrderedMonad_stateT _ OrderedMonad_WPure). Qed.
 
 Theorem OrderedMonad_WStExc S :
   @OrderedMonad (WStExc S) (Monad__WStExc S) (Eq1__WStExc S)
     (fun A => @ordWStExc S A).
 Proof.
-  refine (OrderedMonad_iff (le_stateT (le_optionT (fun A x y => WP_le y x))) _ _
-            (OrderedMonad_stateT _
-               (OrderedMonad_optionT _ (OrderedMonad_flip _ OrderedMonad_WPure)))).
-  intros A x y. split; intro H; exact H.
+  exact (OrderedMonad_stateT _ (OrderedMonad_optionT _ OrderedMonad_WPure)).
 Qed.
+
+Theorem OrderedMonad_WRd R :
+  @OrderedMonad (WRd R) (Monad__WRd R) (Eq1__WRd R) (fun A => @ordWRd R A).
+Proof. exact (OrderedMonad_readerT _ OrderedMonad_WPure). Qed.
 
 (* ================================================================= *)
 (** ** ASP and DSLP: every variant                                   *)
