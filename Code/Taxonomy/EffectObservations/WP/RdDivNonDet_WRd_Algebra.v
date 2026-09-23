@@ -25,6 +25,10 @@ From Incorrectness.Taxonomy.EffectObservations.WP Require Import
 Import MonadNotation.
 Open Scope monad_scope.
 
+Local Definition getNE_T {R A} (m : rddivndNE R A) : readerT R (optionT SetM) A :=
+  RdDivNonDet.getNE m.
+#[local] Coercion getNE_T : rddivndNE >-> readerT.
+
 Section Observations.
   Variable R : Type.
 
@@ -34,10 +38,10 @@ Section Observations.
   Definition MMorRd_AWP  : MMor (rddivnd R) (WRd R) := MMor_readerT R MMor_AWP.
   Definition MMorRd_AWLP : MMor (rddivnd R) (WRd R) := MMor_readerT R MMor_AWLP.
 
-  Definition obsDWPr  {A} (m : rddivnd R A) : WRd R A := mmor MMorRd_DWP m.
-  Definition obsDWLPr {A} (m : rddivnd R A) : WRd R A := mmor MMorRd_DWLP m.
-  Definition obsAWPr  {A} (m : rddivnd R A) : WRd R A := mmor MMorRd_AWP m.
-  Definition obsAWLPr {A} (m : rddivnd R A) : WRd R A := mmor MMorRd_AWLP m.
+  Definition obsDWPr  {A} (m : rddivndNE R A) : WRd R A := mmor MMorRd_DWP (getNE m).
+  Definition obsDWLPr {A} (m : rddivndNE R A) : WRd R A := mmor MMorRd_DWLP (getNE m).
+  Definition obsAWPr  {A} (m : rddivndNE R A) : WRd R A := mmor MMorRd_AWP (getNE m).
+  Definition obsAWLPr {A} (m : rddivndNE R A) : WRd R A := mmor MMorRd_AWLP (getNE m).
 
   (** ** The environment is threaded
 
@@ -45,19 +49,19 @@ Section Observations.
       [r], by [eq_refl] -- which is what "the reader layer is preserved"
       means concretely. *)
 
-  Lemma obsDWPr_at {A} (m : rddivnd R A) (r : R) :
+  Lemma obsDWPr_at {A} (m : rddivndNE R A) (r : R) :
     runReaderT (obsDWPr m) r = obsDWPp (runReaderT m r).
   Proof. reflexivity. Qed.
 
-  Lemma obsDWLPr_at {A} (m : rddivnd R A) (r : R) :
+  Lemma obsDWLPr_at {A} (m : rddivndNE R A) (r : R) :
     runReaderT (obsDWLPr m) r = obsDWLPp (runReaderT m r).
   Proof. reflexivity. Qed.
 
-  Lemma obsAWPr_at {A} (m : rddivnd R A) (r : R) :
+  Lemma obsAWPr_at {A} (m : rddivndNE R A) (r : R) :
     runReaderT (obsAWPr m) r = obsAWPp (runReaderT m r).
   Proof. reflexivity. Qed.
 
-  Lemma obsAWLPr_at {A} (m : rddivnd R A) (r : R) :
+  Lemma obsAWLPr_at {A} (m : rddivndNE R A) (r : R) :
     runReaderT (obsAWLPr m) r = obsAWLPp (runReaderT m r).
   Proof. reflexivity. Qed.
 
@@ -65,25 +69,25 @@ Section Observations.
 
   Theorem obsDWPr_ret {A} (a : A) : eq1 (obsDWPr (ret a)) (ret a).
   Proof. exact (mmor_ret (MMor := MMorRd_DWP) A a). Qed.
-  Theorem obsDWPr_bind {A B} (x : rddivnd R A) (f : A -> rddivnd R B) :
+  Theorem obsDWPr_bind {A B} (x : rddivndNE R A) (f : A -> rddivndNE R B) :
     eq1 (obsDWPr (x >>= f)) (obsDWPr x >>= (fun a => obsDWPr (f a))).
   Proof. exact (mmor_bind (MMor := MMorRd_DWP) A B x f). Qed.
 
   Theorem obsDWLPr_ret {A} (a : A) : eq1 (obsDWLPr (ret a)) (ret a).
   Proof. exact (mmor_ret (MMor := MMorRd_DWLP) A a). Qed.
-  Theorem obsDWLPr_bind {A B} (x : rddivnd R A) (f : A -> rddivnd R B) :
+  Theorem obsDWLPr_bind {A B} (x : rddivndNE R A) (f : A -> rddivndNE R B) :
     eq1 (obsDWLPr (x >>= f)) (obsDWLPr x >>= (fun a => obsDWLPr (f a))).
   Proof. exact (mmor_bind (MMor := MMorRd_DWLP) A B x f). Qed.
 
   Theorem obsAWPr_ret {A} (a : A) : eq1 (obsAWPr (ret a)) (ret a).
   Proof. exact (mmor_ret (MMor := MMorRd_AWP) A a). Qed.
-  Theorem obsAWPr_bind {A B} (x : rddivnd R A) (f : A -> rddivnd R B) :
+  Theorem obsAWPr_bind {A B} (x : rddivndNE R A) (f : A -> rddivndNE R B) :
     eq1 (obsAWPr (x >>= f)) (obsAWPr x >>= (fun a => obsAWPr (f a))).
   Proof. exact (mmor_bind (MMor := MMorRd_AWP) A B x f). Qed.
 
   Theorem obsAWLPr_ret {A} (a : A) : eq1 (obsAWLPr (ret a)) (ret a).
   Proof. exact (mmor_ret (MMor := MMorRd_AWLP) A a). Qed.
-  Theorem obsAWLPr_bind {A B} (x : rddivnd R A) (f : A -> rddivnd R B) :
+  Theorem obsAWLPr_bind {A B} (x : rddivndNE R A) (f : A -> rddivndNE R B) :
     eq1 (obsAWLPr (x >>= f)) (obsAWLPr x >>= (fun a => obsAWLPr (f a))).
   Proof. exact (mmor_bind (MMor := MMorRd_AWLP) A B x f). Qed.
 
@@ -93,7 +97,7 @@ Section Observations.
       of the four sends it to the same specification. *)
 
   Theorem obsDWPr_ask (r : R) (post : R -> Prop) :
-    getWPure (runReaderT (obsDWPr (askD R)) r) post <-> post r.
+    getWPure (runReaderT (obsDWPr (askNE R)) r) post <-> post r.
   Proof.
     rewrite obsDWPr_at. rewrite obsDWPp_get. split.
     - intro H. exact (H (Some r) eq_refl).

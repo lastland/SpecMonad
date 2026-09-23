@@ -1,12 +1,12 @@
-(** * The four WP observations of [divnd] -- and the only algebras in the
+(** * The four WP observations of [(optionT SetM)] -- and the only algebras in the
       WP taxonomy.
 
-    [divnd A = optionT SetM A] is the base of every computation stack in
+    [(optionT SetM) A = optionT SetM A] is the base of every computation stack in
     [ComputationMonads/]:
 
-      [rddivnd   R A] = [readerT R divnd A]
-      [stdivnd   S A] = [stateT S divnd A]
-      [stdivexcnd S A] = [stateT S (optionT divnd) A]
+      [rddivnd   R A] = [readerT R (optionT SetM) A]
+      [stdivnd   S A] = [stateT S (optionT SetM) A]
+      [stdivexcnd S A] = [stateT S (optionT (optionT SetM)) A]
 
     all by [eq_refl].  So the algebras below are the entire algebraic
     content of the WP side: every other observation in this directory is
@@ -41,7 +41,7 @@ Open Scope monad_scope.
 Definition mu_SetM_demonic (P : SetM Prop) : Prop := forall p, P p -> p.
 Definition mu_SetM_angelic (P : SetM Prop) : Prop := exists p, P p /\ p.
 
-Definition MAlg_SetM_demonic : MAlg SetM.
+Definition MAlg_SetM_demonic : MAlg SetM Prop.
 Proof.
   refine {| mu := mu_SetM_demonic |}.
   - (* proper *)
@@ -58,7 +58,7 @@ Proof.
     intros q Hq. apply H. exists a. split; [ exact Hx | exact Hq ].
 Defined.
 
-Definition MAlg_SetM_angelic : MAlg SetM.
+Definition MAlg_SetM_angelic : MAlg SetM Prop.
 Proof.
   refine {| mu := mu_SetM_angelic |}.
   - (* proper *)
@@ -75,20 +75,20 @@ Proof.
 Defined.
 
 (* ================================================================= *)
-(** ** The four algebras of [divnd]                                   *)
+(** ** The four algebras of [(optionT SetM)]                                   *)
 (* ================================================================= *)
 
 (** [MAlg_optionT none] collapses the divergence token to [none]: [False]
     for the TOTAL readings, [True] for the LIBERAL ones. *)
 
-Definition MAlg_DWP : MAlg (optionT SetM) :=
-  @MAlg_optionT SetM _ _ _ _ MAlg_SetM_demonic False.
-Definition MAlg_DWLP : MAlg (optionT SetM) :=
-  @MAlg_optionT SetM _ _ _ _ MAlg_SetM_demonic True.
-Definition MAlg_AWP : MAlg (optionT SetM) :=
-  @MAlg_optionT SetM _ _ _ _ MAlg_SetM_angelic False.
-Definition MAlg_AWLP : MAlg (optionT SetM) :=
-  @MAlg_optionT SetM _ _ _ _ MAlg_SetM_angelic True.
+Definition MAlg_DWP : MAlg (optionT SetM) Prop :=
+  MAlg_optionT (AM := MAlg_SetM_demonic) False.
+Definition MAlg_DWLP : MAlg (optionT SetM) Prop :=
+  MAlg_optionT (AM := MAlg_SetM_demonic) True.
+Definition MAlg_AWP : MAlg (optionT SetM) Prop :=
+  MAlg_optionT (AM := MAlg_SetM_angelic) False.
+Definition MAlg_AWLP : MAlg (optionT SetM) Prop :=
+  MAlg_optionT (AM := MAlg_SetM_angelic) True.
 
 (** The four core morphisms.  Everything else in this directory is one of
     these four under a lift. *)
@@ -102,14 +102,14 @@ Definition MMor_AWLP : MMor (optionT SetM) WPure := MMor_of_MAlg _ MAlg_AWLP.
 (** ** The observations                                               *)
 (* ================================================================= *)
 
-Definition obsDWPp  {A} (m : divnd A) : WPure A := mmor MMor_DWP m.
-Definition obsDWLPp {A} (m : divnd A) : WPure A := mmor MMor_DWLP m.
-Definition obsAWPp  {A} (m : divnd A) : WPure A := mmor MMor_AWP m.
-Definition obsAWLPp {A} (m : divnd A) : WPure A := mmor MMor_AWLP m.
+Definition obsDWPp  {A} (m : (optionT SetM) A) : WPure A := mmor MMor_DWP m.
+Definition obsDWLPp {A} (m : (optionT SetM) A) : WPure A := mmor MMor_DWLP m.
+Definition obsAWPp  {A} (m : (optionT SetM) A) : WPure A := mmor MMor_AWP m.
+Definition obsAWLPp {A} (m : (optionT SetM) A) : WPure A := mmor MMor_AWLP m.
 
 (** What each one says, in terms of the outcome set. *)
 
-Lemma obsDWPp_get {A} (m : divnd A) (post : A -> Prop) :
+Lemma obsDWPp_get {A} (m : (optionT SetM) A) (post : A -> Prop) :
   getWPure (obsDWPp m) post
   <-> (forall oa, unOptionT m oa ->
                   match oa with Some a => post a | None => False end).
@@ -130,7 +130,7 @@ Proof.
     + exact (H None Ho).
 Qed.
 
-Lemma obsAWPp_get {A} (m : divnd A) (post : A -> Prop) :
+Lemma obsAWPp_get {A} (m : (optionT SetM) A) (post : A -> Prop) :
   getWPure (obsAWPp m) post <-> (exists a, unOptionT m (Some a) /\ post a).
 Proof.
   unfold obsAWPp, MMor_AWP, MAlg_AWP. cbn [mmor MMor_of_MAlg].
@@ -147,7 +147,7 @@ Proof.
     exists (Some a). split; [ exact Ho | reflexivity ].
 Qed.
 
-Lemma obsDWLPp_get {A} (m : divnd A) (post : A -> Prop) :
+Lemma obsDWLPp_get {A} (m : (optionT SetM) A) (post : A -> Prop) :
   getWPure (obsDWLPp m) post
   <-> (forall oa, unOptionT m oa ->
                   match oa with Some a => post a | None => True end).
@@ -167,7 +167,7 @@ Proof.
     + exact I.
 Qed.
 
-Lemma obsAWLPp_get {A} (m : divnd A) (post : A -> Prop) :
+Lemma obsAWLPp_get {A} (m : (optionT SetM) A) (post : A -> Prop) :
   getWPure (obsAWLPp m) post
   <-> ((exists a, unOptionT m (Some a) /\ post a) \/ unOptionT m None).
 Proof.
@@ -195,25 +195,25 @@ Qed.
 
 Theorem obsDWPp_ret {A} (a : A) : eq1 (obsDWPp (ret a)) (ret a).
 Proof. exact (mmor_ret (MMor := MMor_DWP) A a). Qed.
-Theorem obsDWPp_bind {A B} (x : divnd A) (f : A -> divnd B) :
+Theorem obsDWPp_bind {A B} (x : (optionT SetM) A) (f : A -> (optionT SetM) B) :
   eq1 (obsDWPp (x >>= f)) (obsDWPp x >>= (fun a => obsDWPp (f a))).
 Proof. exact (mmor_bind (MMor := MMor_DWP) A B x f). Qed.
 
 Theorem obsDWLPp_ret {A} (a : A) : eq1 (obsDWLPp (ret a)) (ret a).
 Proof. exact (mmor_ret (MMor := MMor_DWLP) A a). Qed.
-Theorem obsDWLPp_bind {A B} (x : divnd A) (f : A -> divnd B) :
+Theorem obsDWLPp_bind {A B} (x : (optionT SetM) A) (f : A -> (optionT SetM) B) :
   eq1 (obsDWLPp (x >>= f)) (obsDWLPp x >>= (fun a => obsDWLPp (f a))).
 Proof. exact (mmor_bind (MMor := MMor_DWLP) A B x f). Qed.
 
 Theorem obsAWPp_ret {A} (a : A) : eq1 (obsAWPp (ret a)) (ret a).
 Proof. exact (mmor_ret (MMor := MMor_AWP) A a). Qed.
-Theorem obsAWPp_bind {A B} (x : divnd A) (f : A -> divnd B) :
+Theorem obsAWPp_bind {A B} (x : (optionT SetM) A) (f : A -> (optionT SetM) B) :
   eq1 (obsAWPp (x >>= f)) (obsAWPp x >>= (fun a => obsAWPp (f a))).
 Proof. exact (mmor_bind (MMor := MMor_AWP) A B x f). Qed.
 
 Theorem obsAWLPp_ret {A} (a : A) : eq1 (obsAWLPp (ret a)) (ret a).
 Proof. exact (mmor_ret (MMor := MMor_AWLP) A a). Qed.
-Theorem obsAWLPp_bind {A B} (x : divnd A) (f : A -> divnd B) :
+Theorem obsAWLPp_bind {A B} (x : (optionT SetM) A) (f : A -> (optionT SetM) B) :
   eq1 (obsAWLPp (x >>= f)) (obsAWLPp x >>= (fun a => obsAWLPp (f a))).
 Proof. exact (mmor_bind (MMor := MMor_AWLP) A B x f). Qed.
 
