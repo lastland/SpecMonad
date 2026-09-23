@@ -217,6 +217,36 @@ Definition Ddslp_wkn {S A} {w w' : DSLPStExc S A} (H : ordDSLPStExc w w') (m : D
 Definition Ddslp_lift {S A} (m : stdivexcnd S A) : Ddslp (obsDSLP m) :=
   DM_lift S (DSLPStExc S) (@ordDSLPStExc S) (@ordDSLPStExc_PreOrder S) (@obsDSLP S) m.
 
+(** The same four operations in the OPPOSITE indexing, which is what the
+    [Under] typings ([Ddslp_op], [Dasp_op]) live in.  Nothing new is
+    proved: the enrichment is symmetric, so [DMop_*] apply verbatim. *)
+
+Definition Dasp_op_ret {S A} (a : A) : Dasp_op (ret a) :=
+  DMop_ret S (ASPStExc S) (@ordASPStExc S) (@ordASPStExc_eq1 S)
+       (@obsASP S) (@obsASP_ret S) a.
+Definition Dasp_op_bind {S A B} {w : ASPStExc S A} {wf : A -> ASPStExc S B}
+  (m : Dasp_op w) (f : forall a, Dasp_op (wf a)) : Dasp_op (bind w wf) :=
+  DMop_bind S (ASPStExc S) (@ordASPStExc S) (@ordASPStExc_PreOrder S)
+        (@ordASPStExc_eq1 S) (@ordASPStExc_bind S) (@obsASP S) (@obsASP_bind S) m f.
+Definition Dasp_op_wkn {S A} {w w' : ASPStExc S A} (H : ordASPStExc w' w) (m : Dasp_op w)
+  : Dasp_op w' :=
+  DMop_wkn S (ASPStExc S) (@ordASPStExc S) (@ordASPStExc_PreOrder S) (@obsASP S) H m.
+Definition Dasp_op_lift {S A} (m : stdivexcnd S A) : Dasp_op (obsASP m) :=
+  DMop_lift S (ASPStExc S) (@ordASPStExc S) (@ordASPStExc_PreOrder S) (@obsASP S) m.
+
+Definition Ddslp_op_ret {S A} (a : A) : Ddslp_op (ret a) :=
+  DMop_ret S (DSLPStExc S) (@ordDSLPStExc S) (@ordDSLPStExc_eq1 S)
+       (@obsDSLP S) (@obsDSLP_ret S) a.
+Definition Ddslp_op_bind {S A B} {w : DSLPStExc S A} {wf : A -> DSLPStExc S B}
+  (m : Ddslp_op w) (f : forall a, Ddslp_op (wf a)) : Ddslp_op (bind w wf) :=
+  DMop_bind S (DSLPStExc S) (@ordDSLPStExc S) (@ordDSLPStExc_PreOrder S)
+        (@ordDSLPStExc_eq1 S) (@ordDSLPStExc_bind S) (@obsDSLP S) (@obsDSLP_bind S) m f.
+Definition Ddslp_op_wkn {S A} {w w' : DSLPStExc S A} (H : ordDSLPStExc w' w) (m : Ddslp_op w)
+  : Ddslp_op w' :=
+  DMop_wkn S (DSLPStExc S) (@ordDSLPStExc S) (@ordDSLPStExc_PreOrder S) (@obsDSLP S) H m.
+Definition Ddslp_op_lift {S A} (m : stdivexcnd S A) : Ddslp_op (obsDSLP m) :=
+  DMop_lift S (DSLPStExc S) (@ordDSLPStExc S) (@ordDSLPStExc_PreOrder S) (@obsDSLP S) m.
+
 (* ================================================================= *)
 (** ** No Dijkstra monad over [DSPStExc] or [ASLPStExc]              *)
 (* ================================================================= *)
@@ -700,6 +730,10 @@ Definition Ddsp_lift {S A} (m : stdivexcnd S A) : Ddsp (obsDSP m) :=
 Definition Ddsp_op_wkn {S A} {w w' : DSPStExc S A} (H : ordDSPStExc w' w) (m : Ddsp_op w)
   : Ddsp_op w' :=
   DMop_wkn S (DSPStExc S) (@ordDSPStExc S) (@ordDSPStExc_PreOrder S) (@obsDSP S) H m.
+Definition Ddsp_op_ret {S A} (a : A) : Ddsp_op (ret a) :=
+  DMop_ret S (DSPStExc S) (@ordDSPStExc S) (@ordDSPStExc_eq1 S) (@obsDSP S) (@obsDSP_ret S) a.
+Definition Ddsp_op_lift {S A} (m : stdivexcnd S A) : Ddsp_op (obsDSP m) :=
+  DMop_lift S (DSPStExc S) (@ordDSPStExc S) (@ordDSPStExc_PreOrder S) (@obsDSP S) m.
 
 Definition Daslp_ret {S A} (a : A) : Daslp (ret a) :=
   DM_ret S (ASLPStExc S) (@ordASLPStExc S) (@ordASLPStExc_eq1 S) (@obsASLP S) (@obsASLP_ret S) a.
@@ -707,6 +741,13 @@ Definition Daslp_wkn {S A} {w w' : ASLPStExc S A} (H : ordASLPStExc w w') (m : D
   DM_wkn S (ASLPStExc S) (@ordASLPStExc S) (@ordASLPStExc_PreOrder S) (@obsASLP S) H m.
 Definition Daslp_lift {S A} (m : stdivexcnd S A) : Daslp (obsASLP m) :=
   DM_lift S (ASLPStExc S) (@ordASLPStExc S) (@ordASLPStExc_PreOrder S) (@obsASLP S) m.
+Definition Daslp_op_ret {S A} (a : A) : Daslp_op (ret a) :=
+  DMop_ret S (ASLPStExc S) (@ordASLPStExc S) (@ordASLPStExc_eq1 S) (@obsASLP S) (@obsASLP_ret S) a.
+Definition Daslp_op_wkn {S A} {w w' : ASLPStExc S A} (H : ordASLPStExc w' w) (m : Daslp_op w)
+  : Daslp_op w' :=
+  DMop_wkn S (ASLPStExc S) (@ordASLPStExc S) (@ordASLPStExc_PreOrder S) (@obsASLP S) H m.
+Definition Daslp_op_lift {S A} (m : stdivexcnd S A) : Daslp_op (obsASLP m) :=
+  DMop_lift S (ASLPStExc S) (@ordASLPStExc S) (@ordASLPStExc_PreOrder S) (@obsASLP S) m.
 
 (* ================================================================= *)
 (** ** The examples, as Dijkstra typings                             *)
