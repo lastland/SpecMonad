@@ -214,6 +214,12 @@ Definition ordSPStMon {S A} (m m' : SPStMon S A) :=
 Notation "m ≦ m'" := (ordSPStMon m m') (at level 70).
 Notation "m ≈ m'" := (ordSPStMon m m' /\ ordSPStMon m' m).
 
+Instance: forall {S A}, Reflexive (@ordSPStMon S A).
+Proof. intros ?????; easy. Qed.
+
+Instance: forall {S A}, Transitive (@ordSPStMon S A).
+Proof. intros ??? ** ? **; eauto. Qed.
+
 Module AngelicMonotone. Section AngelicMonotone.
   Context {S : Type}.
   Let SPStMon A := SPStMon S A.
@@ -294,6 +300,42 @@ Module AngelicMonotone. Section AngelicMonotone.
     - constructor.
     - intros h. now destruct (h (fun _ => False) (tt, s0) I) as (?&?& [] & ?).
   Qed.
+
+  Definition map {A B} (f : A -> B) : SPStMon A -> SPStMon B :=
+    fun m => bind m (fun a => ret (f a)).
+
+  Lemma map_alt {A B} (f : A -> B) m pre r :
+    proj1_sig (map f m) pre r <-> exists a, proj1_sig m pre (a, snd r) /\ fst r = f a.
+  Proof.
+    split; cbn.
+    - intros (?&?&?&?&?); subst; eexists; eauto.
+    - intros (?&?&?); eexists _,_; eauto.
+  Qed.
+
+
+  Lemma map_id {A} (m : SPStMon A) : map (fun x => x) m ≈ m.
+  Proof.
+    split.
+    - intros ?? (?&?&?&?&?); rewrite surjective_pairing; now subst.
+    (* Holds for any left-skew monad *)
+    - unfold map; apply runit.
+  Qed.
+
+  Lemma map_comp {A B C} (f : A -> B) (g : B -> C) m :
+    map g (map f m) ≈ map (fun a => g (f a)) m.
+  Proof.
+    split.
+    (* Holds for any left-skew monad *)
+    - unfold map.
+      transitivity (bind m (fun a => bind (ret (f a)) (fun b => ret (g b)))).
+      1: apply assoc.
+      apply bind_monotone ; [reflexivity|].
+      intros; apply (lunit (f a)).
+    - intros ?? (?&?&?)%map_alt.
+      eapply map_alt; eexists; split; [|eassumption].
+      eapply map_alt; cbn; eexists; split; [| reflexivity]; assumption.
+  Qed.
+
 End AngelicMonotone. End AngelicMonotone.
 
 Module DemonicMonotone. Section DemonicMonotone.
