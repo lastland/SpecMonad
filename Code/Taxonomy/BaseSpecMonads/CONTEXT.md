@@ -114,6 +114,16 @@ refute it at `S = bool` in the first argument of `bind` alone, and
 readings at a client precondition (`getDSPSt`, `getDSPStExc`, `getDSPPure`,
 and their `_of` forms for elements built from a relation).
 
+## WP and SP side by side
+
+[WP_SP_Comparison.v](WP_SP_Comparison.v) sets AWP and DWLP next to the arrow
+ASP and DSLP, without state and with it. AWP and DWLP are carved out of
+`WPure` by healthiness (`HealthyWP`), so they share its `ret`, `bind` and
+order; with state they are `stateT S` over those. Each reading of a relation
+(`rho*`, `rho*St`) and each observation of `divnd` / `stdivnd` (`obs*`,
+`obs*St`) is stated with its morphism laws, the order it induces on
+relations, and the adjunctions pairing AWP with DSLP and ASP with DWLP.
+
 ## Reading order
 
 Read the raw carrier, its healthiness condition, and its operations before the

@@ -72,6 +72,7 @@ Taxonomy/BaseSpecMonads/OldMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/ASLPMonad.v
 Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v
 Taxonomy/BaseSpecMonads/SpecificationMonads.v
+Taxonomy/BaseSpecMonads/WP_SP_Comparison.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v
