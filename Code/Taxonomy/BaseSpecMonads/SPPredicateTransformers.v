@@ -354,6 +354,14 @@ Module DemonicMonotone. Section DemonicMonotone.
     red; intros **; eapply (proj2_sig m); eauto.
   Qed.
 
+  Lemma bind_monotone {A B} (m m' : SPStMon A) (f f' : A -> SPStMon B) :
+    m ≦ m' -> (forall a, f a ≦ f' a) -> bind m f ≦ bind m' f'.
+  Proof.
+    intros hm hf pre r hmf ?? h; apply hm, hmf.
+    intros; now apply h, hf.
+  Qed.
+
+
   Lemma lunit {A B} (a : A) (f : A -> SPStMon B) : f a ≦ bind (ret a) f.
   Proof.
     intros ?? hfa a' si hfa' ?; cbn in *; subst; eapply hfa'; assumption.
@@ -369,6 +377,44 @@ Module DemonicMonotone. Section DemonicMonotone.
   Proof.
     intros ??; cbn; intros h  ?? hg ?? hf; apply h; intros pre1 hfg.
     eapply hf, hfg, hg.
+  Qed.
+
+  Definition map {A B} (f : A -> B) : SPStMon A -> SPStMon B :=
+    fun m => bind m (fun a => ret (f a)).
+
+  Lemma map_alt {A B} (f : A -> B) m pre r :
+    proj1_sig (map f m) pre r <-> forall a, fst r = f a -> proj1_sig m pre (a, snd r).
+  Proof.
+    split; cbn.
+    - intros h??; apply h; eauto.
+    - intros h ?? hs.
+      unshelve epose (hs' := hs (fun s => fst r = f a /\ s = snd r) _).
+      2: cbn in hs'; destruct hs' ; subst; eauto.
+      cbn; eauto.
+  Qed.
+
+  Lemma map_id {A} (m : SPStMon A) : map (fun x => x) m ≈ m.
+  Proof.
+    split.
+    (* Holds for any right-skew monoidale *)
+    - apply runit.
+    - intros ?? ?; apply map_alt; intros ? <-; now rewrite <-surjective_pairing.
+  Qed.
+
+  Lemma map_comp {A B C} (f : A -> B) (g : B -> C) m :
+    map g (map f m) ≈ map (fun a => g (f a)) m.
+  Proof.
+    split.
+    - intros ?? h; apply map_alt; intros ??.
+      eapply map_alt in h; [|eassumption].
+      eapply map_alt in h; [|reflexivity].
+      assumption.
+    (* Holds for any right-skew monad *)
+    - unfold map.
+      transitivity (bind m (fun a => bind (ret (f a)) (fun b => ret (g b)))).
+      2: apply assoc.
+      apply bind_monotone ; [reflexivity|].
+      intros; apply (lunit (f a) (fun b => ret (g b))).
   Qed.
 
 End DemonicMonotone. End DemonicMonotone.
