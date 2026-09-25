@@ -196,18 +196,27 @@ Arguments ordSPStExc {_} {_}.
 
 
 
-Section SPStMonotone.
-  Variable S : Type.
+Module SPStMonotone.
+(* A stateful forward predicate transformer is monotone when it
+  is order-preserving as a map from (S -> Prop) to (A × S -> Prop)
+  (with pointwise order inherited from Prop) *)
+Definition SPStMonotone  {S A} `(sp : @SPSt S A) :=
+  forall (pre pre' : S -> Prop) r, (forall s, pre s -> pre' s) -> sp pre r -> sp pre' r.
 
-  (* A stateful forward predicate transformer is monotone when it
-    is order-preserving as a map from (S -> Prop) to (A × S -> Prop)
-    (with pointwise order inherited from Prop) *)
-  Definition SPStMonotone  {A} `(sp : @SPSt S A) :=
-    forall (pre pre' : S -> Prop) r, (forall s, pre s -> pre' s) -> sp pre r -> sp pre' r.
+(* The (angelic) monadic operations on stateful forward predicate
+  transformers (SPSt) lift to monotone forward predicate transformers *)
+Definition SPStMon S A := { sp : @SPSt S A | SPStMonotone sp }.
 
-  (* The (angelic) monadic operations on stateful forward predicate
-    transformers (SPSt) lift to monotone forward predicate transformers *)
-  Definition SPStMon A := { sp : @SPSt S A | SPStMonotone sp }.
+(* We lift the usual pointwise order on forward predicate transformers to
+  monotone forward predicate transformers.  *)
+Definition ordSPStMon {S A} (m m' : SPStMon S A) :=
+  forall pre r, proj1_sig m pre r -> proj1_sig m' pre r.
+Notation "m ≦ m'" := (ordSPStMon m m') (at level 70).
+Notation "m ≈ m'" := (ordSPStMon m m' /\ ordSPStMon m' m).
+
+Module AngelicMonotone. Section AngelicMonotone.
+  Context {S : Type}.
+  Let SPStMon A := SPStMon S A.
 
   #[program]
   Definition ret {A} (a : A) : SPStMon A := fun pre r => pre (snd r) /\ fst r = a.
@@ -221,14 +230,15 @@ Section SPStMonotone.
     eapply (proj2_sig m); eassumption.
   Qed.
 
-  (* We lift the usual pointwise order on forward predicate transformers to
-    monotone forward predicate transformers.
-    The bind operation is monotone in both arguments with respect to this order. *)
   #[program]
-  Definition ordSPStMon {A} (m m' : SPStMon A) := forall pre r, m pre r -> m' pre r.
-  Notation "m ≦ m'" := (ordSPStMon m m') (at level 70).
-  Notation "m ≈ m'" := (ordSPStMon m m' /\ ordSPStMon m' m).
+  Definition bindAlt {A B} (m : SPStMon A) (f : A -> SPStMon B) : SPStMon B :=
+    fun pre r => exists a si prei, m pre (a, si) /\ f a prei r /\ (forall s, prei s -> s = si).
+  Next Obligation.
+    red. intros * ? (? & ? & ? & ?); eexists _, _, _; intuition eauto.
+    eapply (proj2_sig m); eassumption.
+  Qed.
 
+  (* The bind operation is monotone in both arguments with respect to this order. *)
   Lemma bind_monotone {A B} (m m' : SPStMon A) (f f' : A -> SPStMon B) :
     m ≦ m' -> (forall a, f a ≦ f' a) -> bind m f ≦ bind m' f'.
   Proof.
@@ -236,6 +246,16 @@ Section SPStMonotone.
     1: now apply hm.
     now apply hf.
   Qed.
+
+  Lemma bind_bindAlt_equiv {A B} (m : SPStMon A) (f : A -> SPStMon B) :
+    bind m f ≈ bindAlt m f.
+  Proof.
+    split; intros ??.
+    - intros (?&?&?&?); eexists _, _, _; repeat split; try eassumption; cbn; easy.
+    - intros (?&?&?&?&?&?); eexists _, _; split ; [eassumption|].
+      eapply (proj2_sig (f _)); eassumption.
+  Qed.
+
 
   (* These operations satisfy the right unitality and associativity from the usual monadic laws,
     but not the left unitality. In the latter case, we can however retain an inequation. *)
@@ -274,5 +294,40 @@ Section SPStMonotone.
     - constructor.
     - intros h. now destruct (h (fun _ => False) (tt, s0) I) as (?&?& [] & ?).
   Qed.
+End AngelicMonotone. End AngelicMonotone.
 
+Module DemonicMonotone. Section DemonicMonotone.
+  Context {S : Type}.
+  Let SPStMon A := SPStMon S A.
+
+  #[program]
+  Definition ret {A} (a : A) : SPStMon A :=
+    fun pre r => fst r = a -> pre (snd r).
+  Next Obligation. red; intros **; eauto. Qed.
+
+  #[program]
+  Definition bind {A B} (m : SPStMon A) (f : A -> SPStMon B) : SPStMon B :=
+    fun pre r => forall a si, (forall prei, f a prei r -> prei si) -> m pre (a,si).
+  Next Obligation.
+    red; intros **; eapply (proj2_sig m); eauto.
+  Qed.
+
+  Lemma lunit {A B} (a : A) (f : A -> SPStMon B) : f a ≦ bind (ret a) f.
+  Proof.
+    intros ?? hfa a' si hfa' ?; cbn in *; subst; eapply hfa'; assumption.
+  Qed.
+
+  Lemma runit {A} (m : SPStMon A) : bind m ret ≦ m.
+  Proof.
+    intros ? [] hmret; apply hmret; cbn; eauto.
+  Qed.
+
+  Lemma assoc {A B C} (m : SPStMon A) (f : A -> SPStMon B) (g : B -> SPStMon C) :
+    bind m (fun a => bind (f a) g) ≦ bind (bind m f) g.
+  Proof.
+    intros ??; cbn; intros h  ?? hg ?? hf; apply h; intros pre1 hfg.
+    eapply hf, hfg, hg.
+  Qed.
+
+End DemonicMonotone. End DemonicMonotone.
 End SPStMonotone.
