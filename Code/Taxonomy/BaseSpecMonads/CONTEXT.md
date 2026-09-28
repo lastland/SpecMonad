@@ -114,15 +114,16 @@ refute it at `S = bool` in the first argument of `bind` alone, and
 readings at a client precondition (`getDSPSt`, `getDSPStExc`, `getDSPPure`,
 and their `_of` forms for elements built from a relation).
 
-## WP and SP side by side
+## Stateful AWP and DWLP
 
-[WP_SP_Comparison.v](WP_SP_Comparison.v) sets AWP and DWLP next to the arrow
-ASP and DSLP, without state and with it. AWP and DWLP are carved out of
-`WPure` by healthiness (`HealthyWP`), so they share its `ret`, `bind` and
-order; with state they are `stateT S` over those. Each reading of a relation
-(`rho*`, `rho*St`) and each observation of `divnd` / `stdivnd` (`obs*`,
-`obs*St`) is stated with its morphism laws, the order it induces on
-relations, and the adjunctions pairing AWP with DSLP and ASP with DWLP.
+[WP_SP_Comparison.v](WP_SP_Comparison.v) carves `AWPSt S` and `DWLPSt S`
+out of `WSt S`: the elements that are strict and disjunctive (AWP) or
+terminating and conjunctive (DWLP) at every start state. `WSt`'s `ret` has
+all four properties and its `bind` preserves each (`wp*_ret`, `wp*_bind`),
+so both carvings keep `WSt`'s operations, `eq1` and `ordWSt`, and are
+specification monads (`OrderedMonad_AWPSt`, `OrderedMonad_DWLPSt`).
+`obsAWPSt` and `obsDWLPSt` observe `stdivnd` through its terminating
+outcomes, with their `ret` and `bind` laws.
 
 ## Reading order
 
