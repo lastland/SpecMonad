@@ -71,18 +71,23 @@ Section ASPArr.
   Definition mkASPArr {A B} (f : SPArrT A B) (H : asp_join f) : ASPArr A B :=
     exist _ f (asp_join_hom f H).
 
-  Lemma getASPArr_ext_iff {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
-    (forall a, P a <-> Q a) -> f P b <-> f Q b.
+  Lemma getASPArr_mono {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
+    (forall a, P a -> Q a) -> f P b -> f Q b.
   Proof.
     intro H. rewrite !(getASPArr_join f _ b).
-    split; intros [a [Hp Hf]]; exists a; split; solve [ apply H, Hp | exact Hf ].
+    intros [a [Hp Hf]]; exists a; split; solve [ apply H, Hp | exact Hf ].
   Qed.
 
   Lemma getASPArr_ext {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
     (forall a, P a <-> Q a) -> f P b -> f Q b.
   Proof.
-    intros H Hf. apply getASPArr_join in Hf. destruct Hf as [a [Hp Hf]].
-    apply getASPArr_join. exists a. split; [ apply H, Hp | exact Hf ].
+    intro H; apply getASPArr_mon; intros; apply H; assumption.
+  Qed.
+
+  Lemma getASPArr_ext_iff {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
+    (forall a, P a <-> Q a) -> f P b <-> f Q b.
+  Proof.
+    split; now apply getASPArr_ext.
   Qed.
 
   (** The arrow of a relation: its direct image. *)

@@ -59,6 +59,13 @@ Section Relation.
     - intros HR Q HQ. exact (HQ a HR).
   Qed.
 
+  Lemma ofRel_dslpRel {A B} (f : DSLPArr A B) P b :
+    ofRelDSLPArr (dslpRel f) P b <-> f P b.
+  Proof.
+    unfold dslpRel, dslpRelT, ofRelDSLPArr. cbn. split; apply getDSLPArr_meet.
+  Qed.
+
+
   Lemma dslpRel_pure {A B} (h : A -> B) a b : dslpRel (arr_pure h) a b <-> h a = b.
   Proof.
     cbn. unfold dslpRel, dslpRelT. cbn. split.

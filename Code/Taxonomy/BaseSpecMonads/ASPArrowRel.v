@@ -42,6 +42,12 @@ Section Relation.
     - intro HR. exists a. auto.
   Qed.
 
+  Lemma ofRel_aspRel {A B} (f : ASPArr A B) P b :
+    ofRelASPArr (aspRel f) P b <-> f P b.
+  Proof.
+    unfold aspRel, ofRelASPArr. cbn. split; apply getASPArr_join.
+  Qed.
+
   Lemma aspRel_pure {A B} (h : A -> B) a b : aspRel (arr_pure h) a b <-> h a = b.
   Proof.
     cbn. split; [ intros [x [-> H]]; exact H | intro H; exists a; auto ].
