@@ -1,10 +1,11 @@
-(** * [ASPArr]: the arrow of JOIN-PRESERVING strongest-postcondition
-      transformers.
+(** * [ASPArr]: the arrow of angelic strongest-postcondition transformers.
 
-      [ASPArr A B] = { f : (A -> Prop) -> B -> Prop | f preserves joins }
+      [ASPArr A B] = { f : SPArrT A B | f monotone, strict, disjunctive }
 
-    Join preservation is part of the carrier, as monotonicity is for
-    [WPure].  This file is the arrow and its laws only:
+    The carrier refines [Arrows/SPArr.SPArrT] by homomorphism properties, as
+    monotonicity refines [WPure]; [asp_join_iff] shows they are exactly join
+    preservation, [f P b <-> exists a, P a /\ f {a} b], the form the proofs
+    below use.  This file is the arrow and its laws only:
     [Arrow] / [ArrowChoice] / [ArrowApply] and the three law bundles.
 
     The RELATION an arrow denotes lives in [ASPArrowRel.v], and the
@@ -14,29 +15,61 @@ From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr SPArr.
 (* ================================================================= *)
 (** ** [ASPArr]                                                      *)
 (* ================================================================= *)
 
 Section ASPArr.
 
-  Definition ASPArrT (A B : Type) : Type := (A -> Prop) -> B -> Prop.
-
-  Definition asp_join {A B} (f : ASPArrT A B) : Prop :=
+  Definition asp_join {A B} (f : SPArrT A B) : Prop :=
     forall P b, f P b <-> exists a, P a /\ f (fun x => x = a) b.
 
-  Definition ASPArr (A B : Type) : Type := { f : ASPArrT A B | asp_join f }.
+  Lemma asp_join_hom {A B} (f : SPArrT A B) :
+    asp_join f -> sp_monotone f /\ sp_strict f /\ sp_disjunctive f.
+  Proof.
+    intro H. split; [| split ].
+    - intros P Q HPQ b Hf. apply H. apply H in Hf. destruct Hf as [a [Ha Hf]].
+      exists a. split; [ exact (HPQ a Ha) | exact Hf ].
+    - intros b Hf. destruct (proj1 (H _ b) Hf) as [a [[] _]].
+    - intros I _ P b. rewrite (H _ b). split.
+      + intros [a [[i Hi] Hf]]. exists i. apply (H _ b). exists a. split; assumption.
+      + intros [i Hf]. apply (H _ b) in Hf. destruct Hf as [a [Hi Hf]].
+        exists a. split; [ exists i; exact Hi | exact Hf ].
+  Qed.
+
+  (** Backwards, [P] lies below the union of [False] and the singletons of
+      its elements. *)
+  Lemma asp_hom_join {A B} (f : SPArrT A B) :
+    sp_monotone f /\ sp_strict f /\ sp_disjunctive f -> asp_join f.
+  Proof.
+    intros [Hm [Hs Hd]] P b. split.
+    - intro Hf.
+      pose (Q := fun (i : option { a : A | P a }) (x : A) =>
+                   match i with Some a => x = proj1_sig a | None => False end).
+      assert (HQ : f (fun x => exists i, Q i x) b).
+      { apply (Hm P); [| exact Hf ]. intros x Hx. exists (Some (exist _ x Hx)). reflexivity. }
+      apply (Hd _ (inhabits None) Q b) in HQ.
+      destruct HQ as [[[a Ha] |] Hq]; [ exists a; split; [ exact Ha | exact Hq ] | destruct (Hs b Hq) ].
+    - intros [a [Ha Hf]]. apply (Hm (fun x => x = a)); [ intros x ->; exact Ha | exact Hf ].
+  Qed.
+
+  Theorem asp_join_iff {A B} (f : SPArrT A B) :
+    asp_join f <-> sp_monotone f /\ sp_strict f /\ sp_disjunctive f.
+  Proof. split; [ apply asp_join_hom | apply asp_hom_join ]. Qed.
+
+  Definition ASPArr (A B : Type) : Type :=
+    { f : SPArrT A B | sp_monotone f /\ sp_strict f /\ sp_disjunctive f }.
 
   Definition getASPArr {A B} (f : ASPArr A B) : (A -> Prop) -> B -> Prop := proj1_sig f.
   Coercion getASPArr : ASPArr >-> Funclass.
 
   Lemma getASPArr_join {A B} (f : ASPArr A B) P b :
     f P b <-> exists a, P a /\ f (fun x => x = a) b.
-  Proof. exact (proj2_sig f P b). Qed.
+  Proof. exact (asp_hom_join _ (proj2_sig f) P b). Qed.
 
-  Definition mkASPArr {A B} (f : ASPArrT A B) (H : asp_join f) : ASPArr A B :=
-    exist _ f H.
+  Definition mkASPArr {A B} (f : SPArrT A B) (H : asp_join f) : ASPArr A B :=
+    exist _ f (asp_join_hom f H).
 
   Lemma getASPArr_ext_iff {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
     (forall a, P a <-> Q a) -> f P b <-> f Q b.
@@ -56,7 +89,7 @@ Section ASPArr.
   #[program] Definition ofRelASPArr {A B} (R : A -> B -> Prop) : ASPArr A B :=
     fun P b => exists a, P a /\ R a b.
   Next Obligation.
-    intros P b. split.
+    apply asp_join_hom. intros P b. split.
     - intros [a [Hp HR]]. exists a. split; [ exact Hp | exists a; auto ].
     - intros [a [Hp [x [Hx HR]]]]. subst x. exists a. auto.
   Qed.
@@ -66,7 +99,7 @@ Section ASPArr.
   #[program] Definition pureASP {A B} (h : A -> B) : ASPArr A B :=
     fun P b => exists a, P a /\ h a = b.
   Next Obligation.
-    intros P b. split.
+    apply asp_join_hom. intros P b. split.
     - intros [a [Hp Hb]]. exists a. split; [ exact Hp | exists a; auto ].
     - intros [a [Hp [x [Hx Hb]]]]. subst. eauto.
   Qed.
@@ -74,7 +107,7 @@ Section ASPArr.
   #[program] Definition compASP {A B C} (f : ASPArr A B) (g : ASPArr B C) : ASPArr A C :=
     fun P c => g (f P) c.
   Next Obligation.
-    intros P c. rewrite getASPArr_join. split.
+    apply asp_join_hom. intros P c. rewrite getASPArr_join. split.
     - intros [b [Hf Hg]]. apply getASPArr_join in Hf. destruct Hf as [a [Hp Hf]].
       exists a. split; [ exact Hp |].
       apply getASPArr_join. exists b. exact (conj Hf Hg).
@@ -86,7 +119,7 @@ Section ASPArr.
   #[program] Definition firstASP {A B C} (f : ASPArr A B) : ASPArr (A * C) (B * C) :=
     fun P bc => f (fun a => P (a, snd bc)) (fst bc).
   Next Obligation.
-    intros P [b c]. cbn [fst snd]. rewrite getASPArr_join. split.
+    apply asp_join_hom. intros P [b c]. cbn [fst snd]. rewrite getASPArr_join. split.
     - intros [a [Hp Hf]]. exists (a, c). split; [ exact Hp |].
       apply (getASPArr_ext f (fun x => x = a)); [| exact Hf ].
       intro x. split; [ intros ->; reflexivity | intro H; injection H; auto ].
@@ -95,7 +128,7 @@ Section ASPArr.
       injection Hx as Hx1 Hx2. subst. eauto.
   Qed.
 
-  Definition leftASPT {A B C} (f : ASPArr A B) : ASPArrT (A + C) (B + C) :=
+  Definition leftASPT {A B C} (f : ASPArr A B) : SPArrT (A + C) (B + C) :=
     fun P y => match y with
                | inl b => f (fun a => P (inl a)) b
                | inr c => P (inr c)
@@ -104,7 +137,7 @@ Section ASPArr.
   #[program] Definition leftASP {A B C} (f : ASPArr A B) : ASPArr (A + C) (B + C) :=
     leftASPT f.
   Next Obligation.
-    intros P [b | c]; cbn.
+    apply asp_join_hom. intros P [b | c]; cbn.
     - rewrite getASPArr_join. split.
       + intros [a [Hp Hf]]. exists (inl a). split; [ exact Hp |].
         apply (getASPArr_ext f (fun x => x = a)); [| exact Hf ].
@@ -121,7 +154,7 @@ Section ASPArr.
   #[program] Definition appASP {A B} : ASPArr (ASPArr A B * A) B :=
     fun P b => exists f a, P (f, a) /\ f (fun x => x = a) b.
   Next Obligation.
-    intros P b. split.
+    apply asp_join_hom. intros P b. split.
     - intros [f [a [Hp Hf]]]. exists (f, a). split; [ exact Hp |]. exists f, a. auto.
     - intros [[f a] [Hp [f' [a' [Heq Hf]]]]]. injection Heq as H1 H2. subst. eauto.
   Qed.

@@ -214,7 +214,7 @@ Qed.
     client precondition: on [S] for the stacks, a bare [Prop] for [DSP]. *)
 
 Definition dspOfRelArr {X Y} (R : SPureArr X Y) : DSPArr X Y :=
-  exist _ (dspOf R) (ex_intro _ R (fun P y => iff_refl _)).
+  exist _ (dspOf R) (dsp_healthy_hom _ (ex_intro _ R (fun P y => iff_refl _))).
 
 Lemma dspRel_ofRelArr {X Y} (R : SPureArr X Y) x y :
   dspRel (dspOfRelArr R) x y <-> R x y.

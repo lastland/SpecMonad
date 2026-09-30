@@ -40,6 +40,7 @@ Taxonomy/BaseSpecMonads/SPostMonad.v
 Taxonomy/BaseSpecMonads/WPureMonad.v
 Taxonomy/BaseSpecMonads/RelPrePostMonad.v
 Taxonomy/Arrows/PredArr.v
+Taxonomy/Arrows/SPArr.v
 Taxonomy/Arrows/SPostArr.v
 Taxonomy/Arrows/PrePostArr.v
 Taxonomy/Arrows/WPArr.v

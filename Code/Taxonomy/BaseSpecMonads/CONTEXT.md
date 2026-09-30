@@ -92,14 +92,17 @@ The arrow presentation builds each SP monad as a Hughes arrow with the input
 fixed at `unit`, on the arrows of [SPostArr.v](../Arrows/SPostArr.v) and the
 `stateArrT` / `optionArrT` transformers of [Classes](../../Classes/CONTEXT.md).
 Their `ret` / `bind` are `ret_arrow` / `bind_arrow`, and `MonadLawsE` is
-`MonadLawsE_Arrow`, so no monad law is proved per flavour.
+`MonadLawsE_Arrow`, so no monad law is proved per flavour. Each carrier is
+`SPArrT` of [SPArr.v](../Arrows/SPArr.v) refined by homomorphism properties:
+all four are monotone, and the table lists the rest. The operations are each
+flavour's own, not inherited from `SPArrT`.
 
 | Flavour | Files | Carrier and relation |
 |---|---|---|
-| ASP | [ASPArrowCore.v](ASPArrowCore.v), [ASPArrowRel.v](ASPArrowRel.v), [ASPMonad.v](ASPMonad.v) | `ASPArr`, join-preserving transformers; `aspRel` is a bijection with relations. |
-| DSLP | [DSLPArrowCore.v](DSLPArrowCore.v), [DSLPArrowRel.v](DSLPArrowRel.v), [DSLPMonad.v](DSLPMonad.v) | `DSLPArr`, meet-preserving; `dslpRel` reverses inclusion (`dslpRel_incl`). |
-| DSP | [DSPArrowCore.v](DSPArrowCore.v), [DSPArrowRel.v](DSPArrowRel.v), [DSPMonad.v](DSPMonad.v) | `DSPArr`, transformers that are the DSP of some relation; the relation is recovered by a classical probe (`dspRel`). |
-| ASLP | [ASLPArrowCore.v](ASLPArrowCore.v), [ASLPArrowRel.v](ASLPArrowRel.v), [ASLPMonad.v](ASLPMonad.v) | `ASLPArr`, likewise, recovered by `aslpRel`. |
+| ASP | [ASPArrowCore.v](ASPArrowCore.v), [ASPArrowRel.v](ASPArrowRel.v), [ASPMonad.v](ASPMonad.v) | `ASPArr`: strict and disjunctive, i.e. join-preserving (`asp_join_iff`); `aspRel` is a bijection with relations. |
+| DSLP | [DSLPArrowCore.v](DSLPArrowCore.v), [DSLPArrowRel.v](DSLPArrowRel.v), [DSLPMonad.v](DSLPMonad.v) | `DSLPArr`: top-preserving and conjunctive, i.e. meet-preserving (`dslp_meet_iff`); `dslpRel` reverses inclusion (`dslpRel_incl`). |
+| DSP | [DSPArrowCore.v](DSPArrowCore.v), [DSPArrowRel.v](DSPArrowRel.v), [DSPMonad.v](DSPMonad.v) | `DSPArr`: strict and conjunctive, exactly the DSPs of relations (`dsp_hom_iff`, classically); the relation is recovered by a classical probe (`dspRel`). |
+| ASLP | [ASLPArrowCore.v](ASLPArrowCore.v), [ASLPArrowRel.v](ASLPArrowRel.v), [ASLPMonad.v](ASLPMonad.v) | `ASLPArr`: top-preserving and disjunctive, exactly the ASLPs of relations (`aslp_hom_iff`, classically); recovered by `aslpRel`. |
 | shared | [SPure.v](SPure.v) | relations as the SP carrier, the four readings of one, `OrderedMonad_flip`, and `RelDenote` with `rel_bind` / `relS_bind` / `relE_bind`: `bind` as composition of denoted relations for any arrow whose operations denote the relational ones. |
 
 `ASPMonad.v` and `DSLPMonad.v` each give `ASP`, `ASPSt S`, `ASPStExc S` (resp.

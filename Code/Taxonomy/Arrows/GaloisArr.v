@@ -36,7 +36,7 @@
 From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Program.Tactics.
 
 From Incorrectness.Classes Require Import Galois.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr PredArr PrePostArr WPArr RelPrePostArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr PredArr PrePostArr WPArr RelPrePostArr SPArr.
 
 (* ================================================================= *)
 (** ** Local subtypes                                                  *)
@@ -66,19 +66,13 @@ Definition WFRelPrePost (A B : Type) : Type :=
   { r : RelPrePostArr A B | rpp_wf r }.
 
 (** [MonotoneSPost] — the DM4all carrier for [SPostArr].  Forward
-    predicate transformers that are monotone in the precondition. *)
-Definition SPost_pt (A B : Type) : Type := (A -> Prop) -> B -> Prop.
-
-Definition sp_monotone {A B} (sp : SPost_pt A B) : Prop :=
-  forall (pre1 pre2 : A -> Prop),
-    (forall a, pre1 a -> pre2 a) ->
-    forall b, sp pre1 b -> sp pre2 b.
-
+    predicate transformers ([SPArr.SPArrT]) that are monotone in the
+    precondition. *)
 Definition MonotoneSPost (A B : Type) : Type :=
-  { sp : SPost_pt A B | sp_monotone sp }.
+  { sp : SPArrT A B | sp_monotone sp }.
 
 (** Covariant order on forward transformers. *)
-Definition SPost_le {A B} (sp1 sp2 : SPost_pt A B) : Prop :=
+Definition SPost_le {A B} (sp1 sp2 : SPArrT A B) : Prop :=
   forall pre b, sp1 pre b -> sp2 pre b.
 
 #[global]

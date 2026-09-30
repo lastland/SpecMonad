@@ -199,7 +199,7 @@ Qed.
 (* ================================================================= *)
 
 Definition aslpOfRelArr {X Y} (R : SPureArr X Y) : ASLPArr X Y :=
-  exist _ (aslpOf R) (ex_intro _ R (fun P y => iff_refl _)).
+  exist _ (aslpOf R) (aslp_healthy_hom _ (ex_intro _ R (fun P y => iff_refl _))).
 
 Lemma aslpRel_ofRelArr {X Y} (R : SPureArr X Y) x y :
   aslpRel (aslpOfRelArr R) x y <-> R x y.

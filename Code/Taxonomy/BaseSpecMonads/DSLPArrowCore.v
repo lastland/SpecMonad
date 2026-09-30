@@ -1,11 +1,13 @@
-(** * [DSLPArr]: the arrow of MEET-PRESERVING demonic-liberal
-      strongest-postcondition transformers.
+(** * [DSLPArr]: the arrow of demonic-liberal strongest-postcondition
+      transformers.
 
-      [DSLPArr A B] = { f : (A -> Prop) -> B -> Prop | f preserves meets }
+      [DSLPArr A B] = { f : SPArrT A B | f monotone, terminating, conjunctive }
 
-    Meet preservation is part of the carrier, the dual of [ASPArr]'s join
-    preservation.  This file is the arrow and its laws only: [Arrow] /
-    [ArrowChoice] / [ArrowApply] and the three law bundles.
+    The carrier refines [Arrows/SPArr.SPArrT] by homomorphism properties, the
+    duals of [ASPArr]'s; [dslp_meet_iff] shows they are exactly meet
+    preservation, the form the proofs below use.  This file is the arrow and
+    its laws only: [Arrow] / [ArrowChoice] / [ArrowApply] and the three law
+    bundles.
 
     The RELATION an arrow denotes lives in [DSLPArrowRel.v], and the
     specification monads built over it in [DSLPMonad.v]. *)
@@ -16,7 +18,7 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr SPArr.
 
 (* ================================================================= *)
 (** ** [DSLPArr]                                                     *)
@@ -24,17 +26,46 @@ From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
 
 Section DSLPArr.
 
-  Definition DSLPArrT (A B : Type) : Type := (A -> Prop) -> B -> Prop.
-
   (** The relation a raw transformer denotes: [a] lies in every
       precondition the transformer accepts for [b]. *)
-  Definition dslpRelT {A B} (f : DSLPArrT A B) (a : A) (b : B) : Prop :=
+  Definition dslpRelT {A B} (f : SPArrT A B) (a : A) (b : B) : Prop :=
     forall P, f P b -> P a.
 
-  Definition dslp_meet {A B} (f : DSLPArrT A B) : Prop :=
+  Definition dslp_meet {A B} (f : SPArrT A B) : Prop :=
     forall P b, f P b <-> forall a, dslpRelT f a b -> P a.
 
-  Definition DSLPArr (A B : Type) : Type := { f : DSLPArrT A B | dslp_meet f }.
+  Lemma dslp_meet_hom {A B} (f : SPArrT A B) :
+    dslp_meet f -> sp_monotone f /\ sp_terminating f /\ sp_conjunctive f.
+  Proof.
+    intro H. split; [| split ].
+    - intros P Q HPQ b Hf. apply H. intros a Hr. exact (HPQ a (proj1 (H P b) Hf a Hr)).
+    - intro b. apply (H _ b). intros a _. exact I.
+    - intros I _ P b. rewrite (H _ b). split.
+      + intros Hall i. apply (H _ b). intros a Hr. exact (Hall a Hr i).
+      + intros Hall a Hr i. exact (proj1 (H _ b) (Hall i) a Hr).
+  Qed.
+
+  (** Backwards, [f] accepts at [b] the meet of every precondition it
+      accepts there, a family that top preservation makes nonempty, and
+      that meet lies below [P]. *)
+  Lemma dslp_hom_meet {A B} (f : SPArrT A B) :
+    sp_monotone f /\ sp_terminating f /\ sp_conjunctive f -> dslp_meet f.
+  Proof.
+    intros [Hm [Ht Hc]] P b. split.
+    - intros Hf a Hr. exact (Hr P Hf).
+    - intro H.
+      apply (Hm (fun a => forall i : { Q : A -> Prop | f Q b }, proj1_sig i a)).
+      + intros a Ha. apply H. intros Q HQ. exact (Ha (exist _ Q HQ)).
+      + exact (proj2 (Hc _ (inhabits (exist (fun Q => f Q b) (fun _ => True) (Ht b)))
+                       (fun i => proj1_sig i) b) (fun i => proj2_sig i)).
+  Qed.
+
+  Theorem dslp_meet_iff {A B} (f : SPArrT A B) :
+    dslp_meet f <-> sp_monotone f /\ sp_terminating f /\ sp_conjunctive f.
+  Proof. split; [ apply dslp_meet_hom | apply dslp_hom_meet ]. Qed.
+
+  Definition DSLPArr (A B : Type) : Type :=
+    { f : SPArrT A B | sp_monotone f /\ sp_terminating f /\ sp_conjunctive f }.
 
   Definition getDSLPArr {A B} (f : DSLPArr A B) : (A -> Prop) -> B -> Prop :=
     proj1_sig f.
@@ -42,10 +73,10 @@ Section DSLPArr.
 
   Lemma getDSLPArr_meet {A B} (f : DSLPArr A B) P b :
     f P b <-> forall a, dslpRelT (getDSLPArr f) a b -> P a.
-  Proof. exact (proj2_sig f P b). Qed.
+  Proof. exact (dslp_hom_meet _ (proj2_sig f) P b). Qed.
 
-  Definition mkDSLPArr {A B} (f : DSLPArrT A B) (H : dslp_meet f) : DSLPArr A B :=
-    exist _ f H.
+  Definition mkDSLPArr {A B} (f : SPArrT A B) (H : dslp_meet f) : DSLPArr A B :=
+    exist _ f (dslp_meet_hom f H).
 
   Lemma getDSLPArr_ext_iff {A B} (f : DSLPArr A B) (P Q : A -> Prop) b :
     (forall a, P a <-> Q a) -> f P b <-> f Q b.
@@ -62,16 +93,13 @@ Section DSLPArr.
       accepted by more outcomes. *)
   Lemma getDSLPArr_mono {A B} (f : DSLPArr A B) (P Q : A -> Prop) b :
     (forall a, P a -> Q a) -> f P b -> f Q b.
-  Proof.
-    intros H HP. apply getDSLPArr_meet. intros a Hr.
-    apply H. apply (proj1 (getDSLPArr_meet f P b) HP a Hr).
-  Qed.
+  Proof. intro H. exact (proj1 (proj2_sig f) P Q H b). Qed.
 
   (** The arrow of a relation: its inverse image. *)
   #[program] Definition ofRelDSLPArr {A B} (R : A -> B -> Prop) : DSLPArr A B :=
     fun P b => forall a, R a b -> P a.
   Next Obligation.
-    intros P b. split.
+    apply dslp_meet_hom. intros P b. split.
     - intros H a Hr. apply H. apply (Hr (fun x => R x b)). intros a' Hr'. exact Hr'.
     - intros H a Hr. apply H. intros Q HQ. exact (HQ a Hr).
   Qed.
@@ -81,7 +109,7 @@ Section DSLPArr.
   #[program] Definition pureDSLP {A B} (h : A -> B) : DSLPArr A B :=
     fun P b => forall a, h a = b -> P a.
   Next Obligation.
-    intros P b. split.
+    apply dslp_meet_hom. intros P b. split.
     - intros H a Hr. apply H. apply (Hr (fun x => h x = b)). intros a' Hr'. exact Hr'.
     - intros H a Hr. apply H. intros Q HQ. exact (HQ a Hr).
   Qed.
@@ -90,7 +118,7 @@ Section DSLPArr.
     : DSLPArr A C :=
     fun P c => g (f P) c.
   Next Obligation.
-    intros P c. split.
+    apply dslp_meet_hom. intros P c. split.
     - intros H a Hr. exact (Hr P H).
     - intros H.
       (* peel [g], then [f], and feed each [a] back through [H] *)
@@ -105,7 +133,7 @@ Section DSLPArr.
     : DSLPArr (A * C) (B * C) :=
     fun P bc => f (fun a => P (a, snd bc)) (fst bc).
   Next Obligation.
-    intros P [b c]. cbn [fst snd]. split.
+    apply dslp_meet_hom. intros P [b c]. cbn [fst snd]. split.
     - intros H [a c'] Hr. exact (Hr P H).
     - intros H.
       apply (getDSLPArr_meet f (fun a => P (a, c)) b). intros a Hf.
@@ -113,7 +141,7 @@ Section DSLPArr.
       apply (proj1 (getDSLPArr_meet f (fun a0 => Q (a0, c)) b)); [ exact HQ | exact Hf ].
   Qed.
 
-  Definition leftDSLPT {A B C} (f : DSLPArr A B) : DSLPArrT (A + C) (B + C) :=
+  Definition leftDSLPT {A B C} (f : DSLPArr A B) : SPArrT (A + C) (B + C) :=
     fun P y => match y with
                | inl b => f (fun a => P (inl a)) b
                | inr c => P (inr c)
@@ -123,7 +151,7 @@ Section DSLPArr.
     : DSLPArr (A + C) (B + C) :=
     leftDSLPT f.
   Next Obligation.
-    intros P [b | c]; cbn.
+    apply dslp_meet_hom. intros P [b | c]; cbn.
     - split.
       + intros H [a | c'] Hr; exact (Hr P H).
       + intros H.
@@ -138,7 +166,7 @@ Section DSLPArr.
   #[program] Definition appDSLP {A B} : DSLPArr (DSLPArr A B * A) B :=
     fun P b => forall f a, dslpRelT (getDSLPArr f) a b -> P (f, a).
   Next Obligation.
-    intros P b. split.
+    apply dslp_meet_hom. intros P b. split.
     - intros H [f a] Hr. exact (Hr P H).
     - intros H f a Hr. apply H. intros Q HQ. exact (HQ f a Hr).
   Qed.

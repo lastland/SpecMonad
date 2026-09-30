@@ -1,9 +1,11 @@
 (** * [DSPArr]: the arrow of DSP predicate transformers
 
-    The carrier is a genuine DSP transformer, and the arrow operations are
-    built the way [OldMonads/DSPMonad.bindDSPStExc] builds [bind]: split an
-    element into its ASP part and its DSLP part, run the operation on each
-    separately, and CONJOIN.
+    The carrier refines [Arrows/SPArr.SPArrT] by monotonicity, strictness
+    and conjunctivity, which [dsp_hom_iff] shows are exactly the DSPs of
+    relations.  The arrow operations are built the way
+    [OldMonads/DSPMonad.bindDSPStExc] builds [bind]: split an element into
+    its ASP part and its DSLP part, run the operation on each separately,
+    and CONJOIN.
 
     Unlike [ASPArrowCore.v], the relational machinery cannot be deferred to
     [DSPArrowRel.v]: the operations are DEFINED through the split, so
@@ -42,16 +44,68 @@ From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr SPArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure ASPArrowCore DSLPArrowCore.
 
-(** Healthiness, as representability: [w] is a DSP transformer exactly when
-    it is the DSP of some relation.  [DSPMonad.dsp_carrier] proves this
-    equivalent to the intrinsic [Strict /\ Conjunctive]. *)
-Definition DSPhealthy {X Y} (w : (X -> Prop) -> Y -> Prop) : Prop :=
+(** Representability: [w] is the DSP of some relation. *)
+Definition DSPhealthy {X Y} (w : SPArrT X Y) : Prop :=
   exists R : SPureArr X Y, forall P y, w P y <-> dspOf R P y.
 
-Definition DSPArr (X Y : Type) : Type := { w | @DSPhealthy X Y w }.
+(** The DSP of a relation is monotone, strict as an ASP is, and conjunctive
+    over nonempty families as a DSLP is. *)
+Lemma dsp_healthy_hom {X Y} (w : SPArrT X Y) :
+  DSPhealthy w -> sp_monotone w /\ sp_strict w /\ sp_conjunctive w.
+Proof.
+  intros [R HR]. split; [| split ].
+  - intros P Q HPQ y Hw. apply HR in Hw. apply HR. destruct Hw as [[x [Hx HRx]] Hd]. split.
+    + exists x. split; [ exact (HPQ x Hx) | exact HRx ].
+    + intros x' Hx'. exact (HPQ x' (Hd x' Hx')).
+  - intros y Hw. apply HR in Hw. destruct Hw as [[x [[] _]] _].
+  - intros I [i0] P y. rewrite (HR _ y). split.
+    + intros [[x [Hx HRx]] Hd] i. apply (HR _ y). split.
+      * exists x. split; [ exact (Hx i) | exact HRx ].
+      * intros x' Hx'. exact (Hd x' Hx' i).
+    + intro Hall. split.
+      * destruct (proj1 (HR _ y) (Hall i0)) as [[x [_ HRx]] _].
+        exists x. split; [| exact HRx ].
+        intro i. exact (proj2 (proj1 (HR _ y) (Hall i)) x HRx).
+      * intros x HRx i. exact (proj2 (proj1 (HR _ y) (Hall i)) x HRx).
+Qed.
+
+(** Conversely, a monotone, strict and conjunctive transformer is the DSP of
+    the relation that sends [y] to the least precondition accepted there.
+    Strictness makes that precondition nonempty. *)
+Lemma dsp_hom_healthy {X Y} (w : SPArrT X Y) :
+  sp_monotone w /\ sp_strict w /\ sp_conjunctive w -> DSPhealthy w.
+Proof.
+  intros [Hm [Hs Hc]].
+  exists (fun x y => w (fun _ => True) y /\ forall i : { Q : X -> Prop | w Q y }, proj1_sig i x).
+  intros P y. unfold dspOf, aspOf, dslpOf. split.
+  - intro Hw.
+    assert (Htop : w (fun _ => True) y).
+    { apply (Hm P); [ intros; exact I | exact Hw ]. }
+    assert (Hleast : w (fun x => forall i : { Q : X -> Prop | w Q y }, proj1_sig i x) y).
+    { exact (proj2 (Hc _ (inhabits (exist (fun Q => w Q y) P Hw)) (fun i => proj1_sig i) y)
+                   (fun i => proj2_sig i)). }
+    split.
+    + apply NNPP. intro Hno. apply (Hs y).
+      apply (Hm (fun x => forall i : { Q : X -> Prop | w Q y }, proj1_sig i x)); [| exact Hleast ].
+      intros x Hx. apply Hno. exists x.
+      split; [ exact (Hx (exist _ P Hw)) | split; [ exact Htop | exact Hx ] ].
+    + intros x [_ Hx]. exact (Hx (exist _ P Hw)).
+  - intros [[x0 [_ [Htop _]]] Hall].
+    apply (Hm (fun x => forall i : { Q : X -> Prop | w Q y }, proj1_sig i x)).
+    + intros x Hx. exact (Hall x (conj Htop Hx)).
+    + exact (proj2 (Hc _ (inhabits (exist (fun Q => w Q y) (fun _ => True) Htop))
+                      (fun i => proj1_sig i) y) (fun i => proj2_sig i)).
+Qed.
+
+Theorem dsp_hom_iff {X Y} (w : SPArrT X Y) :
+  DSPhealthy w <-> sp_monotone w /\ sp_strict w /\ sp_conjunctive w.
+Proof. split; [ apply dsp_healthy_hom | apply dsp_hom_healthy ]. Qed.
+
+Definition DSPArr (X Y : Type) : Type :=
+  { w : SPArrT X Y | sp_monotone w /\ sp_strict w /\ sp_conjunctive w }.
 
 Definition getDSP {X Y} (w : DSPArr X Y) : (X -> Prop) -> Y -> Prop := proj1_sig w.
 
@@ -72,7 +126,7 @@ Qed.
 Lemma dspRel_spec {X Y} (w : DSPArr X Y) P y :
   getDSP w P y <-> dspOf (dspRel w) P y.
 Proof.
-  destruct (proj2_sig w) as [R HR].
+  destruct (dsp_hom_healthy _ (proj2_sig w)) as [R HR].
   assert (Hrel : Pred_eq (dspRel w) R) by (apply dspRel_of; exact HR).
   unfold getDSP. rewrite HR. unfold dspOf, aspOf, dslpOf.
   split; intros [Ha Hd]; split.
@@ -149,7 +203,7 @@ Qed.
 #[program] Definition pure_DSP {X Y} (h : X -> Y) : DSPArr X Y :=
   fun P y => pureASP h P y /\ pureDSLP h P y.
 Next Obligation.
-  intros X Y h. exists (arr_pure h). intros P y. reflexivity.
+  intros X Y h. apply dsp_healthy_hom. exists (arr_pure h). intros P y. reflexivity.
 Qed.
 
 (** [DSPMonad.bindDSPStExc], at the arrow.  On these carriers composition of
@@ -160,7 +214,7 @@ Qed.
   fun P z => compASP  (aspPartArr  w) (aspPartArr  v) P z
              /\ compDSLP (dslpPartArr w) (dslpPartArr v) P z.
 Next Obligation.
-  intros X Y Z w v. exists (arr_comp (dspRel w) (dspRel v)). intros P z.
+  intros X Y Z w v. apply dsp_healthy_hom. exists (arr_comp (dspRel w) (dspRel v)). intros P z.
   unfold aspPart, dslpPart, dspOf.
   rewrite (aspOf_comp (dspRel w) (dspRel v)), (dslpOf_comp (dspRel w) (dspRel v)).
   reflexivity.
@@ -173,7 +227,7 @@ Qed.
   fun P q => @firstASP  _ _ C (aspPartArr  w) P q
              /\ @firstDSLP _ _ C (dslpPartArr w) P q.
 Next Obligation.
-  intros X Y C w. exists (arr_first (dspRel w)). intros P q.
+  intros X Y C w. apply dsp_healthy_hom. exists (arr_first (dspRel w)). intros P q.
   unfold aspPart, dslpPart, dspOf.
   rewrite (aspOf_first (dspRel w)), (dslpOf_first (dspRel w)).
   reflexivity.
@@ -209,7 +263,7 @@ Qed.
   fun P y => @leftASP  _ _ C (aspPartArr  w) P y
              /\ @leftDSLP _ _ C (dslpPartArr w) P y.
 Next Obligation.
-  intros X Y C w. exists (arr_left (dspRel w)). intros P [b|c]; unfold dspOf.
+  intros X Y C w. apply dsp_healthy_hom. exists (arr_left (dspRel w)). intros P [b|c]; unfold dspOf.
   - unfold aspPart, dslpPart.
     rewrite (aspOf_left_inl (dspRel w)), (dslpOf_left_inl (dspRel w)). reflexivity.
   - rewrite (aspOf_left_inr (dspRel w)), (dslpOf_left_inr (dspRel w)). tauto.
@@ -238,7 +292,7 @@ Definition appRel {A B} : SPureArr (DSPArr A B * A) B :=
 #[program] Definition app_DSP {A B} : DSPArr (DSPArr A B * A) B :=
   fun P b => aspOf appRel P b /\ dslpOf appRel P b.
 Next Obligation.
-  intros A B. exists appRel. intros P b. reflexivity.
+  intros A B. apply dsp_healthy_hom. exists appRel. intros P b. reflexivity.
 Qed.
 
 #[global] Instance ArrowApply_DSPArr : ArrowApply DSPArr := {

@@ -21,6 +21,12 @@ definitions, not older comments that refer to separate facts files or unary name
   `A -> B -> Prop`. The post-relation retains the initial input; `PrePost_eq`
   compares both components by iff. `PrePost_le` reverses the precondition
   implication and preserves the post-relation implication.
+- [SPArr.v](SPArr.v): `SPArrT A B = (A -> Prop) -> B -> Prop`, the raw SP
+  transformers, with the homomorphism properties `sp_monotone`, `sp_strict`,
+  `sp_terminating`, `sp_conjunctive`, and `sp_disjunctive` (the last two over
+  nonempty families). `MonotoneSPost` and the SP arrows of
+  [BaseSpecMonads](../BaseSpecMonads/CONTEXT.md#sp-arrows) are subset types of
+  it. It has no arrow instance: the refinements' operations differ.
 - [WPArr.v](WPArr.v): `WPArr A B = A -> WPureT B`, using the raw carrier
   imported from [WPureMonad.v](../BaseSpecMonads/WPureMonad.v), not its monotone
   `WPure` subset. `ArrowEq_WPArr` uses Leibniz equality; `WPArr_le` uses reverse
@@ -69,7 +75,7 @@ their `MonadLawsE` from here rather than proving it by hand.
   and `WPArr.v` imports a base-specification file. Distinguish semantic
   independence from the current import graph.
 - [GaloisArr.v](GaloisArr.v) defines `MonotoneWP`, `WFRelPrePost`, and
-  `MonotoneSPost`, then `Galois_Pred_PrePost`, `Galois_Pred_SPost`,
+  `MonotoneSPost` (`SPArrT` refined by `sp_monotone`), then `Galois_Pred_PrePost`, `Galois_Pred_SPost`,
   `Galois_WP_PrePost`, and `Galois_RPP_WP`. Preserve their subtype hypotheses.
   The relation/SP adjunction does not identify every monotone transformer with
   a relational ASP. `gamma_uni_not_monotone` is a stated obstruction;

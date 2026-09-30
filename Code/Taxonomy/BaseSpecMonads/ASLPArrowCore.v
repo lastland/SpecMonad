@@ -1,8 +1,10 @@
 (** * [ASLPArr]: the arrow of ASLP predicate transformers
 
-    The dual of [DSPArrowCore.v]: the carrier is a genuine ASLP transformer,
-    and the arrow operations split an element into its ASP part and its DSLP
-    part, run the operation on each separately, and DISJOIN.
+    The dual of [DSPArrowCore.v]: the carrier refines [Arrows/SPArr.SPArrT]
+    by monotonicity, termination and disjunctivity, which [aslp_hom_iff]
+    shows are exactly the ASLPs of relations, and the arrow operations split
+    an element into its ASP part and its DSLP part, run the operation on
+    each separately, and DISJOIN.
 
     As in the DSP case the relational machinery cannot be deferred to
     [ASLPArrowRel.v] -- the operations are DEFINED through the split, so
@@ -12,7 +14,7 @@
     state reaches [y], and not one outside [pre]", ASLP asks "no state
     reaches [y] vacuously, and [x] does".
 
-    See [DSPArrowCore.v] for the full discussion; everything here mirrors
+    See [DSPArrowCore.v] for the full discussion; everything here mirrors it.
 
     The operations are ASP's and DSLP's OWN, not re-derivations of them:
     [pure_ASLP] is [pureASP] or [pureDSLP], [comp_ASLP] is [compASP]
@@ -30,13 +32,76 @@ From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr SPArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure ASPArrowCore DSLPArrowCore.
 
-Definition ASLPhealthy {X Y} (w : (X -> Prop) -> Y -> Prop) : Prop :=
+(** Representability: [w] is the ASLP of some relation. *)
+Definition ASLPhealthy {X Y} (w : SPArrT X Y) : Prop :=
   exists R : SPureArr X Y, forall P y, w P y <-> aslpOf R P y.
 
-Definition ASLPArr (X Y : Type) : Type := { w | @ASLPhealthy X Y w }.
+(** The ASLP of a relation is monotone, preserves top as a DSLP does, and is
+    disjunctive over nonempty families as an ASP is. *)
+Lemma aslp_healthy_hom {X Y} (w : SPArrT X Y) :
+  ASLPhealthy w -> sp_monotone w /\ sp_terminating w /\ sp_disjunctive w.
+Proof.
+  intros [R HR]. split; [| split ].
+  - intros P Q HPQ y Hw. apply HR in Hw. apply HR. destruct Hw as [[x [Hx HRx]] | Hd].
+    + left. exists x. split; [ exact (HPQ x Hx) | exact HRx ].
+    + right. intros x Hx. exact (HPQ x (Hd x Hx)).
+  - intro y. apply (HR _ y). right. intros x _. exact I.
+  - intros I [i0] P y. rewrite (HR _ y). split.
+    + intros [[x [[i Hi] HRx]] | Hd].
+      * exists i. apply (HR _ y). left. exists x. split; assumption.
+      * destruct (classic (exists x, R x y)) as [[x HRx] | Hno].
+        -- destruct (Hd x HRx) as [i Hi]. exists i. apply (HR _ y). left. exists x. split; assumption.
+        -- exists i0. apply (HR _ y). right. intros x HRx. destruct (Hno (ex_intro _ x HRx)).
+    + intros [i Hw]. apply (HR _ y) in Hw. destruct Hw as [[x [Hx HRx]] | Hd].
+      * left. exists x. split; [ exists i; exact Hx | exact HRx ].
+      * right. intros x HRx. exists i. exact (Hd x HRx).
+Qed.
+
+(** Conversely, a monotone, top-preserving and disjunctive transformer is
+    the ASLP of the relation [aslpRel] probes: [x] reaches [y] when [w]
+    rejects [y] at the empty precondition and accepts it at [{x}]. *)
+Lemma aslp_hom_healthy {X Y} (w : SPArrT X Y) :
+  sp_monotone w /\ sp_terminating w /\ sp_disjunctive w -> ASLPhealthy w.
+Proof.
+  intros [Hm [Ht Hd]].
+  (* [P] lies below the union of [False] and the singletons of its elements *)
+  assert (Hsplit : forall P y,
+             w P y <-> w (fun _ => False) y \/ exists x, P x /\ w (fun z => z = x) y).
+  { intros P y. split.
+    - intro Hw.
+      pose (F := fun (i : option { x : X | P x }) (z : X) =>
+                   match i with Some x => z = proj1_sig x | None => False end).
+      assert (HF : w (fun z => exists i, F i z) y).
+      { apply (Hm P); [| exact Hw ]. intros z Hz. exists (Some (exist _ z Hz)). reflexivity. }
+      apply (Hd _ (inhabits None) F y) in HF.
+      destruct HF as [[[x Hx] |] Hw']; [ right; exists x; split; [ exact Hx | exact Hw' ] | left; exact Hw' ].
+    - intros [Hw | [x [Hx Hw]]].
+      + apply (Hm (fun _ => False)); [ intros z [] | exact Hw ].
+      + apply (Hm (fun z => z = x)); [ intros z ->; exact Hx | exact Hw ]. }
+  exists (fun x y => ~ w (fun _ => False) y /\ w (fun z => z = x) y).
+  intros P y. unfold aslpOf, aspOf, dslpOf.
+  destruct (classic (w (fun _ => False) y)) as [Hbot | Hnbot].
+  - split.
+    + intros _. right. intros x [Hn _]. destruct (Hn Hbot).
+    + intros _. apply (Hm (fun _ => False)); [ intros x [] | exact Hbot ].
+  - rewrite (Hsplit P y). split.
+    + intros [Hw | [x [Hx Hw]]]; [ contradiction |].
+      left. exists x. split; [ exact Hx | split; assumption ].
+    + intros [[x [Hx [_ Hw]]] | Hall]; [ right; exists x; split; assumption |].
+      destruct (proj1 (Hsplit (fun _ => True) y) (Ht y)) as [Hw | [x0 [_ Hw0]]];
+        [ contradiction |].
+      right. exists x0. split; [ exact (Hall x0 (conj Hnbot Hw0)) | exact Hw0 ].
+Qed.
+
+Theorem aslp_hom_iff {X Y} (w : SPArrT X Y) :
+  ASLPhealthy w <-> sp_monotone w /\ sp_terminating w /\ sp_disjunctive w.
+Proof. split; [ apply aslp_healthy_hom | apply aslp_hom_healthy ]. Qed.
+
+Definition ASLPArr (X Y : Type) : Type :=
+  { w : SPArrT X Y | sp_monotone w /\ sp_terminating w /\ sp_disjunctive w }.
 
 Definition getASLP {X Y} (w : ASLPArr X Y) : (X -> Prop) -> Y -> Prop := proj1_sig w.
 
@@ -64,7 +129,7 @@ Qed.
 Lemma aslpRel_spec {X Y} (w : ASLPArr X Y) P y :
   getASLP w P y <-> aslpOf (aslpRel w) P y.
 Proof.
-  destruct (proj2_sig w) as [R HR].
+  destruct (aslp_hom_healthy _ (proj2_sig w)) as [R HR].
   assert (Hrel : Pred_eq (aslpRel w) R) by (apply aslpRel_of; exact HR).
   unfold getASLP. rewrite HR. exact (aslpOf_cong R (aslpRel w) (fun a b => iff_sym (Hrel a b)) P y).
 Qed.
@@ -114,7 +179,7 @@ Qed.
 #[program] Definition pure_ASLP {X Y} (h : X -> Y) : ASLPArr X Y :=
   fun P y => pureASP h P y \/ pureDSLP h P y.
 Next Obligation.
-  intros X Y h. exists (arr_pure h). intros P y. reflexivity.
+  intros X Y h. apply aslp_healthy_hom. exists (arr_pure h). intros P y. reflexivity.
 Qed.
 
 #[program] Definition comp_ASLP {X Y Z} (w : ASLPArr X Y) (v : ASLPArr Y Z)
@@ -122,7 +187,7 @@ Qed.
   fun P z => compASP  (aspPartAArr  w) (aspPartAArr  v) P z
              \/ compDSLP (dslpPartAArr w) (dslpPartAArr v) P z.
 Next Obligation.
-  intros X Y Z w v. exists (arr_comp (aslpRel w) (aslpRel v)). intros P z.
+  intros X Y Z w v. apply aslp_healthy_hom. exists (arr_comp (aslpRel w) (aslpRel v)). intros P z.
   unfold aspPartA, dslpPartA, aslpOf.
   rewrite (aspOf_comp (aslpRel w) (aslpRel v)), (dslpOf_comp (aslpRel w) (aslpRel v)).
   reflexivity.
@@ -133,7 +198,7 @@ Qed.
   fun P q => @firstASP  _ _ C (aspPartAArr  w) P q
              \/ @firstDSLP _ _ C (dslpPartAArr w) P q.
 Next Obligation.
-  intros X Y C w. exists (arr_first (aslpRel w)). intros P q.
+  intros X Y C w. apply aslp_healthy_hom. exists (arr_first (aslpRel w)). intros P q.
   unfold aspPartA, dslpPartA, aslpOf.
   rewrite (aspOf_first (aslpRel w)), (dslpOf_first (aslpRel w)).
   reflexivity.
@@ -167,7 +232,7 @@ Definition appRelA {A B} : SPureArr (ASLPArr A B * A) B :=
 #[program] Definition app_ASLP {A B} : ASLPArr (ASLPArr A B * A) B :=
   fun P b => aspOf appRelA P b \/ dslpOf appRelA P b.
 Next Obligation.
-  intros A B. exists appRelA. intros P b. reflexivity.
+  intros A B. apply aslp_healthy_hom. exists appRelA. intros P b. reflexivity.
 Qed.
 
 #[global] Instance ArrowApply_ASLPArr : ArrowApply ASLPArr := {
@@ -180,7 +245,7 @@ Qed.
   fun P y => @leftASP  _ _ C (aspPartAArr  w) P y
              \/ @leftDSLP _ _ C (dslpPartAArr w) P y.
 Next Obligation.
-  intros X Y C w. exists (arr_left (aslpRel w)). intros P [b|c]; unfold aslpOf.
+  intros X Y C w. apply aslp_healthy_hom. exists (arr_left (aslpRel w)). intros P [b|c]; unfold aslpOf.
   - unfold aspPartA, dslpPartA.
     rewrite (aspOf_left_inl (aslpRel w)), (dslpOf_left_inl (aslpRel w)). reflexivity.
   - rewrite (aspOf_left_inr (aslpRel w)), (dslpOf_left_inr (aslpRel w)). tauto.
