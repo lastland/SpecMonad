@@ -81,7 +81,7 @@ Section ASPArr.
   Lemma getASPArr_ext {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
     (forall a, P a <-> Q a) -> f P b -> f Q b.
   Proof.
-    intro H; apply getASPArr_mon; intros; apply H; assumption.
+    intro H; apply getASPArr_mono; intros; apply H; assumption.
   Qed.
 
   Lemma getASPArr_ext_iff {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
