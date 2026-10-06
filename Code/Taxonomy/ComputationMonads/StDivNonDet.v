@@ -17,8 +17,9 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StE
     divergent program.
 
     [None] is absorbing under [bind] (see [outcomes_bind] in
-    [NonDetObservationNew]), which is exactly the propagation rule divergence
-    needs, so the monad structure is unchanged. *)
+    [StExcNonDet.v], which owns the shared single-option outcome laws).
+    This propagation rule supports the divergence reading without
+    changing the monad structure. *)
 
 Section StDivNonDet.
 
@@ -65,6 +66,12 @@ Section StDivNonDet.
   (** [m] may diverge from [s]. *)
   Definition mayDiverge {A} (m : stdivnd A) (s : S) : Prop :=
     unOptionT (runStateT m s) None.
+
+  (** [divergeD]'s only outcome is the divergence token, from every
+      state; generalized over state and outcome. *)
+  Lemma outcomes_diverge {A} (s : S) (r : option (A * S)) :
+    unOptionT (runStateT (divergeD : stdivnd A) s) r <-> r = None.
+  Proof. split; intro H; exact H. Qed.
 
   (** ** The non-empty fragment
 
@@ -182,10 +189,7 @@ Arguments mayDivergeNE {_} {_}.
     [stateT] and [optionT] instances in [Prog], via [SetM]'s in
     [StExcNonDet]. *)
 
-From Coq Require Import Morphisms.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivITree.
 
 Section StDivNonDet.
 
@@ -237,3 +241,25 @@ Section StDivNonDet.
   Qed.
 
 End StDivNonDet.
+
+(** ** Checked semantic example: a divergent prefix survives an empty
+    continuation
+
+    [bind] absorbs the divergence token without running the
+    continuation, so an empty continuation does not annihilate a
+    divergent prefix — the divergence reading of the same absorbing
+    [None] that carries an exception in [stexcnd]. *)
+
+Local Definition emptyD {S A} : stdivnd S A :=
+  mkStateT (fun _ => @mkOptionT SetM _ (fun _ => False)).
+
+Local Example diverge_survives_empty {S A B} (s : S) :
+  unOptionT (runStateT
+    (bindD S (divergeD : stdivnd S A) (fun _ => (emptyD : stdivnd S B))) s)
+    None.
+Proof.
+  apply (outcomes_bind S).
+  exists None. split.
+  - apply (outcomes_diverge S). reflexivity.
+  - reflexivity.
+Qed.

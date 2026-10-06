@@ -1,10 +1,9 @@
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StDivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
-Require Import Coq.Logic.Classical_Prop.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import NewGaloisConnections.
 
 Import MonadNotation.
 Open Scope monad_scope.
@@ -12,23 +11,24 @@ Open Scope monad_scope.
 (** * SP observations of [stdivnd] over a plain stateful outcome
 
     [stdivnd S A] has outcome set [option (A * S) -> Prop], with [None] read as
-    divergence.  [SPSimplerSpecMonads] indexes its transformers by [A * S], so the
-    observations here read the TERMINATING SLICE
+    divergence.  The [StASP], [StDSLP], [StDSP], and [StASLP] carriers in
+    [BaseSpecMonads] use outcomes [A * S], so these observations read the
+    terminating slice:
 
       [unOptionT (runStateT m s) (Some r)]     with [r : A * S]
 
-    — the normal returns only, with divergence projected away.  This is exactly
-    the move [NonDetItObservationNew] makes for [stdivexcnd], one layer down.
+    Only normal returns remain; the divergence token is omitted.  In contrast,
+    [StDivNonDet_SPStExc.v] retains the full outcome set.  In that module,
+    [getASPStExc (obsASP m) pre None] says that some [pre]-state may diverge.
+    Here [getASPSt] takes a pair, not [None].
 
-    Contrast with [NonDetObservationNew], which observes the SAME computation
-    monad into the [option (A * S)]-indexed spec monads and therefore keeps
-    [None] visible: there [getASPSt (obsASP m) pre None] asserts "some
-    [pre]-state may diverge".  Here divergence cannot be spoken about at all;
-    the transformers constrain only the terminating behaviour.
-
-    Because the slice drops the one exceptional outcome, the composite relation
-    of a [bind] has a single case, and the observation proofs are correspondingly
-    shorter than their [option]-indexed counterparts. *)
+    The terminating-slice bind law has one case: a normal intermediate
+    result followed by a normal result of the continuation.  [TermSliceObs]
+    uses this law to prove return/bind preservation for all four readings.
+    The slice laws below are derived from the computation-owned full raw
+    laws — [StExcNonDet.outcomes_ret]/[outcomes_bind] and
+    [StDivNonDet.outcomes_diverge] — rather than by a fresh stack
+    normalization. *)
 
 Import StTrans StASP StDSLP StDSP StASLP StSP.
 
@@ -38,28 +38,38 @@ Section StObservations.
   Variable S : Type.
 
   (** The terminating slice of a bind: one case, since the divergent branch
-      cannot produce a [Some] outcome. *)
+      cannot produce a [Some] outcome.  Derived from the full raw law; the
+      [None] branch of the match is refuted by discrimination. *)
   Lemma outcomes_bind {A B} (x : stdivnd S A) (f : A -> stdivnd S B) s (r : B * S) :
     unOptionT (runStateT (x >>= f) s) (Some r)
     <-> (exists a s', unOptionT (runStateT x s) (Some (a, s'))
                       /\ unOptionT (runStateT (f a) s') (Some r)).
   Proof.
-    cbn. split.
-    - intros [oy [H1 H2]]. destruct oy as [[a s']|]; cbn in *.
-      + exists a, s'. split; [ exact H1 | exact H2 ].
-      + congruence.
-    - intros [a [s' [H1 H2]]]. exists (Some (a, s')).
-      split; [ exact H1 | exact H2 ].
+    refine (iff_trans (StExcNonDet.outcomes_bind S x f s (Some r)) _).
+    split.
+    - intros [oy [Hx Hk]]. destruct oy as [[a s']|].
+      + exists a, s'. split; [ exact Hx | exact Hk ].
+      + discriminate Hk.
+    - intros [a [s' [Hx Hk]]]. exists (Some (a, s')).
+      split; [ exact Hx | exact Hk ].
   Qed.
 
+  (** Derived from the full raw law by injectivity of [Some]. *)
   Lemma outcomes_ret {A} (a : A) (s : S) (r : A * S) :
     unOptionT (runStateT (ret a : stdivnd S A) s) (Some r) <-> r = (a, s).
-  Proof. cbn. split; intro H; congruence. Qed.
+  Proof.
+    refine (iff_trans (StExcNonDet.outcomes_ret S a s (Some r)) _).
+    split; intro Heq; congruence.
+  Qed.
 
-  (** [divergeD] has no terminating outcome at all. *)
+  (** [divergeD] has no terminating outcome at all: the full raw law forces
+      [Some r = None]. *)
   Lemma outcomes_diverge {A} (s : S) (r : A * S) :
     ~ unOptionT (runStateT (divergeD : stdivnd S A) s) (Some r).
-  Proof. cbn. intro H. congruence. Qed.
+  Proof.
+    intro Hout. apply (StDivNonDet.outcomes_diverge S) in Hout.
+    discriminate Hout.
+  Qed.
 
   (* ---- the two observations ---- *)
 
@@ -181,34 +191,20 @@ Section StObservations.
     eq1 (obsDSP (x >>= f)) (obsDSP x >>= (fun a => obsDSP (f a))).
   Proof.
     unfold eq1, Eq1__DSPSt. intros pre r.
-    assert (Hx : forall s y,
-               (getDSPSt (obsDSP x) (fun _ => True) y
-                /\ ~ getDSPSt (obsDSP x) (fun t => t <> s) y)
-               <-> unOptionT (runStateT x s) (Some y)).
-    { intros s y.
-      exact (dsp_recov S (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y). }
-    assert (Hf : forall a s y,
-               (getDSPSt (obsDSP (f a)) (fun _ => True) y
-                /\ ~ getDSPSt (obsDSP (f a)) (fun t => t <> s) y)
-               <-> unOptionT (runStateT (f a) s) (Some y)).
-    { intros a s y.
-      exact (dsp_recov S (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y). }
     refine (iff_trans
-              (dsp_cong S
-                 (fun s r0 => unOptionT (runStateT (x >>= f) s) (Some r0))
-                 (fun s r0 =>
-                    exists a smid,
-                      (getDSPSt (obsDSP x) (fun _ => True) (a, smid)
-                       /\ ~ getDSPSt (obsDSP x) (fun t => t <> s) (a, smid))
-                      /\ (getDSPSt (obsDSP (f a)) (fun _ => True) r0
-                          /\ ~ getDSPSt (obsDSP (f a)) (fun t => t <> smid) r0))
-                 _ pre r)
-              (iff_sym (bindDSPProg_dsp S (obsDSP x) (fun a => obsDSP (f a)) pre r))).
-    intros s r0. split.
-    - intro H. apply outcomes_bind in H. destruct H as [a [s' [Hxx Hk]]].
-      exists a, s'. split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
-    - intros [a [s' [Hm Hk]]]. apply Hx in Hm. apply Hf in Hk.
-      apply outcomes_bind. exists a, s'. split; [ exact Hm | exact Hk ].
+              (dsp_cong S _ _ (outcomes_bind x f) pre r)
+              (iff_trans
+                 (iff_sym (dsp_cong S _ _
+                             (comp_cong S _ _ _ _
+                                (fun s y =>
+                                   dsp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y)
+                                (fun a s y =>
+                                   dsp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y))
+                             pre r))
+                 (iff_sym (bindDSPProg_dsp S (obsDSP x)
+                             (fun a => obsDSP (f a)) pre r)))).
   Qed.
 
   Theorem obsASLP_ret {A} (a : A) : eq1 (obsASLP (ret a : stdivnd S A)) (ret a).
@@ -224,34 +220,20 @@ Section StObservations.
     eq1 (obsASLP (x >>= f)) (obsASLP x >>= (fun a => obsASLP (f a))).
   Proof.
     unfold eq1, Eq1__ASLPSt. intros pre r.
-    assert (Hx : forall s y,
-               (~ getASLPSt (obsASLP x) (fun _ => False) y
-                /\ getASLPSt (obsASLP x) (fun t => t = s) y)
-               <-> unOptionT (runStateT x s) (Some y)).
-    { intros s y.
-      exact (aslp_recov S (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y). }
-    assert (Hf : forall a s y,
-               (~ getASLPSt (obsASLP (f a)) (fun _ => False) y
-                /\ getASLPSt (obsASLP (f a)) (fun t => t = s) y)
-               <-> unOptionT (runStateT (f a) s) (Some y)).
-    { intros a s y.
-      exact (aslp_recov S (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y). }
     refine (iff_trans
-              (aslp_cong S
-                 (fun s r0 => unOptionT (runStateT (x >>= f) s) (Some r0))
-                 (fun s r0 =>
-                    exists a smid,
-                      (~ getASLPSt (obsASLP x) (fun _ => False) (a, smid)
-                       /\ getASLPSt (obsASLP x) (fun t => t = s) (a, smid))
-                      /\ (~ getASLPSt (obsASLP (f a)) (fun _ => False) r0
-                          /\ getASLPSt (obsASLP (f a)) (fun t => t = smid) r0))
-                 _ pre r)
-              (iff_sym (bindASLPProg_aslp S (obsASLP x) (fun a => obsASLP (f a)) pre r))).
-    intros s r0. split.
-    - intro H. apply outcomes_bind in H. destruct H as [a [s' [Hxx Hk]]].
-      exists a, s'. split; [ apply Hx; exact Hxx | apply Hf; exact Hk ].
-    - intros [a [s' [Hm Hk]]]. apply Hx in Hm. apply Hf in Hk.
-      apply outcomes_bind. exists a, s'. split; [ exact Hm | exact Hk ].
+              (aslp_cong S _ _ (outcomes_bind x f) pre r)
+              (iff_trans
+                 (iff_sym (aslp_cong S _ _
+                             (comp_cong S _ _ _ _
+                                (fun s y =>
+                                   aslp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT x s1) (Some r1)) s y)
+                                (fun a s y =>
+                                   aslp_recov S
+                                     (fun s1 r1 => unOptionT (runStateT (f a) s1) (Some r1)) s y))
+                             pre r))
+                 (iff_sym (bindASLPProg_aslp S (obsASLP x)
+                             (fun a => obsASLP (f a)) pre r)))).
   Qed.
 
 End StObservations.

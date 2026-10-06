@@ -1,79 +1,108 @@
-# SP observations context (main)
+# SP observations context
 
-Parent: [effect observations](../CONTEXT.md).
-Targets: [base specifications](../../BaseSpecMonads/CONTEXT.md).
-Related: [WP observations](../WP/CONTEXT.md).
+Parent: [observations](../CONTEXT.md). Targets: [base specs](../../BaseSpecMonads/CONTEXT.md)
+and [arrows](../../Arrows/CONTEXT.md).
 
-## Purpose and scope
+## Earlier healthy-carrier monad clients
 
-These five files define strongest-postcondition observations into healthy
-base-monad values, return/bind preservation, and triples. They do not define
-a separate arrow-derived observation interface. The stateful taxonomy belongs
-to the parent directory; pure/reader collapse results stay with their observations.
+- StDivExcNonDet_SPStExc selects terminating outcomes of the double-option
+  computation, including exceptions, and targets OldMonads' four flavours.
+- StDivNonDet_SPStExc/FullOutcomeObs retains the single-option divergence
+  outcome; StDivNonDet_SPSt/TermSliceObs selects normal returns only.
+- DivNonDet_SPPure/PureObs targets the four pure old carriers;
+  RdDivNonDet_RdSPPure applies those observations per reader environment.
 
-## Choose the outcome indexing first
+For relation R, ASP is existential pre-and-reachability, DSLP universal
+reachability-implies-pre, DSP their conjunction, and ASLP their disjunction.
+DSP/ASLP target binds recover relations; they are not simple forward composition.
+Pure DSP/ASLP collapse to ASP/DSLP, and reader collapse is per environment.
+Determinism does not imply unique predecessors, so WP collapse does not imply
+SP collapse. Full and terminating-slice observations must not be conflated.
 
-| Source file | Computation | Specification outcomes / module |
-|---|---|---|
-| [StDivExcNonDet_SPStExc.v](StDivExcNonDet_SPStExc.v) | `stdivexcnd` | `option (A * S)`, terminating slice including exceptions; top level. |
-| [StDivNonDet_SPStExc.v](StDivNonDet_SPStExc.v) | `stdivnd` | `option (A * S)`, including divergence; `FullOutcomeObs`. |
-| [StDivNonDet_SPSt.v](StDivNonDet_SPSt.v) | `stdivnd` | `A * S`, normal returns only; `TermSliceObs`. |
-| [DivNonDet_SPPure.v](DivNonDet_SPPure.v) | `divnd` | `A`, normal returns only; `PureObs`. |
-| [RdDivNonDet_RdSPPure.v](RdDivNonDet_RdSPPure.v) | `rddivnd` | `A` at each environment; `RdPureObs`. |
+## Arrow-derived clients
 
-The first two target `ASPStExc`, `DSLPStExc`, `DSPStExc`, and `ASLPStExc`.
-`TermSliceObs` uses `StASP.ASPSt`, `StDSLP.DSLPSt`, `StDSP.DSPSt`, and
-`StASLP.ASLPSt`; pure and reader files use the corresponding `ASPSP` /
-`DSLPSP` / `DSPSP` / `ASLPSP` and `ASPRd` / `DSLPRd` / `DSPRd` / `ASLPRd`.
-These SP sources are unrestricted computations, not the non-empty fragments.
+SPostArrObservation shares the property-only ASP/DSLP observation interface
+and Taxonomy-style judgments. StDivITree_SPostArr, StExcNonDet_SPostArr,
+StDivNonDet_SPostArr, and StDivExcNonDet_SPostArr instantiate it using each
+computation's outcome relation. StExcNonDet owns the shared single-option raw
+outcome laws. Generic relational bind facts and SPostArrMonad select the exact target
+arrow dictionaries; neither adds a relation field to property-only values.
 
-## Readings and preservation
+SP Over includes observed in asserted post; Under includes asserted in observed.
+Old in-monad targets can need an inhabited precondition for ASP Under and an
+inhabited complement for DSLP Over. Preserve those hypotheses. Read outcomes
+→ selected target/operations → preservation → triples → comparisons/examples.
 
-For the selected stateful relation `R s r`, **ASP** (angelic SP) reads
-`exists s, pre s /\ R s r`; **DSLP** (demonic liberal SP) reads
-`forall s, R s r -> pre s`. **DSP** (demonic SP) conjoins these readings;
-**ASLP** (angelic liberal SP) disjoins them.
-`obsASP`, `obsDSLP`, `obsDSP`, and `obsASLP` package the respective readings.
+- Computation-specific files depend on a source model and its specification
+  target. Base SP healthiness and operations remain in the specification layer.
+- Raw return/bind laws belong to [StExcNonDet.v](../../ComputationMonads/StExcNonDet.v)
+  for the shared single-option stack and
+  [StDivExcNonDet.v](../../ComputationMonads/StDivExcNonDet.v) for the double-option
+  stack. [StDivNonDet.v](../../ComputationMonads/StDivNonDet.v) owns `outcomes_diverge`.
+  Full-outcome clients use these laws directly; slice clients derive adapters.
+- [SPostArrObservation.v](SPostArrObservation.v) depends only on specification
+  arrows, even though it lives in this directory.
+- [DivExcNonDet_SPDivExc.v](DivExcNonDet_SPDivExc.v) observes the full raw
+  outcomes of stateless `divexcnd` into `DSPDivExc` / `ASLPDivExc`.
+  `obsDSP` reads `p /\ outcomes m o`; `obsASLP` reads `p \/ ~ outcomes m o`.
+  Both preserve return and bind. The specification binds are monotone in both
+  arguments. Divergence (`None`) and exceptions (`Some None`) remain distinct;
+  raw-union choice gives DSP disjunction and ASLP conjunction.
+- [RdPureObs](RdDivNonDet_RdSPPure.v) reuses [PureObs](DivNonDet_SPPure.v)
+  environment by environment. Comparisons of the stateful readings belong to
+  the [parent taxonomy layer](../CONTEXT.md).
 
-The stateful files prove local `outcomes_bind` facts, then `obs*_ret` and
-`obs*_bind` for their actual target binds. DSP/ASLP proofs use relation recovery
-from [DSPMonad.v](../../BaseSpecMonads/DSPMonad.v) and
-[ASLPMonad.v](../../BaseSpecMonads/ASLPMonad.v); the target bind is not simple
-forward composition. `RdPureObs` applies `PureObs` environment by environment.
+## Derived slice facts
 
-## Semantic cautions
+[TermSliceObs](StDivNonDet_SPSt.v) derives `outcomes_ret`, `outcomes_bind`, and
+`outcomes_diverge` from the full raw laws at `Some r`, with `r : A * S`.
+Its bind adapter keeps only normal intermediate returns.
 
-- The double-option file reads `unOptionT (unOptionT (runStateT m s)) (Some r)`.
-  Outer divergence is omitted; `r = None` is a terminating exception.
-- `FullOutcomeObs` instead reads `unOptionT (runStateT m s) r` directly.
-  Its ASP at `None` means some `pre`-state may diverge; its DSLP at `None`
-  means every state that may diverge satisfies `pre`.
-- `TermSliceObs` reads at `Some r` with `r : A * S`, discarding divergence.
-  A divergent-only computation has ASP/DSP false and DSLP/ASLP true on this
-  slice. Thus ASP `Over` is vacuous there, but DSLP `Over` is not generally so.
-- `PureObs.obsDSP_is_obsASP` and `PureObs.obsASLP_is_obsDSLP` record the pure
-  collapse. The reader lift inherits it; its precondition is one `Prop` per
-  environment, not a shared transformer input of type `R -> Prop`, even though
-  its triples accept `pre : R -> Prop` and evaluate it at each environment.
-- Determinism does not imply unique predecessors. Deterministic WP collapse
-  does not justify identifying ASP with DSLP.
+[StDivExcNonDet_SPostArr.v](StDivExcNonDet_SPostArr.v) derives its local
+`outcomes_bind` and primitive `outcomes_get` / `outcomes_put` / `outcomes_raise` /
+`outcomes_pickP` facts at `Some r`, with `r : option (A * S)`. This adapter
+retains exceptions while omitting outer divergence. Qualify computation laws
+when similarly named slice facts are in scope.
 
-## Triples, orders, and boundaries
+## Base DSP/ASLP bind proofs
 
-`Over` requires the observed postcondition to imply `post`; `Under` reverses
-that implication. Raw `*spec` comparisons use plain `pp2_over` / `pp2_under`
-transformers. They are distinct from the healthy in-monad targets in
-[NewGaloisConnections.v](../../BaseSpecMonads/NewGaloisConnections.v): ASP
-`Under` uses an `At` order and `exists s, pre s`; DSLP `Over` uses an `At`
-order and `exists s, ~ pre s`. Do not erase those conditions.
+The DSP/ASLP bind proofs in [FullOutcomeObs](StDivNonDet_SPStExc.v) and
+[TermSliceObs](StDivNonDet_SPSt.v) combine the raw or derived slice `outcomes_bind`
+with specification bind normalization and relation congruence. Recovery reasoning
+belongs to [OldMonads/DSPMonad.v](../../BaseSpecMonads/OldMonads/DSPMonad.v) and
+[OldMonads/ASLPMonad.v](../../BaseSpecMonads/OldMonads/ASLPMonad.v): full-outcome proofs use
+`dsp_comp_recov_option` / `aslp_comp_recov_option`, while terminating-slice
+proofs apply specialized recovery through `StDSP.comp_cong`. Neither proof
+reconstructs recovery probes; both retain their own outcome relation.
+This specification-side recovery is separate from raw computation normalization.
 
-Base healthiness and operations remain in the specification layer. Main's
-double-option SP file nevertheless imports WP and arrow modules; the two
-stateful single-option files show a smaller source/target import boundary.
+## Semantic traps
+
+- [StDivNonDet_SPStExc.v](StDivNonDet_SPStExc.v) retains `None` as divergence.
+  [StDivNonDet_SPSt.v](StDivNonDet_SPSt.v), under `TermSliceObs`, drops it and
+  targets outcomes `A * S`.
+- [StDivExcNonDet_SPStExc.v](StDivExcNonDet_SPStExc.v) reads raw outcomes at
+  `Some r`: outer divergence disappears, while `r = None` is an exception.
+  Its [arrow counterpart](StDivExcNonDet_SPostArr.v) selects the same slice.
+  The examples `raiseP_obs_retained` and `spinP_obs_invisible` check these
+  two cases through `runASP`.
+- [StDivITree_SPostArr.v](StDivITree_SPostArr.v) observes convergence to `Ret r`;
+  `Ret None` is a terminating exception. The two single-option arrow files
+  read `None` as [exception](StExcNonDet_SPostArr.v) or
+  [divergence](StDivNonDet_SPostArr.v), respectively.
+- Pure DSP/ASLP collapse to ASP/DSLP, with named `obsDSP_is_obsASP` and
+  `obsASLP_is_obsDSLP` lemmas. The reader lift inherits this collapse; it
+  does not supply a transformer over a shared set of environments.
+- Deterministic computation need not have unique predecessors. Deterministic
+  WP collapse therefore does not justify identifying ASP and DSLP.
+- Raw `*spec` comparisons and in-monad targets have different contracts.
+  The latter use [generic embeddings](../../BaseSpecMonads/NewGaloisConnections.v)
+  and, in some directions, orders at one precondition plus side conditions.
 
 ## Reading order
 
-Read the computation and selected relation, then the target bind and preservation
-proof. Finish with the local triple definition and the matching
-[comparison](../CONTEXT.md). Use [InCorrectnessPrinciples.v](../../InCorrectnessPrinciples.v)
-for rules over the double-option ASP triples.
+Read the computation-owned raw laws, the chosen outcome relation, and any
+slice adapter before the `obs*` preservation proofs. For arrow clients, read
+`SPostArrMonad.v` and the shared judgments before an effect file. Finish with
+its triples/examples and the matching [taxonomy comparison](../CONTEXT.md); use the
+[README](../../README.md#arrow-derived-aspdslp-observations) for presentation details.

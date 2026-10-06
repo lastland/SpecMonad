@@ -1,28 +1,27 @@
 (** * The pre/post relational arrow [PrePostArr].
 
     [PrePostArr A B := (A -> Prop) * (A -> B -> Prop)] packages a Hoare
-    triple [{P} _ {R}] where the post-relation [R] may reference the
-    initial state [a].  Making the post-relation depend on the input
-    [a] (rather than just on [b]) lets [arr_pure id] hold the diagonal
-    [fun a b => a = b], so a strict Hughes-style [Arrow] instance
-    works without coarsening the equivalence.
+    specification with precondition [P] and post-relation [R].  The
+    post-relation retains the input [a], so [arr_pure id] can express
+    the diagonal [fun a b => a = b].  The arrow laws use pointwise iff
+    on both components, without coarsening that equivalence.
 
     This file defines the type [PrePostArr], the pointwise-iff
     equivalence [PrePost_eq], the partial-correctness Hoare order
-    [PrePost_le] (stronger pre, weaker post), and the [ArrowEq] /
-    [Arrow] / [ArrowChoice] /
-    [ArrowApply] / [Monad] / [Eq1] instances.  All the corresponding
-    laws ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws],
-    [Eq1Equivalence], [MonadLawsE]) are proved in
-    [Taxonomy/PrePostArr.v].
+    [PrePost_le] (stronger pre, weaker post), the [ArrowEq] /
+    [Arrow] / [ArrowChoice] / [ArrowApply] instances, the [Eq1]
+    selecting the arrow equality, and all the corresponding arrow laws
+    ([ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws]).  The
+    arrow-derived monad dictionaries ([Monad], [Eq1Equivalence],
+    [MonadLawsE]) are generic and are collected with their
+    resolution checks in [Tests/ArrowMonadInstances.v].
 
-    GaloisArr connections relating [PrePostArr] to [PredArr] and [WPArr] are
-    collected in [Taxonomy/GaloisArr.v]. *)
+    Galois connections relating [PrePostArr] to [Rel] and monotone
+    [WPArr] values are collected in [GaloisArr.v]. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
+From Coq Require Import RelationClasses.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes Require Import Arrow ArrowMonad.
 
 (* ================================================================= *)
 (** ** Type definition                                                *)
@@ -50,9 +49,9 @@ Qed.
 
 (** Partial-correctness Hoare order: strengthen the precondition,
     weaken the post-relation.  [pq1 ≤ pq2] iff [fst pq2 ⊆ fst pq1]
-    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Pred_le] to make
-    [α R := (True, R)], [γ pq := snd pq] a GaloisArr connection (see
-    [Taxonomy/GaloisArr.v]). *)
+    and [snd pq1 ⊆ snd pq2].  Pairs with covariant [Rel_le] to make
+    [α R := (True, R)], [γ pq := snd pq] a Galois connection (see
+    [GaloisArr.v]). *)
 Definition PrePost_le {A B} (pq1 pq2 : PrePostArr A B) : Prop :=
   (forall a,   fst pq2 a   -> fst pq1 a) /\
   (forall a b, snd pq1 a b -> snd pq2 a b).
@@ -112,54 +111,38 @@ Instance ArrowApply_PrePost : ArrowApply PrePostArr := {
 }.
 
 (* ================================================================= *)
-(** ** Monad instance (second argument, [A] fixed)                    *)
+(** ** Arrow-derived monad (second argument, [A] fixed)               *)
 (* ================================================================= *)
+
+(** For every fixed source type [A], typeclass resolution derives a
+    monad on [PrePostArr A] from the arrow via [Monad_Arrow]; no
+    compact helper is consumed by production proofs, so the monad
+    dictionaries and the compact [ret]/[bind] descriptions live in
+    [Tests/ArrowMonadInstances.v]. *)
 
 Section PrePostMonad.
 
   Context {A : Type}.
 
-  Definition retPrePost {B} (b : B) : PrePostArr A B :=
-    (fun _ => True, fun _ b' => b = b').
-
-  Definition bindPrePost {B C}
-    (m : PrePostArr A B) (k : B -> PrePostArr A C) : PrePostArr A C :=
-    ( fun a => fst m a /\ (forall b, snd m a b -> fst (k b) a)
-    , fun a c => exists b, snd m a b /\ snd (k b) a c ).
-
-  #[global]
-  Instance Monad_PrePost : Monad (PrePostArr A) := {
-    ret := @retPrePost ;
-    bind := @bindPrePost
-  }.
-
   #[global]
   Instance Eq1_PrePost : Eq1 (PrePostArr A) :=
-    fun B m1 m2 =>
-      (forall a,   fst m1 a   <-> fst m2 a) /\
-      (forall a b, snd m1 a b <-> snd m2 a b).
+    @Eq1_Arrow PrePostArr ArrowEq_PrePost A.
 
 End PrePostMonad.
 
-(** GaloisArr connections with other spec types are collected in
-    [Taxonomy/GaloisArr.v]. *)
+(** Galois connections with other specification types are in [GaloisArr.v]. *)
 
 (* ================================================================= *)
 (** * Facts and laws (merged from PrePostArrFacts.v)                          *)
 (* ================================================================= *)
 
-(** * Laws for the [PrePostArr] arrow and monad.
+(** * Laws for the [PrePostArr] arrow.
 
-    Proves [ArrowLaws], [ArrowChoiceLaws], [ArrowApplyLaws] for the
-    arrow instances, and [Eq1Equivalence] + [MonadLawsE] for the
-    monad-in-[B] instance, all from [Taxonomy/PrePostArr.v].  Uses the
-    [PrePost_eq] helper to bridge pointwise iff to structural
-    equality via funext + propext. *)
+    The proofs establish [ArrowLaws], [ArrowChoiceLaws], and
+    [ArrowApplyLaws] under [PrePost_eq].  They reason directly with
+    pointwise iff, not by converting it to structural equality.
+    The generic arrow-to-monad construction supplies the monad laws. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
-From ExtLib Require Import Monad.
-From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow.
 From Hammer Require Import Tactics.
 
 
@@ -168,7 +151,8 @@ From Hammer Require Import Tactics.
 (* ================================================================= *)
 
 #[global]
-Instance ArrowLaws_PrePost : ArrowLaws PrePostArr.
+Instance ArrowLaws_PrePost
+  : @ArrowLaws PrePostArr Arrow_PrePost ArrowEq_PrePost.
 Proof.
   constructor; intros.
   - (* comp_id_l *) split; cbn; sauto limit: 200.
@@ -205,9 +189,9 @@ Proof.
     + intros [[a c] d]. simpl. sauto limit: 200 unfold: assoc_prod.
     + intros [[a c] d] [b' [c' d']]. simpl. unfold assoc_prod. split.
       * intros [[[b c''] d''] [[[HRf Hcc] Hdd] Heq]]. simpl in *.
-        exists (a, (c, d)). sauto.
+        exists (a, (c, d)). sauto limit: 200.
       * intros [[a' [c'' d'']] [Heq [HRf Hcd]]]. simpl in *.
-        exists ((b', c), d). simpl. sauto.
+        exists ((b', c), d). simpl. sauto limit: 200.
   - (* comp_proper *)
     intros f1 f2 [HfP HfR] g1 g2 [HgP HgR].
     cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
@@ -218,6 +202,14 @@ Proof.
     cbv [arrow_eq ArrowEq_PrePost PrePost_eq]; split; cbn.
     + intros [a c]. apply HfP.
     + intros [a c] [b c']. cbn. sauto limit: 200.
+  - (* first_natural *)
+    split; cbn.
+    + intros [a c]. cbn. sauto limit: 200.
+    + intros [a c] [b d]. cbn. split.
+      * intros [[b' c'] [[Hf Hc] Heq]]. cbn in *. subst c'.
+        inversion Heq; subst. exists (a, g c). cbn. auto.
+      * intros [[a' d'] [Heq [Hf Hd]]]. cbn in *.
+        inversion Heq; subst. exists (b, c). cbn. auto.
 Qed.
 
 (* ================================================================= *)
@@ -311,101 +303,82 @@ Qed.
 (* ================================================================= *)
 
 #[global]
-Instance ArrowApplyLaws_PrePost : ArrowApplyLaws PrePostArr.
+Instance ArrowApplyLaws_PrePost
+  : @ArrowApplyLaws PrePostArr Arrow_PrePost ArrowApply_PrePost ArrowEq_PrePost.
 Proof.
   constructor; intros.
   - (* app_law *) split; cbn; sauto limit: 200.
-  - (* app_pair *)
+  - (* app_unit *)
     split; cbn.
     + intros [a b]. cbn. sauto limit: 200.
     + intros [a b] [a' b']. cbn. split.
-      * intros [[k y] [[Hk Hy] Hr]]. cbn in *. subst k y. cbn in Hr. exact Hr.
-      * intros Heq. exists (arr_pure (fun y : B => (a, y)), b). cbn.
-        sauto limit: 200.
-  - (* app_post *)
+      * intros [[f b0] [[Hf Hb] Hout]]. cbn in *. subst f b0.
+        exact Hout.
+      * intros Heq.
+        exists ((fun _ => True, fun y p => (a, y) = p), b).
+        cbn. split; [split; reflexivity | exact Heq].
+  - (* app_precompose *)
+    split; cbn; unfold swap.
+    + intros [f a]. cbn.
+      transitivity (fst g a /\ forall b, snd g a b -> fst f b).
+      * split.
+        -- intros [_ Hpre].
+           apply (Hpre (@arr_comp PrePostArr Arrow_PrePost A B C g f, a)).
+           split; reflexivity.
+        -- intros Hpre. split; [exact I|].
+           intros [k a'] [Hk Ha]. cbn in *. subst k a'. exact Hpre.
+      * split.
+        -- intros [Hg Hf]. split.
+           ++ split; [exact I|]. intros [a' f'] Heq.
+              inversion Heq; subst. cbn. split; [exact Hg|].
+              intros _ _. exact I.
+           ++ intros [f' b] [[a' f''] [Hp [[b' f'''] [[Hgb Hff] Hswap]]]].
+              cbn in *. inversion Hp; subst.
+              inversion Hswap; subst. apply Hf. exact Hgb.
+        -- intros [[_ Hg] Hf]. split.
+           ++ exact (proj1 (Hg (a, f) eq_refl)).
+           ++ intros b Hgb. apply (Hf (f, b)).
+              exists (a, f). split; [reflexivity|].
+              exists (b, f). cbn. auto.
+    + intros [f a] c. cbn. split.
+      * intros [[k a'] [[Hk Ha] Hout]]. cbn in *. subst k a'.
+        destruct Hout as [b [Hg Hf]].
+        exists (f, b). split; [|exact Hf].
+        exists (a, f). split; [reflexivity|].
+        exists (b, f). cbn. auto.
+      * intros [[f' b] [[p [Hp [q [Hg Hq]]]] Hf]].
+        destruct p as [a' f''], q as [b' f''']; cbn in *.
+        injection Hp as Ha Hf0. subst a' f''.
+        destruct Hg as [Hg Hff]. subst f'''.
+        injection Hq as Hf0 Hb. subst f' b'.
+        exists (@arr_comp PrePostArr Arrow_PrePost A B C g f, a).
+        cbn. split; [split; reflexivity | exists b; auto].
+  - (* app_postcompose *)
     split; cbn.
     + intros [f a]. cbn. split.
-      * intros [_ Himp]. exact (Himp (arr_comp f h, a) (conj eq_refl eq_refl)).
-      * intros Hpre. split; [exact I |].
-        intros [g a'] [Hg Ha]. cbn in *. subst g a'. exact Hpre.
+      * intros [_ Hpre].
+        apply (Hpre (@arr_comp PrePostArr Arrow_PrePost A B C f h, a)).
+        split; reflexivity.
+      * intros Hpre. split; [exact I|].
+        intros [k a'] [Hk Ha]. cbn in *. subst k a'. exact Hpre.
     + intros [f a] c. cbn. split.
-      * intros [[g a'] [[Hg Ha] Hr]]. cbn in *. subst g a'. exact Hr.
-      * intros Hr. exists (arr_comp f h, a). cbn.
-        split; [split; reflexivity | exact Hr].
+      * intros [[k a'] [[Hk Ha] Hout]]. cbn in *. subst k a'.
+        exact Hout.
+      * intros Hout.
+        exists (@arr_comp PrePostArr Arrow_PrePost A B C f h, a).
+        cbn. split; [split; reflexivity | exact Hout].
   - (* app_ext *)
     split; cbn.
-    + intros x. split.
-      * intros [_ Himp].
-        specialize (Himp (u x, t x) eq_refl). cbn in Himp.
-        destruct (H x) as [HP _]. split; [exact I |].
-        intros [w y] Heq. cbn in *.
-        inversion Heq; subst. cbn. apply HP. exact Himp.
-      * intros [_ Himp].
-        specialize (Himp (v x, t x) eq_refl). cbn in Himp.
-        destruct (H x) as [HP _]. split; [exact I |].
-        intros [w y] Heq. cbn in *.
-        inversion Heq; subst. cbn. apply HP. exact Himp.
-    + intros x b. split.
-      * intros [[w y] [Heq Hr]]. cbn in *. inversion Heq; subst. cbn in Hr.
-        exists (v x, t x). cbn. split; [reflexivity |].
-        destruct (H x) as [_ HR]. apply HR. exact Hr.
-      * intros [[w y] [Heq Hr]]. cbn in *. inversion Heq; subst. cbn in Hr.
-        exists (u x, t x). cbn. split; [reflexivity |].
-        destruct (H x) as [_ HR]. apply HR. exact Hr.
+    + intros x. specialize (H x).
+      destruct (u x) as [f a], (v x) as [g a']; cbn in *.
+      destruct H as [[HP HR] Ha]. subst a'.
+      split; intros [_ Hpre]; split; [exact I| |exact I|]; intros p <-.
+      * apply HP. exact (Hpre (f, a) eq_refl).
+      * apply HP. exact (Hpre (g, a) eq_refl).
+    + intros x b. specialize (H x).
+      destruct (u x) as [f a], (v x) as [g a']; cbn in *.
+      destruct H as [[HP HR] Ha]. subst a'.
+      split; intros [p [<- Hout]]; cbn in Hout.
+      * exists (g, a). split; [reflexivity|]. apply HR. exact Hout.
+      * exists (f, a). split; [reflexivity|]. apply HR. exact Hout.
 Qed.
-
-(* ================================================================= *)
-(** ** Eq1 equivalence and monad laws                                 *)
-(* ================================================================= *)
-
-Section PrePostMonad.
-
-  Context {A : Type}.
-
-  #[global]
-  Instance Eq1Equivalence_PrePost
-    : @Eq1Equivalence (PrePostArr A) _ Eq1_PrePost.
-  Proof.
-    intros B; constructor.
-    - intros m. unfold eq1, Eq1_PrePost. split; intros; reflexivity.
-    - intros m1 m2 H. unfold eq1, Eq1_PrePost in *.
-      destruct H as [HP HR]. split; intros; symmetry; auto.
-    - intros m1 m2 m3 H1 H2. unfold eq1, Eq1_PrePost in *.
-      destruct H1 as [HP1 HR1]. destruct H2 as [HP2 HR2].
-      split; intros; etransitivity; eauto.
-  Qed.
-
-  #[global]
-  Instance MonadLawsE_PrePost
-    : @MonadLawsE (PrePostArr A) Eq1_PrePost _.
-  Proof.
-    constructor.
-    - (* bind_ret_l *)
-      intros B C f x. unfold eq1, Eq1_PrePost.
-      cbn. unfold bindPrePost, retPrePost. cbn.
-      split; sauto limit: 200.
-    - (* bind_ret_r *)
-      intros B m. unfold eq1, Eq1_PrePost.
-      cbn. unfold bindPrePost, retPrePost. cbn.
-      split; sauto limit: 200.
-    - (* bind_bind *)
-      intros B C D m f g. unfold eq1, Eq1_PrePost.
-      cbn. unfold bindPrePost. cbn.
-      split; sauto limit: 200.
-    - (* Proper_bind *)
-      intros B C m1 m2 Hm k1 k2 Hk.
-      unfold eq1, Eq1_PrePost in *.
-      destruct Hm as [HmP HmR].
-      cbn. unfold bindPrePost. cbn.
-      split.
-      + intros a. split; intros [HP HRf]; split;
-          [apply HmP | | apply HmP |]; try exact HP; intros b HR;
-          [assert (snd m1 a b) by (apply HmR; exact HR) |
-           assert (snd m2 a b) by (apply HmR; exact HR)];
-          destruct (Hk b) as [HkP _]; apply HkP; sauto limit: 200.
-      + intros a c. split; intros [b [HR HRf]]; exists b; split;
-          [apply HmR | destruct (Hk b) as [_ HkR]; apply HkR |
-           apply HmR | destruct (Hk b) as [_ HkR]; apply HkR]; eauto.
-  Qed.
-
-End PrePostMonad.

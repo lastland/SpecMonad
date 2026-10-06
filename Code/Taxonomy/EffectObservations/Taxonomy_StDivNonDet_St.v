@@ -12,7 +12,7 @@
     among the terminating-slice observations of [SP/StDivNonDet_SPSt.v], and
     the two contrapositive diagonals between the [ASP] and [DSLP] triples. *)
 
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
+From ExtLib Require Import StateMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.

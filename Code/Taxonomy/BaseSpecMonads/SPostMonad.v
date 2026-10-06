@@ -6,29 +6,23 @@
         [ret a    := fun p y => (p /\ a = y)]
         [bind m k := fun p y => exists a, (k a) (m p a) y]
 
-    A forward transformer: given a precondition [p] it says, of each result
-    [a], what is known after — and that knowledge always IMPLIES [p], which is
-    what the [Over] subtype records.  [bind] threads [m]'s postcondition at
-    [a] in as the precondition of [k a]; that is the whole content of forward
-    composition.
+    [SPost] maps a precondition [p] to a predicate on results.  Each output
+    proposition implies [p], as recorded by [Over].  Bind passes [m]'s
+    postcondition at [a] to [k a] as its precondition.  The formulas above
+    omit the [app] and [base] projections used below.
 
     This is DM4all's [SP] / [ForwardPredTransformer]
     ([sprop/SpecificationMonads.v], [Section StrongestPostcondition]),
-    transcribed from [SProp] to [Prop].  DM4all proves the laws as equalities
-    and so needs [sprop_ext] and functional extensionality; taking [Eq1] to be
-    pointwise iff on the underlying propositions, the same laws hold here with
-    NO axioms.
+    transcribed from [SProp] to [Prop].  [Eq1] compares the underlying
+    propositions by logical equivalence, not by equality of bundled values.
 
-    Both carrier conditions earn their keep in the proofs: [over] supplies the
-    witness that makes [bind_bind] go through left-to-right, and monotonicity
-    is what lets a precondition be replaced by an equivalent one.
+    In the associativity proof, [over] recovers the intermediate witness.
+    Monotonicity lets the proof replace a precondition by an equivalent one.
 
-    Wrapped in a module: [Taxonomy/SPost.v] uses the name [SPost] for the
-    strongest-postcondition ARROWS over [SPRecord], and [SPSpecMonads.v] binds
-    [SPPure] to the unrestricted [Prop -> A -> Prop]. *)
+    Wrapped in [SPM] to distinguish this unary presentation from the binary
+    arrows in [Arrows/SPostArr.v] and [Arrows/RelSPostArr.v].
+    [SPPredicateTransformers.v] defines the unrestricted [SPPure] carrier. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 
@@ -331,46 +325,18 @@ Module KenjiFailingBind.
   Definition pre : bool -> Prop := fun _ => True.
   Definition r : option (unit * bool) := Some (tt, true).
 
-  (* S := bool, A := bool, B := C := unit *)
-  
-  (** LHS **)
-  
-  (* bind (bind m k) (fun _ : unit => g) pre r <->
-     (exists b : unit, g (fun s1 => (bind m k) pre (Some (b, s1))) r) \/ (r = None /\ (bind m k) pre None) <->
-     (exists b : unit, g (fun s1 => (bind m k) pre (Some (b, s1))) r) <->
-     g (fun s1 => (bind m k) pre (Some (tt, s1))) r <-> (see below)
-     g (fun s1 => True) r <-> (unfold g)
-     True /\ True <-> True
-   *)
-  
-  (* (bind m k) pre (Some (tt, s1)) <-> (unfold bind)
-     exists a, k a (fun s0 => m pre (Some (a, s0))) (Some (tt, s1)) <-> (unfold k)
-     exists a, (exists s, m pre (Some (a, s))) /\ a = s1 <-> (unfold m)
-     exists a, (exists s, pre s) /\ a = s1 <-> (a := true)
-     exists s, pre s <-> (s := s1)
-     True *)
+  (** The two associations pass different preconditions to [g].
 
-  (** RHS **)
-  
-  (* bind m (fun a => bind (k a) (fun _ : unit => g)) pre r <->
-     (exists a : bool, (bind (k a) g) (fun s0 => m pre (Some (a, s0))) r) \/ (r = None /\ m pre None) <->
-     (exists a : bool, (bind (k a) g) (fun s0 => m pre (Some (a, s0))) r) <->
-     (exists a : bool, (bind (k a) g) (fun _ => exists s, pre s) r) <->
-     (exists a : bool, (bind (k a) g) (fun _ => True) r) <->
-     (exists a : bool, False) <-> False
-   *)
+      On the left, sequencing [m] with [k] first makes both Boolean states
+      available.  Thus [g] receives [fun _ => True] and accepts [r].
 
-  (* (bind (k a) g) (fun _ => True) r <->
-     (exists b : unit, g (fun s1 => k a (fun _ => True) (Some (b, s1))) r) \/ (r = None /\ k a (fun _ => True) None) <->
-     (exists b : unit, g (fun s1 => k a (fun _ => True) (Some (b, s1))) r) <->
-     g (fun s1 => k a (fun _ => True) (Some (tt, s1))) r <-> (see below)
-     g (fun s1 => s1 = a) r <->
-     (fun s1 => s1 = a) true /\ (fun s1 => s1 = a) false <->
-     (true = a) /\ (false a) <-> False *)
+      On the right, [m] first chooses one [a : bool].  Sequencing [k a]
+      with [g] then gives [g] only [fun s => s = a].  Since [g] requires
+      both [true] and [false], it rejects that precondition for every [a].
+      The exception branches cannot contribute because [r] is [Some _].
 
-  (* k a (fun _ => True) (Some (tt, s1)) <->
-     (exists s, True) /\ Some (tt, s1) = Some (tt, a) <->
-     s1 = a *)
+      [ProgSP_bind_bind_fails] proves this distinction for the actual
+      [bindKenjiProgSP] operations, without relying on schematic expansions. *)
   
   Theorem ProgSP_bind_bind_fails :
     ~ (forall (A B C S : Type) (m : KenjiProgSP S A) (f : A -> KenjiProgSP S B)
@@ -396,16 +362,9 @@ Module KenjiFailingBind.
     congruence.
   Qed.
 
-(* INTUITION: The problematic predicate transformer here is
-   g := fun pre r => pre true /\ pre false. It requires that
-   two distinct initial states satisfy the precondition. The
-   LHS of the bind simplifies as follows:
-   bind (bind m k) (fun _ : unit => g) pre r <-> g (fun s1 => True) r.
-   The precondition passed to g is not problematic, since it always returns
-   True. However the RHS of the bind simplies as follows:
-   bind m (fun a => (bind k a) (fun _ : unit => g)) pre r <->
-   (exists a : bool, g (fun s1 => s1 = a) r) <->
-   (exists a : bool, (a = true) /\ (a = false). *)
+(* This rejects the proposed bind on [KenjiProgSP], whose monotonicity and
+   codomain conditions admit [g].  It does not reject the more constrained
+   ASP carrier or the unary [SPM.SPost] monad above. *)
 
 End KenjiFailingBind.
 

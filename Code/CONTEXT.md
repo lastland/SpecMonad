@@ -1,47 +1,32 @@
 # Code context
 
-Parent: [global context map](../CONTEXT-MAP.md).
-Conventions: [CLAUDE.md](../CLAUDE.md).
+Parent: [global map](../CONTEXT-MAP.md). Conventions: [CLAUDE.md](../CLAUDE.md).
 
-## Scope and authority
+[_CoqProject](_CoqProject) maps this directory to `Incorrectness` and defines
+the normal build boundary. A file's presence does not establish membership.
+Dependencies live in [the opam file](coq-spec-monad.opam); follow the current
+Makefile for build/audit targets. Source declarations override older prose.
 
-[_CoqProject](_CoqProject) identifies the active Coq sources and maps this
-directory to the `Incorrectness` namespace. A file's presence on disk does
-not establish that it belongs to the current build. Dependencies and build
-instructions live in the [opam file](coq-spec-monad.opam) and
-[project README](../README.md).
+## Ownership
 
-The directory contexts describe this checkout's definitions. Source declarations
-determine exact types and theorem statements; older prose can use earlier names.
-
-## Main relationships
-
-- [Common](Common/CONTEXT.md) defines shared specification-monad machinery;
-  [Common.v](Common.v) provides a re-export for its clients.
+- [Common](Common/CONTEXT.md) supplies earlier specification interfaces.
+- [Classes](Classes/CONTEXT.md) supplies generic arrow laws, transformers,
+  morphisms, and fixed-input monads without concrete Taxonomy carriers.
 - [Identity](Identity/CONTEXT.md), [Reader](Reader/CONTEXT.md),
-  [ST](ST/CONTEXT.md), and [STEx](STEx/CONTEXT.md) explore individual effects
-  and verification judgments through that machinery.
-- [Classes](Classes/CONTEXT.md) defines generic arrows and transformer laws.
-- [Taxonomy](Taxonomy/CONTEXT.md) separates computation models, specification
-  carriers, and observations. Its [README](Taxonomy/README.md) supplies the
-  detailed mathematical discussion; local contexts identify the source contracts.
+  [ST](ST/CONTEXT.md), and [STEx](STEx/CONTEXT.md) study individual effects.
+- [Taxonomy](Taxonomy/CONTEXT.md) separates computation outcomes, base
+  specifications, concrete binary arrows, observations, and comparisons.
+- [Checks](Checks/CONTEXT.md) reports selected assumptions separately from
+  normal tests/examples through `make check` in the maintained [Makefile](Makefile).
+  Reporting is not a proof of axiom-freedom; context documents are not an
+  assumption ledger.
 
 ## Shared distinctions
 
-- A computation's outcome type determines which effects are observable.
-  Check each option layer before interpreting `None` as exception or divergence.
-- A specification carrier, its equality, and its refinement order are separate
-  choices. Similarly named judgments can use opposite implication directions.
-- Unary specification monads and binary specification arrows have different
-  interfaces. Consult the defining module before transferring a law between them.
-- Monad laws and observation-preservation lemmas do not by themselves establish
-  monotonicity of bind in a chosen order. The Taxonomy contexts identify relevant
-  restrictions and counterexamples.
-
-## Build boundaries
-
-The [global map](../CONTEXT-MAP.md) covers every directory containing a
-manifest-listed source, together with its parents. Some
-[OldSP](Taxonomy/OldSP/CONTEXT.md) sources remain active; `deprecated/`,
-`Backup/`, and `ITreeExamples/` are excluded from the manifest.
-Use the manifest rather than a directory name to decide which files are active.
+Check each outcome layer: `None` is not uniformly divergence. Check each
+carrier's equality and order: similar names can reverse implication.
+Unary monads differ from binary arrows at a fixed input. Well-formedness,
+monad laws, monotonicity in a precondition, and ordered bind are separate.
+Some exploratory proofs end in `Abort`; build membership does not turn them
+into results. `OldSP` is partly built; `deprecated/`, `Backup/`, and
+`ITreeExamples/` are excluded. Follow parent/local contexts and source links.

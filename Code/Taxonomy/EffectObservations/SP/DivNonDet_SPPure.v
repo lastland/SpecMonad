@@ -1,6 +1,6 @@
-From ExtLib Require Import Monad OptionMonad.
+From ExtLib Require Import OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet DivNonDet.
+From Incorrectness.Taxonomy.ComputationMonads Require Import DivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 Require Import Coq.Logic.Classical_Prop.
@@ -11,31 +11,22 @@ Open Scope monad_scope.
 (** * SP observations of [divnd] into the pure spec monads
 
     [divnd A] has outcome set [option A -> Prop], with [None] read as
-    divergence.  [SPPure A = Prop -> A -> Prop] indexes its transformers by [A]
-    alone, so the observations here read the TERMINATING SLICE
+    divergence.  These observations retain only its terminating slice:
 
       [unOptionT m (Some a)]
 
-    — the normal returns only, with divergence projected away.  This is the
-    state-free case of [SP/StDivNonDet_SPSt.v]: strip [S] from that file and
-    every [S -> Prop] precondition collapses to a single [Prop], the
-    existential [exists s, pre s /\ _] to [pre /\ _], and the universal
-    [forall s, _ -> pre s] to [_ -> pre].
+    The targets are well-formed subsets of [SPPure A = Prop -> A -> Prop].
+    Unlike [StDivNonDet_SPSt.v], there is no initial-state witness: the ASP
+    reading is [pre /\ unOptionT m (Some a)], and the DSLP reading is
+    [unOptionT m (Some a) -> pre].  Thus [divergeD] has a false ASP reading
+    and a true DSLP reading at every precondition and result.
 
-    Divergence cannot be spoken about at all here; the transformers constrain
-    only the terminating behaviour, and [divergeD] observes as the empty
-    angelic postcondition and the trivial demonic one.
-
-    All four observations appear, but DSP and ASLP DEGENERATE here: with no
-    state there is a single "input", so the conjunction of the ASP and DSLP
-    readings falls back on the ASP one and their disjunction on the DSLP one
-    ([obsDSP_is_obsASP] / [obsASLP_is_obsDSLP]).  That mirrors the carrier
-    level, where [Strict /\ Conjunctive] is equivalent to [Singleton] and
-    [Terminating /\ Disjunctive] to [MSingleton] — see [PureDSPMonad] in
-    [DSPMonad.v] and [PureASLPMonad] in [ASLPMonad.v].
-
-    Everything is wrapped in a module so the names do not clash with the
-    stateful observations. *)
+    The file defines all four observations and proves their return/bind laws.
+    [obsDSP_is_obsASP] and [obsASLP_is_obsDSLP] show that their conjunction
+    and disjunction collapse to ASP and DSLP, respectively.  The pure carrier
+    equivalences are in [BaseSpecMonads/DSPMonad.v] and
+    [BaseSpecMonads/ASLPMonad.v].  [PureObs] qualifies these names to
+    distinguish them from the stateful observations. *)
 
 Module PureObs.
 

@@ -1,8 +1,8 @@
-From ExtLib Require Import Monad MonadState StateMonad MonadExc EitherMonad MonadLaws.
-From Hammer Require Import Hammer Tactics.
+From ExtLib Require Import Monad MonadState StateMonad MonadExc.
+From Hammer Require Import Tactics.
 From Incorrectness Require Import STEx.Examples.
 
-From Coq Require Import Nat Lia PeanoNat.
+From Coq Require Import Lia PeanoNat.
 Opaque "<=?".
 
 Set Implicit Arguments.

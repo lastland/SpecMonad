@@ -10,9 +10,8 @@
     other computation monads, [WPure]'s [WSt] / [WStExc], [PredMonad]'s
     [ProgWPred], and the [*Rd] specification monads. *)
 
-From Coq Require Import Morphisms RelationClasses.
 From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ExtLib Require Import ReaderMonad.
 
 (* ================================================================= *)
@@ -77,6 +76,44 @@ Section OptionT.
   Qed.
 
 End OptionT.
+
+(* ================================================================= *)
+(** ** Generic order lifting for ExtLib's [optionT]                  *)
+(* ================================================================= *)
+
+(** The base order [leM] is an EXPLICIT parameter rather than a
+    typeclass: stacking [optionT] layers can never trigger recursive
+    instance search.  Reflexivity and simultaneous bind monotonicity lift
+    once, parametrically in the base monad; a double-[optionT] stack
+    instantiates the result at each layer. *)
+
+Section OptionTOrder.
+
+  Variable M : Type -> Type.
+  Context {MonadM : Monad M}.
+  Variable leM : forall A, M A -> M A -> Prop.
+  Hypothesis leM_refl : forall A (m : M A), leM A m m.
+  Hypothesis bind_mono : forall A B (m n : M A) (f g : A -> M B),
+    leM A m n -> (forall a, leM B (f a) (g a)) ->
+    leM B (bind m f) (bind n g).
+
+  Definition ord_optionT {A} (m n : optionT M A) : Prop :=
+    leM (option A) (unOptionT m) (unOptionT n).
+
+  Lemma ord_optionT_refl {A} (m : optionT M A) : ord_optionT m m.
+  Proof. apply leM_refl. Qed.
+
+  Lemma bind_optionT_mono {A B} (m n : optionT M A) (f g : A -> optionT M B) :
+    ord_optionT m n -> (forall a, ord_optionT (f a) (g a)) ->
+    ord_optionT (bind m f) (bind n g).
+  Proof.
+    intros Hmn Hfg. unfold ord_optionT in *.
+    cbn. apply bind_mono.
+    - exact Hmn.
+    - intros [a|]; [ apply Hfg | apply leM_refl ].
+  Qed.
+
+End OptionTOrder.
 
 (* ================================================================= *)
 (** ** Generic [Eq1] and [MonadLawsE] for ExtLib's [stateT]          *)

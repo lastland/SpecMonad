@@ -1,10 +1,9 @@
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
 Require Import Coq.Setoids.Setoid.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicateTransformers.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad.
 
 Import MonadNotation.
@@ -96,7 +95,44 @@ Section PureASLPMonad.
   Definition ordASLPSPAt {A} (pre : Prop) (m1 m2 : ASLPSP A) : Prop :=
     forall a, getASLP m1 pre a -> getASLP m2 pre a.
 
+  Lemma ordASLPSP_refl A (m : ASLPSP A) : ordASLPSP m m.
+  Proof. intros p a H. exact H. Qed.
+  Lemma bindASLP_mono A B (m n : ASLPSP A) (f g : A -> ASLPSP B) :
+    ordASLPSP m n -> (forall a, ordASLPSP (f a) (g a)) ->
+    ordASLPSP (bindASLP m f) (bindASLP n g).
+  Proof.
+    intros Hmn Hfg p b Hb a. apply Hfg.
+    apply (getMSP_mono (aslp_to_dslp (f a)) (getASLP m p a) (getASLP n p a) b).
+    - exact (Hmn p a).
+    - exact (Hb a).
+  Qed.
 End PureASLPMonad.
+
+Local Lemma aslp_recov_gen (S O : Type) (R : S -> O -> Prop) (s : S) (r : O) :
+  (~ ((exists t, False /\ R t r) \/ (forall t, R t r -> False))
+   /\ ((exists t, t = s /\ R t r) \/ (forall t, R t r -> t = s))) <-> R s r.
+Proof.
+  split.
+  - intros [Hne [[t [Heq Ht]] | Hall]]; [ subst t; exact Ht |].
+    apply NNPP. intro Hns. apply Hne. right.
+    intros t Ht. rewrite (Hall t Ht) in Ht. exact (Hns Ht).
+  - intro Hs. split.
+    + intros [[t [Hf _]] | Hall]; [ destruct Hf | exact (Hall s Hs) ].
+    + left. exists s. split; [ reflexivity | exact Hs ].
+Qed.
+Local Lemma aslp_cong_gen (S O : Type) (R R' : S -> O -> Prop)
+  (H : forall s r, R s r <-> R' s r) : forall (pre : S -> Prop) (r : O),
+  ((exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s)) <->
+  ((exists s, pre s /\ R' s r) \/ (forall s, R' s r -> pre s)).
+Proof.
+  intros pre r. split.
+  - intros [[s [Hp Hs]] | Hall].
+    + left. exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
+    + right. intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
+  - intros [[s [Hp Hs]] | Hall].
+    + left. exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
+    + right. intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
+Qed.
 
 Section ProgASLPMonad.
   Variable S : Type.
@@ -114,15 +150,7 @@ Section ProgASLPMonad.
     (~ ((exists t, False /\ R t r) \/ (forall t, R t r -> False))
      /\ ((exists t, t = s /\ R t r) \/ (forall t, R t r -> t = s)))
     <-> R s r.
-  Proof.
-    split.
-    - intros [Hne [[t [Heq Ht]] | Hall]]; [ subst t; exact Ht |].
-      apply NNPP. intro Hns. apply Hne. right.
-      intros t Ht. rewrite (Hall t Ht) in Ht. exact (Hns Ht).
-    - intro Hs. split.
-      + intros [[t [Hf _]] | Hall]; [ destruct Hf | exact (Hall s Hs) ].
-      + left. exists s. split; [ reflexivity | exact Hs ].
-  Qed.
+  Proof. exact (aslp_recov_gen S (option (A * S)) R s r). Qed.
 
   Lemma aslp_wf {A} (R : S -> option (A * S) -> Prop) :
     forall (pre : S -> Prop) (r : option (A * S)),
@@ -149,15 +177,7 @@ Section ProgASLPMonad.
     forall (pre : S -> Prop) (r : option (A * S)),
       ((exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s))
       <-> ((exists s, pre s /\ R' s r) \/ (forall s, R' s r -> pre s)).
-  Proof.
-    intros pre r. split.
-    - intros [[s [Hp Hs]] | Hall].
-      + left. exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
-      + right. intros s Hs. exact (Hall s (proj2 (H s r) Hs)).
-    - intros [[s [Hp Hs]] | Hall].
-      + left. exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
-      + right. intros s Hs. exact (Hall s (proj1 (H s r) Hs)).
-  Qed.
+  Proof. exact (aslp_cong_gen S (option (A * S)) R R' H). Qed.
 
   Lemma aslp_rec_ext {A} (w1 w2 : @SPStExc S A)
     (H : forall pre r, w1 pre r <-> w2 pre r) :
@@ -172,9 +192,9 @@ Section ProgASLPMonad.
         [ intro Hc; exact (H1 (proj1 (H _ r) Hc)) | exact (proj2 (H _ r) H2) ].
   Qed.
 
-  (** Dual of [dsp_carrier]: the healthiness condition that the type states is
-      the same thing as "[w] is the ASLP of its own recovered relation", which
-      is what the proofs use. *)
+  (** Dual of [dsp_carrier]: the carrier's well-formedness condition is
+      equivalent to saying that [w] is the ASLP reading of its recovered
+      relation. The proofs use this representation. *)
   Lemma aslp_carrier {A} (w : SPStExc A) :
     TerminatingPositivelyJoinPreserving w <->
       (forall (pre : S -> Prop) (r : option (A * S)), w pre r <->
@@ -279,7 +299,21 @@ Section ProgASLPMonad.
   Lemma aslp_shape_wf {A} (R : S -> option (A * S) -> Prop) :
     TerminatingPositivelyJoinPreserving
       (fun pre r => (exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s)).
-  Proof. apply aslp_carrier. intros pre r. exact (aslp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r. right. intros s _. exact I.
+    - intros I [i0] p r. split.
+      + intros [[s [[i Hi] Hs]] | Hall].
+        * exists i. left. exists s. split; [ exact Hi | exact Hs ].
+        * destruct (classic (exists s, R s r)) as [[s0 Hs0] | Hno].
+          -- destruct (Hall s0 Hs0) as [i Hi]. exists i. left.
+             exists s0. split; [ exact Hi | exact Hs0 ].
+          -- exists i0. right. intros s Hs. exfalso.
+             exact (Hno (ex_intro _ s Hs)).
+      + intros [i [[s [Hp Hs]] | Hall]].
+        * left. exists s. split; [ exists i; exact Hp | exact Hs ].
+        * right. intros s Hs. exists i. exact (Hall s Hs).
+  Qed.
 
   (** ... and every carrier element is the ASLP of its recovered relation. *)
   Lemma getProgASLP_carrier {A} (w : ASLPStExc A)
@@ -395,6 +429,17 @@ Section ProgASLPMonad.
   Qed.
 
   (** Both binds compute the SAME composite relation. *)
+  Lemma aslp_comp_recov_option (A B : Type)
+    (Rx : S -> option (A * S) -> Prop) (F : A -> S -> option (B * S) -> Prop) :
+    forall (s : S) (r : option (B * S)),
+    (exists o, (~ ((exists t, False /\ Rx t o) \/ (forall t, Rx t o -> False))
+      /\ ((exists t, t = s /\ Rx t o) \/ (forall t, Rx t o -> t = s)))
+      /\ match o with
+      | Some (a, smid) => (~ ((exists t, False /\ F a t r) \/ (forall t, F a t r -> False))
+        /\ ((exists t, t = smid /\ F a t r) \/ (forall t, F a t r -> t = smid)))
+      | None => r = None end) <->
+    (exists o, Rx s o /\ match o with Some (a, smid) => F a smid r | None => r = None end).
+  Proof. exact (comp_cong S _ _ _ _ (aslp_recov Rx) (fun a => aslp_recov (F a))). Qed.
   Lemma bind_asp_parts' {A B} (m : ASLPStExc A) (k : A -> ASLPStExc B) pre r :
     getASPStExc (bindASPStExc (aspPartaslp m) (fun a => aspPartaslp (k a))) pre r
     <-> (exists s, pre s /\
@@ -755,17 +800,9 @@ Arguments getASLPStExc {_} {_}.
 (** * Terminating-slice variant (factored out of SPSimplerSpecMonads.v) *)
 (* ================================================================= *)
 
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
-Require Import Coq.Logic.PropExtensionality.
-Require Import Coq.Logic.FunctionalExtensionality.
-Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Setoids.Setoid.
 
 Import MonadNotation.
 Open Scope monad_scope.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
-From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad.
 
 Module StASLP.
   Import StTrans StASP StDSLP StDSP.
@@ -785,15 +822,7 @@ Section ProgASLPMonad.
     (~ ((exists t, False /\ R t r) \/ (forall t, R t r -> False))
      /\ ((exists t, t = s /\ R t r) \/ (forall t, R t r -> t = s)))
     <-> R s r.
-  Proof.
-    split.
-    - intros [Hne [[t [Heq Ht]] | Hall]]; [ subst t; exact Ht |].
-      apply NNPP. intro Hns. apply Hne. right.
-      intros t Ht. rewrite (Hall t Ht) in Ht. exact (Hns Ht).
-    - intro Hs. split.
-      + intros [[t [Hf _]] | Hall]; [ destruct Hf | exact (Hall s Hs) ].
-      + left. exists s. split; [ reflexivity | exact Hs ].
-  Qed.
+  Proof. exact (aslp_recov_gen S (A * S) R s r). Qed.
 
   Lemma aslp_wf {A} (R : S -> (A * S) -> Prop) :
     forall (pre : S -> Prop) (r : (A * S)),
@@ -820,15 +849,7 @@ Section ProgASLPMonad.
     forall (pre : S -> Prop) (r : (A * S)),
       ((exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s))
       <-> ((exists s, pre s /\ R' s r) \/ (forall s, R' s r -> pre s)).
-  Proof.
-    intros pre r. split.
-    - intros [[s [Hp Hs]] | Hall].
-      + left. exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
-      + right. intros s Hs. exact (Hall s (proj2 (H s r) Hs)).
-    - intros [[s [Hp Hs]] | Hall].
-      + left. exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
-      + right. intros s Hs. exact (Hall s (proj1 (H s r) Hs)).
-  Qed.
+  Proof. exact (aslp_cong_gen S (A * S) R R' H). Qed.
 
   Lemma aslp_rec_ext {A} (w1 w2 : @SPSt S A)
     (H : forall pre r, w1 pre r <-> w2 pre r) :
@@ -843,9 +864,9 @@ Section ProgASLPMonad.
         [ intro Hc; exact (H1 (proj1 (H _ r) Hc)) | exact (proj2 (H _ r) H2) ].
   Qed.
 
-  (** Dual of [dsp_carrier]: the healthiness condition that the type states is
-      the same thing as "[w] is the ASLP of its own recovered relation", which
-      is what the proofs use. *)
+  (** Dual of [dsp_carrier]: the carrier's well-formedness condition is
+      equivalent to saying that [w] is the ASLP reading of its recovered
+      relation. The proofs use this representation. *)
   Lemma aslp_carrier {A} (w : SPSt A) :
     TerminatingPositivelyJoinPreserving w <->
       (forall (pre : S -> Prop) (r : (A * S)), w pre r <->
@@ -948,7 +969,21 @@ Section ProgASLPMonad.
   Lemma aslp_shape_wf {A} (R : S -> (A * S) -> Prop) :
     TerminatingPositivelyJoinPreserving
       (fun pre r => (exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s)).
-  Proof. apply aslp_carrier. intros pre r. exact (aslp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r. right. intros s _. exact I.
+    - intros I [i0] p r. split.
+      + intros [[s [[i Hi] Hs]] | Hall].
+        * exists i. left. exists s. split; [ exact Hi | exact Hs ].
+        * destruct (classic (exists s, R s r)) as [[s0 Hs0] | Hno].
+          -- destruct (Hall s0 Hs0) as [i Hi]. exists i. left.
+             exists s0. split; [ exact Hi | exact Hs0 ].
+          -- exists i0. right. intros s Hs. exfalso.
+             exact (Hno (ex_intro _ s Hs)).
+      + intros [i [[s [Hp Hs]] | Hall]].
+        * left. exists s. split; [ exists i; exact Hp | exact Hs ].
+        * right. intros s Hs. exists i. exact (Hall s Hs).
+  Qed.
 
   Lemma getProgASLP_carrier {A} (w : ASLPSt A) (pre : S -> Prop) (r : A * S) :
     getASLPSt w pre r <->

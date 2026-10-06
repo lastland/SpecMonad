@@ -10,14 +10,11 @@
     [progA_stdivitree] are the same shapes read in the other computation
     monads. *)
 
-From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Hammer Require Import Tactics.
+From ExtLib Require Import MonadState MonadExc.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet StDivITree.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr.
 
 Import MonadNotation.
 Open Scope monad_scope.

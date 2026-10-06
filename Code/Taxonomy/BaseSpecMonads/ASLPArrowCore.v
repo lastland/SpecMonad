@@ -32,7 +32,7 @@ From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import PredArr SPostArr SPArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel SPArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure ASPArrowCore DSLPArrowCore.
 
 (** Representability: [w] is the ASLP of some relation. *)
@@ -112,13 +112,13 @@ Definition aslpRel {X Y} (w : ASLPArr X Y) : SPureArr X Y :=
   fun x y => ~ getASLP w (fun _ => False) y /\ getASLP w (fun z => z = x) y.
 
 Lemma aslpRel_of {X Y} (R : SPureArr X Y) (w : ASLPArr X Y) :
-  (forall P y, getASLP w P y <-> aslpOf R P y) -> Pred_eq (aslpRel w) R.
+  (forall P y, getASLP w P y <-> aslpOf R P y) -> Rel_eq (aslpRel w) R.
 Proof.
   intros Hw x y. unfold aslpRel. rewrite !Hw. symmetry. apply aslpOf_rel.
 Qed.
 
 Lemma aslpOf_cong {X Y} (R R' : SPureArr X Y) :
-  Pred_eq R R' -> forall P y, aslpOf R P y <-> aslpOf R' P y.
+  Rel_eq R R' -> forall P y, aslpOf R P y <-> aslpOf R' P y.
 Proof.
   intros H P y. unfold aslpOf, aspOf, dslpOf.
   split; (intros [[x [HP Hx]] | Hd];
@@ -130,7 +130,7 @@ Lemma aslpRel_spec {X Y} (w : ASLPArr X Y) P y :
   getASLP w P y <-> aslpOf (aslpRel w) P y.
 Proof.
   destruct (aslp_hom_healthy _ (proj2_sig w)) as [R HR].
-  assert (Hrel : Pred_eq (aslpRel w) R) by (apply aslpRel_of; exact HR).
+  assert (Hrel : Rel_eq (aslpRel w) R) by (apply aslpRel_of; exact HR).
   unfold getASLP. rewrite HR. exact (aslpOf_cong R (aslpRel w) (fun a b => iff_sym (Hrel a b)) P y).
 Qed.
 
@@ -156,14 +156,14 @@ Theorem aslp_split {X Y} (w : ASLPArr X Y) P y :
 Proof. exact (aslpRel_spec w P y). Qed.
 
 Theorem aslpRel_faithful {X Y} (w v : ASLPArr X Y) :
-  Pred_eq (aslpRel w) (aslpRel v) -> ASLPArr_eq w v.
+  Rel_eq (aslpRel w) (aslpRel v) -> ASLPArr_eq w v.
 Proof.
   intros H P y. rewrite (aslpRel_spec w P y), (aslpRel_spec v P y).
   exact (aslpOf_cong _ _ H P y).
 Qed.
 
 Theorem aslpRel_faithful_conv {X Y} (w v : ASLPArr X Y) :
-  ASLPArr_eq w v -> Pred_eq (aslpRel w) (aslpRel v).
+  ASLPArr_eq w v -> Rel_eq (aslpRel w) (aslpRel v).
 Proof.
   intros H x y. unfold aslpRel. split.
   - intros [Hn Hs]. split; [| apply H; exact Hs ].

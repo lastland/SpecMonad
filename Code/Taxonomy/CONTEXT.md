@@ -1,69 +1,42 @@
-# Taxonomy context (main)
+# Taxonomy context
 
-Parent: [Code context](../CONTEXT.md).
-Detailed map: [Taxonomy README](README.md).
-Active sources: [Code/_CoqProject](../_CoqProject).
+Parent: [Code](../CONTEXT.md). Details: [README](README.md).
+Source declarations and [_CoqProject](../_CoqProject) override older names.
 
-## Purpose and scope
+## Ownership
 
-Taxonomy connects effectful computations to specification monads and arrows,
-then compares the observations and triples they support. This context describes
-the current `main` sources. Parts of the README retain older names; use
-definitions and the manifest to resolve conflicts.
-
-## Established vocabulary and contracts
-
-- A **computation monad** supplies operations and outcomes. For example,
-  [`stdivexcnd`](ComputationMonads/StDivExcNonDet.v) distinguishes normal
-  returns, exceptions, and divergence using two option layers.
-- A **specification monad** supplies a carrier, return, bind, and a chosen
-  equivalence. [`WPure`](BaseSpecMonads/WPureMonad.v) bundles monotone
-  weakest-precondition (WP) transformers. The strongest-postcondition (SP)
-  [carriers](BaseSpecMonads/SPPredicateTransformers.v) turn a precondition into
-  an outcome predicate; healthiness conditions restrict these carriers to SP monads.
-- An **observation** maps a computation to a specification. Its source, target,
-  and treatment of outcomes determine its meaning. Where supplied, `obs*_ret`
-  and `obs*_bind` relate the particular source and target operations; see
-  [`FullOutcomeObs`](EffectObservations/SP/StDivNonDet_SPStExc.v).
-- **Over / Under** on SP triples compare the observed and asserted
-  postconditions in opposite directions. WP triples instead compare the
-  computed and asserted preconditions; their constructor names vary by file.
-
-## Ownership and dependency boundaries
-
-- [ComputationMonads](ComputationMonads/CONTEXT.md) owns the effect models.
-  Its [TransformerLaws.v](ComputationMonads/TransformerLaws.v) is generic in
-  the base monad and also supports specification stacks.
+- [ComputationMonads](ComputationMonads/CONTEXT.md) owns effects and outcomes.
+  Its TransformerLaws is generic and also serves specification stacks.
 - [BaseSpecMonads](BaseSpecMonads/CONTEXT.md) owns unary specifications,
-  healthiness, orders, and base adjunctions without concrete computations.
-- [Arrows](Arrows/CONTEXT.md) owns binary specification carriers and their
-  concrete laws. These are distinct from the unary presentations; current
-  imports do not form a completely separate arrow-only dependency tree.
-- [EffectObservations](EffectObservations/CONTEXT.md) connects the models.
-  [SP](EffectObservations/SP/CONTEXT.md) and [WP](EffectObservations/WP/CONTEXT.md)
-  define observations; `EffectObservations/Taxonomy_*.v` files compare them.
-- [ExampleProgramDefs.v](ExampleProgramDefs.v) shares program definitions
-  without importing observations. [InCorrectnessPrinciples.v](InCorrectnessPrinciples.v)
-  states rewriting rules for the current double-option `tripleASP` presentation.
+  their properties, orders, and adjunctions. OldMonads holds the earlier
+  healthy carriers; new public modules are arrow-derived four-flavour APIs.
+- [Arrows](Arrows/CONTEXT.md) owns binary specification interfaces, concrete
+  laws, and equivalence between canonical property-only SP arrows and plain
+  `Rel`. The canonical SP carriers live in BaseSpecMonads. Check actual imports:
+  the present dependency graph is not completely arrow-only.
+- [EffectObservations](EffectObservations/CONTEXT.md) connects computations
+  to specifications and compares observations/triples. SP and WP have separate
+  outcome choices and directions. Arrow-derived clients coexist with old ones.
+- [DijkstraMonads](DijkstraMonads/CONTEXT.md) indexes computations by observations
+  and selected specification orders. It supplies WP and earlier ASP/DSLP SP
+  clients, triple bridges, and selected-order sequencing/indexing obstructions.
+- ExampleProgramDefs shares programs without observations. InCorrectnessPrinciples
+  states rewriting rules for the double-option tripleASP interface.
+- [OldSP](OldSP/CONTEXT.md) retains some built earlier results;
+  deprecated is excluded. Tests, examples, and assumption audits are distinct.
 
 ## Semantic cautions
 
-- `None` is not uniformly divergence. In a single-option computation it can
-  mean exception or divergence; an observation may also discard one option layer.
-- `SPStExc` names an option-indexed carrier, not a fixed interpretation of its
-  extra outcome. A terminating-slice observation can retain exceptions while
-  hiding divergence.
-- Healthiness, monad laws, precondition monotonicity, and monotonicity of bind
-  in the refinement order are separate properties. The
-  [ordered-bind counterexamples](BaseSpecMonads/SPBindOrderCounterexample.v)
-  concern the existing state-only DSP/ASLP binds and pointwise orders.
-- [OldSP](OldSP/CONTEXT.md) mixes manifest-listed and excluded files.
-  `deprecated/` is excluded; do not use it as the default source of current symbols.
+None can mean exception, divergence, or structural failure depending on the
+layer. For stdivexcnd, outer None is divergence and Some None is exception.
+Terminating-slice observations can retain exceptions while omitting divergence;
+full-outcome observations retain both layers where available.
 
-## Reading order
+Healthiness, monad equations, precondition monotonicity, and ordered bind
+are separate. Pointwise DSP/ASLP ordered-bind counterexamples coexist with
+relation-inclusion ordered monads. Over/Under SP and WP triples can reverse
+implication and argument order: inspect the local definitions.
 
-Choose the computation and its outcome type first. Then read the target's
-[base-monad](BaseSpecMonads/CONTEXT.md) or [arrow](Arrows/CONTEXT.md) contract,
-the corresponding observation, and finally its comparison file and examples.
-Follow the local context before relying on an older comment or a similarly
-named definition from another presentation.
+Read computation/outcomes → specification carrier/order → observation →
+comparison/examples. A return/bind preservation theorem refers to the selected
+source and target operations, not every similarly named dictionary.

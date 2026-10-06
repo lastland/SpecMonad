@@ -19,9 +19,18 @@ Discuss new terms with the user before adopting them.
 Meeting notes are historical discussion rather than adopted ADRs; surface
 conflicts with an existing ADR explicitly.
 
+Identify referenced papers by their full titles, with authors, venue/year, and
+citation links where available. Introduce abbreviations with the title before
+using them, and attribute theorem, definition, and figure numbers to the paper
+they come from.
+
 ## Maintenance
 
 Update affected contexts and the global map when directory roles, terminology,
 or architectural relationships change. Coverage follows `Code/_CoqProject`,
 including parent directories. Link to detailed documentation rather than
 duplicating it, and describe the current checkout rather than another branch.
+
+Use “healthy” and “healthiness” for predicate-transformer class conditions.
+Use “well-formed” and “well-formedness” for general validity constraints.
+Healthiness does not assert arrow or monad laws; see the root development rules.

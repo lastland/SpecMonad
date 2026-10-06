@@ -1,42 +1,30 @@
 (** * WP observations of [stdivndNE] into [WSt]
 
     The WP counterpart of [SP/StDivNonDet_SPSt.v].  The source is the
-    NON-EMPTY fragment of the nondeterministic, possibly divergent monad
+    non-empty fragment of the nondeterministic, possibly divergent monad
 
       [stdivndNE S A]   outcome set [option (A * S) -> Prop], [None] = divergence
 
-    and the target is the exception-free WP monad of [WP.v]
-
-      [WSt S A  =  S -> (A * S -> Prop) -> Prop]
-
-    so postconditions range over [A * S] — terminating results only.
-
-    Divergence is still visible to the OBSERVATION (it is in the source outcome
-    set); what it is no longer visible to is the POSTCONDITION.  So the
-    total/liberal axis is carried entirely by which observation you pick,
-    rather than being expressible by [post None]:
+    and the target is [WSt] from [BaseSpecMonads/WPureMonad.v].  Its evaluator
+    takes an initial state and a postcondition on [A * S], so the postcondition
+    describes normal returns only.  The observation can still see divergence
+    in the source.  Each reading chooses how to handle that outcome:
 
       [obsDWP]   demonic total    -- every outcome terminates and satisfies [post]
-      [obsDWLP]  demonic liberal  -- every TERMINATING outcome satisfies [post]
+      [obsDWLP]  demonic liberal  -- every terminating outcome satisfies [post]
       [obsAWP]   angelic total    -- some terminating outcome satisfies [post]
       [obsAWLP]  angelic liberal  -- ... or divergence is possible
 
-    All four survive the move to [A * S] postconditions.  (Contrast the
-    uniform "restrict the quantifier to terminating outcomes" operation, which
-    sends [obsDWP] to [obsDWLP] and [obsAWLP] to [obsAWP]; here each
-    observation makes its own choice at [None] instead.)
+    [getNE_nonEmpty] supplies the outcome witness used by [obsDWP_strict],
+    [obsAWLP_top], and selected taxonomy inclusions.  Without it, an empty
+    outcome set would satisfy demonic total WP at [False] vacuously and fail
+    angelic liberal WP at [True].  The postcondition-monotonicity proofs
+    below do not use non-emptiness.
 
-    Observing [stdivndNE] rather than [stdivnd] has two effects.  The four
-    inclusions and taxonomy lemmas that needed a non-emptiness side condition
-    no longer state one -- it is discharged by [getNE_nonEmpty].  And the
-    observations become HEALTHY: [obsDWP_strict] and [obsAWLP_top] hold here
-    but fail over the unrestricted [stdivnd], where the everywhere-blocking
-    program satisfies the total demonic reading at [False] vacuously.
+    [TermSliceObsWP] qualifies the four observations, their triples, and
+    their return/bind preservation laws. *)
 
-    Everything is wrapped in a module so the names do not clash with the
-    [stdivexcnd] observations of [WP/StDivExcNonDet_WStExc.v]. *)
-
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
@@ -229,13 +217,12 @@ Section NDObservationWP.
   Qed.
 
   (* --------------------------------------------------------------- *)
-  (** *** Healthiness, from non-emptiness of the carrier
+  (** *** Strictness and top preservation from non-empty outcomes
 
       Neither of these holds over the unrestricted [stdivnd]: the
-      everywhere-blocking program satisfies [obsDWP _ _ (fun _ => False)]
-      vacuously and fails [obsAWLP _ _ (fun _ => True)].  Carving the source
-      to [stdivndNE] is exactly what makes the total demonic reading STRICT
-      and the liberal angelic reading NON-TRIVIAL. *)
+      empty outcome set satisfies the demonic total formula at [False]
+      vacuously and fails the angelic liberal formula at [True].  The
+      [stdivndNE] witness rules out this case. *)
 
   Theorem obsDWP_strict {A} (m : stdivndNE S A) s :
     ~ runStateT (obsDWP m) s (fun _ => False).
@@ -344,6 +331,11 @@ Section NDMonadMorphismLawsWP.
 
   Variable S : Type.
 
+  (** This statement specializes the shared raw law to the non-empty
+      source carrier: [getNE (x >>= f)] is definitionally
+      [bindD (getNE x) (fun a => getNE (f a))], so
+      [StExcNonDet.outcomes_bind] — with [None] read as divergence —
+      applies verbatim through [getNE]. *)
   Lemma outcomes_bind {A B} (x : stdivndNE S A) (f : A -> stdivndNE S B) s ob :
     unOptionT (runStateT (getNE (x >>= f)) s) ob <->
     (exists oy, unOptionT (runStateT (getNE x) s) oy /\
@@ -352,47 +344,48 @@ Section NDMonadMorphismLawsWP.
        | None => ob = None
        end).
   Proof.
-    cbn. split.
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
-    - intros [oy [H1 H2]]. exists oy. split; [ exact H1 |].
-      destruct oy as [[a s0]|]; cbn in *; [ exact H2 | congruence ].
+    exact (StExcNonDet.outcomes_bind S (getNE x) (fun a => getNE (f a)) s ob).
   Qed.
 
-  (** [ret]: every observation of [ret a] is [post] at [(a, s)]. *)
+  (** [ret]: every observation of [ret a] is [post] at [(a, s)].  The
+      outcome semantics is the computation-owned raw law
+      [StExcNonDet.outcomes_ret] — [None] read as divergence — consumed
+      through [getNE] by the unfolding lemmas above. *)
 
   Lemma obsDWP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsDWP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intro H. exact (H (Some (a, s)) eq_refl).
-    - intros Hp oa Heq. assert (E : oa = Some (a, s)) by congruence.
-      rewrite E. exact Hp.
+    rewrite (obsDWP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split; [ intro H; exact (H _ eq_refl) | intros Hp oa ->; exact Hp ].
   Qed.
 
   Lemma obsDWLP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsDWLP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intro H. exact (H (Some (a, s)) eq_refl).
-    - intros Hp oa Heq. assert (E : oa = Some (a, s)) by congruence.
-      rewrite E. exact Hp.
+    rewrite (obsDWLP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split; [ intro H; exact (H _ eq_refl) | intros Hp oa ->; exact Hp ].
   Qed.
 
   Lemma obsAWP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsAWP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intros [r [Hr Hp]]. assert (E : r = (a, s)) by congruence. subst r. exact Hp.
+    rewrite (obsAWP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split.
+    - intros [r [Heq Hp]]. injection Heq as Heq. subst r. exact Hp.
     - intro Hp. exists (a, s). split; [ reflexivity | exact Hp ].
   Qed.
 
   Lemma obsAWLP_ret {A} (a : A) (post : A * S -> Prop) s :
     runStateT (obsAWLP (ret a : stdivndNE S A)) s post <-> post (a, s).
   Proof.
-    cbn. split.
-    - intros [[r [Hr Hp]] | Hdiv].
-      + assert (E : r = (a, s)) by congruence. subst r. exact Hp.
+    rewrite (obsAWLP_unfold (ret a : stdivndNE S A) s post).
+    setoid_rewrite (StExcNonDet.outcomes_ret S a s).
+    split.
+    - intros [[r [Heq Hp]] | Hdiv].
+      + injection Heq as Heq. subst r. exact Hp.
       + discriminate Hdiv.
     - intro Hp. left. exists (a, s). split; [ reflexivity | exact Hp ].
   Qed.

@@ -15,7 +15,7 @@
     and [obsAWP] triples with the [obsASP] and [obsDSLP] ones. *)
 
 From Coq Require Import Lia Classical_Prop PeanoNat.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
@@ -612,9 +612,9 @@ From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 (** ** Angelic vs. demonic nondeterminism under exceptions            *)
 (* ================================================================= *)
 
-(** A withdrawal session that nondeterministically [pick]s an [amount]
-    and either throws (when the amount exceeds the balance) or debits the
-    balance.  [balance] is the state.
+(** [progloom] in [ExampleProgramDefs.v] chooses an [amount], then either
+    throws if it exceeds the balance or debits the balance.  The state is
+    [balance].  The motivating specification, in pseudocode, is:
 
       def withdrawSessionAngelic' returns (u : Unit)
         require balance > 0
@@ -625,16 +625,16 @@ From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
         return
 
     The exception payload is [unit] (the message is dropped), and [pick
-    Nat] is the unbounded-choice combinator [pickP] from [StDivExcNonDet.v].
+    Nat] is the unbounded-choice combinator [pickP] from
+    [ComputationMonads/StDivExcNonDet.v].
 
-    "Angelic, [ensures False]": from any positive balance *some* execution
-    reaches an acceptable outcome.  A normal return is forbidden
-    ([ensures False]); the only acceptable outcome is the exceptional one
-    ([None]), so the triple states that the angelic scheduler can always
-    drive the session to the [throw].  This is [tripleWP obsAWP _ Under]
-    with a postcondition that is [True] on the exception and [False] on
-    every normal return.  The [obsDWP] (demonic) reading of the same spec
-    is invalid: the demon may pick a small amount and return normally. *)
+    Here [ensures False] forbids normal returns but permits the exception.
+    [progloom_triple] states this as [tripleWP obsAWP progloom pre SubsetOf post],
+    where [post None] is true and [post (Some (tt, s))] is false.  For every
+    positive initial balance, choosing a larger amount reaches the exception.
+    The same specification fails under [obsDWP], since choosing zero returns
+    normally.  Below, the ASP [Under] judgment asks instead whether the
+    exception is reachable from some positive balance. *)
 
 Module WithdrawExample.
 
@@ -724,4 +724,3 @@ Module WithdrawExample.
         * cbn. exists (Some None). split; [reflexivity|]. cbn. reflexivity.
   Qed.
 End WithdrawExample.
-

@@ -14,7 +14,7 @@ From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Classes Require Import ArrowMonad RelArrowCoherence.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPArrowCore.
 
 (* ================================================================= *)
@@ -27,7 +27,7 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPArrowCore.
 Section Relation.
 
   Definition aspRel {A B} (f : ASPArr A B) (a : A) (b : B) : Prop :=
-    f (fun x => x = a) b.
+    ASPArrowCore.aspRel f a b.
 
   Lemma get_aspRel {A B} (f : ASPArr A B) P b :
     f P b <-> exists a, P a /\ aspRel f a b.
@@ -49,23 +49,15 @@ Section Relation.
   Qed.
 
   Lemma aspRel_pure {A B} (h : A -> B) a b : aspRel (arr_pure h) a b <-> h a = b.
-  Proof.
-    cbn. split; [ intros [x [-> H]]; exact H | intro H; exists a; auto ].
-  Qed.
+  Proof. exact (ASPArrowCore.aspRel_pure h a b). Qed.
 
   Lemma aspRel_comp {A B C} (f : ASPArr A B) (g : ASPArr B C) a c :
     aspRel (arr_comp f g) a c <-> exists b, aspRel f a b /\ aspRel g b c.
-  Proof. exact (get_aspRel g _ c). Qed.
+  Proof. exact (ASPArrowCore.aspRel_comp f g a c). Qed.
 
   Lemma aspRel_first {A B C} (f : ASPArr A B) (p : A * C) (q : B * C) :
     aspRel (arr_first f) p q <-> aspRel f (fst p) (fst q) /\ snd p = snd q.
-  Proof.
-    destruct p as [a c], q as [b c']. cbn - [getASPArr].
-    unfold aspRel. rewrite get_first. cbv beta. cbn [fst snd].
-    rewrite (get_aspRel f). split.
-    - intros [x [Hx H]]. inversion Hx; subst; auto.
-    - intros [H ->]. exists a. auto.
-  Qed.
+  Proof. exact (ASPArrowCore.aspRel_first f p q). Qed.
 
   Lemma aspRel_left {A B C} (f : ASPArr A B) (x : A + C) (y : B + C) :
     aspRel (arr_left f) x y <->
@@ -74,30 +66,12 @@ Section Relation.
     | inr c, inr c' => c = c'
     | _, _ => False
     end.
-  Proof.
-    unfold aspRel. cbn - [getASPArr]. rewrite get_left. unfold leftASPT.
-    destruct y as [b | c'].
-    - rewrite (get_aspRel f). destruct x as [a | c]; split.
-      + intros [x [Hx H]]. inversion Hx; subst; exact H.
-      + intro H. exists a. auto.
-      + intros [x [Hx _]]. discriminate Hx.
-      + intros [].
-    - destruct x as [a | c]; cbn; split; intro H.
-      + discriminate H.
-      + destruct H.
-      + inversion H; subst; reflexivity.
-      + subst. reflexivity.
-  Qed.
+  Proof. exact (ASPArrowCore.aspRel_left f x y). Qed.
 
   (** Equality and the refinement order are relational too. *)
   Lemma aspRel_eq {A B} (f g : ASPArr A B) :
     ASPArr_eq f g <-> (forall a b, aspRel f a b <-> aspRel g a b).
-  Proof.
-    split.
-    - intros H a b. apply H.
-    - intros H P b. rewrite !get_aspRel. split;
-        intros [a [Hp Hr]]; exists a; split; solve [ exact Hp | apply H, Hr ].
-  Qed.
+  Proof. exact (ASPArrowCore.aspRel_eq f g). Qed.
 
   Lemma aspRel_incl {A B} (f g : ASPArr A B) :
     (forall P b, f P b -> g P b) <-> (forall a b, aspRel f a b -> aspRel g a b).
@@ -110,11 +84,7 @@ Section Relation.
 
   Lemma aspRel_app {A B} (p : ASPArr A B * A) (b : B) :
     aspRel arr_app p b <-> aspRel (fst p) (snd p) b.
-  Proof.
-    destruct p as [f a]. unfold aspRel. cbn - [getASPArr]. rewrite get_app. split.
-    - intros [f' [a' [Heq H]]]. inversion Heq; subst; exact H.
-    - intro H. exists f, a. auto.
-  Qed.
+  Proof. exact (ASPArrowCore.aspRel_app p b). Qed.
 
 End Relation.
 
@@ -273,38 +243,11 @@ Section StExc.
     <-> exists o1, aspRel m (i, s) o1 /\
           match o1 with Some (a, s') => aspRel (k a) (i, s') o | None => o = None end.
   Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-    rewrite aspRelE_comp. split.
-    - intros [o1 [H1 H2]].
-      apply aspRelE_comp in H1. destruct H1 as [o2 [H1 H3]]. apply aspRelE_pure in H1. subst o2.
-      apply aspRelE_comp in H3. destruct H3 as [o3 [H3 H4]].
-      apply aspRelE_first in H3. destruct H3 as [o4 [Hm ->]].
-      exists o4. split; [ exact Hm |].
-      destruct o4 as [[a s']|]; simp_in H4; [| subst o1; exact H2 ].
-      apply aspRelE_comp in H4. destruct H4 as [o5 [H4 H5]].
-      apply aspRelE_pure in H4. subst o5. simp_in H5.
-      apply aspRelE_comp in H5. destruct H5 as [o6 [H5 H6]].
-      apply aspRelE_first in H5. destruct H5 as [o7 [H5 ->]].
-      apply aspRelE_pure in H5. subst o7. simp_in H6.
-      apply aspRelE_pure in H6. subst o1. simp_in H2.
-      apply aspRelE_comp in H2. destruct H2 as [o8 [H7 H8]].
-      apply aspRelE_pure in H7. subst o8. simp_in H8.
-      exact (proj1 (aspRelE_app (k a) i s' o) H8).
-    - intros [o1 [Hm Hk]].
-      exists (match o1 with Some (a, s') => Some ((a, i), s') | None => None end).
-      split.
-      + apply aspRelE_comp. exists (Some ((i, i), s)). split; [ apply aspRelE_pure; reflexivity |].
-        apply aspRelE_comp.
-        exists (match o1 with Some (a, s') => Some ((a, i), s') | None => None end).
-        split; [ apply aspRelE_first; exists o1; split; [ exact Hm | reflexivity ] |].
-        destruct o1 as [[a s']|]; [| reflexivity ].
-        apply aspRelE_comp. exists (Some ((i, a), s')). split; [ apply aspRelE_pure; reflexivity |].
-        apply aspRelE_comp. exists (Some ((i, a), s')).
-        split; [ apply aspRelE_first; exists (Some (i, s')); split; [ apply aspRelE_pure | ]; reflexivity |].
-        apply aspRelE_pure. reflexivity.
-      + destruct o1 as [[a s']|]; [| exact Hk ].
-        apply aspRelE_comp. exists (Some ((k a, i), s')). split; [ apply aspRelE_pure; reflexivity |].
-        exact (proj2 (aspRelE_app (k a) i s' o) Hk).
+    exact (@rel_state_option_bind_fields ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@aspRel) (@aspRel_pure) (@aspRel_comp)
+      (fun X Y C f a c b d => aspRel_first f (a, c) (b, d))
+      (@aspRel_left) (fun X Y f a b => aspRel_app (f, a) b)
+      S I A B m k i s o).
   Qed.
 End StExc.
 

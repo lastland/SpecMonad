@@ -1,73 +1,88 @@
-# WP observations context (main)
+# WP observations context
 
-Parent: [effect observations](../CONTEXT.md).
-Target definitions: [WPureMonad.v](../../BaseSpecMonads/WPureMonad.v).
-Related: [SP observations](../SP/CONTEXT.md).
+Parent: [observations](../CONTEXT.md). Target: [WPureMonad](../../BaseSpecMonads/WPureMonad.v).
 
-## Purpose and scope
+StDivITree_WStExc handles deterministic state/divergence/exception trees;
+StExcNonDet_WStExc handles exception-only nondeterminism;
+StDivExcNonDet_WStExc handles double-option outcomes; StDivNonDet_WSt handles
+the nonempty state/divergence fragment. Theorem coverage differs across files:
+similar observation names do not imply identical law packages.
 
-These files interpret computations as weakest-precondition specifications.
-Each observation packages a monotone transformer using `mkWPure` and an
-`obs*_mono` proof. The four source files have different theorem coverage;
-their common naming does not imply a uniform interface.
+The four readings at an initial state are demonic total (all outcomes
+terminate and satisfy post), demonic liberal (all terminating outcomes satisfy
+post), angelic total (some terminating outcome satisfies post), and angelic
+liberal (some satisfies post or divergence is possible). Termination may
+include exceptions. For double option, post None constrains exceptions, while
+raw outer None is divergence. State-only WSt posts cannot mention exceptions.
 
-## Source and target map
+Nonempty fragments exclude empty outcomes, not divergence. They justify
+strictness/top preservation claims that fail vacuously on empty outcome sets.
+Retain upstream excluded-miracle results. Deterministic WP collapse and
+no-divergence total/liberal collapse are different theorems.
 
-| Source file | Observation source and target | Main contents |
-|---|---|---|
-| [StDivITree_WStExc.v](StDivITree_WStExc.v) | `stdivitree` to `WStExc` | Four readings, deterministic collapse, `tripleWP`, examples. |
-| [StExcNonDet_WStExc.v](StExcNonDet_WStExc.v) | `stexcnd` to `WStExc` | `obsDWP` / `obsAWP` and examples; no separate liberal readings. |
-| [StDivExcNonDet_WStExc.v](StDivExcNonDet_WStExc.v) | `stdivexcnd` to `WStExc` | Four readings, return/bind laws, triples and refinement forms, examples. |
-| [StDivNonDet_WSt.v](StDivNonDet_WSt.v) | `stdivndNE` to `WSt` | `TermSliceObsWP`: four readings, healthiness, return/bind laws, triples. |
+WP_le and ordWSt/ordWStExc are reverse-implication orders in the current
+checkout; WP triple argument swaps preserve the intended meanings. Inspect
+local approximation constructors and call order (the deterministic and
+nondeterministic interfaces differ). tripleWPDefEq retains monotonicity.
 
-The deterministic and exception-only files do not declare `obs*_ret` /
-`obs*_bind` laws. The exception-only file also has no local triple interface.
+Generic WP structure belongs to BaseSpecMonads. Comparisons, contrapositive
+pairs, and WP/SP equivalences belong to the parent layer. Use run/unfold
+lemmas before destructing bundles; read outcomes → observation → triple/order
+→ comparison/examples. Shared programs live in ExampleProgramDefs.
 
-## Four readings and divergence
+## Dependency boundaries
 
-For a fixed initial state, the divergence-aware readings mean:
+- Each definition module connects a computation model to
+  [WPureMonad.v](../../BaseSpecMonads/WPureMonad.v); the target itself has no
+  concrete computation dependency. Its transformer laws come from generic
+  [TransformerLaws.v](../../ComputationMonads/TransformerLaws.v).
+- The double-option return/bind proofs use
+  [StDivExcNonDet.outcomes_ret / outcomes_bind](../../ComputationMonads/StDivExcNonDet.v)
+  directly. `TermSliceObsWP.outcomes_bind` in
+  [StDivNonDet_WSt.v](StDivNonDet_WSt.v) is a non-empty-carrier adapter for
+  [StExcNonDet.outcomes_bind](../../ComputationMonads/StExcNonDet.v): projecting
+  `bindNE` through `getNE` gives the underlying `bindD` definitionally.
+- [Double-option comparisons](../Taxonomy_StDivExcNonDet_StExc.v) and
+  [state-only comparisons](../Taxonomy_StDivNonDet_St.v) consume these readings.
+  Definition modules also retain local collapse lemmas and examples.
 
-| Observation | Requirement |
-|---|---|
-| `obsDWP` — demonic total | Every outcome terminates and satisfies the postcondition. |
-| `obsDWLP` — demonic liberal | Every terminating outcome satisfies the postcondition. |
-| `obsAWP` — angelic total | Some terminating outcome satisfies the postcondition. |
-| `obsAWLP` — angelic liberal | Some terminating outcome satisfies it, or divergence is possible. |
+## Independent state and result types
 
-Here termination can include an exception. `WStExc` postconditions range over
-`option (A * S)`: `post None` constrains exceptions, not divergence.
-For `stdivexcnd`, raw `Some None` reaches that exception outcome while raw
-`None` denotes divergence. For `stdivitree`, convergence to `Ret None` is
-the exception case. `WSt` postconditions range only over `A * S`.
+The four return laws in [StDivExcNonDet_WStExc.v](StDivExcNonDet_WStExc.v) —
+`obsDWP_ret`, `obsDWLP_ret`, `obsAWP_ret`, and `obsAWLP_ret` — compare the
+observation of `ret a : stdivexcnd S A` with `WPureMonad.retP S a`.
+The correction from `retP A a` to `retP S a` removes the earlier restriction
+that state and result have the same type. The laws take `s0 : S` and
+`post : option (A * S) -> Prop`.
 
-`TermSliceObsWP` still inspects divergence even though its postcondition cannot
-name it. Its source `stdivndNE` excludes empty outcome sets, not divergence;
-`obsDWP_strict` and `obsAWLP_top` use that nonemptiness. On an unrestricted
-empty outcome set, a universal requirement can hold vacuously.
+The [audit](../../../Checks/Assumptions.v) instantiates each law with `bool`
+state and `0 : nat`. These `Check` commands verify the type instantiations,
+not program behavior.
 
-`obsWPCollapse` / `obsWLPCollapse` in the ITree file equate angelic and demonic
-readings under determinism. By contrast, `obsDPCollapse` / `obsAPCollapse` in
-the divergence-aware nondeterministic files equate total and liberal readings
-under an explicit no-divergence hypothesis. These are different collapses.
+## Semantic traps
 
-## Triple and order contracts
+- In `WStExc`, `post None` describes an exception. For the double-option
+  source this is raw `Some None`; raw outer `None` is divergence and is
+  handled by the choice of total or liberal observation.
+- [StExcNonDet_WStExc.v](StExcNonDet_WStExc.v) defines `obsDWP` and `obsAWP`
+  only. Its source offers exceptions without a separate divergence outcome,
+  so it supplies no distinct liberal readings.
+- [StDivNonDet_WSt.v](StDivNonDet_WSt.v), in `TermSliceObsWP`, takes
+  `stdivndNE`. Divergence is visible to the observation but not to its
+  postcondition. Non-emptiness supports `obsDWP_strict`, `obsAWLP_top`, and
+  taxonomy inclusions; postcondition monotonicity alone does not require it.
+- [StDivITree_WStExc.v](StDivITree_WStExc.v) proves `obsWPCollapse` and
+  `obsWLPCollapse` from determinism. Its classical convergence/divergence
+  argument uses `ITree.Extra.Dijkstra.PureITreeBasics`. These are different
+  from total/liberal collapse under a no-divergence hypothesis.
+- `ordWSt` / `ordWStExc` lift reverse `WP_le`; retain the corresponding
+  WP triple argument swaps rather than changing orders independently.
 
-- The two nondeterministic files with triples use `approxKindWP`:
-  `SubsetOf` means `pre` implies the computed WP, and `SupersetOf` reverses it.
-  Their call order is `tripleWP obs prog pre kind post`.
-- The ITree file instead uses `approximationKind`, with `Under` for the first
-  implication and `Over` for the reverse, and takes `kind` before `pre`.
-  Do not confuse these with SP's postcondition comparisons.
-- `tripleWPspec` uses forward `ordWSt` / `ordWStExc`, not reverse `WP_le`.
-  `pp2wp_subset` / `pp2wp_superset` supply the comparison targets;
-  `tripleWPDefEq` retains a monotonicity hypothesis in its signature.
+## Reading order
 
-## Boundaries and reading order
-
-Keep the generic WP carrier and stack laws in `WPureMonad.v`; cross-observation
-inclusions, contrapositive pairs, and WP/SP equivalences live in the
-[parent comparison files](../CONTEXT.md). Some current WP files also import
-arrows and shared examples; do not assume an isolated WP-only import graph.
-Read the observation body and outcome cases first. Use the ITree `obs*_run`
-or state-only `obs*_unfold` lemmas before destructing through bundled proofs,
-then follow the local laws, triples, examples, and comparison results.
+Read `WPureMonad.v`, then the source's outcome encoding and computation-owned
+raw laws. Read `stdivndNE` and its `getNE` adapter for the non-empty source.
+Use the observation's monotonicity and unfolding lemmas before return/bind
+proofs or triples. Use the deterministic file for angelic/demonic collapse,
+the non-empty state-only file for divergence absent from postconditions, and the
+[parent comparison layer](../CONTEXT.md) for the resulting taxonomy.

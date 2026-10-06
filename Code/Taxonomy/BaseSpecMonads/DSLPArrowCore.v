@@ -18,7 +18,7 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr SPArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPArr.
 
 (* ================================================================= *)
 (** ** [DSLPArr]                                                     *)
@@ -219,4 +219,3 @@ Section Get.
     fun P b => forall f a, dslpRelT (getDSLPArr f) a b -> P (f, a).
   Proof. reflexivity. Qed.
 End Get.
-

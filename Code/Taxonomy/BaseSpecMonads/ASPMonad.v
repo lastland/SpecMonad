@@ -23,7 +23,7 @@ From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Classes Require Import ArrowMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Export ASPArrowCore ASPArrowRel.
 (* ================================================================= *)
 (** ** [ASP = ASPArr unit]: a specification monad                *)
@@ -59,7 +59,7 @@ Section ASP.
   Proof. apply aspRel_bind. Qed.
 
   #[global] Instance MonadLawsE_ASP : @MonadLawsE ASP Eq1_ASP _ :=
-    @MonadLawsE_Arrow ASPArr _ _ _ _ _.
+    @MonadLawsE_Arrow ASPArr _ _ _ _ _ unit.
 
   (** Refinement: FORWARD pointwise implication, as for the SP monads. *)
   Definition ordASP {A} (m1 m2 : ASP A) : Prop :=
@@ -112,7 +112,7 @@ Section ASPSt.
     fun A => ASPArr_eq_Equivalence.
 
   #[global] Instance MonadLawsE_ASPSt : @MonadLawsE ASPSt Eq1_ASPSt _ :=
-    @MonadLawsE_Arrow (stateArrT S ASPArr) _ _ _ _ _.
+    @MonadLawsE_Arrow (stateArrT S ASPArr) _ _ _ _ _ unit.
 
   Definition ordASPSt {A} (m1 m2 : ASPSt A) : Prop :=
     forall P r, getASPArr m1 P r -> getASPArr m2 P r.
@@ -168,7 +168,7 @@ Section ASPStExc.
 
   #[global] Instance MonadLawsE_ASPStExc
     : @MonadLawsE ASPStExc Eq1_ASPStExc _ :=
-    @MonadLawsE_Arrow (stateArrT S (optionArrT ASPArr)) _ _ _ _ _.
+    @MonadLawsE_Arrow (stateArrT S (optionArrT ASPArr)) _ _ _ _ _ unit.
 
   Definition ordASPStExc {A} (m1 m2 : ASPStExc A) : Prop :=
     forall P o, getASPArr m1 P o -> getASPArr m2 P o.

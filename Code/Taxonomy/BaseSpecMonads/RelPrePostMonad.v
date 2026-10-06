@@ -7,28 +7,26 @@
         [ret a    := fun p post => (p -> post a)]
         [bind m f := fun p post => m p (fun a => f a p post)]
 
-    A [RelPrePost] is a VALIDATOR of Hoare specifications: given a
+    A [RelPrePost] validates Hoare specifications: given a
     precondition and a postcondition it says whether the pair is admissible.
     Monotonicity is the Hoare order — strengthening the precondition and
     weakening the postcondition preserves validity.
 
     This is DM4all's [MRSpec] ([sprop/SpecificationMonads.v],
-    [Section MonotonicRelations], lines 255-295), transcribed from [SProp] to
-    [Prop].  Two simplifications fall out in [Prop]: [bind] needs no
-    re-wrapping of the inner postcondition (in DM4all the [Sexists] bookkeeping
-    forces one), and [Eq1] as pointwise iff avoids the [sprop_ext] and
-    functional extensionality DM4all needs to state the laws as equalities.
-    No axioms.
+    [Section MonotonicRelations]), transcribed from [SProp] to [Prop].
+    Bind passes each continuation's [Assuming p] result directly to [m].
+    [Eq1] compares the underlying verdicts by logical equivalence rather
+    than by equality of bundled values.  The formulas above omit the
+    [runRPP] and [ab] projections used in the definitions.
 
     [Assuming p] is the subtype of propositions [q] with [(p -> q) -> q] —
     "knowing [q] under [p] already gives [q]".  It is exactly what makes
     [bind_ret_l] go through, and it is the dual of [SPostMonad.v]'s [Over p].
 
-    Wrapped in a module: [Taxonomy/RelPrePost.v] binds [RelPrePost] to the
-    BINARY arrow [(A -> Prop) -> (A -> B -> Prop) -> Prop]. *)
+    The unary carrier is [RPPM.RelPrePost].  The separate binary carrier
+    [RelPrePostArr] in [Arrows/RelPrePostArr.v] validates input-indexed
+    post-relations and uses projection-induced arrow equality. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 
 Module RPPM.

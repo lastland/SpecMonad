@@ -10,13 +10,13 @@
     so all four laws hold with no extensionality axioms (see
     [PredMonad.v]).
 
-    Wrapped in a module because [Taxonomy/Pred.v] already binds the name
-    [Pred] to the BINARY arrow [Pred A B = A -> B -> Prop]; the two are
-    different type constructors and a top-level clash would be silent.
+    Wrapped in a module to keep the unary [Pred] distinct from the BINARY
+    relation arrow [Rel A B = A -> B -> Prop] in [Taxonomy/Arrows/Rel.v]
+    (formerly [PredArr]); the two are different type constructors and a
+    top-level clash would be silent.
     Write [PredM.Pred] here, or [Import PredM] in a file that does not use
     the arrow. *)
 
-From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 
@@ -53,8 +53,6 @@ End PredM.
     intermediate value, so each law is a small logical rearrangement and no
     extensionality axioms are needed. *)
 
-From Coq Require Import Morphisms RelationClasses.
-From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 
 Module PredMFacts.
@@ -102,7 +100,7 @@ End PredMFacts.
 
 Import PredM PredMFacts.
 
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ExtLib Require Import MonadState MonadExc StateMonad OptionMonad.
 
 Section PredStExc.
 
@@ -162,10 +160,6 @@ End PredStExc.
     via the generic [optionT] and [stateT] instances from [Prog].
     Unfolded, [PredStExc S A = S -> option (A * S) -> Prop]. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality Morphisms RelationClasses.
-From ITree Require Import Basics.Monad.
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
-From Hammer Require Import Tactics.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 

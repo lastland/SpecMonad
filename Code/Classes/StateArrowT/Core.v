@@ -3,7 +3,7 @@
     [stateArrT S arr A B := arr (A * S) (B * S)] threads state
     through an arrow by transforming both input and output. *)
 
-From Coq Require Import FunctionalExtensionality Morphisms RelationClasses.
+From Coq Require Import FunctionalExtensionality Morphisms.
 From Incorrectness.Classes Require Import Arrow.
 
 (* ================================================================= *)
@@ -61,6 +61,11 @@ Section StateArrowTEqLaws.
 
   Variable S : Type.
   Context {arr : Type -> Type -> Type} `{HL : ArrowLaws arr}.
+
+  Local Notation cassoc := (@comp_assoc arr Harr Heq HL).
+  Local Notation pcomp  := (@pure_comp arr Harr Heq HL).
+  Local Notation cprop  := (@comp_proper arr Harr Heq HL).
+  Local Notation fnat   := (@first_natural arr Harr Heq HL).
 
   #[global]
   Instance ArrowEq_stateArrT : ArrowEq (stateArrT S arr) := {
@@ -297,6 +302,41 @@ Section StateArrowTEqLaws.
       apply comp_proper. { reflexivity. }
       apply comp_proper. 2: reflexivity.
       apply first_proper. assumption.
+    - (* first_natural: the state shuffles commute with the pure map. *)
+      assert (Htail : @arrow_eq arr _ ((B * S) * C) ((B * D) * S)
+        (arr_comp (arr_pure (@state_shuffle_out S B C))
+          (arr_pure (fun '(bc, s) => (let '(b, c) := bc in (b, g c), s))))
+        (arr_comp (arr_pure (fun '(bs, c) => (bs, g c)))
+          (arr_pure (@state_shuffle_out S B D)))).
+      { etransitivity. { apply pcomp. }
+        symmetry. etransitivity. { apply pcomp. }
+        apply arr_pure_ext. intros [[b s] c]. reflexivity. }
+      assert (Hhead : @arrow_eq arr _ ((A * C) * S) ((A * S) * D)
+        (arr_comp (arr_pure (@state_shuffle_in S A C))
+          (arr_pure (fun '(as_, c) => (as_, g c))))
+        (arr_comp (arr_pure (fun '(ac, s) => (let '(a, c) := ac in (a, g c), s)))
+          (arr_pure (@state_shuffle_in S A D)))).
+      { etransitivity. { apply pcomp. }
+        symmetry. etransitivity. { apply pcomp. }
+        apply arr_pure_ext. intros [[a c] s]. reflexivity. }
+      etransitivity. { apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        apply cprop. 1: reflexivity. exact Htail. }
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        symmetry. apply cassoc. }
+      etransitivity.
+      { apply cprop. 1: reflexivity.
+        apply cprop. 2: reflexivity. apply fnat. }
+      etransitivity.
+      { apply cprop. 1: reflexivity. apply cassoc. }
+      etransitivity. { symmetry. apply cassoc. }
+      etransitivity.
+      { apply cprop. 2: reflexivity. exact Hhead. }
+      apply cassoc.
   Qed.
 
 End StateArrowTEqLaws.

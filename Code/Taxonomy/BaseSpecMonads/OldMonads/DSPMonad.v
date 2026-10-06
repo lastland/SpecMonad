@@ -1,10 +1,8 @@
-From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 Require Import Coq.Logic.PropExtensionality.
 Require Import Coq.Logic.FunctionalExtensionality.
 Require Import Coq.Logic.Classical_Prop.
-Require Import Coq.Setoids.Setoid.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicateTransformers.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
 From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad.
 
 Import MonadNotation.
@@ -105,7 +103,54 @@ Section PureDSPMonad.
   Definition ordDSPSPAt {A} (pre : Prop) (m1 m2 : DSPSP A) : Prop :=
     forall a, getDSP m1 pre a -> getDSP m2 pre a.
 
+  Lemma getDSP_mono {A} (w : DSPSP A) (p q : Prop) (a : A) :
+    (p -> q) -> getDSP w p a -> getDSP w q a.
+  Proof.
+    intros Hpq Hw.
+    pose proof (proj1 (strict_conj_iff_singleton (getDSP w)) (proj2_sig w) p a) as Hsp.
+    pose proof (proj1 (strict_conj_iff_singleton (getDSP w)) (proj2_sig w) q a) as Hsq.
+    apply (proj2 Hsq). split.
+    - exact (Hpq (proj1 (proj1 Hsp Hw))).
+    - exact (proj2 (proj1 Hsp Hw)).
+  Qed.
+  Lemma ordDSPSP_refl A (m : DSPSP A) : ordDSPSP m m.
+  Proof. intros p a H. exact H. Qed.
+  Lemma bindDSP_mono A B (m n : DSPSP A) (f g : A -> DSPSP B) :
+    ordDSPSP m n -> (forall a, ordDSPSP (f a) (g a)) ->
+    ordDSPSP (bindDSP m f) (bindDSP n g).
+  Proof.
+    intros Hmn Hfg p b [a H]. exists a. apply Hfg.
+    apply (getDSP_mono (f a) (getDSP m p a) (getDSP n p a) b).
+    - exact (Hmn p a).
+    - exact H.
+  Qed.
 End PureDSPMonad.
+
+Local Lemma dsp_recov_gen (S O : Type) (R : S -> O -> Prop) (s : S) (r : O) :
+  (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
+   /\ ~ ((exists t, t <> s /\ R t r) /\ (forall t, R t r -> t <> s))) <-> R s r.
+Proof.
+  split.
+  - intros [[[t [_ Ht]] _] Hn]. apply NNPP. intro Hns. apply Hn. split.
+    + exists t. split; [ intro Heq; subst t; exact (Hns Ht) | exact Ht ].
+    + intros t' Ht' Heq. subst t'. exact (Hns Ht').
+  - intro Hs. split.
+    + split; [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
+    + intros [_ Hall]. exact (Hall s Hs eq_refl).
+Qed.
+Local Lemma dsp_cong_gen (S O : Type) (R R' : S -> O -> Prop)
+  (H : forall s r, R s r <-> R' s r) : forall (pre : S -> Prop) (r : O),
+  ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s)) <->
+  ((exists s, pre s /\ R' s r) /\ (forall s, R' s r -> pre s)).
+Proof.
+  intros pre r. split.
+  - intros [[s [Hp Hs]] Hall]. split.
+    + exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
+    + intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
+  - intros [[s [Hp Hs]] Hall]. split.
+    + exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
+    + intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
+Qed.
 
 Section ProgDSPMonad.
   Variable S : Type.
@@ -126,26 +171,18 @@ Section ProgDSPMonad.
       are introduced. *)
 
   (** Probing that transformer at [fun _ => True] and at the co-singleton of
-      [s] recovers [R s r] exactly.  This is the ONLY use of classical logic
-      in the section: from "some state reaches [r]" together with "[fun t =>
-      t <> s] is not a valid precondition for [r]" one concludes [R s r]. *)
+      [s] recovers [R s r] exactly. The forward direction uses classical
+      logic: some state reaches [r], and excluding [s] invalidates the
+      precondition, so [s] itself must reach [r]. *)
   Lemma dsp_recov {A} (R : S -> option (A * S) -> Prop)
     (s : S) (r : option (A * S)) :
     (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
      /\ ~ ((exists t, t <> s /\ R t r) /\ (forall t, R t r -> t <> s)))
     <-> R s r.
-  Proof.
-    split.
-    - intros [[[t [_ Ht]] _] Hn]. apply NNPP. intro Hns. apply Hn. split.
-      + exists t. split; [ intro Heq; subst t; exact (Hns Ht) | exact Ht ].
-      + intros t' Ht' Heq. subst t'. exact (Hns Ht').
-    - intro Hs. split.
-      + split; [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
-      + intros [_ Hall]. exact (Hall s Hs eq_refl).
-  Qed.
+  Proof. exact (dsp_recov_gen S (option (A * S)) R s r). Qed.
 
-  (** Consequently every such transformer inhabits [DSPStExc]: this discharges
-      each of the [#[program]] obligations below. *)
+  (** The DSP shape at [R] is pointwise the DSP of the relation recovered
+      from it by probing ([dsp_recov]). *)
   Lemma dsp_wf {A} (R : S -> option (A * S) -> Prop) :
     forall (pre : S -> Prop) (r : option (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
@@ -172,15 +209,7 @@ Section ProgDSPMonad.
     forall (pre : S -> Prop) (r : option (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
       <-> ((exists s, pre s /\ R' s r) /\ (forall s, R' s r -> pre s)).
-  Proof.
-    intros pre r. split.
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
-  Qed.
+  Proof. exact (dsp_cong_gen S (option (A * S)) R R' H). Qed.
 
   (** ... and extensionally equal transformers recover the same relation. *)
   Lemma dsp_rec_ext {A} (w1 w2 : @SPStExc S A)
@@ -196,10 +225,9 @@ Section ProgDSPMonad.
         [ exact (proj2 (H _ r) H1) | intro Hc; exact (H2 (proj1 (H _ r) Hc)) ].
   Qed.
 
-  (** The carrier condition [StrictPositivelyMeetPreservingProg] says the same
-      thing as "[w] is the DSP of its own recovered relation".  This is the
-      bridge between the healthiness reading (which the type states) and the
-      fixed-point reading (which the proofs use). *)
+  (** [StrictPositivelyMeetPreservingProg] is equivalent to saying that [w]
+      is the DSP reading of its recovered relation. This connects the
+      carrier's well-formedness condition to the representation used in proofs. *)
   Lemma dsp_carrier {A} (w : SPStExc A) :
     StrictPositivelyMeetPreservingProg w <->
       (forall (pre : S -> Prop) (r : option (A * S)), w pre r <->
@@ -286,7 +314,17 @@ Section ProgDSPMonad.
   Lemma dsp_shape_wf {A} (R : S -> option (A * S) -> Prop) :
     StrictPositivelyMeetPreservingProg
       (fun pre r => (exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s)).
-  Proof. apply dsp_carrier. intros pre r. exact (dsp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r [[s [Hbot _]] _]. exact Hbot.
+    - intros I [i0] p r. split.
+      + intros [[s [Hmeet HR]] Hclose] i. split.
+        * exists s. split; [ exact (Hmeet i) | exact HR ].
+        * intros s' Hs'. exact (Hclose s' Hs' i).
+      + intros H. destruct (H i0) as [[s [Hp Hs]] _]. split.
+        * exists s. split; [ intro i; exact (proj2 (H i) s Hs) | exact Hs ].
+        * intros s' Hs' i. exact (proj2 (H i) s' Hs').
+  Qed.
 
   (** ... and every carrier element is the DSP of its recovered relation. *)
   Lemma getProgDSP_carrier {A} (w : DSPStExc A)
@@ -394,6 +432,18 @@ Section ProgDSPMonad.
 
   (** ** [ret] and [bind] *)
 
+  Lemma dsp_comp_recov_option (A B : Type)
+    (Rx : S -> option (A * S) -> Prop) (F : A -> S -> option (B * S) -> Prop) :
+    forall (s : S) (r : option (B * S)),
+    (exists o, (((exists t, True /\ Rx t o) /\ (forall t, Rx t o -> True))
+      /\ ~ ((exists t, t <> s /\ Rx t o) /\ (forall t, Rx t o -> t <> s)))
+      /\ match o with
+      | Some (a, smid) => (((exists t, True /\ F a t r) /\ (forall t, F a t r -> True))
+        /\ ~ ((exists t, t <> smid /\ F a t r) /\ (forall t, F a t r -> t <> smid)))
+      | None => r = None end) <->
+    (exists o, Rx s o /\ match o with Some (a, smid) => F a smid r | None => r = None end).
+  Proof. exact (comp_cong _ _ _ _ (dsp_recov Rx) (fun a => dsp_recov (F a))). Qed.
+
   #[program] Definition retDSPStExc {A} (a : A) : DSPStExc A :=
     fun pre r => (retASPStExc a pre r) /\ (retDSLPStExc a pre r).
   Next Obligation. exact (dsp_shape_wf (fun s r => r = Some (a, s))). Qed.
@@ -436,7 +486,7 @@ Section ProgDSPMonad.
       split; [ exists s0; split; [ exact (Hall s0 Hr0) | exact Hr0 ] | exact Hall ].
   Qed.
 
-  (** Both healthiness classes transport along pointwise equivalence. *)
+  (** Both well-formedness properties transport along pointwise equivalence. *)
   Lemma singletonProg_ext {A} (w1 w2 : @SPStExc S A) :
     (forall pre r, w1 pre r <-> w2 pre r) -> SingletonProg S w1 -> SingletonProg S w2.
   Proof.
@@ -900,18 +950,10 @@ Section ProgDSPMonad.
     (((exists t, True /\ R t r) /\ (forall t, R t r -> True))
      /\ ~ ((exists t, t <> s /\ R t r) /\ (forall t, R t r -> t <> s)))
     <-> R s r.
-  Proof.
-    split.
-    - intros [[[t [_ Ht]] _] Hn]. apply NNPP. intro Hns. apply Hn. split.
-      + exists t. split; [ intro Heq; subst t; exact (Hns Ht) | exact Ht ].
-      + intros t' Ht' Heq. subst t'. exact (Hns Ht').
-    - intro Hs. split.
-      + split; [ exists s; split; [ exact I | exact Hs ] | intros; exact I ].
-      + intros [_ Hall]. exact (Hall s Hs eq_refl).
-  Qed.
+  Proof. exact (dsp_recov_gen S (A * S) R s r). Qed.
 
-  (** Consequently every such transformer inhabits [DSPSt]: this discharges
-      each of the [#[program]] obligations below. *)
+  (** The DSP shape at [R] is pointwise the DSP of the relation recovered
+      from it by probing ([dsp_recov]). *)
   Lemma dsp_wf {A} (R : S -> (A * S) -> Prop) :
     forall (pre : S -> Prop) (r : (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
@@ -938,15 +980,7 @@ Section ProgDSPMonad.
     forall (pre : S -> Prop) (r : (A * S)),
       ((exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s))
       <-> ((exists s, pre s /\ R' s r) /\ (forall s, R' s r -> pre s)).
-  Proof.
-    intros pre r. split.
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj1 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj2 (H s' r) Hs')).
-    - intros [[s [Hp Hs]] Hall]. split.
-      + exists s. split; [ exact Hp | exact (proj2 (H s r) Hs) ].
-      + intros s' Hs'. exact (Hall s' (proj1 (H s' r) Hs')).
-  Qed.
+  Proof. exact (dsp_cong_gen S (A * S) R R' H). Qed.
 
   (** ... and extensionally equal transformers recover the same relation. *)
   Lemma dsp_rec_ext {A} (w1 w2 : @SPSt S A)
@@ -962,10 +996,9 @@ Section ProgDSPMonad.
         [ exact (proj2 (H _ r) H1) | intro Hc; exact (H2 (proj1 (H _ r) Hc)) ].
   Qed.
 
-  (** The carrier condition [StrictPositivelyMeetPreservingProg] says the same
-      thing as "[w] is the DSP of its own recovered relation".  This is the
-      bridge between the healthiness reading (which the type states) and the
-      fixed-point reading (which the proofs use). *)
+  (** [StrictPositivelyMeetPreservingProg] is equivalent to saying that [w]
+      is the DSP reading of its recovered relation. This connects the
+      carrier's well-formedness condition to the representation used in proofs. *)
   Lemma dsp_carrier {A} (w : SPSt A) :
     StrictPositivelyMeetPreservingProg w <->
       (forall (pre : S -> Prop) (r : (A * S)), w pre r <->
@@ -1050,7 +1083,17 @@ Section ProgDSPMonad.
   Lemma dsp_shape_wf {A} (R : S -> (A * S) -> Prop) :
     StrictPositivelyMeetPreservingProg
       (fun pre r => (exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s)).
-  Proof. apply dsp_carrier. intros pre r. exact (dsp_wf R pre r). Qed.
+  Proof.
+    split.
+    - intros r [[s [Hbot _]] _]. exact Hbot.
+    - intros I [i0] p r. split.
+      + intros [[s [Hmeet HR]] Hclose] i. split.
+        * exists s. split; [ exact (Hmeet i) | exact HR ].
+        * intros s' Hs'. exact (Hclose s' Hs' i).
+      + intros H. destruct (H i0) as [[s [Hp Hs]] _]. split.
+        * exists s. split; [ intro i; exact (proj2 (H i) s Hs) | exact Hs ].
+        * intros s' Hs' i. exact (proj2 (H i) s' Hs').
+  Qed.
 
   Lemma getProgDSP_carrier {A} (w : DSPSt A) (pre : S -> Prop) (r : A * S) :
     getDSPSt w pre r <->

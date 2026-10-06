@@ -7,7 +7,13 @@
       [WSt    S A]    = stateT S WPure A            (* W^St     *)
       [WStExc S A]    = stateT S (optionT WPure) A  (* W^StExc  *)
 
-    *)
+    Monotonicity is part of the carrier.  The adjunction proofs in
+    [BaseGaloisConnections.v] and the [Proper_bind] proof below use it.
+
+    The evaluators take an initial state and a postcondition on [A * S]
+    for [WSt], or on [option (A * S)] for [WStExc].  The latter stack
+    supplies [MonadExc].  These evaluator shapes omit the bundled
+    monotonicity proofs and the transformer wrappers. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
 From ExtLib Require Import Monad MonadState MonadExc MonadReader
@@ -21,6 +27,9 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
 Section WPure.
 
+  (** The underlying, unrestricted transformer type.  The arrow presentation
+      in [Arrows/WPArr.v] uses this with Leibniz [ArrowEq].  The [WPure]
+      subset below instead uses pointwise logical equivalence for [Eq1]. *)
   Definition WPureT (A : Type) : Type := (A -> Prop) -> Prop.
 
   Definition wpure_mono {A} (f : WPureT A) : Prop :=

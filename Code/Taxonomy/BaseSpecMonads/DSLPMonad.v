@@ -21,7 +21,7 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.Classes Require Import ArrowMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Export DSLPArrowCore DSLPArrowRel.
 
 
@@ -60,7 +60,7 @@ Section DSLP.
   Proof. apply dslpRel_bind. Qed.
 
   #[global] Instance MonadLawsE_DSLP : @MonadLawsE DSLP Eq1_DSLP _ :=
-    @MonadLawsE_Arrow DSLPArr _ _ _ _ _.
+    @MonadLawsE_Arrow DSLPArr _ _ _ _ _ unit.
 
   (** Refinement: FORWARD pointwise implication, as for the SP monads. *)
   Definition ordDSLP {A} (m1 m2 : DSLP A) : Prop :=
@@ -113,7 +113,7 @@ Section DSLPSt.
     fun A => DSLPArr_eq_Equivalence.
 
   #[global] Instance MonadLawsE_DSLPSt : @MonadLawsE DSLPSt Eq1_DSLPSt _ :=
-    @MonadLawsE_Arrow (stateArrT S DSLPArr) _ _ _ _ _.
+    @MonadLawsE_Arrow (stateArrT S DSLPArr) _ _ _ _ _ unit.
 
   Definition ordDSLPSt {A} (m1 m2 : DSLPSt A) : Prop :=
     forall P r, getDSLPArr m1 P r -> getDSLPArr m2 P r.
@@ -169,7 +169,7 @@ Section DSLPStExc.
 
   #[global] Instance MonadLawsE_DSLPStExc
     : @MonadLawsE DSLPStExc Eq1_DSLPStExc _ :=
-    @MonadLawsE_Arrow (stateArrT S (optionArrT DSLPArr)) _ _ _ _ _.
+    @MonadLawsE_Arrow (stateArrT S (optionArrT DSLPArr)) _ _ _ _ _ unit.
 
   Definition ordDSLPStExc {A} (m1 m2 : DSLPStExc A) : Prop :=
     forall P o, getDSLPArr m1 P o -> getDSLPArr m2 P o.

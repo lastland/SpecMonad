@@ -1,67 +1,84 @@
-# Classes
+# Classes context
 
-Parent: [Code context](../CONTEXT.md). Shared proof conventions:
-[root CLAUDE.md](../../CLAUDE.md).
+Parent: [Code](../CONTEXT.md). Conventions: [CLAUDE.md](../../CLAUDE.md).
 
-## Purpose and scope
+## Contracts
 
-Classes defines Hughes-style arrow interfaces, their laws, generic option/state
-transformers, and a binary Galois-connection class. Concrete specification
-carriers belong to [Taxonomy arrows](../Taxonomy/Arrows/CONTEXT.md).
-[Common/Classes.v](../Common/Classes.v) defines a separate pre/post-order API.
+[Arrow.v](Arrow.v) defines pure, sequential composition (first argument runs
+first), and `first`; `second`, split, and fanout are derived. `ArrowEq` selects
+an equivalence, not necessarily Leibniz equality. `ArrowLaws` includes product
+naturality and proper composition/first. Choice has sum laws and proper left.
 
-## Established vocabulary and contracts
+`ArrowApplyLaws` has static application, `app_unit`, `app_precompose`,
+`app_postcompose`, and pair-valued `app_ext`: both the stored arrow's selected
+equality and equality of its argument matter. Main compatibility corollaries
+`app_pair`, `app_post`, and the curried `app_*_at` forms remain available.
+The option and state transformers lift this full contract algebraically.
+[ArrowApplyFacts.v](ArrowApplyFacts.v) derives extensional reasoning;
+[ArrowMonad.v](ArrowMonad.v) defines operations and laws at every fixed input
+`I`, with explicit `Eq1_Arrow HE I`. `bind_arrow_unit` remains a corollary.
 
-- [Arrow.v](Arrow.v) defines `Arrow` through `arr_pure`, `arr_comp`, and
-  `arr_first`. `arr_comp f g` runs `f` before `g`; `arr_first` acts on the
-  first component of a pair. `arr_id`, `arr_second`, `arr_split`, and
-  `arr_fanout` are derived operations.
-- `ArrowEq` selects an equivalence `arrow_eq`. `ArrowLaws` states the
-  composition and product laws, with `comp_proper` and `first_proper`
-  requiring operations to respect that equivalence.
-- `ArrowChoice` supplies `arr_left` on sums; `ArrowChoiceLaws` includes
-  branch, composition, naturality, and product-distribution laws.
-- `ArrowApply` supplies `arr_app : arr (arr A B * A) B`.
-  `ArrowApplyLaws` has four fields: `app_law`
-  (`arrow_eq (arr_comp (arr_pure (fun a => (f, a))) arr_app) f`), Hughes'
-  `app_pair` (feeding `arr_app` the pairing arrow is the identity) and
-  `app_post` (postcomposition passes through `arr_app`), and `app_ext`
-  (`arr_app` sees its arrow argument only up to `arrow_eq`).
-  Hughes' remaining law, `first (arr (g >>>)) >>> app = second g >>> app`,
-  is deliberately absent: `optionArrT`'s composition wraps the continuation
-  in `arr_left`, and no arrow law relates `arr_app` to `arr_left` of its
-  arrow argument, so that transformer cannot prove it. Nothing needs it.
-  The applied forms `app_pair_at` / `app_post_at` / `app_ext_at` at the end
-  of the file are what clients use; they are the laws precomposed with a
-  pure pair-builder `fun x => (u x, t x)`.
-- `ArrowLoop` supplies feedback through `arr_loop`; `ArrowLoopLaws`
-  states its tightening, sliding, vanishing, and superposing laws.
-- `ArrowT` supplies `arrowT_lift`; the class itself has no preservation laws.
-- [Galois.v](Galois.v) indexes `Galois` by two binary carriers and both
-  orders. `galois_alpha : G A B -> F A B` and `galois_gamma : F A B -> G A B`
-  satisfy `le_F A B (galois_alpha g) f <-> le_G A B g (galois_gamma f)`.
-  The class includes preorders; derived lemmas give monotonicity,
-  `galois_alpha_gamma_deflation`, and `galois_gamma_alpha_inflation`.
-- [OrderedMonad.v](OrderedMonad.v) states DM4All's specification-monad
-  criterion for unary monads: `OrderedMonad W le` asks for a preorder
-  containing `eq1` and a `bind` monotone in both arguments. Every monad is
-  ordered by `eq1` (`OrderedMonad_eq1`), so the criterion is relative to `le`.
+[ArrowMorphism.v](ArrowMorphism.v) packages proper operation-preserving maps.
+[RelArrowCoherence.v](RelArrowCoherence.v) derives application equations and
+bind semantics from faithful relational presentations; it does not add
+well-formedness fields to concrete carriers. Loop has its own laws; neither
+transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 
-## Transformers and boundaries
+- [ArrowMorphism.v](ArrowMorphism.v) uses an ordinary `ArrowMorphism` record
+  with explicit operation and equality dictionaries:
+  `ArrowMorphism SA SC SX SE DA DC DX DE map`. `SE` and `DE` select the source
+  and destination `ArrowEq`. `morphism_proper` maps source-equivalent arrows
+  to destination-equivalent arrows. The five preservation fields,
+  `morphism_pure`, `morphism_comp`, `morphism_first`, `morphism_left`, and
+  `morphism_app`, use the destination `arrow_eq`. Application preservation
+  also maps the embedded arrow in the input.
+  Inverse morphisms and option/state lifts reuse this record and the selected
+  law dictionaries, not a separate exact-equality contract:
+  - `inverse_morphism` requires semantic round trips, properness of the back
+    map, and destination core/choice/application laws. Inverse application
+    uses `app_ext` to replace equivalent embedded arrows.
+  - `option_arrow_morphism` requires destination core/choice laws.
+  - `state_arrow_morphism` requires destination core/application laws,
+    including the law-derived `pure_ext`.
+  - `state_option_arrow_morphism` requires all three destination law packages.
 
-[OptionArrowT.v](OptionArrowT.v) and [StateArrowT.v](StateArrowT.v) re-export
-their implementation modules. Read the [option](OptionArrowT/CONTEXT.md) or
-[state](StateArrowT/CONTEXT.md) context for each transformer's prerequisites.
-Their proofs use base arrow laws and equalities of helper functions, without
-inspecting a concrete specification carrier. Neither provides loop lifting.
+  `ArrowEq_leibniz` remains an ordinary definition for independent consumers;
+  direct-Rel equivalences do not use it.
+- [RelArrowCoherence.v](RelArrowCoherence.v) separates relational operation
+  contracts (`RelArrow`, `RelArrowChoice`, `RelArrowApply`) from `RelArrowEq`,
+  which identifies the chosen `arrow_eq` with pointwise relation equivalence.
+  The shared `rel_arrow_laws`, `rel_arrow_choice_laws`, and
+  `rel_arrow_apply_laws` instances supply complete law packages, including
+  `Proper` fields and `app_ext`. Core laws need neither choice nor application;
+  choice laws need no application. Property-only SP arrows instantiate these
+  contracts with recovered relations. The relational carrier reuses its
+  existing laws in [Rel.v](../Taxonomy/Arrows/Rel.v).
+  Relational-only `rel_<equation>_iff` lemmas and state-over-option formulas,
+  including `rel_state_option_bind_fields`, do not require faithfulness.
+  The exact-equality `rel_<equation>_fields` helpers and `RelArrowPresentation`
+  wrappers remain independent APIs. `rel_arrow_laws_leibniz` and
+  `rel_arrow_choice_laws_leibniz` transport semantic laws when equivalence
+  reflects into ordinary equality. These
+  helpers do not change the carrier's selected equality, and the direct-Rel
+  morphisms do not use them. Transformer laws remain in the generic
+  option/state modules.
 
-The relational carrier is `PredArr A B := A -> B -> Prop` in
-[PredArr.v](../Taxonomy/Arrows/PredArr.v), not in `Arrow.v`.
-The generic `Monad_Arrow` construction remains in `Section ArrowMonad` of
-[SPostArr.v](../Taxonomy/Arrows/SPostArr.v), not in a separate Classes module.
-Concrete binary adjunctions live in [GaloisArr.v](../Taxonomy/Arrows/GaloisArr.v).
+[Galois.v](Galois.v) relates two ordered binary carriers via alpha/gamma,
+preorders, and the adjunction. [OrderedMonad.v](OrderedMonad.v) concerns unary
+monads under a specified preorder containing `eq1`, with monotone bind.
+Every lawful monad is ordered by its equivalence; stronger orders need proofs.
+These differ from [Common/Classes.v](../Common/Classes.v)'s pre/post API.
 
-Start with `Arrow.v`, then the relevant transformer or `Galois.v`.
-Classes imports Coq libraries and, in the option implementation, CoqHammer;
-it does not import Common or Taxonomy. All local implementation modules and
-both re-exports are listed in [_CoqProject](../_CoqProject).
+## Boundaries and tests
+
+Start with `Arrow.v`, then `ArrowApplyFacts.v` and `ArrowMonad.v`, or the
+transformer context relevant to the task. The concrete relational carrier is
+`Rel A B := A -> B -> Prop` in
+[Rel.v](../Taxonomy/Arrows/Rel.v), not a definition in `Arrow.v`.
+
+Read [option](OptionArrowT/CONTEXT.md) or [state](StateArrowT/CONTEXT.md)
+contexts after the base contract. Keep explicit dictionaries in recursive
+transformer stacks. [Generic tests](Tests/CONTEXT.md) check arrow monads;
+[concrete tests](../Taxonomy/Arrows/Tests/CONTEXT.md) check carrier instances.
+Classes does not import concrete Taxonomy carriers. The relational carrier
+belongs to Taxonomy/Arrows; use its defining module for exact names.
