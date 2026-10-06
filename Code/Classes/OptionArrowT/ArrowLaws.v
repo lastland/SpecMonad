@@ -34,13 +34,6 @@ Section GenericOptionArrTLaws.
   Local Notation lnat     := (@left_natural arr HA HC HE HCL).
   Local Notation lprop    := (@left_proper arr HA HC HE HCL).
 
-  Local Lemma arr_pure_ext {A B} (f g : A -> B) :
-    (forall x, f x = g x) ->
-    @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
-  Proof.
-    exact (@Arrow.arr_pure_ext arr HA HE A B f g).
-  Qed.
-
   Create HintDb opt_ops.
   #[local] Hint Unfold arr_id arr_comp arr_pure arr_first Arrow_optionArrT
     arrow_eq arrow_eq_equiv ArrowEq_optionArrT : opt_ops.
@@ -108,7 +101,7 @@ Section GenericOptionArrTLaws.
       assert (Hid : @arrow_eq arr HE _ _
         (@arr_pure arr HA _ _ (@option_map B B (fun x : B => x)))
         (@arr_pure arr HA _ _ (fun x => x))).
-      { apply arr_pure_ext. intros [?|]; reflexivity. }
+      { apply (@Arrow.arr_pure_ext arr HA HE). intros [?|]; reflexivity. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hid. }
       apply cidr.
     - (* comp_assoc *)

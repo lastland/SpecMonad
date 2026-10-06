@@ -56,22 +56,11 @@ Section ArrowMonadLaws.
   Local Notation cprop := (@comp_proper arr HA HE HL).
   Local Notation fprop := (@first_proper arr HA HE HL).
   Local Notation fpure := (@first_pure arr HA HE HL).
-  Local Notation alaw := (@app_law arr HA HAA HE HAL).
   Local Notation aext := (@app_ext arr HA HAA HE HAL).
   Local Notation arrow_ext := (@ArrowApplyFacts.arrow_ext arr HA HAA HE HL HAL).
 
   Create HintDb arrow_monad_fanout.
   #[local] Hint Unfold arr_fanout arr_split : arrow_monad_fanout.
-
-  (** A constant companion commutes with [first], by naturality and
-      projection.  This is the step that preserves a fixed monad input. *)
-  Local Lemma first_constant {A B C} (f : arr A B) (c : C) :
-    eqA (pure (fun a => (a, c)) >>> first f)
-        (f >>> pure (fun b => (b, c))).
-  Proof.
-    exact (@Arrow.first_constant arr HA HE HL
-      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL) A B C f c).
-  Qed.
 
   Local Lemma second_id {A B} :
     eqA (@arr_second arr HA A A B (@arr_id arr HA A))
@@ -110,7 +99,12 @@ Section ArrowMonadLaws.
     etransitivity. { symmetry. apply cassoc. }
     etransitivity. { apply cprop. 2: reflexivity. exact Hhead. }
     etransitivity. { apply cassoc. }
-    etransitivity. { apply cprop. 1: reflexivity. apply first_constant. }
+    (* A constant companion commutes with [first], by naturality and
+       projection. This step preserves the fixed monad input. *)
+    etransitivity.
+    { apply cprop. 1: reflexivity.
+      apply (@Arrow.first_constant arr HA HE HL
+        (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL)). }
     symmetry. apply cassoc.
   Qed.
 
@@ -132,13 +126,6 @@ Section ArrowMonadLaws.
     etransitivity. { apply pcomp. } reflexivity.
   Qed.
 
-  Local Lemma app_constant {X A B} (f : arr A B) (a : A) :
-    eqA (pure (fun _ : X => (f, a)) >>> app)
-        (pure (fun _ : X => a) >>> f).
-  Proof.
-    exact (@ArrowApplyFacts.app_constant arr HA HAA HE HL X A B f a (alaw f)).
-  Qed.
-
   (** Compatibility with the former unit-input development. *)
   Lemma bind_arrow_unit {A B} (m : arr unit A) (k : A -> arr unit B) :
     eqA (@bind_arrow arr HA HAA unit A B m k)
@@ -156,7 +143,8 @@ Section ArrowMonadLaws.
   Proof.
     etransitivity. { symmetry. apply cassoc. }
     etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-    exact (app_constant (k a) i).
+    exact (@ArrowApplyFacts.app_constant arr HA HAA HE HL unit I B
+      (k a) i (@app_law arr HA HAA HE HAL I B (k a))).
   Qed.
 
   Local Lemma app_at_ret {I A} (i : I) :

@@ -26,13 +26,6 @@ Section GenericOptionArrTChoiceLaws.
   Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
   Local Notation lprop  := (@left_proper arr HA HC HE HCL).
 
-  Local Lemma pure_ext {A B} (f g : A -> B) :
-    (forall x, f x = g x) ->
-    @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
-  Proof.
-    exact (@Arrow.arr_pure_ext arr HA HE A B f g).
-  Qed.
-
   Definition rev_assoc {A B C} (x : A + (B + C)) : (A + B) + C :=
     match x with inl a => inl (inl a) | inr (inl b) => inl (inr b) | inr (inr c) => inr c end.
 
@@ -41,7 +34,7 @@ Section GenericOptionArrTChoiceLaws.
     collapse sequence_option sum_prod_dist rev_assoc : opt_choice_ops.
 
   Local Ltac solve_pure_eq :=
-    apply pure_ext; intro x;
+    apply (@Arrow.arr_pure_ext arr HA HE); intro x;
     repeat match goal with
     | [ x : (_ + _)%type |- _ ] => destruct x
     | [ x : option _ |- _ ] => destruct x

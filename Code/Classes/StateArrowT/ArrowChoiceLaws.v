@@ -35,13 +35,6 @@ Section StateArrowTChoiceLaws.
   Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
   Local Notation lprop  := (@left_proper arr HA HC HE HCL).
 
-  Local Lemma arr_pure_ext' {A B} (f g : A -> B) :
-    (forall x, f x = g x) ->
-    @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
-  Proof.
-    exact (@Arrow.arr_pure_ext arr HA HE A B f g).
-  Qed.
-
   (** The key identity: [sd] >>> left f >>> [su] distributes state
       across a left-mapped arrow. We prove many choice laws by
       reducing to the base arrow law plus shuffling [sd]/[su]. *)
@@ -430,7 +423,7 @@ Section StateArrowTChoiceLaws.
               (@arr_pure arr HA _ _
                 (fun x : (((B+C)*D)*S)%type =>
                   (sum_prod_dist (fst x), snd x)))).
-          { apply cprop. 1: reflexivity. apply arr_pure_ext'.
+          { apply cprop. 1: reflexivity. apply (@Arrow.arr_pure_ext arr HA HE).
             intros ((bc, d), s0); reflexivity. }
           apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
           intros [[[b s]|[c s]] d]; reflexivity. }
@@ -567,7 +560,7 @@ Section StateArrowTChoiceLaws.
                 (fun p : (((A+C)*D)*S)%type => (sum_prod_dist (fst p), snd p)))
               (@arr_pure arr HA _ _ (@sum_distribute (A*D) (C*D) S))).
           { apply cprop. 2: reflexivity.
-            apply arr_pure_ext'. intros ((ac, d), s0); reflexivity. }
+            apply (@Arrow.arr_pure_ext arr HA HE). intros ((ac, d), s0); reflexivity. }
           apply pcomp. }
         apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
         intros [[[a|c] d] s]; reflexivity. }
@@ -631,7 +624,7 @@ Section StateArrowTChoiceLaws.
 
       (* Now both sides: (_ >>> L(Ff)_{CSD}) >>> [t_{CSD}] *)
       apply cprop. 2: reflexivity. apply cprop. 2: reflexivity.
-      apply arr_pure_ext'. intros [[[a|c] d] s]; reflexivity.
+      apply (@Arrow.arr_pure_ext arr HA HE). intros [[[a|c] d] s]; reflexivity.
     - (* left_proper *)
       unfold Proper, respectful; intros.
       apply cprop. 1: reflexivity.

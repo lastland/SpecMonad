@@ -59,28 +59,8 @@ Section GenericOptionArrTApplyLaws.
     apply alaw.
   Qed.
 
-  Local Lemma option_app_const {A B} (f : optionArrT arr A B) (a : A) :
-    @arrow_eq _ OE _ _
-      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => (f, a)))
-        (@arr_app _ OA OApp _ _))
-      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => a)) f).
-  Proof.
-    exact (@ArrowApplyFacts.app_constant _ OA OApp OE OL unit A B f a
-      (option_app_law f)).
-  Qed.
-
   (** Naturality and [first_fst] allow a fixed value to pass beside an
       arbitrary effectful arrow. *)
-  Local Lemma option_first_const {A B C}
-    (f : optionArrT arr A B) (c : C) :
-    @arrow_eq _ OE _ _
-      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun a => (a, c)))
-        (@arr_first _ OA _ _ _ f))
-      (@arr_comp _ OA _ _ _ f (@arr_pure _ OA _ _ (fun b => (b, c)))).
-  Proof.
-    exact (@Arrow.first_constant _ OA OE OL (@option_pure_ext) A B C f c).
-  Qed.
-
   Local Lemma option_second_const {A B C}
     (f : optionArrT arr A B) (c : C) :
     @arrow_eq _ OE _ _
@@ -92,7 +72,9 @@ Section GenericOptionArrTApplyLaws.
     etransitivity. { symmetry. apply ocassoc. }
     etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
     etransitivity. { symmetry. apply ocassoc. }
-    etransitivity. { apply ocprop. 2: reflexivity. apply option_first_const. }
+    etransitivity.
+    { apply ocprop. 2: reflexivity.
+      apply (@Arrow.first_constant _ OA OE OL (@option_pure_ext)). }
     etransitivity. { apply ocassoc. }
     apply ocprop. 1: reflexivity.
     apply (@pure_comp_ext _ OA OE OL (@option_pure_ext)).
@@ -112,7 +94,9 @@ Section GenericOptionArrTApplyLaws.
       { apply ocprop. 2: reflexivity.
         apply ocprop. 1: reflexivity. apply ofpure. }
       etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
-      etransitivity. { apply option_app_const. }
+      etransitivity.
+      { exact (@ArrowApplyFacts.app_constant _ OA OApp OE OL unit _ _ _ _
+          (option_app_law _)). }
       etransitivity. { apply opcomp. }
       symmetry. apply ocidr.
     - (* app_precompose *)
@@ -122,7 +106,9 @@ Section GenericOptionArrTApplyLaws.
       { apply ocprop. 2: reflexivity.
         apply ocprop. 1: reflexivity. apply ofpure. }
       etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
-      etransitivity. { apply option_app_const. }
+      etransitivity.
+      { exact (@ArrowApplyFacts.app_constant _ OA OApp OE OL unit _ _ _ _
+          (option_app_law _)). }
       symmetry.
       etransitivity. { symmetry. apply ocassoc. }
       assert (Hpair : @arrow_eq _ OE _ _
@@ -147,10 +133,15 @@ Section GenericOptionArrTApplyLaws.
       { apply ocprop. 2: reflexivity.
         apply ocprop. 1: reflexivity. apply ofpure. }
       etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
-      etransitivity. { apply option_app_const. }
+      etransitivity.
+      { exact (@ArrowApplyFacts.app_constant _ OA OApp OE OL unit _ _ _ _
+          (option_app_law _)). }
       symmetry.
       etransitivity. { symmetry. apply ocassoc. }
-      etransitivity. { apply ocprop. 2: reflexivity. apply option_app_const. }
+      etransitivity.
+      { apply ocprop. 2: reflexivity.
+        exact (@ArrowApplyFacts.app_constant _ OA OApp OE OL unit _ _ _ _
+          (option_app_law _)). }
       apply ocassoc.
     - (* app_ext is inherited directly by the underlying application. *)
       intros X A B u v H.
