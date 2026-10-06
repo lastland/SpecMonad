@@ -17,6 +17,9 @@ Source declarations and [_CoqProject](../_CoqProject) override older names.
 - [EffectObservations](EffectObservations/CONTEXT.md) connects computations
   to specifications and compares observations/triples. SP and WP have separate
   outcome choices and directions. Arrow-derived clients coexist with old ones.
+- [DijkstraMonads](DijkstraMonads/CONTEXT.md) indexes computations by observations
+  and selected specification orders. It supplies WP and earlier ASP/DSLP SP
+  clients, triple bridges, and selected-order sequencing/indexing obstructions.
 - ExampleProgramDefs shares programs without observations. InCorrectnessPrinciples
   states rewriting rules for the double-option tripleASP interface.
 - [OldSP](OldSP/CONTEXT.md) retains some built earlier results;

@@ -16,7 +16,9 @@ See [domain-document rules](docs/agents/domain.md) for maintenance and ADR use.
   `TransformerLaws.v` serves both despite its computation-directory location.
   Consult imports: directory ownership does not establish semantic independence.
 - EffectObservations connects computations to specifications; its parent
-  compares readings and triples. OldSP retains some built earlier results.
+  compares readings and triples. DijkstraMonads uses observations and selected
+  specification orders to index computations. OldSP retains some built earlier
+  results.
 - Tests check instances/laws, Examples check semantic clients, and Checks
   reports selected theorem assumptions. The map does not certify axiom-freedom.
 
@@ -47,6 +49,7 @@ and the opt-in assumption audit.
 | [EffectObservations](Code/Taxonomy/EffectObservations/CONTEXT.md) | Reading/triple comparisons |
 | [SP observations](Code/Taxonomy/EffectObservations/SP/CONTEXT.md) | SP readings and judgments |
 | [WP observations](Code/Taxonomy/EffectObservations/WP/CONTEXT.md) | Four WP readings |
+| [DijkstraMonads](Code/Taxonomy/DijkstraMonads/CONTEXT.md) | Indexed computations, triple bridges, and order obstructions |
 | [OldSP](Code/Taxonomy/OldSP/CONTEXT.md) | Earlier presentation, partly built |
 
 ## Reading by task and other areas
@@ -54,7 +57,8 @@ and the opt-in assumption audit.
 For effects, read computation → observation → comparison contexts. For a
 representation change, read carrier → equivalence → examples/tests. For a
 generic law, read Classes → transformer → generic/concrete tests. For a
-judgment, check its outcome type, quantifiers, and order direction.
+judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
+typings, read carrier/order → observation → DijkstraMonads.
 
 `Taxonomy/deprecated/`, `Backup/`, and `ITreeExamples/` are outside the normal
 manifest. Consult them deliberately; copied ITree provenance is in its README.

@@ -40,7 +40,8 @@ an exception or divergence; the observation determines which.
 What is formalised:
 
 - **Four stateful computation models**, combining exceptions, nondeterminism,
-  and divergence, plus the state-free `divnd` and reader-indexed `rddivnd`.
+  and divergence, plus the state-free `divnd` / `divexcnd` and reader-indexed
+  `rddivnd`.
 
 - **Four strongest-postcondition (SP) specification monads** — angelic (ASP),
   demonic liberal (DSLP), demonic (DSP), and angelic liberal (ASLP). The public
@@ -60,12 +61,14 @@ What is formalised:
   [`SPostArr.v`](Code/Taxonomy/Arrows/SPostArr.v) and the checked
   [examples](Code/Taxonomy/Arrows/Examples/SPostArrExamples.v).
 
-- **Weakest-precondition (WP) specifications**, `WPure` and its `stateT`/`optionT`
-  stacks. `WPure` bundles postcondition monotonicity, which the adjunction and
-  congruence proofs use. The binary `WPArr` instead uses the raw `WPureT` carrier.
+- **Weakest-precondition (WP) specifications**, `WPure` and its reader, state,
+  and state/option stacks. `WPure` bundles postcondition monotonicity, which the
+  adjunction and congruence proofs use. The binary `WPArr` instead uses the raw
+  `WPureT` carrier.
 
-- **The five base specification monads of *Dijkstra Monads For All*** (ICFP
-  2019), presented as unary monads with five adjunctions in
+- **Five base specification monads**, from Maillard et al.'s
+  [*Dijkstra Monads for All*](https://doi.org/10.1145/3341708) (ICFP 2019),
+  presented as unary monads with five adjunctions in
   `BaseGaloisConnections.v`. Their laws use pointwise logical equivalence
   rather than equality of bundled values.
 
@@ -74,13 +77,21 @@ What is formalised:
   observations of `stdivexcnd` and `stdivndNE`. The other WP modules provide
   readings and examples, but do not prove local return/bind preservation laws.
 
+- **Dijkstra typings**, with return/bind, weakening, and lift clients for the
+  four WP observations of `stdivexcnd` and the earlier ASP/DSLP SP observations
+  of `stdivexcnd` and `stdivnd`. Triple bridges and counterexamples delimit
+  sequencing and indexing under the selected orders. See the
+  [Dijkstra context](Code/Taxonomy/DijkstraMonads/CONTEXT.md).
+
 - **The taxonomy**: how the observations relate to one another — inclusions,
   contrapositive dualities, and the implications between the triples built on
   them. The WP/SP comparison theorems identify specific triple directions over
   the same terminating relation. The withdrawal example separately contrasts
   angelic WP coverage of every input with ASP reachability from some input.
 
-- **O'Hearn's incorrectness principles** over the ASP triples, in
+- **Incorrectness principles** from Peter W. O'Hearn's
+  [*Incorrectness Logic*](https://doi.org/10.1145/3371078) (POPL 2020), proved
+  over the ASP triples in
   [`InCorrectnessPrinciples.v`](Code/Taxonomy/InCorrectnessPrinciples.v).
 
 ## Question
@@ -110,12 +121,15 @@ What is formalised:
 
 ## Potential future directions
 
-- *Backward reasoning*: Look into works like [underspecified incorrectness
-  logic](https://doi.org/10.1145/3704850).
+- *Backward reasoning*: Explore Verbeek et al.'s
+  [*On Extending Incorrectness Logic with Backwards Reasoning*](https://doi.org/10.1145/3704850)
+  (POPL 2025).
 
 - What about other predicate transformers?
 
-- What about [outcome logic](https://doi.org/10.1145/3586045)?
+- What about Zilberstein, Dreyer, and Silva's
+  [*Outcome Logic: A Unifying Foundation for Correctness and Incorrectness Reasoning*](https://doi.org/10.1145/3586045)
+  (PLDI 2023)?
 
 - Compositional reasoning with incorrectness logic, beyond the O'Hearn
   principles already proved.

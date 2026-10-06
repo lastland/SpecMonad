@@ -56,8 +56,9 @@ transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
   Relational-only `rel_<equation>_iff` lemmas and state-over-option formulas,
   including `rel_state_option_bind_fields`, do not require faithfulness.
   The exact-equality `rel_<equation>_fields` helpers and `RelArrowPresentation`
-  wrappers remain independent APIs. `rel_arrow_*_laws_leibniz` transports
-  semantic laws when equivalence reflects into ordinary equality. These
+  wrappers remain independent APIs. `rel_arrow_laws_leibniz` and
+  `rel_arrow_choice_laws_leibniz` transport semantic laws when equivalence
+  reflects into ordinary equality. These
   helpers do not change the carrier's selected equality, and the direct-Rel
   morphisms do not use them. Transformer laws remain in the generic
   option/state modules.

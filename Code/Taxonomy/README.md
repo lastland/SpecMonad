@@ -26,6 +26,10 @@ provides shorter directory guides. Formulas below describe carriers and readings
 unless shown as complete declarations, they are schematic rather than standalone
 Coq commands.
 
+The five unary specification monads in §7 follow Kenji Maillard et al.,
+[*Dijkstra Monads for All*](https://doi.org/10.1145/3341708) (ICFP 2019),
+abbreviated **DM4all** below.
+
 ---
 
 ## 1. Directory layout
@@ -348,7 +352,7 @@ conditions.
 
 ## 4. The WP specification monads
 
-`BaseSpecMonads/WPureMonad.v` holds exactly three developments plus their
+`BaseSpecMonads/WPureMonad.v` defines four WP monads and their refinement
 orders:
 
 ```coq
@@ -356,19 +360,28 @@ WPureT A   := (A -> Prop) -> Prop                    (* raw; used by Arrows/WPAr
 wpure_mono f := forall p q, (p ⊆ q) -> f p -> f q
 WPure  A   := { f : WPureT A | wpure_mono f }        (* the monad *)
 
-WSt    S   := stateT S WPure                          (* W^St     *)
+WSt    S   := stateT S WPure                         (* W^St     *)
 WStExc S   := stateT S (optionT WPure)                (* W^StExc  *)
+WRd    R   := readerT R WPure                        (* reader   *)
 ```
 
-After applying the stack runners and `runWPure`, `WSt` takes an initial state
+After applying the stack runners and `getWPure`, `WSt` takes an initial state
 and a postcondition on `A * S`. `WStExc` instead takes a postcondition on
-`option (A * S)` and supplies `MonadExc`. These are the shapes of the
-evaluators, not equalities of the bundled carriers with unrestricted functions.
+`option (A * S)` and supplies `MonadExc`. `WRd` takes an environment and a
+postcondition on `A`, with no final environment in the outcome. These are the
+shapes of the evaluators, not equalities of the bundled carriers with
+unrestricted functions.
 
-`ret`, `bind`, `Eq1` (pointwise iff) and `MonadLawsE` are proved directly for
-`WPure`; both stacks get their laws from the `Eq1`-generic `optionT` / `stateT`
-instances in `ComputationMonads/TransformerLaws.v`.
-`Coercion runWPure : WPure >-> Funclass` keeps application (`w post`) working
+The reader operations are `retPr` / `bindPr` and `askPr` / `localPr`.
+`bindPr` passes the same environment to both stages. At environment `r`,
+`askPr` returns `r`, while `localPr f m` runs `m` under `f r`.
+`MonadReader__WRd` exposes `askPr` and `localPr` as `ask` and `local`.
+
+For `WPure`, the file defines `ret`, `bind`, and pointwise-iff `Eq1`, and
+proves `MonadLawsE` directly. The three stacks inherit their laws from the
+`Eq1`-generic `optionT`, `stateT`, and `readerT` instances in
+`ComputationMonads/TransformerLaws.v`.
+`Coercion getWPure : WPure >-> Funclass` keeps application (`w post`) working
 through the subset type.
 
 The adjunction and `Proper_bind` proofs use the bundled monotonicity. Each WP
@@ -376,20 +389,27 @@ observation therefore supplies an `obs*_mono` proof when constructing a
 `WPure` value. Downstream proofs can use these lemmas or the public unfolding
 lemmas without unpacking the subset type.
 
-All three WP orders live in `WPureMonad.v`, each next to the type it orders —
-matching the SP side:
+All four WP orders live in `WPureMonad.v`. Each stack order is a generic
+lift of **reverse implication** from `WP_le`; the formulas below omit runners:
 
-| order | on | direction |
+| order | on | meaning of `w1 ⊑ w2` |
 |---|---|---|
-| `WP_le` (+ `WP_le_PreOrder`) | `WPure` | **reverse**: `forall k, w2 k -> w1 k` (DM4all; a weaker precondition is lower) |
-| `ordWSt` | `WSt S` | forward: `forall s post, w1 s post -> w2 s post` |
-| `ordWStExc` | `WStExc S` | forward |
+| `WP_le` (+ `WP_le_PreOrder`) | `WPure` | `forall post, w2 post -> w1 post` |
+| `ordWSt` | `WSt S` | `forall s post, w2 s post -> w1 s post` |
+| `ordWStExc` | `WStExc S` | `forall s post, w2 s post -> w1 s post` |
+| `ordWRd` | `WRd R` | `forall r post, w2 r post -> w1 r post` |
 
-The direction mismatch is deliberate and visible in one file. The DM4all
-adjunctions are stated against the reverse `WP_le`; the triple characterisations
-in `EffectObservations/` use the forward stack orders. They are opposite
-conventions, not a lifting of one another — lifting `WP_le` through the
-transformers would give `forall s, m2 s ⊆ m1 s`.
+The lifts preserve argument order: a transformer that yields pointwise weaker
+preconditions is lower in the refinement order. The DM4all adjunctions and
+the WP triple characterisations use these reverse orders; the triples account
+for the direction through their argument positions. For example, the `SubsetOf`
+triple-spec comparisons use `ordWSt (obs prog) (pp2wp_subset pre post)` in
+[`StDivNonDet_WSt.v`](EffectObservations/WP/StDivNonDet_WSt.v) and
+`ordWStExc (obs prog) (pp2wp_subset pre post)` in
+[`StDivExcNonDet_WStExc.v`](EffectObservations/WP/StDivExcNonDet_WStExc.v).
+Their `SupersetOf` forms swap the arguments and use `pp2wp_superset`.
+Other WP interfaces differ in constructor names and argument positions; see
+the [WP context](EffectObservations/WP/CONTEXT.md).
 
 **`Arrows/WPArr.v` uses the raw carrier `WPureT`**, not `WPure`. Its `ArrowEq`
 is Leibniz equality. Some laws hold by conversion; laws involving products and
@@ -556,9 +576,14 @@ Three files assemble the inclusions, contrapositive pairs, and triple taxonomy,
 one per source monad / target indexing. Observation modules also contain local
 collapse and simplification results.
 
+Theorem 3.7, Theorem 3.8, and Figure 5 below refer to Lena Verscht and Benjamin
+Lucien Kaminski's [*A Taxonomy of Hoare-Like Logics: Towards a Holistic View
+using Predicate Transformers and Kleene Algebras with Top and Tests*](https://doi.org/10.1145/3704896)
+(POPL 2025).
+
 | File | Contents |
 |---|---|
-| `Taxonomy_StDivExcNonDet_StExc.v` | WP: inclusions (Thm 3.7), contrapositive transformers (Thm 3.8), `TaxonomyWPTransformers` (upper half of Figure 5). SP: `ContrapositiveTransformers`, `TaxonomySPTransformers`. Then `GaloisConnection`, joining the two, and `Module WithdrawExample`. |
+| `Taxonomy_StDivExcNonDet_StExc.v` | WP: inclusions (Theorem 3.7), contrapositive transformers (Theorem 3.8), `TaxonomyWPTransformers` (upper half of Figure 5). SP: `ContrapositiveTransformers`, `TaxonomySPTransformers`. Then `GaloisConnection`, joining the two, and `Module WithdrawExample`. |
 | `Taxonomy_StDivNonDet_StExc.v` | `Module TaxonomyFullOutcome` — the contrapositive pairs, the `DSP_conjunction` / `ASLP_disjunction` decompositions, the four orderings, and the `cc_*` / `ii_*` triple taxonomy. |
 | `Taxonomy_StDivNonDet_St.v` | `Module TaxonomyStDivNonDetWSt` (WP side) and `Module TaxonomyStDivNonDetSPSt` (SP side), each with its observation comparisons and triple taxonomy. |
 
@@ -583,8 +608,9 @@ modules cannot shadow names the WP proofs above resolve against.
 
 ## 7. The DM4all specification monads and their adjunctions
 
-Five standalone base specification monads, faithful ports of the ones in
-*Dijkstra Monads For All* (ICFP 2019), `theories/sprop/SpecificationMonads.v`.
+The five standalone base specification monads port the implementations in
+`theories/sprop/SpecificationMonads.v`, the artifact file accompanying
+[*Dijkstra Monads for All*](https://doi.org/10.1145/3341708) (ICFP 2019).
 Each is unary (`Type -> Type`) and has `Monad` and `MonadLawsE`. Their `Eq1`
 compares underlying propositions by logical equivalence, so the law statements
 do not require equality of bundled proofs. Assumptions should be checked for
@@ -839,8 +865,8 @@ disjunction of ASP and DSLP over the same relation.
 These results follow Lena Verscht and Benjamin Lucien Kaminski,
 [*A Taxonomy of Hoare-Like Logics: Towards a Holistic View using Predicate
 Transformers and Kleene Algebras with Top and Tests*](https://doi.org/10.1145/3704896),
-POPL 2025. Definitions 3.5 and 3.6 give the DSP and ASLP readings; §3.2.4 gives
-the conjunction/disjunction identities.
+POPL 2025. The article's Definitions 3.5 and 3.6 give the DSP and ASLP readings;
+its §3.2.4 gives the conjunction/disjunction identities.
 
 ### Property-only SP arrows
 
@@ -946,8 +972,13 @@ Each map's morphism theorem appends `_morphism`. Lifted round-trip names keep
 the same pattern, such as `option_asp_from_to` / `option_asp_to_from` and
 `state_option_asp_from_to` / `state_option_asp_to_from`, with DSLP counterparts.
 All public lifted round trips and operation-preservation results use the
-corresponding selected `arrow_eq`. State-only lifts use `state_arrow_map` and
-`state_arrow_morphism` directly.
+corresponding selected `arrow_eq`.
+
+The option maps use `option_arrow_map`, and their morphism theorems use
+`option_arrow_morphism`. The state-over-option maps apply `state_arrow_map`
+to those option maps; their morphism theorems use the combined
+`state_option_arrow_morphism`. For state-only lifts, apply `state_arrow_map`
+and `state_arrow_morphism` directly.
 
 Inverse and lift proofs use the existing core/choice/application laws under
 the selected equality dictionaries. Inverse application uses `app_ext`; state
@@ -984,12 +1015,6 @@ substitution under the loop. The projection's round-trip and operation facts,
 and the public obstruction statements, remain semantic. This local step does
 not convert `Rel_eq` into equality of relation values.
 
-`PredMonad.v` also carries `WPred` and the stack
-`ProgWPred S := stateT S (optionT WPred)`. `WPred` and `PredM.Pred` use the
-same predicate shape but have separate equality dictionaries: Leibniz equality
-for `WPred` and pointwise logical equivalence for `PredM.Pred`. Check the
-selected `Eq1` when using their laws.
-
 ## 9. Example programs
 
 `ExampleProgramDefs.v` holds the program definitions and nothing else:
@@ -997,7 +1022,7 @@ selected `Eq1` when using their laws.
 | program | monad | notes |
 |---|---|---|
 | `progA`, `progB`, `progRet`, `progEx` | `stdivexcnd` | `progB` has a divergent branch |
-| `example_state` | `stdivexcnd (nat*nat*nat)` | O'Hearn, *Incorrectness Logic*, Example 3.1 |
+| `example_state` | `stdivexcnd (nat*nat*nat)` | Example 3.1 of Peter W. O'Hearn's [*Incorrectness Logic*](https://doi.org/10.1145/3371078) (POPL 2020) |
 | `progloom`, `progloom_harder` | `stdivexcnd` | the withdrawal session |
 | `progA_stexcnd` | `stexcnd` | `progA` read in the divergence-free monad |
 | `progA_stdivitree` | `stdivitree` | the deterministic variant |
@@ -1027,12 +1052,42 @@ retains the exception but omits divergence.
 The cross-reading example is `Module WithdrawExample`, at the bottom of
 `EffectObservations/Taxonomy_StDivExcNonDet_StExc.v`: it states `tripleWP obsAWP`
 with `SubsetOf` and `tripleASP … Under` over the *same* program and postcondition,
-contrasting angelic *coverage* (∀ input, ∃ output) with O'Hearn-style bug
-*presence* (∀ asserted output, ∃ input). It is a comparison, so it sits with the
-other comparisons.
+contrasting angelic *coverage* (∀ input, ∃ output) with bug *presence*
+(∀ asserted output, ∃ input) in O'Hearn's *Incorrectness Logic*. It sits with
+the other observation comparisons.
 
-`InCorrectnessPrinciples.v` states O'Hearn's rewriting rules over the
-`tripleASP` triples of `SP/StDivExcNonDet_SPStExc.v`.
+`InCorrectnessPrinciples.v` states the rewriting rules from O'Hearn's
+[*Incorrectness Logic*](https://doi.org/10.1145/3371078) over the `tripleASP`
+triples of `SP/StDivExcNonDet_SPStExc.v`.
+
+### Dijkstra typings
+
+`DijkstraMonads/` uses observations and selected refinement orders to index
+computations by specifications. The [Dijkstra context](DijkstraMonads/CONTEXT.md)
+describes the three modules, their operations, and the precise theorem scopes.
+
+- **WP:** `Dijkstra_StDivExcNonDet_WStExc.v` defines
+  `D w := { m : stdivexcnd S A | ordWStExc (obs m) w }`; `Dop` swaps the
+  order arguments. All four WP readings instantiate the construction, which
+  supplies return, bind, weakening, and lift in both directions, plus choice
+  rules for `D`. The bind equations compare projected computations by `eq1`,
+  not indexed packages. Later clients include liberal divergence typings and
+  compositional examples.
+- **SP:** The two SP files use the earlier `OldMonads/` carriers and
+  terminating-slice observations. ASP/DSLP instantiate sequencing, with exact
+  global-order triple bridges for ASP/`Over` and DSLP/`Under`.
+  `Dijkstra_StDivNonDet_SPSt.v` also supplies a generic construction using
+  `OrderedMonad` and `EffObs` (return/bind preservation), despite its
+  computation-specific filename.
+
+The SP limitations concern **selected orders**, not every Dijkstra
+construction. In the exception-capable SP file, DSP/ASLP retain indexed
+carriers with return, weakening, and lift. Nat-state counterexamples refute
+monotonicity of their existing binds and of observation-preserving alternative
+binds under the global pointwise orders. Both SP files give counterexamples
+to representing arbitrary ASP/`Under` triples by global indices and to bind
+monotonicity under the fixed-precondition orders. Consult the context before
+generalising these results to another carrier or order.
 
 ## 10. `OldSP/`
 
@@ -1117,21 +1172,29 @@ building it. Editor backups (`.v~`) are outside the build manifest.
 
 ## 12. Naming conventions
 
-**Instances** are named after the type they are an instance for, with the number
-of underscores marking the layer:
+**Instance names depend on the presentation.** The ExtLib-based developments
+in this directory use one underscore for base monads and two for transformer
+stacks:
 
 | | pattern | examples |
 |---|---|---|
 | base monad | `Class_Type` (one underscore) | `Monad_WPure`, `MonadLawsE_WPure`, `Monad_Pred` |
-| transformer stack | `Class__Type` (two underscores) | `Monad__WStExc`, `MonadState__WSt`, `Monad__ASPStExc`, `Eq1__DSPStExc`, `MonadLawsE__ASLPStExc`, `Monad__stdivnd` |
+| transformer stack | `Class__Type` (two underscores) | `Monad__WStExc`, `MonadState__WSt`, `MonadReader__WRd`, `Monad__stdivnd` |
 
-The law instance is always `MonadLawsE` (matching the ITree class), never
-`MonadLaws`. Slice variants inside `Module St*` reuse the identical names; the
-module qualifies them (`StASP.MonadLawsE__ASPSt`).
+The earlier SP files in `BaseSpecMonads/OldMonads/` also use double underscores
+for stateful and reader instances, such as `Monad__ASPStExc`, `Eq1__DSPStExc`,
+and `MonadLawsE__ASLPStExc`. Their terminating-slice instances live inside
+`Module St*`, for example `StASP.MonadLawsE__ASPSt`.
 
-**Type names distinguish outcome indexings** — `SPSt` for plain pairs,
-`SPStExc` for option outcomes. The latter can represent an exception or divergence
-depending on the observation (§5):
+By contrast, the canonical `ASPMonad.v` / `DSLPMonad.v` / `DSPMonad.v` /
+`ASLPMonad.v` APIs directly in `BaseSpecMonads/`, and `SPure.v`, use **one
+underscore at every layer**: for example, `Monad_ASP`, `Monad_ASPSt`,
+`Monad_ASPStExc`, `Eq1_ASPSt`, `MonadLawsE_ASPStExc`, and `Monad_SPStExc`.
+The monad-law class used here is `MonadLawsE` (the ITree class), not `MonadLaws`.
+
+**The earlier SP presentation's type names distinguish outcome indexings** —
+`SPSt` for plain pairs, `SPStExc` for option outcomes. The latter can represent
+an exception or divergence depending on the observation (§5):
 
 | | option outcome | terminating slice (in `Module St*`) |
 |---|---|---|
@@ -1143,15 +1206,15 @@ depending on the observation (§5):
 and likewise for `DSLP`, `DSP`, `ASLP`. The raw order is `ordSPStExc` /
 `ordSPSt`; the WP side matches, with `ordWStExc` / `ordWSt`.
 
-The state-free variants follow the same rule with `SP` in place of `SPSt` —
+The earlier SP presentation's state-free variants use `SP` in place of `SPSt` —
 `ASPSP` / `DSLPSP`, `getASP` / `getDSLP`, `ordASPSP` / `ordASPSPAt` and
-`ordDSLPSP` / `ordDSLPSPAt` — and, being at top level rather than in a `Module
-St*`, they need no qualification.
+`ordDSLPSP` / `ordDSLPSPAt`. These names live outside `Module St*`; qualify
+the source module when another presentation exports the same name.
 
-The `Module St*` wrappers are still needed: the healthiness conditions
-(`StrictProg`, `TerminatingProg`, …) and the `NewGaloisConnections.v` embeddings
-deliberately carry parallel names in both variants, so the module is what tells
-them apart.
+The `Module St*` wrappers distinguish parallel names in the earlier healthiness
+and `NewGaloisConnections.v` developments. They are not a layout convention
+for the canonical arrow-derived monads, whose pure, state, and
+state-over-option APIs live at top level.
 
 ## 13. Known duplication
 

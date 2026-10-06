@@ -19,6 +19,11 @@ Discuss new terms with the user before adopting them.
 Meeting notes are historical discussion rather than adopted ADRs; surface
 conflicts with an existing ADR explicitly.
 
+Identify referenced papers by their full titles, with authors, venue/year, and
+citation links where available. Introduce abbreviations with the title before
+using them, and attribute theorem, definition, and figure numbers to the paper
+they come from.
+
 ## Maintenance
 
 Update affected contexts and the global map when directory roles, terminology,
