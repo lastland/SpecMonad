@@ -12,9 +12,9 @@
 #   make GOAL...             any other goal passes through to Makefile.coq
 #                             (file targets like Classes/Arrow.vo, install, ...)
 #
-# Parallel builds (make -jN) and multiple goals are forwarded to a single
-# sub-make through the jobserver, so shared prerequisites are never built
-# concurrently by two sub-makes.
+# Parallel builds (make -jN) and multiple build goals use a single sub-make
+# through the jobserver. If clean is also requested, it completes before the
+# shared build; assumption reporting runs afterward.
 
 COQ_MAKEFILE ?= coq_makefile
 COQPROJECT   := _CoqProject
@@ -32,16 +32,14 @@ regen:
 	$(COQ_MAKEFILE) -f $(COQPROJECT) -o $(COQMAKEFILE)
 
 .PHONY: all
-all: regen
-	$(MAKE) -f $(COQMAKEFILE) all
+all: delegate
 
 # The audit is deliberately outside _CoqProject, so the normal build never
 # compiles it and the generated clean rule never removes its outputs.  Its
 # dependency closure lies inside the normal build, so building everything
 # first suffices; no prerequisite list is maintained here.
 .PHONY: check
-check: regen
-	$(MAKE) -f $(COQMAKEFILE) all
+check: delegate
 	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/Assumptions.v
 
 .PHONY: clean
@@ -50,15 +48,26 @@ clean: regen
 	rm -f Checks/Assumptions.vo Checks/Assumptions.vos Checks/Assumptions.vok \
 	  Checks/Assumptions.glob Checks/.Assumptions.aux
 
-# Pass every other goal through to the generated makefile.  All such goals
-# are funneled into one sub-make invocation; the empty per-goal recipes only
-# mark them as (re)made after that sub-make has succeeded.
-GOALS     := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)
-DELEGATED := $(filter-out all check clean regen,$(GOALS))
+# Share one dependency graph across all/check and explicit file/install goals.
+# The audit requires the whole project even when all was not requested.
+GOALS       := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)
+BUILD_GOALS := $(filter-out check clean regen,$(GOALS))
+ifneq ($(filter check,$(GOALS)),)
+ifeq ($(filter all,$(BUILD_GOALS)),)
+BUILD_GOALS := all $(BUILD_GOALS)
+endif
+endif
+DELEGATED := $(filter-out all,$(BUILD_GOALS))
 
 .PHONY: delegate
 delegate: regen
-	$(MAKE) -f $(COQMAKEFILE) $(DELEGATED)
+	$(MAKE) -f $(COQMAKEFILE) $(BUILD_GOALS)
+
+ifneq ($(filter clean,$(GOALS)),)
+ifneq ($(strip $(BUILD_GOALS)),)
+delegate: clean
+endif
+endif
 
 ifneq ($(strip $(DELEGATED)),)
 $(DELEGATED): delegate
