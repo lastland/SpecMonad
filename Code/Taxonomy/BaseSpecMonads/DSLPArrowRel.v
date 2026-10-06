@@ -16,7 +16,7 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
-From Incorrectness.Classes Require Import ArrowMonad.
+From Incorrectness.Classes Require Import ArrowMonad RelArrowCoherence.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPArrowCore.
 
 (* ================================================================= *)
@@ -167,182 +167,23 @@ End Relation.
     it would be for [ASPArr]: the arrows differ only in how a relation is
     read, not in which relation each operation denotes. *)
 
-Local Ltac rel_eq :=
-  apply dslpRel_eq; intros ?x ?y; unfold arr_id;
-  repeat first [ setoid_rewrite dslpRel_comp | setoid_rewrite dslpRel_pure
-               | setoid_rewrite dslpRel_first | setoid_rewrite dslpRel_app ];
-  cbn [fst snd].
-
-#[global] Instance ArrowLaws_DSLPArr : ArrowLaws DSLPArr.
-Proof.
-  constructor; intros.
-  - (* comp_id_l *)
-    rel_eq.
-    split; [ intros [z [<- H]] | intro H; exists x ]; auto.
-  - (* comp_id_r *)
-    rel_eq.
-    split; [ intros [z [H ->]] | intro H; exists y ]; auto.
-  - (* comp_assoc *)
-    rel_eq. firstorder.
-  - (* pure_comp *)
-    rel_eq. split; [ intros [z [<- H]] | intro H; eexists ]; auto.
-  - (* first_pure *)
-    rel_eq. destruct x as [a c], y as [b c']. cbn [fst snd]. split.
-    + intros [H ->]. rewrite H. reflexivity.
-    + intro H. injection H as <- <-. auto.
-  - (* first_comp *)
-    rel_eq. destruct x as [a c], y as [b c']. cbn [fst snd]. split.
-    + intros [[z [H1 H2]] ->]. exists (z, c'). cbn. auto.
-    + intros [[z c''] [[H1 ->] [H2 ->]]]. cbn in *. split; [ exists z |]; auto.
-  - (* first_fst *)
-    rel_eq. destruct x as [a c]. cbn [fst snd]. split.
-    + intros [[b c'] [[H1 H2] H3]]. cbn in *. subst b. exists a. auto.
-    + intros [z [Hz H]]. subst z. exists (y, c). cbn. auto.
-  - (* first_assoc *)
-    rel_eq. destruct x as [[a c] d], y as [b [c' d']].
-    cbn [fst snd]. split.
-    + intros [[[b0 c0] d0] [[[H1 H2] H3] Heq]]. cbn in *.
-      injection Heq as Hb Hc Hd.
-      exists (a, (c, d)). cbn. split; [ reflexivity | split ].
-      * rewrite <- Hb. exact H1.
-      * rewrite H2, Hc, H3, Hd. reflexivity.
-    + intros [z [Heq [H1 H2]]]. subst z. cbn in *.
-      injection H2 as Hc Hd.
-      exists (b, c, d). cbn. rewrite Hc, Hd. auto.
-
-  - (* comp_proper *)
-    intros f f' Hf g g' Hg.
-    pose proof (proj1 (dslpRel_eq f f') Hf) as Hf'.
-    pose proof (proj1 (dslpRel_eq g g') Hg) as Hg'.
-    rel_eq.
-    split; intros [z [H1 H2]]; exists z; split;
-      solve [ apply (proj1 (Hf' _ _)), H1 | apply (proj2 (Hf' _ _)), H1
-            | apply (proj1 (Hg' _ _)), H2 | apply (proj2 (Hg' _ _)), H2 ].
-  - (* first_proper *)
-    intros f f' Hf.
-    pose proof (proj1 (dslpRel_eq f f') Hf) as Hf'.
-    rel_eq.
-    split; intros [H Heq]; split;
-      solve [ apply (proj1 (Hf' _ _)), H | apply (proj2 (Hf' _ _)), H | exact Heq ].
-  - (* first_natural *)
-    rel_eq. destruct x as [a c], y as [b d]. cbn [fst snd]. split.
-    + intros [[b0 c0] [[Hf Hc] Heq]]. cbn in Hc, Heq. subst c0.
-      injection Heq as Hb Hd. subst b0 d.
-      exists (a, g c). cbn. auto.
-    + intros [[a0 d0] [Heq [Hf Hd]]]. cbn in Heq, Hd.
-      injection Heq as Ha Hd0. subst a0 d0 d.
-      exists (b, c). cbn. auto.
-Qed.
-
-(** Sum laws: split the input and output first, so that the [match] in
-    [dslpRel_left] reduces and the inner relations become rewritable. *)
-Local Ltac rel_sum :=
-  apply dslpRel_eq; intros ?x ?y;
-  unfold arr_id, sum_bimap, swap_sum, assoc_sum, sum_prod_dist;
-  repeat match goal with z : (_ + _)%type |- _ => destruct z end;
-  repeat match goal with z : (_ * _)%type |- _ => destruct z end;
-  cbn [fst snd];
-  repeat first [ setoid_rewrite dslpRel_comp | setoid_rewrite dslpRel_pure
-               | setoid_rewrite dslpRel_first | setoid_rewrite dslpRel_left
-               | setoid_rewrite dslpRel_app ];
-  cbn [fst snd].
-
-(** [sauto] closes the mixed cases; what is left are the goals whose
-    witness is a sum injection, which [eauto] will not guess. *)
-Local Ltac sum_step :=
-  repeat match goal with
-         | H : ex _ |- _ => destruct H
-         | H : _ /\ _ |- _ => destruct H
-         | z : (_ + _)%type |- _ => destruct z
-         | z : (_ * _)%type |- _ => destruct z
-         end;
-  rewrite ?dslpRel_left, ?dslpRel_first, ?dslpRel_pure in *;
-  cbn in *;
-  try contradiction;
-  repeat match goal with
-         | H : inl _ = inl _ |- _ => injection H as H
-         | H : inr _ = inr _ |- _ => injection H as H
-         | H : inl _ = inr _ |- _ => discriminate H
-         | H : inr _ = inl _ |- _ => discriminate H
-         | H : (_, _) = (_, _) |- _ => injection H as H
-         end;
-  subst.
-
-Local Ltac sum_crush :=
-  split; intro H; sum_step;
-  solve [ eauto
-        | eexists (inl _); sum_step; eauto
-        | eexists (inr _); sum_step; eauto
-        | eexists (inl (inl _)); sum_step; eauto
-        | eexists (inl (inr _)); sum_step; eauto
-        | eexists (inr (inl _)); sum_step; eauto
-        | eexists (inr (inr _)); sum_step; eauto
-        | eexists (inl _, _); sum_step; eauto
-        | eexists (inr _, _); sum_step; eauto ].
-
-#[global] Instance ArrowChoiceLaws_DSLPArr : ArrowChoiceLaws DSLPArr.
-Proof.
-  constructor; intros.
-  - (* left_pure *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* left_comp *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* left_inl *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* left_assoc *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* left_inr *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* left_natural *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* first_left_dist *) rel_sum; try (sauto limit: 200); sum_crush.
-  - (* left_proper *)
-    intros f f' Hf.
-    pose proof (proj1 (dslpRel_eq f f') Hf) as Hf'.
-    rel_sum; solve [ apply Hf' | reflexivity | tauto ].
-Qed.
-
-#[global] Instance ArrowApplyLaws_DSLPArr : ArrowApplyLaws DSLPArr.
-Proof.
-  constructor.
-  - (* app_law *)
-    intros A B f. rel_eq. split.
-    + intros [[g a] [Heq H]]. injection Heq as <- <-. exact H.
-    + intro H. exists (f, x). cbn. auto.
-  - (* app_pair *)
-    intros A B. rel_eq. split.
-    + intros [[k v] [[H1 H2] H3]]. cbn in *. subst k v.
-      rewrite dslpRel_pure in H3. destruct x as [a b]. cbn in *. exact H3.
-    + intro H. destruct x as [a b]. cbn in *.
-      exists (pureDSLP (fun v : B => (a, v)), b). cbn.
-      split; [ split; reflexivity |]. rewrite dslpRel_pure. exact H.
-  - (* app_precompose *)
-    intros A B C g. unfold arr_second. rel_eq.
-    destruct x as [f a]. unfold swap. cbn [fst snd]. split.
-    + intros [[k a'] [[Hk Ha] Hcomp]]. cbn in *. subst k a'.
-      rewrite dslpRel_comp in Hcomp. destruct Hcomp as [b [Hg Hf]].
-      exists (f, b). split; [|exact Hf].
-      exists (a, f). split; [reflexivity|].
-      exists (b, f). cbn. auto.
-    + intros [[f0 b] [[p [Hp [q [Hg Hq]]]] Hf]].
-      destruct p as [a' f'], q as [b' f'']. cbn in *.
-      injection Hp as Ha Hf'. subst a' f'.
-      destruct Hg as [Hg Hff]. subst f''.
-      injection Hq as Hf0 Hb. subst f0 b'.
-      exists (compDSLP g f, a). cbn.
-      split; [split; reflexivity |]. rewrite dslpRel_comp. exists b. auto.
-  - (* app_postcompose *)
-    intros A B C h. rel_eq. split.
-    + intros [[k a] [[H1 H2] H3]]. cbn in *. subst k a.
-      rewrite dslpRel_comp in H3. destruct x as [f a]. cbn in *. exact H3.
-    + intros H. destruct x as [f a]. cbn in *.
-      exists (compDSLP f h, a). cbn.
-      split; [ split; reflexivity |]. rewrite dslpRel_comp. exact H.
-  - (* app_ext *)
-    intros X A B u v Huv. rel_eq.
-    specialize (Huv x). destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
-    cbn in Huv. destruct Huv as [Hfg Ha]. subst av. split.
-    + intros [p [Heq Hr]]. subst p. cbn in Hr.
-      exists (fv, au). split; [reflexivity|].
-      exact (proj1 (proj1 (dslpRel_eq fu fv) Hfg _ _) Hr).
-    + intros [p [Heq Hr]]. subst p. cbn in Hr.
-      exists (fu, au). split; [reflexivity|].
-      exact (proj2 (proj1 (dslpRel_eq fu fv) Hfg _ _) Hr).
-Qed.
+#[global] Instance RelArrow_DSLPArr : RelArrow DSLPArr := {|
+  rel_reading := @dslpRel; rel_pure := @dslpRel_pure; rel_comp := @dslpRel_comp;
+  rel_first := fun A B C f a c b d => dslpRel_first f (a, c) (b, d)
+|}.
+#[global] Instance RelArrowChoice_DSLPArr : RelArrowChoice DSLPArr := {|rel_left := @dslpRel_left|}.
+#[global] Instance RelArrowApply_DSLPArr : RelArrowApply DSLPArr := {|
+  rel_app := fun A B f a b => dslpRel_app (f, a) b
+|}.
+#[global] Instance RelArrowEq_DSLPArr : RelArrowEq DSLPArr := {|rel_arrow_eq := @dslpRel_eq|}.
+#[global] Instance ArrowLaws_DSLPArr : ArrowLaws DSLPArr :=
+  @rel_arrow_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr RelArrowEq_DSLPArr.
+#[global] Instance ArrowChoiceLaws_DSLPArr : ArrowChoiceLaws DSLPArr :=
+  @rel_arrow_choice_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr
+    RelArrowEq_DSLPArr ArrowChoice_DSLPArr RelArrowChoice_DSLPArr.
+#[global] Instance ArrowApplyLaws_DSLPArr : ArrowApplyLaws DSLPArr :=
+  @rel_arrow_apply_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr
+    RelArrowEq_DSLPArr ArrowApply_DSLPArr RelArrowApply_DSLPArr.
 
 Local Ltac flat :=
   repeat match goal with
@@ -499,38 +340,11 @@ Section StExc.
     <-> exists o1, dslpRel m (i, s) o1 /\
           match o1 with Some (a, s') => dslpRel (k a) (i, s') o | None => o = None end.
   Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-    rewrite dslpRelE_comp. split.
-    - intros [o1 [H1 H2]].
-      apply dslpRelE_comp in H1. destruct H1 as [o2 [H1 H3]]. apply dslpRelE_pure in H1. subst o2.
-      apply dslpRelE_comp in H3. destruct H3 as [o3 [H3 H4]].
-      apply dslpRelE_first in H3. destruct H3 as [o4 [Hm ->]].
-      exists o4. split; [ exact Hm |].
-      destruct o4 as [[a s']|]; simp_in H4; [| subst o1; exact H2 ].
-      apply dslpRelE_comp in H4. destruct H4 as [o5 [H4 H5]].
-      apply dslpRelE_pure in H4. subst o5. simp_in H5.
-      apply dslpRelE_comp in H5. destruct H5 as [o6 [H5 H6]].
-      apply dslpRelE_first in H5. destruct H5 as [o7 [H5 ->]].
-      apply dslpRelE_pure in H5. subst o7. simp_in H6.
-      apply dslpRelE_pure in H6. subst o1. simp_in H2.
-      apply dslpRelE_comp in H2. destruct H2 as [o8 [H7 H8]].
-      apply dslpRelE_pure in H7. subst o8. simp_in H8.
-      exact (proj1 (dslpRelE_app (k a) i s' o) H8).
-    - intros [o1 [Hm Hk]].
-      exists (match o1 with Some (a, s') => Some ((a, i), s') | None => None end).
-      split.
-      + apply dslpRelE_comp. exists (Some ((i, i), s)). split; [ apply dslpRelE_pure; reflexivity |].
-        apply dslpRelE_comp.
-        exists (match o1 with Some (a, s') => Some ((a, i), s') | None => None end).
-        split; [ apply dslpRelE_first; exists o1; split; [ exact Hm | reflexivity ] |].
-        destruct o1 as [[a s']|]; [| reflexivity ].
-        apply dslpRelE_comp. exists (Some ((i, a), s')). split; [ apply dslpRelE_pure; reflexivity |].
-        apply dslpRelE_comp. exists (Some ((i, a), s')).
-        split; [ apply dslpRelE_first; exists (Some (i, s')); split; [ apply dslpRelE_pure | ]; reflexivity |].
-        apply dslpRelE_pure. reflexivity.
-      + destruct o1 as [[a s']|]; [| exact Hk ].
-        apply dslpRelE_comp. exists (Some ((k a, i), s')). split; [ apply dslpRelE_pure; reflexivity |].
-        exact (proj2 (dslpRelE_app (k a) i s' o) Hk).
+    exact (@rel_state_option_bind_fields DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@dslpRel) (@dslpRel_pure) (@dslpRel_comp)
+      (fun X Y C f a c b d => dslpRel_first f (a, c) (b, d))
+      (@dslpRel_left) (fun X Y f a b => dslpRel_app (f, a) b)
+      S I A B m k i s o).
   Qed.
 End StExc.
 

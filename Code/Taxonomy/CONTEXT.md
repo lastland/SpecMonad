@@ -10,8 +10,9 @@ Source declarations and [_CoqProject](../_CoqProject) override older names.
 - [BaseSpecMonads](BaseSpecMonads/CONTEXT.md) owns unary specifications,
   their properties, orders, and adjunctions. OldMonads holds the earlier
   healthy carriers; new public modules are arrow-derived four-flavour APIs.
-- [Arrows](Arrows/CONTEXT.md) owns binary carriers, concrete laws, and
-  property-only/coupled presentation equivalence. Check actual imports:
+- [Arrows](Arrows/CONTEXT.md) owns binary specification interfaces, concrete
+  laws, and equivalence between canonical property-only SP arrows and plain
+  `Rel`. The canonical SP carriers live in BaseSpecMonads. Check actual imports:
   the present dependency graph is not completely arrow-only.
 - [EffectObservations](EffectObservations/CONTEXT.md) connects computations
   to specifications and compares observations/triples. SP and WP have separate
@@ -28,7 +29,7 @@ layer. For stdivexcnd, outer None is divergence and Some None is exception.
 Terminating-slice observations can retain exceptions while omitting divergence;
 full-outcome observations retain both layers where available.
 
-Well-formedness, monad equations, precondition monotonicity, and ordered bind
+Healthiness, monad equations, precondition monotonicity, and ordered bind
 are separate. Pointwise DSP/ASLP ordered-bind counterexamples coexist with
 relation-inclusion ordered monads. Over/Under SP and WP triples can reverse
 implication and argument order: inspect the local definitions.

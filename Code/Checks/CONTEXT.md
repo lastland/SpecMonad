@@ -27,6 +27,12 @@ The selected reports cover:
   SP law packages in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v), and the existing
   relational laws in [Rel.v](../Taxonomy/Arrows/Rel.v). Both relational SP
   readings reuse those `Rel` laws, rather than contributing duplicate packages.
+- Constructive canonical ASP/DSLP normal forms, all four canonical SP law
+  packages, and selected `CanonicalSP` interoperability clients in
+  [ArrowMonadInstances.v](../Taxonomy/Arrows/Tests/ArrowMonadInstances.v).
+  The clients exercise canonical/compatibility application, bind dictionary
+  identity, and state update followed by propagated failure. DSP/ASLP law
+  packages retain classical relation recovery.
 - `rel_state_option_bind` in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and `asp_to_dslp_bind`
   in [SPostArrMonad.v](../Taxonomy/Arrows/SPostArrMonad.v).

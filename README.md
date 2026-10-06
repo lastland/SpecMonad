@@ -43,14 +43,16 @@ What is formalised:
   and divergence, plus the state-free `divnd` and reader-indexed `rddivnd`.
 
 - **Four strongest-postcondition (SP) specification monads** — angelic (ASP),
-  demonic liberal (DSLP), demonic (DSP), and angelic liberal (ASLP). Their
-  well-formedness conditions restrict the raw transformer type
-  `(S -> Prop) -> Outcome -> Prop` to support lawful sequencing.
-  Each comes with `Monad`, `Eq1`, and
-  `MonadLawsE`, in both option-outcome and terminating-slice indexings.
-  Pure and reader-indexed variants are also defined.
+  demonic liberal (DSLP), demonic (DSP), and angelic liberal (ASLP). The public
+  monads fix the input of canonical healthy arrows and reuse the generic
+  arrow-derived return, bind, and monad laws. Pure, state, and state/option
+  stacks are provided. Earlier shared-precondition carriers, including reader
+  variants, remain in `BaseSpecMonads/OldMonads/`.
 
-- **Property-only ASP and DSLP arrows**, with lawful option/state stacks,
+- **Canonical property-only SP arrows**, with shared relational law proofs.
+  `PureASPostArr` / `PureDSLPostArr` are compatibility aliases for the public
+  `ASPArr` / `DSLPArr`; their operations and dictionaries are shared. ASP/DSLP
+  have lawful option/state stacks,
   full application coherence, and operation-preserving equivalences to the
   existing `Rel` carrier under the selected pointwise equalities.
   [`RelSPostArr.v`](Code/Taxonomy/Arrows/RelSPostArr.v)

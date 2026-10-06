@@ -1,8 +1,8 @@
 (** * Property-only strongest-postcondition arrows.
 
-    The carriers contain only predicate transformers and well-formedness proofs.
-    All operations act directly on transformers.  Canonical normal forms are
-    derived below for reasoning; no relation is stored in either carrier. *)
+    Compatibility names reuse the canonical ASP/DSLP carriers and operations.
+    The carriers contain only predicate transformers and healthiness proofs.
+    Constructive normal forms support reasoning; no relation is stored. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Morphisms.
 From Hammer Require Import Tactics.
@@ -10,12 +10,13 @@ From Incorrectness.Classes Require Export ArrowMonad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT ArrowMorphism RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import Rel.
 From Incorrectness.Taxonomy.Arrows Require Export PredicateTransformerProperties.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPArrowCore ASPArrowRel DSLPArrowCore DSLPArrowRel.
 
 Definition PureASPostArr (A B : Type) : Type :=
-  { w : (A -> Prop) -> B -> Prop | StrictArr w /\ DisjunctiveArr w }.
+  ASPArr A B.
 
 Definition PureDSLPostArr (A B : Type) : Type :=
-  { w : (A -> Prop) -> B -> Prop | TerminatingArr w /\ ConjunctiveArr w }.
+  DSLPArr A B.
 
 Definition getASP {A B} (f : PureASPostArr A B) : (A -> Prop) -> B -> Prop :=
   proj1_sig f.
@@ -24,70 +25,63 @@ Definition getDSLP {A B} (f : PureDSLPostArr A B) : (A -> Prop) -> B -> Prop :=
   proj1_sig f.
 
 Lemma ASP_strict {A B} (f : PureASPostArr A B) : StrictArr (getASP f).
-Proof. exact (proj1 (proj2_sig f)). Qed.
+Proof. exact (proj1 (proj2 (proj2_sig f))). Qed.
 
 Lemma ASP_disjunctive {A B} (f : PureASPostArr A B) :
   DisjunctiveArr (getASP f).
-Proof. exact (proj2 (proj2_sig f)). Qed.
+Proof. exact (proj2 (proj2 (proj2_sig f))). Qed.
 
 Lemma DSLP_terminating {A B} (f : PureDSLPostArr A B) :
   TerminatingArr (getDSLP f).
-Proof. exact (proj1 (proj2_sig f)). Qed.
+Proof. exact (proj1 (proj2 (proj2_sig f))). Qed.
 
 Lemma DSLP_conjunctive {A B} (f : PureDSLPostArr A B) :
   ConjunctiveArr (getDSLP f).
-Proof. exact (proj2 (proj2_sig f)). Qed.
+Proof. exact (proj2 (proj2 (proj2_sig f))). Qed.
 
 Lemma ASP_monotone {A B} (f : PureASPostArr A B) P Q b :
   (forall a, P a -> Q a) -> getASP f P b -> getASP f Q b.
-Proof. apply disjunctiveArr_monotone, ASP_disjunctive. Qed.
+Proof. exact (getASPArr_mono f P Q b). Qed.
 
 Lemma DSLP_monotone {A B} (f : PureDSLPostArr A B) P Q b :
   (forall a, P a -> Q a) -> getDSLP f P b -> getDSLP f Q b.
-Proof. apply conjunctiveArr_monotone, DSLP_conjunctive. Qed.
+Proof. exact (getDSLPArr_mono f P Q b). Qed.
 
 Lemma ASP_full_join {A B} (f : PureASPostArr A B)
   (I : Type) (p : I -> A -> Prop) b :
   getASP f (fun a => exists i, p i a) b <-> exists i, getASP f (p i) b.
 Proof.
-  apply strict_disjunctiveArr_full_join; [apply ASP_strict | apply ASP_disjunctive].
+  rewrite getASPArr_join. split.
+  - intros [a [[i HP] Hr]]. exists i. apply getASPArr_join. exists a. auto.
+  - intros [i H]. apply getASPArr_join in H. destruct H as [a [HP Hr]].
+    exists a. split; [exists i; exact HP | exact Hr].
 Qed.
 
 Lemma DSLP_full_meet {A B} (f : PureDSLPostArr A B)
   (I : Type) (p : I -> A -> Prop) b :
   getDSLP f (fun a => forall i, p i a) b <-> forall i, getDSLP f (p i) b.
 Proof.
-  apply terminating_conjunctiveArr_full_meet;
-    [apply DSLP_terminating | apply DSLP_conjunctive].
+  rewrite getDSLPArr_meet. split.
+  - intros H i. apply getDSLPArr_meet. intros a Hr. exact (H a Hr i).
+  - intros H a Hr i. exact (proj1 (getDSLPArr_meet f (p i) b) (H i) a Hr).
 Qed.
 
-(** Canonical representations follow from full joins/meets, including empty
-    families.  Their proofs use extensionality, without excluded middle. *)
+(** Canonical representations reuse constructive singleton joins and
+    accepted-predicate meets; no extensionality or excluded middle is needed. *)
 Theorem ASP_normal_form {A B} (f : PureASPostArr A B) P b :
   getASP f P b <-> exists a, P a /\ getASP f (eq a) b.
 Proof.
-  assert (HE : P = (fun a' => exists a : {a : A | P a}, proj1_sig a = a')).
-  { extensionality a'. apply propositional_extensionality. split.
-    - intro HP. exists (exist _ a' HP). reflexivity.
-    - intros [[a HP] Heq]. cbn in Heq. subst. exact HP. }
-  split.
-  - intro H. rewrite HE in H. apply ASP_full_join in H.
-    destruct H as [[a HP] H]. exists a. auto.
-  - intros [a [HP H]]. rewrite HE. apply ASP_full_join.
-    exists (exist _ a HP). exact H.
+  rewrite (getASPArr_join f). split.
+  - intros [a [HP H]]. exists a. split; [exact HP |].
+    eapply getASPArr_ext; [|exact H]. intro x. split; symmetry; assumption.
+  - intros [a [HP H]]. exists a. split; [exact HP |].
+    eapply getASPArr_ext; [|exact H]. intro x. split; symmetry; assumption.
 Qed.
 
 Theorem DSLP_normal_form {A B} (f : PureDSLPostArr A B) P b :
   getDSLP f P b <-> forall a, (forall Q, getDSLP f Q b -> Q a) -> P a.
 Proof.
-  split.
-  - intros H a Ha. exact (Ha P H).
-  - intro H.
-    assert (HM : getDSLP f
-      (fun a => forall Q : {Q : A -> Prop | getDSLP f Q b}, proj1_sig Q a) b).
-    { apply DSLP_full_meet. intros [Q HQ]. exact HQ. }
-    eapply DSLP_monotone; [|exact HM].
-    intros a Ha. apply H. intros Q HQ. exact (Ha (exist _ Q HQ)).
+  exact (getDSLPArr_meet f P b).
 Qed.
 
 Lemma PureASPostArr_eq {A B} (f g : PureASPostArr A B) :
@@ -108,142 +102,37 @@ Proof.
   subst. f_equal. apply proof_irrelevance.
 Qed.
 
-(** ** Direct operations and their well-formedness proofs *)
+(** ** Canonical operations under compatibility names *)
 
 Local Obligation Tactic := idtac.
 
-#[program] Definition arrASP {A B} (h : A -> B) : PureASPostArr A B :=
-  fun P b => exists a, P a /\ h a = b.
-Next Obligation.
-  intros A B h. split.
-  - intros b [a [H _]]. exact H.
-  - intros I HI p b. split.
-    + intros [a [[i H] Heq]]. exists i, a. auto.
-    + intros [i [a [H Heq]]]. exists a. split; [exists i; exact H | exact Heq].
-Qed.
+Definition arrASP := @ASPArrowCore.pureASP.
+Definition compASP := @ASPArrowCore.compASP.
+Definition firstASP := @ASPArrowCore.firstASP.
+Definition leftASP := @ASPArrowCore.leftASP.
+Definition appASP := @ASPArrowCore.appASP.
+Definition arrDSLP := @DSLPArrowCore.pureDSLP.
+Definition compDSLP := @DSLPArrowCore.compDSLP.
+Definition firstDSLP := @DSLPArrowCore.firstDSLP.
+Definition leftDSLP := @DSLPArrowCore.leftDSLP.
+Definition appDSLP := @DSLPArrowCore.appDSLP.
+Arguments arrASP {A B} _.
+Arguments compASP {A B C} _ _.
+Arguments firstASP {A B C} _.
+Arguments leftASP {A B C} _.
+Arguments appASP {A B}.
+Arguments arrDSLP {A B} _.
+Arguments compDSLP {A B C} _ _.
+Arguments firstDSLP {A B C} _.
+Arguments leftDSLP {A B C} _.
+Arguments appDSLP {A B}.
 
-#[program] Definition compASP {A B C}
-  (f : PureASPostArr A B) (g : PureASPostArr B C) : PureASPostArr A C :=
-  fun P c => getASP g (getASP f P) c.
-Next Obligation.
-  intros A B C f g. split.
-  - intros c H. apply (ASP_strict g c).
-    eapply ASP_monotone; [|exact H]. intros b Hb. exact (ASP_strict f b Hb).
-  - intros I HI p c.
-    assert (HE : getASP f (fun a => exists i, p i a) =
-      (fun b => exists i, getASP f (p i) b)).
-    { extensionality b. apply propositional_extensionality, ASP_disjunctive, HI. }
-    rewrite HE. apply ASP_disjunctive, HI.
-Qed.
-
-#[program] Definition firstASP {A B C} (f : PureASPostArr A B) :
-  PureASPostArr (A * C) (B * C) :=
-  fun P '(b, c) => getASP f (fun a => P (a, c)) b.
-Next Obligation.
-  intros A B C f. split.
-  - intros [b c]. apply ASP_strict.
-  - intros I HI p [b c]. apply ASP_disjunctive, HI.
-Qed.
-
-#[program] Definition leftASP {A B C} (f : PureASPostArr A B) :
-  PureASPostArr (A + C) (B + C) :=
-  fun P bc => match bc with
-    | inl b => getASP f (fun a => P (inl a)) b
-    | inr c => P (inr c)
-    end.
-Next Obligation.
-  intros A B C f. split.
-  - intros [b|c]; [apply ASP_strict | tauto].
-  - intros I HI p [b|c]; [apply ASP_disjunctive, HI | reflexivity].
-Qed.
-
-#[program] Definition appASP {A B} : PureASPostArr (PureASPostArr A B * A) B :=
-  fun P b => exists f : PureASPostArr A B, getASP f (fun a => P (f, a)) b.
-Next Obligation.
-  intros A B. split.
-  - intros b [f H]. exact (ASP_strict f b H).
-  - intros I HI p b. split.
-    + intros [f H]. apply (ASP_disjunctive f I HI) in H.
-      destruct H as [i H]. exists i, f. exact H.
-    + intros [i [f H]]. exists f. apply (ASP_disjunctive f I HI).
-      exists i. exact H.
-Qed.
-
-#[program] Definition arrDSLP {A B} (h : A -> B) : PureDSLPostArr A B :=
-  fun P b => forall a, h a = b -> P a.
-Next Obligation.
-  intros A B h. split.
-  - intros b a Heq. constructor.
-  - intros I HI p b. split.
-    + intros H i a Heq. exact (H a Heq i).
-    + intros H a Heq i. exact (H i a Heq).
-Qed.
-
-#[program] Definition compDSLP {A B C}
-  (f : PureDSLPostArr A B) (g : PureDSLPostArr B C) : PureDSLPostArr A C :=
-  fun P c => getDSLP g (getDSLP f P) c.
-Next Obligation.
-  intros A B C f g. split.
-  - intro c. eapply DSLP_monotone; [|apply DSLP_terminating].
-    intros b _. apply DSLP_terminating.
-  - intros I HI p c.
-    assert (HE : getDSLP f (fun a => forall i, p i a) =
-      (fun b => forall i, getDSLP f (p i) b)).
-    { extensionality b. apply propositional_extensionality, DSLP_conjunctive, HI. }
-    rewrite HE. apply DSLP_conjunctive, HI.
-Qed.
-
-#[program] Definition firstDSLP {A B C} (f : PureDSLPostArr A B) :
-  PureDSLPostArr (A * C) (B * C) :=
-  fun P '(b, c) => getDSLP f (fun a => P (a, c)) b.
-Next Obligation.
-  intros A B C f. split.
-  - intros [b c]. apply DSLP_terminating.
-  - intros I HI p [b c]. apply DSLP_conjunctive, HI.
-Qed.
-
-#[program] Definition leftDSLP {A B C} (f : PureDSLPostArr A B) :
-  PureDSLPostArr (A + C) (B + C) :=
-  fun P bc => match bc with
-    | inl b => getDSLP f (fun a => P (inl a)) b
-    | inr c => P (inr c)
-    end.
-Next Obligation.
-  intros A B C f. split.
-  - intros [b|c]; [apply DSLP_terminating | constructor].
-  - intros I HI p [b|c]; [apply DSLP_conjunctive, HI | reflexivity].
-Qed.
-
-#[program] Definition appDSLP {A B} :
-  PureDSLPostArr (PureDSLPostArr A B * A) B :=
-  fun P b => (forall f : PureDSLPostArr A B, getDSLP f (fun a => P (f, a)) b).
-Next Obligation.
-  intros A B. split.
-  - intros b f. apply DSLP_terminating.
-  - intros I HI p b. split.
-    + intros H i f. exact (proj1 (DSLP_conjunctive f I HI _ b) (H f) i).
-    + intros H f. apply (DSLP_conjunctive f I HI). intro i. exact (H i f).
-Qed.
-
-#[global] Instance Arrow_PureASPostArr : Arrow PureASPostArr := {
-  arr_pure := @arrASP; arr_comp := @compASP; arr_first := @firstASP
-}.
-
-#[global] Instance Arrow_PureDSLPostArr : Arrow PureDSLPostArr := {
-  arr_pure := @arrDSLP; arr_comp := @compDSLP; arr_first := @firstDSLP
-}.
-
-#[global] Instance ArrowChoice_PureASPostArr :
-  @ArrowChoice PureASPostArr Arrow_PureASPostArr := { arr_left := @leftASP }.
-
-#[global] Instance ArrowChoice_PureDSLPostArr :
-  @ArrowChoice PureDSLPostArr Arrow_PureDSLPostArr := { arr_left := @leftDSLP }.
-
-#[global] Instance ArrowApply_PureASPostArr :
-  @ArrowApply PureASPostArr Arrow_PureASPostArr := { arr_app := @appASP }.
-
-#[global] Instance ArrowApply_PureDSLPostArr :
-  @ArrowApply PureDSLPostArr Arrow_PureDSLPostArr := { arr_app := @appDSLP }.
+Definition Arrow_PureASPostArr : Arrow PureASPostArr := Arrow_ASPArr.
+Definition Arrow_PureDSLPostArr : Arrow PureDSLPostArr := Arrow_DSLPArr.
+Definition ArrowChoice_PureASPostArr := ArrowChoice_ASPArr.
+Definition ArrowChoice_PureDSLPostArr := ArrowChoice_DSLPArr.
+Definition ArrowApply_PureASPostArr := ArrowApply_ASPArr.
+Definition ArrowApply_PureDSLPostArr := ArrowApply_DSLPArr.
 
 Definition arrow_eq_ASP {A B} (f g : PureASPostArr A B) : Prop :=
   forall P b, getASP f P b <-> getASP g P b.
@@ -256,10 +145,7 @@ Proof.
   - intros f g h H1 H2 P b. etransitivity; [apply H1 | apply H2].
 Qed.
 
-#[global] Instance ArrowEq_PureASPostArr : ArrowEq PureASPostArr := {
-  arrow_eq := @arrow_eq_ASP;
-  arrow_eq_equiv := arrow_eq_ASP_equiv
-}.
+Definition ArrowEq_PureASPostArr : ArrowEq PureASPostArr := ArrowEq_ASPArr.
 
 Definition arrow_eq_DSLP {A B} (f g : PureDSLPostArr A B) : Prop :=
   forall P b, getDSLP f P b <-> getDSLP g P b.
@@ -272,10 +158,7 @@ Proof.
   - intros f g h H1 H2 P b. etransitivity; [apply H1 | apply H2].
 Qed.
 
-#[global] Instance ArrowEq_PureDSLPostArr : ArrowEq PureDSLPostArr := {
-  arrow_eq := @arrow_eq_DSLP;
-  arrow_eq_equiv := arrow_eq_DSLP_equiv
-}.
+Definition ArrowEq_PureDSLPostArr : ArrowEq PureDSLPostArr := ArrowEq_DSLPArr.
 
 #[global] Instance Proper_getASP {A B} :
   Proper (arrow_eq ==> eq ==> eq ==> iff) (@getASP A B).
@@ -327,11 +210,22 @@ Proof. destruct bc; reflexivity. Qed.
 
 Lemma appASP_spec {A B} (P : PureASPostArr A B * A -> Prop) b :
   getASP appASP P b <-> exists f, getASP f (fun a => P (f, a)) b.
-Proof. reflexivity. Qed.
+Proof.
+  change ((exists f a, P (f, a) /\ getASP f (fun x => x = a) b) <->
+    exists f, getASP f (fun a => P (f, a)) b). split.
+  - intros [f [a [HP H]]]. exists f. apply getASPArr_join. exists a. auto.
+  - intros [f H]. apply getASPArr_join in H. destruct H as [a [HP H]].
+    exists f, a. auto.
+Qed.
 
 Lemma appDSLP_spec {A B} (P : PureDSLPostArr A B * A -> Prop) b :
   getDSLP appDSLP P b <-> forall f, getDSLP f (fun a => P (f, a)) b.
-Proof. reflexivity. Qed.
+Proof.
+  change ((forall f a, dslpRelT (getDSLPArr f) a b -> P (f, a)) <->
+    forall f, getDSLP f (fun a => P (f, a)) b). split.
+  - intros H f. apply getDSLPArr_meet. intros a Hr. exact (H f a Hr).
+  - intros H f a Hr. exact (proj1 (getDSLPArr_meet f _ b) (H f) a Hr).
+Qed.
 
 (** ** Recovered relations, constructors, and round trips
 
@@ -345,25 +239,10 @@ Definition ASP_rel {A B} (f : PureASPostArr A B) a b : Prop :=
 Definition DSLP_rel {A B} (f : PureDSLPostArr A B) a b : Prop :=
   forall Q, getDSLP f Q b -> Q a.
 
-#[program] Definition relASP {A B} (R : A -> B -> Prop) : PureASPostArr A B :=
-  fun P b => exists a, P a /\ R a b.
-Next Obligation.
-  intros A B R. split.
-  - intros b [a [HF _]]. exact HF.
-  - intros I HI p b. split.
-    + intros [a [[i H] HR]]. exists i, a. auto.
-    + intros [i [a [H HR]]]. exists a. split; [exists i; exact H | exact HR].
-Qed.
-
-#[program] Definition relDSLP {A B} (R : A -> B -> Prop) : PureDSLPostArr A B :=
-  fun P b => forall a, R a b -> P a.
-Next Obligation.
-  intros A B R. split.
-  - intros b a _. exact I.
-  - intros I HI p b. split.
-    + intros H i a Heq. exact (H a Heq i).
-    + intros H a Heq i. exact (H i a Heq).
-Qed.
+Definition relASP := @ofRelASPArr.
+Definition relDSLP := @ofRelDSLPArr.
+Arguments relASP {A B} _.
+Arguments relDSLP {A B} _.
 
 Lemma getASP_relASP {A B} (R : A -> B -> Prop) P b :
   getASP (relASP R) P b <-> exists a, P a /\ R a b.
@@ -613,67 +492,67 @@ Qed.
 
 (** ** Generic semantic instances and derived law packages *)
 
-#[global] Instance RelArrow_PureASPostArr : RelArrow PureASPostArr := {
+Definition RelArrow_PureASPostArr : RelArrow PureASPostArr := {|
   rel_reading := @ASP_rel;
   rel_pure := @ASP_rel_pure;
   rel_comp := @ASP_rel_comp;
   rel_first := @ASP_rel_first;
-}.
-
-#[global] Instance RelArrowChoice_PureASPostArr :
-  RelArrowChoice PureASPostArr := {
-  rel_left := @ASP_rel_left;
-}.
-
-#[global] Instance RelArrowApply_PureASPostArr :
-  RelArrowApply PureASPostArr := {
-  rel_app := @ASP_rel_app;
-}.
-
-#[global] Instance RelArrowEq_PureASPostArr :
-  RelArrowEq PureASPostArr := {|
-  rel_arrow_eq := @ASP_arrow_eq_rel;
 |}.
 
-#[global] Instance ArrowLaws_PureASPostArr :
-  ArrowLaws PureASPostArr := rel_arrow_laws.
+Definition RelArrowChoice_PureASPostArr :
+  @RelArrowChoice PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr RelArrow_PureASPostArr :=
+  @Build_RelArrowChoice PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr
+    RelArrow_PureASPostArr (@ASP_rel_left).
 
-#[global] Instance ArrowChoiceLaws_PureASPostArr :
-  ArrowChoiceLaws PureASPostArr := rel_arrow_choice_laws.
+Definition RelArrowApply_PureASPostArr :
+  @RelArrowApply PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr RelArrow_PureASPostArr :=
+  @Build_RelArrowApply PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
+    RelArrow_PureASPostArr (@ASP_rel_app).
 
-#[global] Instance ArrowApplyLaws_PureASPostArr :
-  ArrowApplyLaws PureASPostArr := rel_arrow_apply_laws.
+Definition RelArrowEq_PureASPostArr :
+  @RelArrowEq PureASPostArr Arrow_PureASPostArr ArrowEq_PureASPostArr RelArrow_PureASPostArr :=
+  @Build_RelArrowEq PureASPostArr Arrow_PureASPostArr ArrowEq_PureASPostArr
+    RelArrow_PureASPostArr (@ASP_arrow_eq_rel).
 
-#[global] Instance RelArrow_PureDSLPostArr : RelArrow PureDSLPostArr := {
+Definition ArrowLaws_PureASPostArr :
+  ArrowLaws PureASPostArr := ArrowLaws_ASPArr.
+
+Definition ArrowChoiceLaws_PureASPostArr :
+  ArrowChoiceLaws PureASPostArr := ArrowChoiceLaws_ASPArr.
+
+Definition ArrowApplyLaws_PureASPostArr :
+  ArrowApplyLaws PureASPostArr := ArrowApplyLaws_ASPArr.
+
+Definition RelArrow_PureDSLPostArr : RelArrow PureDSLPostArr := {|
   rel_reading := @DSLP_rel;
   rel_pure := @DSLP_rel_pure;
   rel_comp := @DSLP_rel_comp;
   rel_first := @DSLP_rel_first;
-}.
-
-#[global] Instance RelArrowChoice_PureDSLPostArr :
-  RelArrowChoice PureDSLPostArr := {
-  rel_left := @DSLP_rel_left;
-}.
-
-#[global] Instance RelArrowApply_PureDSLPostArr :
-  RelArrowApply PureDSLPostArr := {
-  rel_app := @DSLP_rel_app;
-}.
-
-#[global] Instance RelArrowEq_PureDSLPostArr :
-  RelArrowEq PureDSLPostArr := {|
-  rel_arrow_eq := @DSLP_arrow_eq_rel;
 |}.
 
-#[global] Instance ArrowLaws_PureDSLPostArr :
-  ArrowLaws PureDSLPostArr := rel_arrow_laws.
+Definition RelArrowChoice_PureDSLPostArr :
+  @RelArrowChoice PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr RelArrow_PureDSLPostArr :=
+  @Build_RelArrowChoice PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
+    RelArrow_PureDSLPostArr (@DSLP_rel_left).
 
-#[global] Instance ArrowChoiceLaws_PureDSLPostArr :
-  ArrowChoiceLaws PureDSLPostArr := rel_arrow_choice_laws.
+Definition RelArrowApply_PureDSLPostArr :
+  @RelArrowApply PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr RelArrow_PureDSLPostArr :=
+  @Build_RelArrowApply PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+    RelArrow_PureDSLPostArr (@DSLP_rel_app).
 
-#[global] Instance ArrowApplyLaws_PureDSLPostArr :
-  ArrowApplyLaws PureDSLPostArr := rel_arrow_apply_laws.
+Definition RelArrowEq_PureDSLPostArr :
+  @RelArrowEq PureDSLPostArr Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr RelArrow_PureDSLPostArr :=
+  @Build_RelArrowEq PureDSLPostArr Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr
+    RelArrow_PureDSLPostArr (@DSLP_arrow_eq_rel).
+
+Definition ArrowLaws_PureDSLPostArr :
+  ArrowLaws PureDSLPostArr := ArrowLaws_DSLPArr.
+
+Definition ArrowChoiceLaws_PureDSLPostArr :
+  ArrowChoiceLaws PureDSLPostArr := ArrowChoiceLaws_DSLPArr.
+
+Definition ArrowApplyLaws_PureDSLPostArr :
+  ArrowApplyLaws PureDSLPostArr := ArrowApplyLaws_DSLPArr.
 
 Lemma ArrowLaws_PureASPostArr_leibniz :
   @ArrowLaws PureASPostArr Arrow_PureASPostArr (ArrowEq_leibniz PureASPostArr).
@@ -738,56 +617,56 @@ Definition optionDSLPArr := optionArrT PureDSLPostArr.
 Definition ASPostArr (S B : Type) : Type := stateArrT S optionASPArr unit B.
 Definition DSLPostArr (S B : Type) : Type := stateArrT S optionDSLPArr unit B.
 
-#[global] Instance Arrow_optionASPArr : Arrow optionASPArr :=
+Definition Arrow_optionASPArr : Arrow optionASPArr :=
   @Arrow_optionArrT PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr.
-#[global] Instance ArrowEq_optionASPArr : ArrowEq optionASPArr :=
+Definition ArrowEq_optionASPArr : ArrowEq optionASPArr :=
   @ArrowEq_optionArrT PureASPostArr ArrowEq_PureASPostArr.
-#[global] Instance ArrowChoice_optionASPArr :
+Definition ArrowChoice_optionASPArr :
   @ArrowChoice optionASPArr Arrow_optionASPArr :=
   @ArrowChoice_optionArrT PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr.
-#[global] Instance ArrowApply_optionASPArr :
+Definition ArrowApply_optionASPArr :
   @ArrowApply optionASPArr Arrow_optionASPArr :=
   @ArrowApply_optionArrT PureASPostArr Arrow_PureASPostArr
     ArrowChoice_PureASPostArr ArrowApply_PureASPostArr.
-#[global] Instance ArrowLaws_optionASPArr :
+Definition ArrowLaws_optionASPArr :
   @ArrowLaws optionASPArr Arrow_optionASPArr ArrowEq_optionASPArr :=
   @ArrowLaws_optionArrT PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr
     ArrowEq_PureASPostArr ArrowLaws_PureASPostArr ArrowChoiceLaws_PureASPostArr.
-#[global] Instance ArrowChoiceLaws_optionASPArr :
+Definition ArrowChoiceLaws_optionASPArr :
   @ArrowChoiceLaws optionASPArr Arrow_optionASPArr
     ArrowChoice_optionASPArr ArrowEq_optionASPArr :=
   @ArrowChoiceLaws_optionArrT PureASPostArr Arrow_PureASPostArr
     ArrowChoice_PureASPostArr ArrowEq_PureASPostArr
     ArrowLaws_PureASPostArr ArrowChoiceLaws_PureASPostArr.
-#[global] Instance ArrowApplyLaws_optionASPArr :
+Definition ArrowApplyLaws_optionASPArr :
   @ArrowApplyLaws optionASPArr Arrow_optionASPArr
     ArrowApply_optionASPArr ArrowEq_optionASPArr :=
   @ArrowApplyLaws_optionArrT PureASPostArr Arrow_PureASPostArr
     ArrowChoice_PureASPostArr ArrowApply_PureASPostArr ArrowEq_PureASPostArr
     ArrowLaws_PureASPostArr ArrowChoiceLaws_PureASPostArr ArrowApplyLaws_PureASPostArr.
 
-#[global] Instance Arrow_optionDSLPArr : Arrow optionDSLPArr :=
+Definition Arrow_optionDSLPArr : Arrow optionDSLPArr :=
   @Arrow_optionArrT PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr.
-#[global] Instance ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr :=
+Definition ArrowEq_optionDSLPArr : ArrowEq optionDSLPArr :=
   @ArrowEq_optionArrT PureDSLPostArr ArrowEq_PureDSLPostArr.
-#[global] Instance ArrowChoice_optionDSLPArr :
+Definition ArrowChoice_optionDSLPArr :
   @ArrowChoice optionDSLPArr Arrow_optionDSLPArr :=
   @ArrowChoice_optionArrT PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr.
-#[global] Instance ArrowApply_optionDSLPArr :
+Definition ArrowApply_optionDSLPArr :
   @ArrowApply optionDSLPArr Arrow_optionDSLPArr :=
   @ArrowApply_optionArrT PureDSLPostArr Arrow_PureDSLPostArr
     ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr.
-#[global] Instance ArrowLaws_optionDSLPArr :
+Definition ArrowLaws_optionDSLPArr :
   @ArrowLaws optionDSLPArr Arrow_optionDSLPArr ArrowEq_optionDSLPArr :=
   @ArrowLaws_optionArrT PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr
     ArrowEq_PureDSLPostArr ArrowLaws_PureDSLPostArr ArrowChoiceLaws_PureDSLPostArr.
-#[global] Instance ArrowChoiceLaws_optionDSLPArr :
+Definition ArrowChoiceLaws_optionDSLPArr :
   @ArrowChoiceLaws optionDSLPArr Arrow_optionDSLPArr
     ArrowChoice_optionDSLPArr ArrowEq_optionDSLPArr :=
   @ArrowChoiceLaws_optionArrT PureDSLPostArr Arrow_PureDSLPostArr
     ArrowChoice_PureDSLPostArr ArrowEq_PureDSLPostArr
     ArrowLaws_PureDSLPostArr ArrowChoiceLaws_PureDSLPostArr.
-#[global] Instance ArrowApplyLaws_optionDSLPArr :
+Definition ArrowApplyLaws_optionDSLPArr :
   @ArrowApplyLaws optionDSLPArr Arrow_optionDSLPArr
     ArrowApply_optionDSLPArr ArrowEq_optionDSLPArr :=
   @ArrowApplyLaws_optionArrT PureDSLPostArr Arrow_PureDSLPostArr
@@ -797,54 +676,54 @@ Definition DSLPostArr (S B : Type) : Type := stateArrT S optionDSLPArr unit B.
 Section StateOptionInstances.
   Variable S : Type.
 
-  #[global] Instance Arrow_stateOptASP : Arrow (stateArrT S optionASPArr) :=
+  Definition Arrow_stateOptASP : Arrow (stateArrT S optionASPArr) :=
     @Arrow_stateArrT S optionASPArr Arrow_optionASPArr.
-  #[global] Instance ArrowEq_stateOptASP : ArrowEq (stateArrT S optionASPArr) :=
+  Definition ArrowEq_stateOptASP : ArrowEq (stateArrT S optionASPArr) :=
     @ArrowEq_stateArrT S optionASPArr ArrowEq_optionASPArr.
-  #[global] Instance ArrowChoice_stateOptASP :
+  Definition ArrowChoice_stateOptASP :
     @ArrowChoice (stateArrT S optionASPArr) Arrow_stateOptASP :=
     @ArrowChoice_stateArrT S optionASPArr Arrow_optionASPArr ArrowChoice_optionASPArr.
-  #[global] Instance ArrowApply_stateOptASP :
+  Definition ArrowApply_stateOptASP :
     @ArrowApply (stateArrT S optionASPArr) Arrow_stateOptASP :=
     @ArrowApply_stateArrT S optionASPArr Arrow_optionASPArr ArrowApply_optionASPArr.
-  #[global] Instance ArrowLaws_stateOptASP :
+  Definition ArrowLaws_stateOptASP :
     @ArrowLaws (stateArrT S optionASPArr) Arrow_stateOptASP ArrowEq_stateOptASP :=
     @ArrowLaws_stateArrT S optionASPArr Arrow_optionASPArr
       ArrowEq_optionASPArr ArrowLaws_optionASPArr.
-  #[global] Instance ArrowChoiceLaws_stateOptASP :
+  Definition ArrowChoiceLaws_stateOptASP :
     @ArrowChoiceLaws (stateArrT S optionASPArr) Arrow_stateOptASP
       ArrowChoice_stateOptASP ArrowEq_stateOptASP :=
     @ArrowChoiceLaws_stateArrT S optionASPArr Arrow_optionASPArr
       ArrowChoice_optionASPArr ArrowEq_optionASPArr
       ArrowLaws_optionASPArr ArrowChoiceLaws_optionASPArr.
-  #[global] Instance ArrowApplyLaws_stateOptASP :
+  Definition ArrowApplyLaws_stateOptASP :
     @ArrowApplyLaws (stateArrT S optionASPArr) Arrow_stateOptASP
       ArrowApply_stateOptASP ArrowEq_stateOptASP :=
     @ArrowApplyLaws_stateArrT S optionASPArr Arrow_optionASPArr
       ArrowApply_optionASPArr ArrowEq_optionASPArr
       ArrowLaws_optionASPArr ArrowApplyLaws_optionASPArr.
 
-  #[global] Instance Arrow_stateOptDSLP : Arrow (stateArrT S optionDSLPArr) :=
+  Definition Arrow_stateOptDSLP : Arrow (stateArrT S optionDSLPArr) :=
     @Arrow_stateArrT S optionDSLPArr Arrow_optionDSLPArr.
-  #[global] Instance ArrowEq_stateOptDSLP : ArrowEq (stateArrT S optionDSLPArr) :=
+  Definition ArrowEq_stateOptDSLP : ArrowEq (stateArrT S optionDSLPArr) :=
     @ArrowEq_stateArrT S optionDSLPArr ArrowEq_optionDSLPArr.
-  #[global] Instance ArrowChoice_stateOptDSLP :
+  Definition ArrowChoice_stateOptDSLP :
     @ArrowChoice (stateArrT S optionDSLPArr) Arrow_stateOptDSLP :=
     @ArrowChoice_stateArrT S optionDSLPArr Arrow_optionDSLPArr ArrowChoice_optionDSLPArr.
-  #[global] Instance ArrowApply_stateOptDSLP :
+  Definition ArrowApply_stateOptDSLP :
     @ArrowApply (stateArrT S optionDSLPArr) Arrow_stateOptDSLP :=
     @ArrowApply_stateArrT S optionDSLPArr Arrow_optionDSLPArr ArrowApply_optionDSLPArr.
-  #[global] Instance ArrowLaws_stateOptDSLP :
+  Definition ArrowLaws_stateOptDSLP :
     @ArrowLaws (stateArrT S optionDSLPArr) Arrow_stateOptDSLP ArrowEq_stateOptDSLP :=
     @ArrowLaws_stateArrT S optionDSLPArr Arrow_optionDSLPArr
       ArrowEq_optionDSLPArr ArrowLaws_optionDSLPArr.
-  #[global] Instance ArrowChoiceLaws_stateOptDSLP :
+  Definition ArrowChoiceLaws_stateOptDSLP :
     @ArrowChoiceLaws (stateArrT S optionDSLPArr) Arrow_stateOptDSLP
       ArrowChoice_stateOptDSLP ArrowEq_stateOptDSLP :=
     @ArrowChoiceLaws_stateArrT S optionDSLPArr Arrow_optionDSLPArr
       ArrowChoice_optionDSLPArr ArrowEq_optionDSLPArr
       ArrowLaws_optionDSLPArr ArrowChoiceLaws_optionDSLPArr.
-  #[global] Instance ArrowApplyLaws_stateOptDSLP :
+  Definition ArrowApplyLaws_stateOptDSLP :
     @ArrowApplyLaws (stateArrT S optionDSLPArr) Arrow_stateOptDSLP
       ArrowApply_stateOptDSLP ArrowEq_stateOptDSLP :=
     @ArrowApplyLaws_stateArrT S optionDSLPArr Arrow_optionDSLPArr
@@ -873,7 +752,7 @@ Lemma optionASP_comp_spec {A B C}
   (getASP f P None /\ r = None) \/
   getASP g (fun b => getASP f P (Some b)) r.
 Proof.
-  cbn. destruct (IsASP_rewrite g) as [R HR]. split.
+  cbn. unfold leftASPT. destruct (IsASP_rewrite g) as [R HR]. unfold getASP, getASPArr in *. split.
   - intros [[r0|[]] [H Heq]]; cbn in Heq; subst.
     + right. rewrite HR in H |- *. destruct H as [b [[ob [Hb Heq]] Hg]].
       destruct ob as [b0|]; cbn in Heq; [|discriminate].
@@ -893,7 +772,7 @@ Lemma optionDSLP_comp_spec {A B C}
   (r = None -> getDSLP f P None) /\
   getDSLP g (fun b => getDSLP f P (Some b)) r.
 Proof.
-  cbn. destruct (IsDSLP_rewrite g) as [R HR]. split.
+  cbn. unfold leftDSLPT. destruct (IsDSLP_rewrite g) as [R HR]. unfold getDSLP, getDSLPArr in *. split.
   - intro H. split.
     + intro Heq. subst. exact (H (inr tt) eq_refl None eq_refl).
     + rewrite HR. intros b Hb.
@@ -909,12 +788,12 @@ Qed.
 Lemma optionASP_app_spec {A B} (P : optionASPArr A B * A -> Prop) r :
   getASP (@arr_app optionASPArr Arrow_optionASPArr ArrowApply_optionASPArr A B) P r
   <-> exists f, getASP f (fun a => P (f, a)) r.
-Proof. reflexivity. Qed.
+Proof. apply appASP_spec. Qed.
 
 Lemma optionDSLP_app_spec {A B} (P : optionDSLPArr A B * A -> Prop) r :
   getDSLP (@arr_app optionDSLPArr Arrow_optionDSLPArr ArrowApply_optionDSLPArr A B) P r
   <-> forall f, getDSLP f (fun a => P (f, a)) r.
-Proof. reflexivity. Qed.
+Proof. apply appDSLP_spec. Qed.
 
 Lemma stateOptASP_pure_spec {S A B} (h : A -> B) P r :
   getASP (@arr_pure (stateArrT S optionASPArr) (Arrow_stateOptASP S) A B h) P r

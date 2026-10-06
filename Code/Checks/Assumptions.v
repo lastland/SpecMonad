@@ -183,3 +183,30 @@ Print Assumptions DivExcNonDet_SPDivExc.obsDSP_bind.
 Print Assumptions DivExcNonDet_SPDivExc.obsASLP_bind.
 Print Assumptions DivExcNonDet_SPDivExc.mixed_DSP_outcomes.
 Print Assumptions DivExcNonDet_SPDivExc.mixed_ASLP_outcomes.
+
+(** Canonical carriers share law dictionaries with their compatibility names.
+    ASP/DSLP normal forms and base laws are constructive; DSP/ASLP recovery
+    retains excluded middle. Cross-API clients check the selected dictionaries
+    without reflecting pointwise equivalence into bundled equality. *)
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+  ASPArrowCore DSLPArrowRel DSPArrowRel ASLPArrowRel.
+From Incorrectness.Taxonomy.Arrows.Tests Require Import ArrowMonadInstances.
+Print Assumptions SPostArr.ASP_normal_form.
+Print Assumptions SPostArr.DSLP_normal_form.
+Print Assumptions ASPArrowCore.ArrowLaws_ASPArr.
+Print Assumptions ASPArrowCore.ArrowChoiceLaws_ASPArr.
+Print Assumptions ASPArrowCore.ArrowApplyLaws_ASPArr.
+Print Assumptions DSLPArrowRel.ArrowLaws_DSLPArr.
+Print Assumptions DSLPArrowRel.ArrowChoiceLaws_DSLPArr.
+Print Assumptions DSLPArrowRel.ArrowApplyLaws_DSLPArr.
+Print Assumptions DSPArrowRel.ArrowLaws_DSPArr.
+Print Assumptions DSPArrowRel.ArrowChoiceLaws_DSPArr.
+Print Assumptions DSPArrowRel.ArrowApplyLaws_DSPArr.
+Print Assumptions ASLPArrowRel.ArrowLaws_ASLPArr.
+Print Assumptions ASLPArrowRel.ArrowChoiceLaws_ASLPArr.
+Print Assumptions ASLPArrowRel.ArrowApplyLaws_ASLPArr.
+Print Assumptions CanonicalSP.asp_mixed_application.
+Print Assumptions CanonicalSP.dslp_mixed_application.
+Print Assumptions CanonicalSP.asp_mixed_bind_identity.
+Print Assumptions CanonicalSP.dslp_mixed_bind_identity.
+Print Assumptions CanonicalSP.mixed_update_failure.

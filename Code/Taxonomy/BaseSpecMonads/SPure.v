@@ -39,7 +39,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
 From Incorrectness.Taxonomy.Arrows Require Import Rel.
-From Incorrectness.Classes Require Import ArrowMonad.
+From Incorrectness.Classes Require Import ArrowMonad RelArrowCoherence.
 
 (* ================================================================= *)
 (** ** The carrier and its two stacks                                *)
@@ -184,16 +184,14 @@ Lemma bind_SPStExc {S A B} (m : SPStExc S A) (k : A -> SPStExc S B)
                    | None => r = None
                    end.
 Proof.
-  unfold bind, Monad_SPStExc, Monad_Arrow, bind_arrow, SPStExc, SPStExcArr,
-    arr_fanout, arr_split, arr_second, arr_id.
-  cbn. cbv beta iota delta [state_shuffle_in state_shuffle_out swap
-    to_sum collapse sequence_option opt_rearrange].
-  split.
-  - intro H. flat.
-    all: try (eexists; split;
-              [ eassumption | cbn; first [ eassumption | reflexivity ] ]).
-  - intros [o [Hm Hk]]. destruct o as [[a s']|]; cbn in Hk;
-      [| subst r ]; buildall.
+  exact (@rel_state_option_bind_fields Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel
+    (fun _ _ f => f)
+    (fun _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ => iff_refl _)
+    S unit A B m k tt s r).
 Qed.
 
 (* ================================================================= *)
@@ -555,12 +553,10 @@ End Ordered.
 (** ** [bind] as composition of denoted relations, for any arrow      *)
 (* ================================================================= *)
 
-(** An arrow together with a map [rel] reading each element as the relation
-    it denotes, such that every arrow operation denotes the corresponding
-    [PredArr] operation.  [ASPArrowRel.v] proves [aspRelS_bind] /
-    [aspRelE_bind] by hand, using only these five facts; stated once here,
-    DSP and ASLP get the same lemmas by instantiation ([RelDenote_DSP],
-    [RelDenote_ASLP]). *)
+(** Compatibility contract for an explicit relation reading. Its five
+    public fields remain available to clients. State-option bind below uses
+    these fields to instantiate the existing generic relational theorem,
+    without adding faithfulness or equality-reflection requirements. *)
 
 Class RelDenote (arr : Type -> Type -> Type) `{HA : Arrow arr}
   `{HC : @ArrowChoice arr HA} `{HAA : @ArrowApply arr HA}
@@ -713,38 +709,13 @@ Section RelationalBind.
       <-> exists o1, rel _ _ m (i, s) o1 /\
             match o1 with Some (a, s') => rel _ _ (k a) (i, s') o | None => o = None end.
     Proof.
-      unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-      rewrite relE_comp. split.
-      - intros [o1 [H1 H2]].
-        apply relE_comp in H1. destruct H1 as [o2 [H1 H3]]. apply relE_pure in H1. subst o2.
-        apply relE_comp in H3. destruct H3 as [o3 [H3 H4]].
-        apply relE_first in H3. destruct H3 as [o4 [Hm ->]].
-        exists o4. split; [ exact Hm |].
-        destruct o4 as [[a s']|]; rb_simp_in H4; [| subst o1; exact H2 ].
-        apply relE_comp in H4. destruct H4 as [o5 [H4 H5]].
-        apply relE_pure in H4. subst o5. rb_simp_in H5.
-        apply relE_comp in H5. destruct H5 as [o6 [H5 H6]].
-        apply relE_first in H5. destruct H5 as [o7 [H5 ->]].
-        apply relE_pure in H5. subst o7. rb_simp_in H6.
-        apply relE_pure in H6. subst o1. rb_simp_in H2.
-        apply relE_comp in H2. destruct H2 as [o8 [H7 H8]].
-        apply relE_pure in H7. subst o8. rb_simp_in H8.
-        exact (proj1 (relE_app (k a) i s' o) H8).
-      - intros [o1 [Hm Hk]].
-        exists (match o1 with Some (a, s') => Some ((a, i), s') | None => None end).
-        split.
-        + apply relE_comp. exists (Some ((i, i), s)). split; [ apply relE_pure; reflexivity |].
-          apply relE_comp.
-          exists (match o1 with Some (a, s') => Some ((a, i), s') | None => None end).
-          split; [ apply relE_first; exists o1; split; [ exact Hm | reflexivity ] |].
-          destruct o1 as [[a s']|]; [| reflexivity ].
-          apply relE_comp. exists (Some ((i, a), s')). split; [ apply relE_pure; reflexivity |].
-          apply relE_comp. exists (Some ((i, a), s')).
-          split; [ apply relE_first; exists (Some (i, s')); split; [ apply relE_pure | ]; reflexivity |].
-          apply relE_pure. reflexivity.
-        + destruct o1 as [[a s']|]; [| exact Hk ].
-          apply relE_comp. exists (Some ((k a, i), s')). split; [ apply relE_pure; reflexivity |].
-          exact (proj2 (relE_app (k a) i s' o) Hk).
+      exact (@rel_state_option_bind_fields arr HA HC HAA rel
+        (@rd_pure arr HA HC HAA rel RD)
+        (@rd_comp arr HA HC HAA rel RD)
+        (fun X Y C f a c b d => @rd_first arr HA HC HAA rel RD X Y C f (a, c) (b, d))
+        (@rd_left arr HA HC HAA rel RD)
+        (fun X Y f a b => @rd_app arr HA HC HAA rel RD X Y (f, a) b)
+        S I A B m k i s o).
     Qed.
   End StExc.
 

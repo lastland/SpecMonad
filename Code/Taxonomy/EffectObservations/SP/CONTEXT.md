@@ -3,7 +3,7 @@
 Parent: [observations](../CONTEXT.md). Targets: [base specs](../../BaseSpecMonads/CONTEXT.md)
 and [arrows](../../Arrows/CONTEXT.md).
 
-## Earlier well-formed-monad clients
+## Earlier healthy-carrier monad clients
 
 - StDivExcNonDet_SPStExc selects terminating outcomes of the double-option
   computation, including exceptions, and targets OldMonads' four flavours.
@@ -24,8 +24,8 @@ SP collapse. Full and terminating-slice observations must not be conflated.
 SPostArrObservation shares the property-only ASP/DSLP observation interface
 and Taxonomy-style judgments. StDivITree_SPostArr, StExcNonDet_SPostArr,
 StDivNonDet_SPostArr, and StDivExcNonDet_SPostArr instantiate it using each
-computation's outcome relation. RawStOpt_SPostArr shares single-option outcome
-facts. Generic relational bind facts and SPostArrMonad select the exact target
+computation's outcome relation. StExcNonDet owns the shared single-option raw
+outcome laws. Generic relational bind facts and SPostArrMonad select the exact target
 arrow dictionaries; neither adds a relation field to property-only values.
 
 SP Over includes observed in asserted post; Under includes asserted in observed.
@@ -34,7 +34,7 @@ inhabited complement for DSLP Over. Preserve those hypotheses. Read outcomes
 → selected target/operations → preservation → triples → comparisons/examples.
 
 - Computation-specific files depend on a source model and its specification
-  target. Base SP well-formedness and operations remain in the specification layer.
+  target. Base SP healthiness and operations remain in the specification layer.
 - Raw return/bind laws belong to [StExcNonDet.v](../../ComputationMonads/StExcNonDet.v)
   for the shared single-option stack and
   [StDivExcNonDet.v](../../ComputationMonads/StDivExcNonDet.v) for the double-option

@@ -81,7 +81,7 @@ Example option_choice_bypasses_failure :
     unit nat nat (arrDSLP (fun _ : unit => @None nat)))
     (eq (inr 7)) (Some (inr 7)).
 Proof.
-  split; cbn.
+  split; cbn; unfold ASPArrowCore.leftASPT, DSLPArrowCore.leftDSLPT; cbn.
   - exists (inr 7). auto.
   - intros [[n|]|n] H; inversion H; reflexivity.
 Qed.

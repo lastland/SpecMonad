@@ -46,11 +46,16 @@ StASP/StDSLP/StDSP/StASLP supply state-only variants.
 ## New four-flavour public API
 
 ASPArrowCore/Rel, DSLPArrowCore/Rel, DSPArrowCore/Rel, and ASLPArrowCore/Rel
-define binary SPArrT subsets and their own operations/laws. All are monotone;
+define canonical binary SPArrT subsets and their operations. All are monotone;
 ASP is strict/disjunctive, DSLP terminating/conjunctive, DSP strict/conjunctive,
 ASLP terminating/disjunctive. ASP singleton joins and DSLP accepted-predicate
 meets recover relations constructively; DSP/ASLP recovery is classical.
 Equalities are transformer iff, not automatically Leibniz bundle equality.
+All four flavours instantiate the shared law packages from
+`Classes/RelArrowCoherence.v`. `Arrows/SPostArr.v` aliases ASPArr/DSLPArr as
+PureASPostArr/PureDSLPostArr and reuses their operations and dictionaries.
+The compatibility API adds no second carrier or global instance registration.
+
 ## Earlier-carrier recovery proof ownership
 
 [OldMonads/DSPMonad.v](OldMonads/DSPMonad.v) and [OldMonads/ASLPMonad.v](OldMonads/ASLPMonad.v) each share local,
@@ -71,8 +76,9 @@ ASPMonad/DSLPMonad/DSPMonad/ASLPMonad fix input unit and use generic
 Classes/ArrowMonad operations/laws. Each exposes pure/state/state-option APIs.
 SPure gives a relational carrier, four readings, OrderedMonad_flip, and the
 five-operation RelDenote contract; rel_bind/relS_bind/relE_bind describe the
-chosen bind through relations. Preserve these APIs alongside property-only
-SPostArr; the equivalent bundles are not definitionally the same carrier.
+chosen bind through relations, reusing generic state-option normalization.
+The canonical ASPStExc/DSLPStExc monads are definitionally the compatibility
+ASPostArr/DSLPostArr stacks, including their named monad dictionaries and runners.
 
 - [`SPBindOrderCounterexample.v`](SPBindOrderCounterexample.v) refutes ordered
   bind for `StDSP.DSPSt` / `StASLP.ASLPSt` under their global pointwise orders.

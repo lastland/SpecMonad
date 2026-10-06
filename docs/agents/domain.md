@@ -26,4 +26,6 @@ or architectural relationships change. Coverage follows `Code/_CoqProject`,
 including parent directories. Link to detailed documentation rather than
 duplicating it, and describe the current checkout rather than another branch.
 
-Use “well-formed” and “well-formedness” for SP transformer constraints.
+Use “healthy” and “healthiness” for predicate-transformer class conditions.
+Use “well-formed” and “well-formedness” for general validity constraints.
+Healthiness does not assert arrow or monad laws; see the root development rules.

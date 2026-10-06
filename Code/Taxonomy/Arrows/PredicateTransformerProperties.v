@@ -12,13 +12,13 @@
     join is [False], so strictness supplies that case.  The full-preservation
     lemmas below establish these two combinations constructively.
 
-    These properties describe well-formed SP transformers.  In the forward
+    These properties characterize healthy SP transformer classes.  In the forward
     SP interpretation, [TerminatingArr] means top preservation; it is not
     itself a claim about program termination. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality.
 
-(** Well-formedness properties for arbitrary input and output types. *)
+(** Healthiness conditions for arbitrary input and output types. *)
 Section ArrowPredicateTransformers.
   Context {A B : Type}.
 

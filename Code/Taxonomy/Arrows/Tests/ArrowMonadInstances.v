@@ -386,10 +386,9 @@ Definition rel_state_option_monad_laws (S : Type) :
           ArrowChoice_Rel
           ArrowApply_Rel)) bool) := _.
 
-(** The named monad dictionaries of [SPostArrMonad] alias the same
-    property-only stacks.  Typeclass resolution does not see through the
-    aliases, so the generic law instance is named explicitly, at
-    arbitrary state. *)
+(** The named monad dictionaries of [SPostArrMonad] alias the canonical
+    stacks. Explicit generic dictionaries pin the exact instance at arbitrary
+    state and avoid competing recursive option/state resolution paths. *)
 Definition spostarr_asp_monad_laws (S : Type) :
   @MonadLawsE (SPostArr.ASPostArr S)
     (@Eq1_Arrow _ (SPostArr.ArrowEq_stateOptASP S) unit)
@@ -407,3 +406,118 @@ Definition spostarr_dslp_monad_laws (S : Type) :
     (SPostArr.Arrow_stateOptDSLP S) (SPostArr.ArrowApply_stateOptDSLP S)
     (SPostArr.ArrowEq_stateOptDSLP S) (SPostArr.ArrowLaws_stateOptDSLP S)
     (SPostArr.ArrowApplyLaws_stateOptDSLP S) unit.
+
+(** Cross-API clients: these must typecheck by conversion, without a map
+    between bundles or equality reflection. They also pin the dictionaries
+    selected after importing both public presentations. *)
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+  ASPMonad DSLPMonad DSPArrowCore DSPArrowRel ASLPArrowCore ASLPArrowRel.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArrEquiv.
+
+Module CanonicalSP.
+  Definition asp_dictionary : Arrow ASPArr := _.
+  Definition dslp_dictionary : Arrow DSLPArr := _.
+  Definition asp_laws : ArrowLaws ASPArr := _.
+  Definition dslp_laws : ArrowLaws DSLPArr := _.
+  Definition dsp_laws : ArrowLaws DSPArr := _.
+  Definition dsp_choice : ArrowChoiceLaws DSPArr := _.
+  Definition dsp_apply : ArrowApplyLaws DSPArr := _.
+  Definition aslp_laws : ArrowLaws ASLPArr := _.
+  Definition aslp_choice : ArrowChoiceLaws ASLPArr := _.
+  Definition aslp_apply : ArrowApplyLaws ASLPArr := _.
+
+  Example asp_dictionary_identity : asp_dictionary = Arrow_PureASPostArr.
+  Proof. reflexivity. Qed.
+  Example dslp_dictionary_identity : dslp_dictionary = Arrow_PureDSLPostArr.
+  Proof. reflexivity. Qed.
+  Example asp_law_dictionary_identity : asp_laws = ArrowLaws_PureASPostArr.
+  Proof. reflexivity. Qed.
+  Example dslp_law_dictionary_identity : dslp_laws = ArrowLaws_PureDSLPostArr.
+  Proof. reflexivity. Qed.
+  Example asp_choice_dictionary_identity : ArrowChoice_ASPArr = ArrowChoice_PureASPostArr.
+  Proof. reflexivity. Qed.
+  Example dslp_choice_dictionary_identity : ArrowChoice_DSLPArr = ArrowChoice_PureDSLPostArr.
+  Proof. reflexivity. Qed.
+  Example asp_apply_dictionary_identity : ArrowApply_ASPArr = ArrowApply_PureASPostArr.
+  Proof. reflexivity. Qed.
+  Example dslp_apply_dictionary_identity : ArrowApply_DSLPArr = ArrowApply_PureDSLPostArr.
+  Proof. reflexivity. Qed.
+  Example asp_equality_dictionary_identity : ArrowEq_ASPArr = ArrowEq_PureASPostArr.
+  Proof. reflexivity. Qed.
+  Example dslp_equality_dictionary_identity : ArrowEq_DSLPArr = ArrowEq_PureDSLPostArr.
+  Proof. reflexivity. Qed.
+
+  (** A canonical arrow is fed to the compatibility application operator,
+      and its result is consumed using the canonical equality and laws. *)
+  Example asp_mixed_application {A B} (f : ASPArr A B) :
+    ASPArr_eq (SPostArr.compASP (SPostArr.arrASP (fun a => (f, a))) SPostArr.appASP) f.
+  Proof. exact (@app_law ASPArr Arrow_ASPArr ArrowApply_ASPArr ArrowEq_ASPArr ArrowApplyLaws_ASPArr A B f). Qed.
+  Example dslp_mixed_application {A B} (f : DSLPArr A B) :
+    DSLPArr_eq (SPostArr.compDSLP (SPostArr.arrDSLP (fun a => (f, a))) SPostArr.appDSLP) f.
+  Proof. exact (@app_law DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr ArrowEq_DSLPArr ArrowApplyLaws_DSLPArr A B f). Qed.
+
+  Example asp_stack_monad_dictionary_identity S :
+    Monad_ASPStExc S = Monad_ASPostArr S.
+  Proof. reflexivity. Qed.
+  Example dslp_stack_monad_dictionary_identity S :
+    Monad_DSLPStExc S = Monad_DSLPostArr S.
+  Proof. reflexivity. Qed.
+
+  Definition asp_pure_client {A B} (m : ASP A) (k : A -> PureASPostArr unit B) :
+    PureASPostArr unit B := bindASP m k.
+  Definition dslp_pure_client {A B} (m : DSLP A) (k : A -> PureDSLPostArr unit B) :
+    PureDSLPostArr unit B := bindDSLP m k.
+  Definition asp_state_client {S A B} (m : ASPSt S A)
+    (k : A -> stateArrT S PureASPostArr unit B) :
+    stateArrT S PureASPostArr unit B := bindASPSt m k.
+  Definition dslp_state_client {S A B} (m : DSLPSt S A)
+    (k : A -> stateArrT S PureDSLPostArr unit B) :
+    stateArrT S PureDSLPostArr unit B := bindDSLPSt m k.
+
+  (** Both directions of the public type seam are exercised by binding a
+      canonical computation to a compatibility continuation. *)
+  Definition asp_mixed_bind {S A B} (m : ASPStExc S A)
+    (k : A -> ASPostArr S B) : ASPostArr S B := bindASPStExc m k.
+  Definition dslp_mixed_bind {S A B} (m : DSLPStExc S A)
+    (k : A -> DSLPostArr S B) : DSLPostArr S B := bindDSLPStExc m k.
+  Example asp_mixed_bind_identity {S A B} (m : ASPStExc S A) (k : A -> ASPostArr S B) :
+    asp_mixed_bind m k = @bind _ (Monad_ASPostArr S) A B m k.
+  Proof. reflexivity. Qed.
+  Example dslp_mixed_bind_identity {S A B} (m : DSLPStExc S A) (k : A -> DSLPostArr S B) :
+    dslp_mixed_bind m k = @bind _ (Monad_DSLPostArr S) A B m k.
+  Proof. reflexivity. Qed.
+  Example asp_runner_identity {S A} (m : ASPStExc S A) pre r :
+    runASP m pre r <-> getASPStExc m pre r.
+  Proof. reflexivity. Qed.
+  Example dslp_runner_identity {S A} (m : DSLPStExc S A) pre r :
+    runDSLP m pre r <-> getDSLPStExc m pre r.
+  Proof. reflexivity. Qed.
+
+  (** Conversion still preserves semantics on canonical values, including
+      state update followed by propagated failure. These are not just
+      dictionary equations. *)
+  Definition update : ASPStExc nat nat :=
+    ofRelASPArr (fun p r => r = Some (snd p, S (snd p))).
+  Definition fail (a : nat) : ASPostArr nat nat :=
+    SPostArr.relASP (fun _ r => r = None).
+  Example mixed_update_failure r :
+    runASP (asp_mixed_bind update fail) (eq 3) r <-> r = None.
+  Proof.
+    rewrite asp_mixed_bind_identity, runASP_rel. split.
+    - intros [s [_ H]]. rewrite ASP_rel_bind in H.
+      destruct H as [om [Hm Hk]]. unfold update in Hm.
+      rewrite (ASP_rel_relASP (fun p : unit * nat => fun r => r = Some (snd p, S (snd p)))) in Hm.
+      cbn in Hm. subst om.
+      unfold fail in Hk. rewrite ASP_rel_relASP in Hk. exact Hk.
+    - intros ->. exists 3. split; [reflexivity |]. rewrite ASP_rel_bind.
+      exists (Some (3, 4)). split.
+      + unfold update. rewrite ASP_rel_relASP. reflexivity.
+      + unfold fail. rewrite ASP_rel_relASP. reflexivity.
+  Qed.
+  Example canonical_asp_semantic_roundtrip {A B} (f : ASPArr A B) :
+    ASPArr_eq (SPostArr.relASP (ASP_rel f)) f.
+  Proof. apply asp_from_to. Qed.
+  Example canonical_dslp_semantic_roundtrip {A B} (f : DSLPArr A B) :
+    DSLPArr_eq (SPostArr.relDSLP (DSLP_rel f)) f.
+  Proof. apply dslp_from_to. Qed.
+End CanonicalSP.

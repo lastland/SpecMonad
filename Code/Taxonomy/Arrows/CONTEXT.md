@@ -27,10 +27,12 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   **nonempty indexed families**; strictness supplies the empty join and termination
   the empty meet. `TerminatingArr` means **top preservation** here. See
   [PROPERTY_TERMINOLOGY.md](PROPERTY_TERMINOLOGY.md) for its semantic interpretation.
-- [SPostArr.v](SPostArr.v) is the **property-only** presentation:
-  `PureASPostArr` bundles strictness and disjunctivity; `PureDSLPostArr` bundles
-  termination and conjunctivity. `getASP` / `getDSLP` expose the transformer;
-  operations act directly on it. `ASP_normal_form` / `DSLP_normal_form` recover
+- [SPostArr.v](SPostArr.v) exposes the **property-only** presentation through
+  compatibility aliases: `PureASPostArr := ASPArr` and
+  `PureDSLPostArr := DSLPArr`. The canonical carriers in `BaseSpecMonads/`
+  bundle monotonicity with strictness/disjunctivity or termination/conjunctivity.
+  `getASP` / `getDSLP` expose the transformer; operations reuse the canonical
+  implementation. Constructive `ASP_normal_form` / `DSLP_normal_form` recover
   relational readings without storing a relation in the carrier.
   `arrASP` / `arrDSLP` lift functions, with `arrASP_spec` / `arrDSLP_spec`
   exposing direct/universal images. `ASP_rel` / `DSLP_rel`, constructors
@@ -60,13 +62,13 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
 
 ## Laws, stacks, and monads
 
-The property-only ASP and DSLP carriers provide `ArrowLaws`, `ArrowChoiceLaws`,
+All four canonical SP carriers provide `ArrowLaws`, `ArrowChoiceLaws`,
 and `ArrowApplyLaws` by instantiating the shared semantic packages in
 [RelArrowCoherence.v](../../Classes/RelArrowCoherence.v).
 `RelArrow`, `RelArrowChoice`, and `RelArrowApply` describe operation preservation;
 `RelArrowEq` connects the chosen equality to pointwise relation equivalence.
-The recovered relations are `ASP_rel` / `DSLP_rel`, with operation facts phrased
-using the existing operators in `Rel.v`. Shared proofs supply
+The ASP/DSLP compatibility interface exposes `ASP_rel` / `DSLP_rel`, with
+operation facts phrased using the existing operators in `Rel.v`. Shared proofs supply
 composition/first/choice congruence and `app_ext`, including replacement of
 semantically equivalent arrows stored in inputs.
 Relational-only helpers remain independent of equality reflection.
@@ -83,7 +85,7 @@ destination `ArrowEq` dictionaries, requires `morphism_proper`, and states
 its five preservation fields under the destination `arrow_eq`. Inverse and
 lift proofs use the existing selected core/choice/application laws, not
 Leibniz law dictionaries or relational equality reflection. See the
-[Classes contract](../../Classes/CONTEXT.md#contracts-and-constructions) for
+[Classes contract](../../Classes/CONTEXT.md#contracts) for
 the precise law requirements. All public base and lifted round trips retain
 the selected semantic equalities.
 
@@ -103,10 +105,12 @@ type under `ArrowLaws` and `ArrowApplyLaws`. Effects are stacked before fixing
 the input. `asp_to_dslp` preserves the recovered relation and return/bind while
 changing its reading; each property-only/`Rel` equivalence preserves its reading.
 
-Main's ASPArr/DSLPArr/DSPArr/ASLPArr in BaseSpecMonads are retained distinct
-public bundles. ASP/DSLP and the property-only presentation now select
-transformer iff, but the bundles are not definitionally equal because their
-proof fields differ. Canonical-carrier consolidation is not yet done.
+`ASPostArr` / `DSLPostArr` are definitionally the public `ASPStExc` /
+`DSLPStExc` stacks. Compatibility dictionaries are plain definitions over
+the canonical instances, avoiding competing registrations for equal aliases.
+The normal-build `CanonicalSP` clients in `Tests/ArrowMonadInstances.v` check
+cross-API application/bind, dictionary and runner identity, and propagated failure.
+
 [OptionLoop.v](OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
 `ArrowLoop` for the existing `optionRel` operations and pointwise equivalence
 when feedback ranges over all types, including `Empty_set`. Empty feedback hides

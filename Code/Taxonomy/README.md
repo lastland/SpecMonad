@@ -34,15 +34,18 @@ Coq commands.
 Taxonomy/
   ComputationMonads/     TransformerLaws            -- generic optionT/stateT/readerT laws
                          StDivITree, StExcNonDet, StDivNonDet, StDivExcNonDet,
-                         DivNonDet, RdDivNonDet
+                         DivNonDet, DivExcNonDet, RdDivNonDet
   BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
                          RelPrePostMonad             -- the five DM4all monads
-                         SPPredicateTransformers     -- SP carriers + well-formedness
+                         SPPredicateTransformers     -- earlier raw SP carriers + healthiness
                          ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
+                         *ArrowCore, *ArrowRel, SPure -- canonical SP arrows and readings
+                         DivExcSP, SpecificationMonads, SPStBindComparisons
                          BaseGaloisConnections, NewGaloisConnections
+      OldMonads/         ASPMonad, DSLPMonad, DSPMonad, ASLPMonad -- earlier SP carriers
   Arrows/                Rel, PrePostArr, RelPrePostArr, WPArr, GaloisArr
-                         PredicateTransformerProperties -- SP well-formedness properties
-                         SPostArr                    -- property-only SP arrows
+                         SPArr, PredicateTransformerProperties -- SP healthiness conditions
+                         SPostArr                    -- canonical ASP/DSLP compatibility API
                          RelSPostArr                 -- ASP/DSLP readings of Rel
                          SPostArrMonad               -- monad dictionaries and SP readings
                          SPostArrEquiv               -- equivalence and transformer lifts
@@ -55,12 +58,14 @@ Taxonomy/
                          StDivExcNonDet_WStExc, StDivNonDet_WSt
       SP/                StDivExcNonDet_SPStExc, StDivNonDet_SPStExc,
                          StDivNonDet_SPSt, DivNonDet_SPPure,
-                         RdDivNonDet_RdSPPure
+                         RdDivNonDet_RdSPPure, DivExcNonDet_SPDivExc
                          SPostArrObservation         -- shared SP judgments
                          StDivITree_SPostArr, StExcNonDet_SPostArr,
                          StDivNonDet_SPostArr, StDivExcNonDet_SPostArr
       (root)             Taxonomy_StDivExcNonDet_StExc,
                          Taxonomy_StDivNonDet_StExc, Taxonomy_StDivNonDet_St
+  DijkstraMonads/        Dijkstra_StDivExcNonDet_WStExc,
+                         Dijkstra_StDivExcNonDet_SPStExc, Dijkstra_StDivNonDet_SPSt
   OldSP/                 the earlier reading-based SP presentation
   deprecated/            older iterations, excluded from the build
   (root)                 ExampleProgramDefs, InCorrectnessPrinciples
@@ -162,12 +167,12 @@ for the law inventory.
 > described in `BaseSpecMonads/CONTEXT.md`; the two sets of names collide,
 > so import only one unqualified.
 
-Four well-formedness conditions select the SP monads from the raw transformer
+Four healthiness conditions select the SP monads from the raw transformer
 type `(S -> Prop) -> Outcome -> Prop`. The raw type alone does not justify the
 sequencing laws: `SPostMonad.v` contains a counterexample to associativity for
 the weaker stateful Kenji-style carrier and its proposed bind.
 
-| Monad | Carrier condition | Equivalent well-formedness properties | Reading of a relation `R` |
+| Monad | Carrier condition | Equivalent healthiness conditions | Reading of a relation `R` |
 |---|---|---|---|
 | `ASPStExc` | `SingletonProg` | strict, universally disjunctive | `∃s ∈ pre, R s r` (angelic) |
 | `DSLPStExc` | `MSingletonProg` | terminating, universally conjunctive | `∀s, R s r → pre s` (demonic, liberal) |
@@ -214,7 +219,7 @@ and `dslpPart*` projections read each argument's recovered relation. DSP recover
 at bottom and the singleton `fun t => t = s`. The `dsp_recov` and `aslp_recov`
 lemmas justify these probes. The binds compose the recovered relations and
 read the result again. The `dsp_carrier` and `aslp_carrier` lemmas connect this
-representation to the stated well-formedness conditions.
+representation to the stated healthiness conditions.
 
 **Ordered bind is a separate requirement.**
 [`SPBindOrderCounterexample.v`](BaseSpecMonads/SPBindOrderCounterexample.v)
@@ -334,7 +339,7 @@ use orders at one precondition:
 | DSP / ASLP | not supplied | not supplied |
 
 `Over` always compares `obs ⊑ target`, `Under` always `target ⊑ obs`. The two
-side conditions are forced by the well-formedness conditions themselves (`asp_bot`:
+side conditions are forced by the healthiness conditions themselves (`asp_bot`:
 every ASP is `False` at `⊥`; `dslp_top`: every DSLP is `True` at `⊤`) and are
 not removable for these targets. These statements concern targets inside the
 well-formed monads. Comparisons against the raw `pp2_over` / `pp2_under`
@@ -665,10 +670,10 @@ versions of these triple characterizations.
 
 ### Relation to `Arrows/GaloisArr.v`
 
-`Arrows/GaloisArr.v` proves four binary connections: `Galois_Pred_PrePost`,
-`Galois_Pred_SPost`, `Galois_WP_PrePost`, and `Galois_RPP_WP`. Its local
+`Arrows/GaloisArr.v` proves four binary connections: `Galois_Rel_PrePost`,
+`Galois_Rel_SPost`, `Galois_WP_PrePost`, and `Galois_RPP_WP`. Its local
 `MonotoneSPost`, `MonotoneWP`, and `WFRelPrePost` subtypes state the required
-constraints. `Galois_Pred_SPost` is an adjunction with monotone transformers,
+constraints. `Galois_Rel_SPost` is an adjunction with monotone transformers,
 not an isomorphism on that entire carrier; the property-only ASP normal form
 in §8 requires the stronger strictness and disjunctivity conditions.
 
@@ -695,10 +700,10 @@ presentations**:
 | `RelPrePost` | `BaseSpecMonads/RelPrePostMonad.v` — over `Assuming p` | `Arrows/RelPrePostArr.v` |
 | `WPure` / `WP` | `BaseSpecMonads/WPureMonad.v` | `Arrows/WPArr.v` |
 
-The monad files define their carriers **in terms of the result type alone**
+The five unary specification-monad files define their carriers **in terms of the result type alone**
 (`Pred A = A -> Prop`), rather than fixing the input of a binary arrow.
 `WPArr.v` reuses the raw carrier `WPureT`.
-`PredicateTransformerProperties.v` defines the binary SP well-formedness
+`PredicateTransformerProperties.v` defines binary SP healthiness
 properties independently of the base-monad development.
 
 General arrow infrastructure lives in `Code/Classes/`. `ArrowMonad.v` defines
@@ -720,7 +725,9 @@ The SP monads use `rel_state_option_bind_fields` with their operation facts;
 exact-equality interface for independent consumers; the direct-Rel equivalences
 below do not use it. Concrete proofs retain the assumptions used to establish
 their relational readings.
-SP-specific definitions and their concrete proofs live in `Taxonomy/Arrows/`.
+Canonical SP carriers and their relational contracts live in
+`BaseSpecMonads/*ArrowCore.v` / `*ArrowRel.v`; the compatibility interface,
+representation morphisms, and loop obstruction live in `Taxonomy/Arrows/`.
 
 ### Arrow-derived monad laws
 
@@ -794,8 +801,10 @@ ASP and DSLP.
 Both test modules are in `_CoqProject`, so the normal build checks them.
 They register no helper instances. Explicit generic applications check
 specialization; `:= _` checks automatic resolution. The two named SP-stack
-law witnesses use explicit applications because inference does not see through
-those aliases.
+law witnesses use explicit applications to pin the exact dictionaries and avoid
+competing recursive option/state search paths. `CanonicalSP` additionally checks
+cross-API application and bind, pure/state clients, runner identity, and a state
+update followed by propagated failure.
 
 ### Relational SP readings
 
@@ -846,30 +855,34 @@ termination supplies empty-meet preservation. Here, termination means **top
 preservation**, with its operational interpretation determined by the direction
 of the transformer.
 
-`Arrows/SPostArr.v` bundles only a transformer and these well-formedness proofs:
+The canonical ASP/DSLP carriers store only a transformer and healthiness proofs,
+including explicit monotonicity. `Arrows/SPostArr.v` exposes compatibility aliases
+to the public carriers in `BaseSpecMonads/`:
 
 ```coq
-PureASPostArr A B :=
-  { w : (A -> Prop) -> B -> Prop | StrictArr w /\ DisjunctiveArr w }.
-PureDSLPostArr A B :=
-  { w : (A -> Prop) -> B -> Prop | TerminatingArr w /\ ConjunctiveArr w }.
+PureASPostArr A B := ASPArr A B.
+PureDSLPostArr A B := DSLPArr A B.
 ```
 
 The accessors are `getASP` and `getDSLP`. `arrASP` / `arrDSLP` lift functions;
 `arrASP_spec` / `arrDSLP_spec` expose their direct and universal images.
 Composition forwards the precondition:
-`comp f g P = g (f P)`. Application also works directly on transformers:
+`comp f g P = g (f P)`. Application satisfies these normal-form equivalences:
 
 ```text
-appASP  P b = exists f, getASP  f (fun a => P (f,a)) b
-appDSLP P b = forall f, getDSLP f (fun a => P (f,a)) b
+appASP  P b <-> exists f, getASP  f (fun a => P (f,a)) b
+appDSLP P b <-> forall f, getDSLP f (fun a => P (f,a)) b
 ```
 
-Both carriers satisfy `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`.
+The compatibility operations and dictionaries are definitions over the canonical
+ones, with no duplicate global registrations. Both carriers satisfy `ArrowLaws`,
+`ArrowChoiceLaws`, and `ArrowApplyLaws`.
 The existing option/state transformers lift these laws, including to
 `stateArrT S (optionArrT PureASPostArr)` and its DSLP counterpart. This stack
 has input `A * S` and output `option (B * S)`: `None` propagates without a final
-state. `ASPostArr S B` and `DSLPostArr S B` fix the arrow input to `unit`.
+state. `ASPostArr S B` and `DSLPostArr S B` fix the arrow input to `unit`; they
+are definitionally the public `ASPStExc S B` / `DSLPStExc S B` monads, including
+their return/bind dictionaries.
 
 Property-only `arrow_eq f g` means pointwise transformer iff:
 `forall P b, getASP f P b <-> getASP g P b`, and likewise for DSLP.
@@ -880,11 +893,14 @@ equivalence, including pointwise-equivalent continuations.
 `SPostArr.v` groups the recovered relations `ASP_rel` / `DSLP_rel` with
 `relASP` / `relDSLP`, their round trips, and normal-form rewrite consequences.
 Their operation-preservation facts use the existing operators in `Rel.v`.
-The property-only ASP and DSLP carriers instantiate the shared `RelArrow`,
+All four canonical SP carriers instantiate the shared `RelArrow`,
 `RelArrowChoice`, `RelArrowApply`, and `RelArrowEq` contracts in
 `Classes/RelArrowCoherence.v`. Those contracts supply their complete
 core/choice/application law packages under pointwise transformer iff.
-The relational carrier instead reuses its existing laws in `Rel.v`.
+The ASP/DSLP normal forms and base law packages are constructive; exact bundled
+equality remains available separately with extensionality. DSP/ASLP recovery and
+law packages retain classical reasoning. The relational carrier reuses its
+existing laws in `Rel.v`.
 The generic transformers preserve both sets of laws algebraically.
 
 ### Equivalence with `Rel`
@@ -936,7 +952,7 @@ corresponding selected `arrow_eq`. State-only lifts use `state_arrow_map` and
 Inverse and lift proofs use the existing core/choice/application laws under
 the selected equality dictionaries. Inverse application uses `app_ext`; state
 lifting uses the law-derived `pure_ext`. See the
-[Classes contract](../Classes/CONTEXT.md#contracts-and-constructions)
+[Classes contract](../Classes/CONTEXT.md#contracts)
 for each generic theorem's law requirements. The direct-Rel equivalences do
 not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.
 
@@ -1132,7 +1148,7 @@ The state-free variants follow the same rule with `SP` in place of `SPSt` —
 `ordDSLPSP` / `ordDSLPSPAt` — and, being at top level rather than in a `Module
 St*`, they need no qualification.
 
-The `Module St*` wrappers are still needed: the well-formedness conditions
+The `Module St*` wrappers are still needed: the healthiness conditions
 (`StrictProg`, `TerminatingProg`, …) and the `NewGaloisConnections.v` embeddings
 deliberately carry parallel names in both variants, so the module is what tells
 them apart.
