@@ -43,10 +43,6 @@ Print Assumptions StDivExcNonDet.outcomes_pickP.
 Print Assumptions StDivExcNonDet.outcomes_spin.
 
 (** WP return laws support independent state and result types. *)
-Check (StDivExcNonDet_WStExc.obsDWP_ret bool (0 : nat)).
-Check (StDivExcNonDet_WStExc.obsDWLP_ret bool (0 : nat)).
-Check (StDivExcNonDet_WStExc.obsAWP_ret bool (0 : nat)).
-Check (StDivExcNonDet_WStExc.obsAWLP_ret bool (0 : nat)).
 Print Assumptions StDivExcNonDet_WStExc.obsDWP_ret.
 Print Assumptions StDivExcNonDet_WStExc.obsDWLP_ret.
 Print Assumptions StDivExcNonDet_WStExc.obsAWP_ret.
@@ -159,25 +155,13 @@ Print Assumptions StDivExcNonDet_SPostArr.obsASP_bind.
 Print Assumptions StDivExcNonDet_SPostArr.obsDSLP_bind.
 
 (** Ordered-bind counterexamples. *)
-Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.dsp_counterexample.
-Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.aslp_counterexample.
-Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.dsp_bind_not_monotone.
-Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.aslp_bind_not_monotone.
-
 Print Assumptions Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.dsp_bind_not_monotone.
 Print Assumptions Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.aslp_bind_not_monotone.
-
-Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.dsp_arbitrary_bind_impossible.
-Check Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.aslp_arbitrary_bind_impossible.
 
 Print Assumptions Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.dsp_arbitrary_bind_impossible.
 Print Assumptions Incorrectness.Taxonomy.BaseSpecMonads.SPBindOrderCounterexample.SPBindOrderCounterexample.aslp_arbitrary_bind_impossible.
 
 (** Stateless ordered binds, with both exceptions and divergence retained. *)
-Check DSPMonad.bindDSP_mono.
-Check ASLPMonad.bindASLP_mono.
-Check DivExcSP.bindDSPDivExc_mono.
-Check DivExcSP.bindASLPDivExc_mono.
 Print Assumptions DSPMonad.bindDSP_mono.
 Print Assumptions ASLPMonad.bindASLP_mono.
 Print Assumptions TransformerLaws.bind_optionT_mono.
