@@ -13,6 +13,8 @@ Core derives arrow laws from base arrow laws. Choice laws additionally use
 base choice/laws. [ArrowApplyLaws.v](ArrowApplyLaws.v) lifts all five
 application fields from the base contract without requiring choice.
 Keep explicit dictionaries to avoid recursive option/state instance search.
+Pure-map fusion and shuffle cancellation reuse core facts with explicit base
+pure-function congruence.
 No loop lifting is supplied.
 
 Over option the carrier becomes `arr (A * S) (option (B * S))`: failure has

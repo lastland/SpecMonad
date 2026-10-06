@@ -51,18 +51,14 @@ Section ArrowMonadLaws.
   Local Notation app := (@arr_app arr HA HAA _ _).
   Local Notation eqA := (@arrow_eq arr HE _ _).
   Local Notation cassoc := (@comp_assoc arr HA HE HL).
-  Local Notation cidl := (@comp_id_l arr HA HE HL).
   Local Notation cidr := (@comp_id_r arr HA HE HL).
   Local Notation pcomp := (@pure_comp arr HA HE HL).
   Local Notation cprop := (@comp_proper arr HA HE HL).
   Local Notation fprop := (@first_proper arr HA HE HL).
   Local Notation fpure := (@first_pure arr HA HE HL).
-  Local Notation ffst := (@first_fst arr HA HE HL).
-  Local Notation fnat := (@first_natural arr HA HE HL).
   Local Notation alaw := (@app_law arr HA HAA HE HAL).
   Local Notation aext := (@app_ext arr HA HAA HE HAL).
   Local Notation arrow_ext := (@ArrowApplyFacts.arrow_ext arr HA HAA HE HL HAL).
-  Local Notation pure_ext := (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL).
 
   Create HintDb arrow_monad_fanout.
   #[local] Hint Unfold arr_fanout arr_split : arrow_monad_fanout.
@@ -73,28 +69,8 @@ Section ArrowMonadLaws.
     eqA (pure (fun a => (a, c)) >>> first f)
         (f >>> pure (fun b => (b, c))).
   Proof.
-    assert (Hhead :
-      eqA (pure (fun a : A => (a, tt)) >>> pure (fun '(a, _) => (a, c)))
-          (pure (fun a : A => (a, c)))).
-    { etransitivity. { apply pcomp. } reflexivity. }
-    assert (Htail :
-      eqA (pure (fun p : B * unit => let '(b, _) := p in (b, c)))
-          (pure (@fst B unit) >>> pure (fun b => (b, c)))).
-    { symmetry. etransitivity. { apply pcomp. }
-      apply pure_ext. intros [b []]. reflexivity. }
-    etransitivity. { apply cprop. 2: reflexivity. symmetry. exact Hhead. }
-    etransitivity. { apply cassoc. }
-    etransitivity. { apply cprop. 1: reflexivity. symmetry. apply fnat. }
-    etransitivity.
-    { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity. exact Htail. }
-    etransitivity.
-    { apply cprop. 1: reflexivity. symmetry. apply cassoc. }
-    etransitivity.
-    { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply ffst. }
-    etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
-    etransitivity. { symmetry. apply cassoc. }
-    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-    apply cidl.
+    exact (@Arrow.first_constant arr HA HE HL
+      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL) A B C f c).
   Qed.
 
   Local Lemma second_id {A B} :
@@ -105,8 +81,9 @@ Section ArrowMonadLaws.
     etransitivity.
     { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply fpure. }
     etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-    etransitivity. { apply pcomp. }
-    apply pure_ext. intros [b a]. reflexivity.
+    apply (@pure_comp_ext arr HA HE HL
+      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL)).
+    intros [b a]. reflexivity.
   Qed.
 
   Local Lemma fanout_id {A B} (f : arr A B) :
@@ -159,11 +136,7 @@ Section ArrowMonadLaws.
     eqA (pure (fun _ : X => (f, a)) >>> app)
         (pure (fun _ : X => a) >>> f).
   Proof.
-    symmetry.
-    etransitivity. { apply cprop. 1: reflexivity. symmetry. apply alaw. }
-    etransitivity. { symmetry. apply cassoc. }
-    apply cprop. 2: reflexivity.
-    etransitivity. { apply pcomp. } reflexivity.
+    exact (@ArrowApplyFacts.app_constant arr HA HAA HE HL X A B f a (alaw f)).
   Qed.
 
   (** Compatibility with the former unit-input development. *)

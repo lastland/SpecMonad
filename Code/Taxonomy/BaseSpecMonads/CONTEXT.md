@@ -77,6 +77,10 @@ Classes/ArrowMonad operations/laws. Each exposes pure/state/state-option APIs.
 SPure gives a relational carrier, four readings, OrderedMonad_flip, and the
 five-operation RelDenote contract; rel_bind/relS_bind/relE_bind describe the
 chosen bind through relations, reusing generic state-option normalization.
+`ASPArrowRel` and `DSLPArrowRel` specialize those generic reading facts through
+explicit local `RelDenote` definitions built from their operation lemmas.
+Their public fixed-input, state, option, and state-option reading wrappers
+reuse the same semantic proofs.
 The canonical ASPStExc/DSLPStExc monads are definitionally the compatibility
 ASPostArr/DSLPostArr stacks, including their named monad dictionaries and runners.
 

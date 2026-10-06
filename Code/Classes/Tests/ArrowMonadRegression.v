@@ -2,7 +2,49 @@
 
 From Coq Require Import FunctionalExtensionality RelationClasses.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad.
+From Incorrectness.Classes Require Import Arrow ArrowApplyFacts ArrowMonad.
+
+(** These checks guard the helpers' dependency boundary: core facts need
+    ordinary pure congruence, and static application needs its fixed-arrow
+    equation. Neither check has an application-law dictionary available. *)
+Section CoreFactDependencies.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HE : ArrowEq arr} {HL : @ArrowLaws arr HA HE}.
+
+  Variable pure_congr : forall X Y (u v : X -> Y),
+    (forall x, u x = v x) ->
+    @arrow_eq arr HE X Y (@arr_pure arr HA X Y u) (@arr_pure arr HA X Y v).
+
+  Definition first_constant_core_only {A B C} (f : arr A B) (c : C) :
+    @arrow_eq arr HE A (B * C)%type
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun a => (a, c)))
+        (@arr_first arr HA A B C f))
+      (@arr_comp arr HA _ _ _ f (@arr_pure arr HA _ _ (fun b => (b, c)))) :=
+    @Arrow.first_constant arr HA HE HL pure_congr A B C f c.
+
+  Definition pure_comp_ext_core_only {A B C}
+    (f : A -> B) (g : B -> C) (h : A -> C) (H : forall x, g (f x) = h x) :
+    @arrow_eq arr HE A C
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g))
+      (@arr_pure arr HA _ _ h) :=
+    @Arrow.pure_comp_ext arr HA HE HL pure_congr A B C f g h H.
+End CoreFactDependencies.
+
+Section StaticApplicationDependencies.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HAA : @ArrowApply arr HA}
+    {HE : ArrowEq arr} {HL : @ArrowLaws arr HA HE}.
+
+  Definition app_constant_static_only {X A B} (f : arr A B) (a : A)
+    (H : @arrow_eq arr HE A B
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun a => (f, a)))
+        (@arr_app arr HA HAA A B)) f) :
+    @arrow_eq arr HE X B
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun _ : X => (f, a)))
+        (@arr_app arr HA HAA A B))
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun _ : X => a)) f) :=
+    @ArrowApplyFacts.app_constant arr HA HAA HE HL X A B f a H.
+End StaticApplicationDependencies.
 
 (** Selecting the other position satisfies fixed-arrow application, but
     breaks the derived monad's right identity.  The full application

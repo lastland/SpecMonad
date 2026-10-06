@@ -1,4 +1,4 @@
-From Coq Require Import FunctionalExtensionality Morphisms.
+From Coq Require Import Morphisms.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Classes.OptionArrowT Require Import Core.
 
@@ -38,7 +38,7 @@ Section GenericOptionArrTLaws.
     (forall x, f x = g x) ->
     @arrow_eq arr HE A B (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g).
   Proof.
-    intro H. replace f with g by (extensionality x; symmetry; apply H). reflexivity.
+    exact (@Arrow.arr_pure_ext arr HA HE A B f g).
   Qed.
 
   Create HintDb opt_ops.
@@ -91,8 +91,8 @@ Section GenericOptionArrTLaws.
     etransitivity.
     { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply lpure. }
     etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-    etransitivity. { apply pcomp. }
-    apply arr_pure_ext. intros [b|]; reflexivity.
+    apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+    intros [b|]; reflexivity.
   Qed.
 
   #[global]
@@ -159,8 +159,8 @@ Section GenericOptionArrTLaws.
               (@arr_pure arr HA _ _ (sum_bimap (fun c0 : C => c0) (fun _ : unit + unit => tt)))))).
         { symmetry.
           etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-          etransitivity. { apply pcomp. }
-          apply arr_pure_ext. intros [[c0|]|[]]; reflexivity. }
+          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          intros [[c0|]|[]]; reflexivity. }
 
         (* E12: [sbm id ctt] >>> Lh = L'h >>> [sbm id ctt]   (from lnat symmetry) *)
         assert (E12 : @arrow_eq arr HE _ _
@@ -192,8 +192,9 @@ Section GenericOptionArrTLaws.
             (@arr_pure arr HA _ _ (@collapse D)))).
         { etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
           etransitivity. { apply pcomp. }
-          symmetry. etransitivity. { apply pcomp. }
-          apply arr_pure_ext. intros [[od|]|[]]; reflexivity. }
+          symmetry.
+          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          intros [[od|]|[]]; reflexivity. }
 
         (* E45a: [sbm ts id] = L[ts] *)
         assert (E45a : @arrow_eq arr HE _ _
@@ -371,8 +372,8 @@ Section GenericOptionArrTLaws.
       exact H.
     - (* first_pure *)
       etransitivity. { apply cprop. 2: reflexivity. apply fpure. }
-      etransitivity. { apply pcomp. }
-      apply arr_pure_ext. intros [a c]. reflexivity.
+      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      intros [a c]. reflexivity.
     - (* first_comp *)
       (* Distribute arr_first over base composition, then move the carried
          value through the option/sum conversions.  In the sketches, F is
@@ -444,8 +445,8 @@ Section GenericOptionArrTLaws.
         (* [sbm seq id] >>> [sbm id g] >>> [c] *)
         etransitivity. { symmetry. apply cassoc. }
         etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-        etransitivity. { apply pcomp. }
-        apply arr_pure_ext. intros [[oc d]|[[] d]]; [destruct oc|]; reflexivity. }
+        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        intros [[oc d]|[[] d]]; [destruct oc|]; reflexivity. }
 
       (* Prove the tail: [Fts] >>> F(Lg) >>> [Fc] >>> [seq]
                        ≃ [seq] >>> [ts] >>> L(Fg >>> [seq]) >>> [c]
@@ -484,14 +485,13 @@ Section GenericOptionArrTLaws.
         { apply cprop. 1: reflexivity.
           apply cprop. 1: reflexivity.
           symmetry.
-          etransitivity.
-          { exact (@pcomp
+          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
               ((option C + unit) * D)%type
               ((option C * D) + (unit * D))%type
               (option (C * D))
               (@sum_prod_dist (option C) unit D)
-              cseq). }
-          apply arr_pure_ext. intros [[oc|[]] d]; reflexivity. }
+              cseq _).
+          intros [[oc|[]] d]; reflexivity. }
         (* [Fts] >>> F(Lg) >>> [spd] >>> [cseq] *)
 
         (* Step 3: Left-assoc F(Lg)>>>[spd], apply fldist *)
@@ -544,14 +544,13 @@ Section GenericOptionArrTLaws.
         etransitivity.
         { apply cprop. 2: reflexivity.
           symmetry.
-          etransitivity.
-          { exact (@pcomp
+          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
               (option B * D)%type
               (option (B * D))
               ((B * D) + unit)%type
               (@sequence_option B D)
-              (@to_sum (B * D))). }
-          apply arr_pure_ext. intros [[b|] d]; reflexivity. }
+              (@to_sum (B * D)) _).
+          intros [[b|] d]; reflexivity. }
         apply cassoc. }
 
       (* Right-associate the RHS, then apply Htail under Ff *)
@@ -572,8 +571,8 @@ Section GenericOptionArrTLaws.
           (@arr_pure arr HA _ _ (@sequence_option B C))
           (@arr_pure arr HA _ _ (option_map (@fst B C))))
         (@arr_pure arr HA _ _ (@fst (option B) C))).
-      { etransitivity. { apply pcomp. }
-        apply arr_pure_ext. intros [ob c0]; destruct ob; reflexivity. }
+      { apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        intros [ob c0]; destruct ob; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hfused. }
       apply ffst.
@@ -600,8 +599,9 @@ Section GenericOptionArrTLaws.
         { apply cprop. 1: reflexivity. apply pcomp. }
         etransitivity.
         { apply pcomp. }
-        symmetry. etransitivity. { apply pcomp. }
-        apply arr_pure_ext. intros [[ob c0] d0]; destruct ob; reflexivity. }
+        symmetry.
+        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        intros [[ob c0] d0]; destruct ob; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 2: reflexivity. apply fcomp. }
       etransitivity. { apply cassoc. }
@@ -633,8 +633,9 @@ Section GenericOptionArrTLaws.
           (@arr_pure arr HA _ _ (fun '(ob, c) => (ob, g c)))
           (@arr_pure arr HA _ _ (@sequence_option B D)))).
       { etransitivity. { apply pcomp. }
-        symmetry. etransitivity. { apply pcomp. }
-        apply arr_pure_ext. intros [[b|] c]; reflexivity. }
+        symmetry.
+        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        intros [[b|] c]; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hsequence. }
       etransitivity. { symmetry. apply cassoc. }

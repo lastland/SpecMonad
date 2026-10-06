@@ -11,6 +11,11 @@ and `Check`; its output concerns only the named declarations.
 
 The selected reports cover:
 
+- Core algebraic arrow helpers in [Arrow.v](../Classes/Arrow.v) and
+  [ArrowApplyFacts.v](../Classes/ArrowApplyFacts.v), the fixed-input monad laws,
+  and the option/state core, choice, and application law packages. The helpers
+  take congruence or fixed-arrow application equations explicitly; the monad
+  derives congruence from application coherence.
 - The 13 stateful [computation-owned raw outcome laws](../Taxonomy/ComputationMonads/CONTEXT.md#raw-outcome-law-interface):
   five single-option return/bind and primitive laws in
   [StExcNonDet.v](../Taxonomy/ComputationMonads/StExcNonDet.v), `outcomes_diverge`
@@ -36,6 +41,10 @@ The selected reports cover:
 - `rel_state_option_bind` in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and `asp_to_dslp_bind`
   in [SPostArrMonad.v](../Taxonomy/Arrows/SPostArrMonad.v).
+- Canonical ASP/DSLP fixed-input, state, option, and state-option relation
+  readings in [ASPArrowRel.v](../Taxonomy/BaseSpecMonads/ASPArrowRel.v) and
+  [DSLPArrowRel.v](../Taxonomy/BaseSpecMonads/DSLPArrowRel.v). These wrappers
+  specialize the generic `RelDenote` facts through explicit local definitions.
 - ASP/DSLP bind laws and examples for state, exceptions, and nondeterminism
   in [StExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v),
   and state, divergence, and nondeterminism in

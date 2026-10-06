@@ -15,7 +15,7 @@ From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
 From Incorrectness.Classes Require Import ArrowMonad RelArrowCoherence.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPArrowCore.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPArrowCore SPure.
 
 (* ================================================================= *)
 (** ** The relation an arrow denotes                                 *)
@@ -88,23 +88,12 @@ Section Relation.
 
 End Relation.
 
-Local Ltac flat :=
-  repeat match goal with
-  | H : exists _, _ |- _ => destruct H
-  | H : _ /\ _ |- _ => destruct H
-  | p : _ * _ |- _ => destruct p
-  | H : (_, _) = (_, _) |- _ => inversion H; clear H
-  | H : ?x = ?y |- _ => first [ subst x | subst y ]
-  | _ => progress cbn in *
-  end.
-
-Local Ltac build :=
-  repeat first [ progress cbn | eassumption | reflexivity | split
-               | eexists (_, _) | eexists ].
-
-Local Ltac rel_simpl :=
-  repeat first [ setoid_rewrite aspRel_comp | setoid_rewrite aspRel_pure
-               | setoid_rewrite aspRel_first | setoid_rewrite aspRel_app ].
+Local Definition aspRelDenote :
+  @RelDenote ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+    (@ASPArrowRel.aspRel) :=
+  @Build_RelDenote ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+    (@ASPArrowRel.aspRel) (@aspRel_pure) (@aspRel_comp) (@aspRel_first)
+    (@aspRel_left) (@aspRel_app).
 
 (* ================================================================= *)
 (** ** [bind] on relations, at a fixed input                        *)
@@ -117,8 +106,8 @@ Section Mon.
   Lemma aspRel_bind {I A B} (m : ASPArr I A) (k : A -> ASPArr I B) i b :
     aspRel (@bind_arrow ASPArr _ _ I A B m k) i b <-> exists a, aspRel m i a /\ aspRel (k a) i b.
   Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id. rel_simpl.
-    split; [ intro H; flat; eauto | intros [a [Hm Hk]]; build ].
+    exact (@SPure.rel_bind ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote I A B m k i b).
   Qed.
 End Mon.
 
@@ -141,10 +130,8 @@ Section St.
     aspRel (@bind_arrow (stateArrT S ASPArr) _ _ I A B m k) (i, s) r
     <-> exists a s', aspRel m (i, s) (a, s') /\ aspRel (k a) (i, s') r.
   Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-    cbn [arr_comp arr_pure arr_first arr_app Arrow_stateArrT ArrowApply_stateArrT].
-    rel_simpl.
-    split; [ intro H; flat; eauto | intros [a [s' [Hm Hk]]]; build ].
+    exact (@SPure.relS_bind ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S I A B m k i s r).
   Qed.
 End St.
 
@@ -161,41 +148,25 @@ Section Opt.
     aspRel (@arr_comp (optionArrT ASPArr) _ X Y Z f g) x o <->
     exists o1, aspRel f x o1 /\ match o1 with Some y => aspRel g y o | None => o = None end.
   Proof.
-    cbn [arr_comp Arrow_optionArrT].
-    repeat first [ setoid_rewrite aspRel_comp | setoid_rewrite aspRel_pure
-                 | setoid_rewrite aspRel_left ].
-    split.
-    - intros [b [Hf [c [Hc [d [Hd Ho]]]]]]. subst c o. exists b. split; [ exact Hf |].
-      destruct b as [y|], d as [z|[]]; cbn in *; solve [ exact Hd | contradiction | reflexivity ].
-    - intros [[y|] [Hf Hg]].
-      + exists (Some y). split; [ exact Hf |]. exists (inl y). split; [ reflexivity |].
-        exists (inl o). split; [ exact Hg | reflexivity ].
-      + subst o. exists None. split; [ exact Hf |]. exists (inr tt). split; [ reflexivity |].
-        exists (inr tt). split; reflexivity.
+    exact (@SPure.relO_comp ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote X Y Z f g x o).
   Qed.
 
   Lemma aspRelO_pure {X Y} (h : X -> Y) x o :
     aspRel (@arr_pure (optionArrT ASPArr) _ X Y h) x o <-> o = Some (h x).
   Proof.
-    cbn [arr_pure Arrow_optionArrT]. rewrite aspRel_pure.
-    split; intro H; symmetry; exact H.
+    exact (@SPure.relO_pure ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote X Y h x o).
   Qed.
 
   Lemma aspRelO_first {X Y C} (f : optionArrT ASPArr X Y) x (c : C) o :
     aspRel (@arr_first (optionArrT ASPArr) _ X Y C f) (x, c) o <->
     exists o1, aspRel f x o1 /\ o = match o1 with Some y => Some (y, c) | None => None end.
   Proof.
-    cbn [arr_first arr_comp Arrow_optionArrT].
-    rewrite aspRel_comp. setoid_rewrite aspRel_first. setoid_rewrite aspRel_pure.
-    split.
-    - intros [[o1 c'] [[Hf Hc] Ho]]. cbn in *. subst. exists o1. split; [ exact Hf |].
-      destruct o1; reflexivity.
-    - intros [o1 [Hf ->]]. exists (o1, c). cbn. split; [ exact (conj Hf eq_refl) |].
-      destruct o1; reflexivity.
+    exact (@SPure.relO_first ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote X Y C f x c o).
   Qed.
 End Opt.
-
-Local Ltac simp_in H := cbv beta iota delta [state_shuffle_in state_shuffle_out swap] in H.
 
 Section StExc.
   Variable S : Type.
@@ -204,38 +175,32 @@ Section StExc.
   Lemma aspRelE_comp {X Y Z} (f : T X Y) (g : T Y Z) p o :
     aspRel (@arr_comp T _ X Y Z f g) p o <->
     exists o1, aspRel f p o1 /\ match o1 with Some q => aspRel g q o | None => o = None end.
-  Proof. exact (aspRelO_comp f g p o). Qed.
+  Proof.
+    exact (@SPure.relE_comp ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S X Y Z f g p o).
+  Qed.
 
   Lemma aspRelE_pure {X Y} (h : X -> Y) x s o :
     aspRel (@arr_pure T _ X Y h) (x, s) o <-> o = Some (h x, s).
-  Proof. exact (aspRelO_pure _ (x, s) o). Qed.
+  Proof.
+    exact (@SPure.relE_pure ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S X Y h x s o).
+  Qed.
 
   Lemma aspRelE_first {X Y C} (f : T X Y) x (c : C) s o :
     aspRel (@arr_first T _ X Y C f) ((x, c), s) o <->
     exists o1, aspRel f (x, s) o1 /\
       o = match o1 with Some (y, s') => Some ((y, c), s') | None => None end.
   Proof.
-    unfold arr_first at 1; cbn [Arrow_stateArrT].
-    rewrite aspRelO_comp. split.
-    - intros [o1 [H1 H2]]. apply aspRelO_pure in H1. subst o1. simp_in H2.
-      apply aspRelO_comp in H2. destruct H2 as [o2 [H2 H3]].
-      apply aspRelO_first in H2. destruct H2 as [o3 [H3' ->]].
-      exists o3. split; [ exact H3' |].
-      destruct o3 as [[y s']|]; simp_in H3; [ apply aspRelO_pure in H3 |]; exact H3.
-    - intros [o1 [Hf ->]]. exists (Some ((x, s), c)). split; [ apply aspRelO_pure; reflexivity |].
-      apply aspRelO_comp. exists (match o1 with Some y => Some (y, c) | None => None end).
-      split; [ apply aspRelO_first; exists o1; split; [ exact Hf | reflexivity ] |].
-      destruct o1 as [[y s']|]; [ apply aspRelO_pure |]; reflexivity.
+    exact (@SPure.relE_first ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S X Y C f x c s o).
   Qed.
 
   Lemma aspRelE_app {X Y} (f : T X Y) x s o :
     aspRel (@arr_app T _ _ X Y) ((f, x), s) o <-> aspRel f (x, s) o.
   Proof.
-    unfold arr_app at 1; cbn [ArrowApply_stateArrT].
-    rewrite aspRelO_comp. split.
-    - intros [o1 [H1 H2]]. apply aspRelO_pure in H1. subst o1. exact (proj1 (aspRel_app (f, (x, s)) o) H2).
-    - intro H. exists (Some (f, (x, s))). split; [ apply aspRelO_pure; reflexivity |].
-      exact (proj2 (aspRel_app (f, (x, s)) o) H).
+    exact (@SPure.relE_app ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S X Y f x s o).
   Qed.
 
   Lemma aspRelE_bind {I A B} (m : T I A) (k : A -> T I B) i s o :
@@ -243,11 +208,8 @@ Section StExc.
     <-> exists o1, aspRel m (i, s) o1 /\
           match o1 with Some (a, s') => aspRel (k a) (i, s') o | None => o = None end.
   Proof.
-    exact (@rel_state_option_bind_fields ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
-      (@aspRel) (@aspRel_pure) (@aspRel_comp)
-      (fun X Y C f a c b d => aspRel_first f (a, c) (b, d))
-      (@aspRel_left) (fun X Y f a b => aspRel_app (f, a) b)
-      S I A B m k i s o).
+    exact (@SPure.relE_bind ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S I A B m k i s o).
   Qed.
 End StExc.
 
@@ -255,5 +217,8 @@ Section StExcRet.
   Variable S : Type.
   Lemma aspRelE_ret {I A} (a : A) i s o :
     aspRel (@ret_arrow (stateArrT S (optionArrT ASPArr)) _ I A a) (i, s) o <-> o = Some (a, s).
-  Proof. unfold ret_arrow. cbn [arr_pure Arrow_stateArrT]. rewrite aspRelO_pure. reflexivity. Qed.
+  Proof.
+    exact (@SPure.relE_pure ASPArr Arrow_ASPArr ArrowChoice_ASPArr ArrowApply_ASPArr
+      (@ASPArrowRel.aspRel) aspRelDenote S I A (fun _ => a) i s o).
+  Qed.
 End StExcRet.

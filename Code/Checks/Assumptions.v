@@ -1,5 +1,6 @@
 (** Console assumption reports, compiled explicitly by [make check]. *)
-From Incorrectness.Classes Require Import RelArrowCoherence.
+From Incorrectness.Classes Require Import
+  Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import
   SPostArrMonad RelSPostArr SPostArrEquiv GaloisArr.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import
@@ -10,6 +11,20 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import
   StExcNonDet StDivNonDet StDivExcNonDet.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import DivExcNonDet_SPDivExc.
+
+(** Shared algebraic helpers take their congruence/application premises
+    explicitly. Generic monad laws derive pure congruence constructively;
+    transformer law packages retain their existing extensionality dependency. *)
+Print Assumptions Arrow.first_constant.
+Print Assumptions Arrow.pure_comp_ext.
+Print Assumptions ArrowApplyFacts.app_constant.
+Print Assumptions ArrowMonad.MonadLawsE_Arrow.
+Print Assumptions ArrowLaws_optionArrT.
+Print Assumptions ArrowChoiceLaws_optionArrT.
+Print Assumptions ArrowApplyLaws_optionArrT.
+Print Assumptions ArrowLaws_stateArrT.
+Print Assumptions ArrowChoiceLaws_stateArrT.
+Print Assumptions ArrowApplyLaws_stateArrT.
 
 (** Computation-owned raw outcome laws use pointwise equivalence and are
     closed under the global context. *)
@@ -189,7 +204,7 @@ Print Assumptions DivExcNonDet_SPDivExc.mixed_ASLP_outcomes.
     retains excluded middle. Cross-API clients check the selected dictionaries
     without reflecting pointwise equivalence into bundled equality. *)
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  ASPArrowCore DSLPArrowRel DSPArrowRel ASLPArrowRel.
+  ASPArrowCore ASPArrowRel DSLPArrowRel DSPArrowRel ASLPArrowRel.
 From Incorrectness.Taxonomy.Arrows.Tests Require Import ArrowMonadInstances.
 Print Assumptions SPostArr.ASP_normal_form.
 Print Assumptions SPostArr.DSLP_normal_form.
@@ -205,6 +220,24 @@ Print Assumptions DSPArrowRel.ArrowApplyLaws_DSPArr.
 Print Assumptions ASLPArrowRel.ArrowLaws_ASLPArr.
 Print Assumptions ASLPArrowRel.ArrowChoiceLaws_ASLPArr.
 Print Assumptions ASLPArrowRel.ArrowApplyLaws_ASLPArr.
+
+(** Canonical relation readings reuse the generic RelDenote facts through
+    explicit local dictionaries. These semantic wrappers are constructive. *)
+Print Assumptions ASPArrowRel.aspRel_bind.
+Print Assumptions ASPArrowRel.aspRelS_bind.
+Print Assumptions ASPArrowRel.aspRelO_comp.
+Print Assumptions ASPArrowRel.aspRelO_first.
+Print Assumptions ASPArrowRel.aspRelE_first.
+Print Assumptions ASPArrowRel.aspRelE_app.
+Print Assumptions ASPArrowRel.aspRelE_bind.
+Print Assumptions DSLPArrowRel.dslpRel_bind.
+Print Assumptions DSLPArrowRel.dslpRelS_bind.
+Print Assumptions DSLPArrowRel.dslpRelO_comp.
+Print Assumptions DSLPArrowRel.dslpRelO_first.
+Print Assumptions DSLPArrowRel.dslpRelE_first.
+Print Assumptions DSLPArrowRel.dslpRelE_app.
+Print Assumptions DSLPArrowRel.dslpRelE_bind.
+
 Print Assumptions CanonicalSP.asp_mixed_application.
 Print Assumptions CanonicalSP.dslp_mixed_application.
 Print Assumptions CanonicalSP.asp_mixed_bind_identity.

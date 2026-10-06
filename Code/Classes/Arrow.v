@@ -113,6 +113,60 @@ Class ArrowLaws (arr : Type -> Type -> Type)
         (arr_first f))
 }.
 
+Section ArrowCoreFacts.
+  Context {arr : Type -> Type -> Type}
+    `{HA : Arrow arr} `{HE : ArrowEq arr}
+    `{HL : @ArrowLaws arr HA HE}.
+
+  (** Ordinary pointwise congruence is supplied explicitly so these facts
+      can use either constructive application coherence or another proof. *)
+  Variable pure_congr : forall X Y (u v : X -> Y),
+    (forall x, u x = v x) ->
+    @arrow_eq arr HE X Y (@arr_pure arr HA X Y u) (@arr_pure arr HA X Y v).
+
+  Local Notation "f >>> g" := (@arr_comp arr HA _ _ _ f g)
+    (at level 50, left associativity).
+  Local Notation pure := (@arr_pure arr HA _ _).
+  Local Notation first := (@arr_first arr HA _ _ _).
+  Local Notation eqA := (@arrow_eq arr HE _ _).
+
+  Lemma pure_comp_ext {A B C} (f : A -> B) (g : B -> C) (h : A -> C) :
+    (forall x, g (f x) = h x) -> eqA (pure f >>> pure g) (pure h).
+  Proof.
+    intro H. etransitivity. { apply pure_comp. }
+    apply pure_congr. exact H.
+  Qed.
+
+  (** A constant companion commutes with [first], using only core laws
+      and the supplied ordinary pure-function congruence. *)
+  Lemma first_constant {A B C} (f : arr A B) (c : C) :
+    eqA (pure (fun a => (a, c)) >>> first f)
+        (f >>> pure (fun b => (b, c))).
+  Proof.
+    assert (Hhead :
+      eqA (pure (fun a : A => (a, tt)) >>> pure (fun '(a, _) => (a, c)))
+          (pure (fun a : A => (a, c)))).
+    { apply pure_comp_ext. intro a. reflexivity. }
+    assert (Htail :
+      eqA (pure (fun p : B * unit => let '(b, _) := p in (b, c)))
+          (pure (@fst B unit) >>> pure (fun b => (b, c)))).
+    { symmetry. apply pure_comp_ext. intros [b []]. reflexivity. }
+    etransitivity. { apply comp_proper. 2: reflexivity. symmetry. exact Hhead. }
+    etransitivity. { apply comp_assoc. }
+    etransitivity. { apply comp_proper. 1: reflexivity. symmetry. apply first_natural. }
+    etransitivity.
+    { apply comp_proper. 1: reflexivity. apply comp_proper. 1: reflexivity. exact Htail. }
+    etransitivity.
+    { apply comp_proper. 1: reflexivity. symmetry. apply comp_assoc. }
+    etransitivity.
+    { apply comp_proper. 1: reflexivity. apply comp_proper. 2: reflexivity. apply first_fst. }
+    etransitivity. { apply comp_proper. 1: reflexivity. apply comp_assoc. }
+    etransitivity. { symmetry. apply comp_assoc. }
+    etransitivity. { apply comp_proper. 2: reflexivity. apply pure_comp. }
+    apply comp_id_l.
+  Qed.
+End ArrowCoreFacts.
+
 (* ================================================================= *)
 (** ** ArrowChoice                                                    *)
 (* ================================================================= *)

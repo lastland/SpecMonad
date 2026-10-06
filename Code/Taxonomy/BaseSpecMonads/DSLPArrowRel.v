@@ -17,7 +17,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
 From Incorrectness.Classes Require Import ArrowMonad RelArrowCoherence.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPArrowCore.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPArrowCore SPure.
 
 (* ================================================================= *)
 (** ** The relation an arrow denotes                                 *)
@@ -185,23 +185,12 @@ End Relation.
   @rel_arrow_apply_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr
     RelArrowEq_DSLPArr ArrowApply_DSLPArr RelArrowApply_DSLPArr.
 
-Local Ltac flat :=
-  repeat match goal with
-  | H : exists _, _ |- _ => destruct H
-  | H : _ /\ _ |- _ => destruct H
-  | p : _ * _ |- _ => destruct p
-  | H : (_, _) = (_, _) |- _ => inversion H; clear H
-  | H : ?x = ?y |- _ => first [ subst x | subst y ]
-  | _ => progress cbn in *
-  end.
-
-Local Ltac build :=
-  repeat first [ progress cbn | eassumption | reflexivity | split
-               | eexists (_, _) | eexists ].
-
-Local Ltac rel_simpl :=
-  repeat first [ setoid_rewrite dslpRel_comp | setoid_rewrite dslpRel_pure
-               | setoid_rewrite dslpRel_first | setoid_rewrite dslpRel_app ].
+Local Definition dslpRelDenote :
+  @RelDenote DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+    (@DSLPArrowRel.dslpRel) :=
+  @Build_RelDenote DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+    (@DSLPArrowRel.dslpRel) (@dslpRel_pure) (@dslpRel_comp) (@dslpRel_first)
+    (@dslpRel_left) (@dslpRel_app).
 
 (* ================================================================= *)
 (** ** [bind] on relations, at a fixed input                        *)
@@ -214,8 +203,8 @@ Section Mon.
   Lemma dslpRel_bind {I A B} (m : DSLPArr I A) (k : A -> DSLPArr I B) i b :
     dslpRel (@bind_arrow DSLPArr _ _ I A B m k) i b <-> exists a, dslpRel m i a /\ dslpRel (k a) i b.
   Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id. rel_simpl.
-    split; [ intro H; flat; eauto | intros [a [Hm Hk]]; build ].
+    exact (@SPure.rel_bind DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote I A B m k i b).
   Qed.
 End Mon.
 
@@ -238,10 +227,8 @@ Section St.
     dslpRel (@bind_arrow (stateArrT S DSLPArr) _ _ I A B m k) (i, s) r
     <-> exists a s', dslpRel m (i, s) (a, s') /\ dslpRel (k a) (i, s') r.
   Proof.
-    unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
-    cbn [arr_comp arr_pure arr_first arr_app Arrow_stateArrT ArrowApply_stateArrT].
-    rel_simpl.
-    split; [ intro H; flat; eauto | intros [a [s' [Hm Hk]]]; build ].
+    exact (@SPure.relS_bind DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S I A B m k i s r).
   Qed.
 End St.
 
@@ -258,41 +245,25 @@ Section Opt.
     dslpRel (@arr_comp (optionArrT DSLPArr) _ X Y Z f g) x o <->
     exists o1, dslpRel f x o1 /\ match o1 with Some y => dslpRel g y o | None => o = None end.
   Proof.
-    cbn [arr_comp Arrow_optionArrT].
-    repeat first [ setoid_rewrite dslpRel_comp | setoid_rewrite dslpRel_pure
-                 | setoid_rewrite dslpRel_left ].
-    split.
-    - intros [b [Hf [c [Hc [d [Hd Ho]]]]]]. subst c o. exists b. split; [ exact Hf |].
-      destruct b as [y|], d as [z|[]]; cbn in *; solve [ exact Hd | contradiction | reflexivity ].
-    - intros [[y|] [Hf Hg]].
-      + exists (Some y). split; [ exact Hf |]. exists (inl y). split; [ reflexivity |].
-        exists (inl o). split; [ exact Hg | reflexivity ].
-      + subst o. exists None. split; [ exact Hf |]. exists (inr tt). split; [ reflexivity |].
-        exists (inr tt). split; reflexivity.
+    exact (@SPure.relO_comp DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote X Y Z f g x o).
   Qed.
 
   Lemma dslpRelO_pure {X Y} (h : X -> Y) x o :
     dslpRel (@arr_pure (optionArrT DSLPArr) _ X Y h) x o <-> o = Some (h x).
   Proof.
-    cbn [arr_pure Arrow_optionArrT]. rewrite dslpRel_pure.
-    split; intro H; symmetry; exact H.
+    exact (@SPure.relO_pure DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote X Y h x o).
   Qed.
 
   Lemma dslpRelO_first {X Y C} (f : optionArrT DSLPArr X Y) x (c : C) o :
     dslpRel (@arr_first (optionArrT DSLPArr) _ X Y C f) (x, c) o <->
     exists o1, dslpRel f x o1 /\ o = match o1 with Some y => Some (y, c) | None => None end.
   Proof.
-    cbn [arr_first arr_comp Arrow_optionArrT].
-    rewrite dslpRel_comp. setoid_rewrite dslpRel_first. setoid_rewrite dslpRel_pure.
-    split.
-    - intros [[o1 c'] [[Hf Hc] Ho]]. cbn in *. subst. exists o1. split; [ exact Hf |].
-      destruct o1; reflexivity.
-    - intros [o1 [Hf ->]]. exists (o1, c). cbn. split; [ exact (conj Hf eq_refl) |].
-      destruct o1; reflexivity.
+    exact (@SPure.relO_first DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote X Y C f x c o).
   Qed.
 End Opt.
-
-Local Ltac simp_in H := cbv beta iota delta [state_shuffle_in state_shuffle_out swap] in H.
 
 Section StExc.
   Variable S : Type.
@@ -301,38 +272,32 @@ Section StExc.
   Lemma dslpRelE_comp {X Y Z} (f : T X Y) (g : T Y Z) p o :
     dslpRel (@arr_comp T _ X Y Z f g) p o <->
     exists o1, dslpRel f p o1 /\ match o1 with Some q => dslpRel g q o | None => o = None end.
-  Proof. exact (dslpRelO_comp f g p o). Qed.
+  Proof.
+    exact (@SPure.relE_comp DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S X Y Z f g p o).
+  Qed.
 
   Lemma dslpRelE_pure {X Y} (h : X -> Y) x s o :
     dslpRel (@arr_pure T _ X Y h) (x, s) o <-> o = Some (h x, s).
-  Proof. exact (dslpRelO_pure _ (x, s) o). Qed.
+  Proof.
+    exact (@SPure.relE_pure DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S X Y h x s o).
+  Qed.
 
   Lemma dslpRelE_first {X Y C} (f : T X Y) x (c : C) s o :
     dslpRel (@arr_first T _ X Y C f) ((x, c), s) o <->
     exists o1, dslpRel f (x, s) o1 /\
       o = match o1 with Some (y, s') => Some ((y, c), s') | None => None end.
   Proof.
-    unfold arr_first at 1; cbn [Arrow_stateArrT].
-    rewrite dslpRelO_comp. split.
-    - intros [o1 [H1 H2]]. apply dslpRelO_pure in H1. subst o1. simp_in H2.
-      apply dslpRelO_comp in H2. destruct H2 as [o2 [H2 H3]].
-      apply dslpRelO_first in H2. destruct H2 as [o3 [H3' ->]].
-      exists o3. split; [ exact H3' |].
-      destruct o3 as [[y s']|]; simp_in H3; [ apply dslpRelO_pure in H3 |]; exact H3.
-    - intros [o1 [Hf ->]]. exists (Some ((x, s), c)). split; [ apply dslpRelO_pure; reflexivity |].
-      apply dslpRelO_comp. exists (match o1 with Some y => Some (y, c) | None => None end).
-      split; [ apply dslpRelO_first; exists o1; split; [ exact Hf | reflexivity ] |].
-      destruct o1 as [[y s']|]; [ apply dslpRelO_pure |]; reflexivity.
+    exact (@SPure.relE_first DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S X Y C f x c s o).
   Qed.
 
   Lemma dslpRelE_app {X Y} (f : T X Y) x s o :
     dslpRel (@arr_app T _ _ X Y) ((f, x), s) o <-> dslpRel f (x, s) o.
   Proof.
-    unfold arr_app at 1; cbn [ArrowApply_stateArrT].
-    rewrite dslpRelO_comp. split.
-    - intros [o1 [H1 H2]]. apply dslpRelO_pure in H1. subst o1. exact (proj1 (dslpRel_app (f, (x, s)) o) H2).
-    - intro H. exists (Some (f, (x, s))). split; [ apply dslpRelO_pure; reflexivity |].
-      exact (proj2 (dslpRel_app (f, (x, s)) o) H).
+    exact (@SPure.relE_app DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S X Y f x s o).
   Qed.
 
   Lemma dslpRelE_bind {I A B} (m : T I A) (k : A -> T I B) i s o :
@@ -340,11 +305,8 @@ Section StExc.
     <-> exists o1, dslpRel m (i, s) o1 /\
           match o1 with Some (a, s') => dslpRel (k a) (i, s') o | None => o = None end.
   Proof.
-    exact (@rel_state_option_bind_fields DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
-      (@dslpRel) (@dslpRel_pure) (@dslpRel_comp)
-      (fun X Y C f a c b d => dslpRel_first f (a, c) (b, d))
-      (@dslpRel_left) (fun X Y f a b => dslpRel_app (f, a) b)
-      S I A B m k i s o).
+    exact (@SPure.relE_bind DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S I A B m k i s o).
   Qed.
 End StExc.
 
@@ -352,5 +314,8 @@ Section StExcRet.
   Variable S : Type.
   Lemma dslpRelE_ret {I A} (a : A) i s o :
     dslpRel (@ret_arrow (stateArrT S (optionArrT DSLPArr)) _ I A a) (i, s) o <-> o = Some (a, s).
-  Proof. unfold ret_arrow. cbn [arr_pure Arrow_stateArrT]. rewrite dslpRelO_pure. reflexivity. Qed.
+  Proof.
+    exact (@SPure.relE_pure DSLPArr Arrow_DSLPArr ArrowChoice_DSLPArr ArrowApply_DSLPArr
+      (@DSLPArrowRel.dslpRel) dslpRelDenote S I A (fun _ => a) i s o).
+  Qed.
 End StExcRet.

@@ -8,6 +8,11 @@ Parent: [Code](../CONTEXT.md). Conventions: [CLAUDE.md](../../CLAUDE.md).
 first), and `first`; `second`, split, and fanout are derived. `ArrowEq` selects
 an equivalence, not necessarily Leibniz equality. `ArrowLaws` includes product
 naturality and proper composition/first. Choice has sum laws and proper left.
+The core helpers `first_constant` and `pure_comp_ext` take ordinary pure-function
+congruence explicitly, so callers can supply congruence independently of
+application laws. `arr_pure_ext` supplies the functional-extensionality-based
+form; `ArrowApplyFacts.pure_ext` derives the same congruence constructively
+from application coherence.
 
 `ArrowApplyLaws` has static application, `app_unit`, `app_precompose`,
 `app_postcompose`, and pair-valued `app_ext`: both the stored arrow's selected
@@ -15,6 +20,8 @@ equality and equality of its argument matter. Main compatibility corollaries
 `app_pair`, `app_post`, and the curried `app_*_at` forms remain available.
 The option and state transformers lift this full contract algebraically.
 [ArrowApplyFacts.v](ArrowApplyFacts.v) derives extensional reasoning;
+its `app_constant` needs only the fixed-arrow application equation alongside
+core laws. The dynamic-pure fact `app_constant_unit` uses application coherence.
 [ArrowMonad.v](ArrowMonad.v) defines operations and laws at every fixed input
 `I`, with explicit `Eq1_Arrow HE I`. `bind_arrow_unit` remains a corollary.
 

@@ -5,6 +5,28 @@
 
 From Incorrectness.Classes Require Import Arrow.
 
+Section StaticApplicationFacts.
+  Context {arr : Type -> Type -> Type}
+    `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}
+    `{HE : ArrowEq arr} `{HL : @ArrowLaws arr HA HE}.
+
+  (** Static application at a constant input needs only the equation for
+      the fixed arrow, not a complete application-law dictionary. *)
+  Lemma app_constant {X A B} (f : arr A B) (a : A) :
+    @arrow_eq arr HE A B
+      (arr_comp (arr_pure (fun a => (f, a))) arr_app) f ->
+    @arrow_eq arr HE X B
+      (arr_comp (arr_pure (fun _ : X => (f, a))) arr_app)
+      (arr_comp (arr_pure (fun _ : X => a)) f).
+  Proof.
+    intro H. symmetry.
+    etransitivity. { apply comp_proper. 1: reflexivity. symmetry. exact H. }
+    etransitivity. { symmetry. apply comp_assoc. }
+    apply comp_proper. 2: reflexivity.
+    etransitivity. { apply pure_comp. } reflexivity.
+  Qed.
+End StaticApplicationFacts.
+
 Section ArrowApplyFacts.
   Context {arr : Type -> Type -> Type}
     `{HA : Arrow arr} `{HAA : @ArrowApply arr HA}

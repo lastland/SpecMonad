@@ -7,11 +7,16 @@ Parent: [Classes context](../CONTEXT.md). Shared proof conventions:
 
 [ArrowMonadRegression.v](ArrowMonadRegression.v) protects the generic
 arrow-derived monad and its application-law contract. It imports
-[Arrow.v](../Arrow.v), [ArrowMonad.v](../ArrowMonad.v), ITree's monad laws,
+[Arrow.v](../Arrow.v), [ArrowApplyFacts.v](../ArrowApplyFacts.v),
+[ArrowMonad.v](../ArrowMonad.v), ITree's monad laws,
 and Coq equality infrastructure, without importing Taxonomy carriers.
 
 ## What the regression establishes
 
+- `CoreFactDependencies` checks `first_constant` and `pure_comp_ext` with
+  core laws and explicit pure congruence, without application operations or
+  laws. `StaticApplicationDependencies` checks constant application with
+  only its fixed-arrow equation and core laws, without application laws.
 - `WrongIndex.t A B := (bool -> A) -> bool -> B` supplies an arrow with
   proved core laws and an application operation that selects the stored
   arrow at `negb i`.

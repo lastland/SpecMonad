@@ -1,4 +1,3 @@
-From Coq Require Import FunctionalExtensionality.
 From Incorrectness.Classes Require Import Arrow.
 From Incorrectness.Classes.StateArrowT Require Import Core.
 
@@ -56,8 +55,9 @@ Section StateArrowTApplyLaws.
     set (eval := fun '(a, b) => f a b).
     assert (Hstored : forall a,
       eqA (pure (f a)) (pair a >>> pure eval)).
-    { intro a. symmetry. etransitivity. { apply pcomp. }
-      apply arr_pure_ext. intro b. reflexivity. }
+    { intro a. symmetry.
+      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      intro b. reflexivity. }
     assert (Hinputs :
       eqA (first (pure (fun a => pure (f a))) >>> app)
           (first (pure (fun a => pair a >>> pure eval)) >>> app)).
@@ -91,9 +91,9 @@ Section StateArrowTApplyLaws.
   Proof.
     cbn [arr_pure arr_app Arrow_stateArrT ArrowApply_stateArrT].
     etransitivity. { symmetry. apply cassoc. }
-    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
     apply cprop. 2: reflexivity.
-    apply arr_pure_ext. intros [x s]. destruct (u x). reflexivity.
+    apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+    intros [x s]. destruct (u x). reflexivity.
   Qed.
 
   Local Lemma state_first_pure_app {A B C}
@@ -108,9 +108,9 @@ Section StateArrowTApplyLaws.
     { apply cprop. 1: reflexivity.
       apply cprop. 2: reflexivity. apply fpure. }
     etransitivity. { symmetry. apply cassoc. }
-    etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
     apply cprop. 2: reflexivity.
-    apply arr_pure_ext. intros [[a b] s]. reflexivity.
+    apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+    intros [[a b] s]. reflexivity.
   Qed.
 
   (** Moving the state beside the argument commutes with [second]. *)
@@ -123,8 +123,9 @@ Section StateArrowTApplyLaws.
           (pure (@assoc_prod C A S) >>> pure (@swap C (A * S)))).
     { cbn [arr_pure Arrow_stateArrT].
       etransitivity. { apply pcomp. }
-      symmetry. etransitivity. { apply pcomp. }
-      apply arr_pure_ext. intros [[c a] s]. reflexivity. }
+      symmetry.
+      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      intros [[c a] s]. reflexivity. }
     assert (Htail :
       eqA (pure (@state_shuffle_out S B C) >>>
             (spure (@swap B C) >>> pure (@assoc_prod C B S)))
@@ -132,8 +133,8 @@ Section StateArrowTApplyLaws.
     { cbn [arr_pure Arrow_stateArrT].
       etransitivity.
       { apply cprop. 1: reflexivity. apply pcomp. }
-      etransitivity. { apply pcomp. }
-      apply arr_pure_ext. intros [[b s] c]. reflexivity. }
+      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      intros [[b s] c]. reflexivity. }
     change (eqA
       ((spure (@swap C A) >>>
           ((pure (@state_shuffle_in S A C) >>>
@@ -170,7 +171,7 @@ Section StateArrowTApplyLaws.
       etransitivity. { apply state_pure_app. }
       transitivity (pure (fun p : A * S => (f, p)) >>> app).
       + apply cprop. 2: reflexivity.
-        apply arr_pure_ext. intros [a s]. reflexivity.
+        apply (@Arrow.arr_pure_ext arr HA HE). intros [a s]. reflexivity.
       + apply alaw.
     - (* app_unit *)
       intros A B.
@@ -180,9 +181,9 @@ Section StateArrowTApplyLaws.
       etransitivity. { apply state_first_pure_app. }
       etransitivity.
       { apply cprop. 1: reflexivity. apply app_pure. }
-      etransitivity. { apply pcomp. }
       unfold arr_pure, Arrow_stateArrT.
-      apply arr_pure_ext. intros [[a b] s]. reflexivity.
+      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      intros [[a b] s]. reflexivity.
     - (* app_precompose *)
       intros A B C g.
       change (eqA

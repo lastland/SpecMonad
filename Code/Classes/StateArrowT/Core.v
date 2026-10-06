@@ -73,15 +73,6 @@ Section StateArrowTEqLaws.
     arrow_eq_equiv := fun A B => @arrow_eq_equiv arr _ (A * S) (B * S)
   }.
 
-  (** Extensional equality of pure functions lifts to [arrow_eq]. *)
-  Local Lemma arr_pure_ext {A B} (f g : A -> B) :
-    (forall x, f x = g x) ->
-    @arrow_eq arr _ A B (@arr_pure arr _ _ _ f) (@arr_pure arr _ _ _ g).
-  Proof.
-    intro Hext. replace g with f by (extensionality x; apply Hext).
-    reflexivity.
-  Qed.
-
   (** The state shuffles compose to identity (out then in). *)
   Local Lemma shuffle_cancel (A C : Type) :
     @arrow_eq arr _ ((A * S) * C) ((A * S) * C)
@@ -90,19 +81,9 @@ Section StateArrowTEqLaws.
         (@arr_pure arr _ _ _ (@state_shuffle_in S A C)))
       (@arr_id arr _ _).
   Proof.
-    etransitivity. { apply pure_comp. }
-    apply arr_pure_ext. intros [[a s0] c]. reflexivity.
+    apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+    intros [[a s0] c]. reflexivity.
   Qed.
-
-  (** Tactic: prove [arrow_eq (arr_pure f) (arr_pure g)] by computation. *)
-  Create HintDb state_ops.
-  #[local] Hint Unfold state_shuffle_in state_shuffle_out assoc_prod : state_ops.
-
-  Local Ltac pure_ext :=
-    apply arr_pure_ext; intro;
-    autounfold with state_ops;
-    repeat match goal with [p : _ * _ |- _] => destruct p end;
-    simpl; reflexivity.
 
   #[global]
   Instance ArrowLaws_stateArrT : ArrowLaws (stateArrT S arr).
@@ -121,14 +102,16 @@ Section StateArrowTEqLaws.
     - (* comp_assoc *)
       apply comp_assoc.
     - (* pure_comp *)
-      etransitivity. { apply pure_comp. } pure_ext.
+      apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+      intros [a s]. reflexivity.
     - (* first_pure *)
       etransitivity.
       { apply comp_proper. 1: reflexivity.
         etransitivity.
         { apply comp_proper. { apply first_pure. } 1: reflexivity. }
         apply pure_comp. }
-      etransitivity. { apply pure_comp. } pure_ext.
+      apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+      intros [[a c] s]. reflexivity.
     - (* first_comp *)
       (* Goal: si >>> first(f>>>g) >>> so ≃ (si >>> first f >>> so) >>> (si >>> first g >>> so) *)
       symmetry.
@@ -164,16 +147,16 @@ Section StateArrowTEqLaws.
           (@arr_pure arr _ _ _ (@state_shuffle_out S B C))
           (@arr_pure arr _ _ _ (fun '(a, s0) => (fst a, s0))))
         (@arr_pure arr _ _ _ fst)).
-      { etransitivity. { apply pure_comp. }
-        apply arr_pure_ext. intros [[b s0] c]. reflexivity. }
+      { apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[b s0] c]. reflexivity. }
       (* Pre-prove: si >>> pure fst ≃ pure fst_s *)
       assert (Hsi_fst : @arrow_eq arr _ ((A * C) * S) (A * S)
         (@arr_comp arr _ _ _ _
           (@arr_pure arr _ _ _ (@state_shuffle_in S A C))
           (@arr_pure arr _ _ _ fst))
         (@arr_pure arr _ _ _ (fun '(a, s0) => (fst a, s0)))).
-      { etransitivity. { apply pure_comp. }
-        apply arr_pure_ext. intros [[a0 c0] s0]. reflexivity. }
+      { apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[a0 c0] s0]. reflexivity. }
       (* Right-associate LHS *)
       etransitivity. { apply comp_assoc. }
       etransitivity.
@@ -206,8 +189,9 @@ Section StateArrowTEqLaws.
         etransitivity.
         { apply comp_proper. 2: reflexivity. apply first_pure. }
         etransitivity. { apply pure_comp. }
-        symmetry. etransitivity. { apply pure_comp. }
-        apply arr_pure_ext. intros [[[b s0] c] d]. reflexivity. }
+        symmetry.
+        apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[[b s0] c] d]. reflexivity. }
       (* Pre-prove: head collapse *)
       assert (Hhead : @arrow_eq arr _ (((A * C) * D) * S) (((A * S) * C) * D)
         (arr_comp (arr_pure (@state_shuffle_in S (A * C) D))
@@ -215,8 +199,8 @@ Section StateArrowTEqLaws.
         (arr_pure (fun '(((a, c), d), s) => (((a, s), c), d)))).
       { etransitivity.
         { apply comp_proper. 1: reflexivity. apply first_pure. }
-        etransitivity. { apply pure_comp. }
-        apply arr_pure_ext. intros [[[a0 c0] d0] s0]. reflexivity. }
+        apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[[a0 c0] d0] s0]. reflexivity. }
       (* Pre-prove: head >>> assoc = rhs_head *)
       assert (Hhead_assoc : @arrow_eq arr _ (((A * C) * D) * S) ((A * S) * (C * D))
         (arr_comp
@@ -225,8 +209,9 @@ Section StateArrowTEqLaws.
         (arr_comp (arr_pure (fun '(a, s0) => (assoc_prod a, s0)))
           (arr_pure (@state_shuffle_in S A (C * D))))).
       { etransitivity. { apply pure_comp. }
-        symmetry. etransitivity. { apply pure_comp. }
-        apply arr_pure_ext. intros [[[a0 c0] d0] s0]. reflexivity. }
+        symmetry.
+        apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[[a0 c0] d0] s0]. reflexivity. }
       (* Step 1: Right-associate LHS *)
       etransitivity. { apply comp_assoc. }
       etransitivity.
@@ -309,16 +294,18 @@ Section StateArrowTEqLaws.
         (arr_comp (arr_pure (fun '(bs, c) => (bs, g c)))
           (arr_pure (@state_shuffle_out S B D)))).
       { etransitivity. { apply pcomp. }
-        symmetry. etransitivity. { apply pcomp. }
-        apply arr_pure_ext. intros [[b s] c]. reflexivity. }
+        symmetry.
+        apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[b s] c]. reflexivity. }
       assert (Hhead : @arrow_eq arr _ ((A * C) * S) ((A * S) * D)
         (arr_comp (arr_pure (@state_shuffle_in S A C))
           (arr_pure (fun '(as_, c) => (as_, g c))))
         (arr_comp (arr_pure (fun '(ac, s) => (let '(a, c) := ac in (a, g c), s)))
           (arr_pure (@state_shuffle_in S A D)))).
       { etransitivity. { apply pcomp. }
-        symmetry. etransitivity. { apply pcomp. }
-        apply arr_pure_ext. intros [[a c] s]. reflexivity. }
+        symmetry.
+        apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[a c] s]. reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity.
       { apply cprop. 1: reflexivity. apply cassoc. }

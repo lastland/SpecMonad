@@ -15,6 +15,9 @@ base application. [ArrowLaws.v](ArrowLaws.v) and
 [ArrowApplyLaws.v](ArrowApplyLaws.v) proves the complete five-field contract,
 including dynamic precomposition, from base arrow/choice/application laws.
 These proofs inspect no concrete carrier; use explicit base dictionaries.
+The law proofs reuse core pure-map fusion. Fixed-companion and constant
+application steps reuse shared helpers with base-derived congruence and
+application equations while constructing the transformed application laws.
 There is no generic loop lift. `None`'s exception/divergence interpretation
 belongs to a computation or observation, not this transformer.
 
