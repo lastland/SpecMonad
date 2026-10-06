@@ -37,46 +37,71 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   `relASP` / `relDSLP`, their round trips, and relational rewrite facts all
   live in this arrow layer. `arrow_eq` is pointwise transformer iff;
   `PureASPostArr_eq` / `PureDSLPostArr_eq` separately recover bundled equality.
-- [RelSPPairArr.v](RelSPPairArr.v) is the **coupled** presentation:
-  `RelSPPair` stores `spost` and `rel`; `PureRelASPPairArr` / `PureRelDSLPPairArr`
-  require their agreement with `asp` / `dslp`. ASP asks for some predecessor in
-  the precondition; DSLP requires every predecessor to satisfy it. At an
-  unreachable output ASP is false and DSLP is vacuously true. Determinism alone
-  does not identify these readings: a many-to-one function can distinguish them.
-- [SPostArrEquiv.v](SPostArrEquiv.v) proves both round trips for
-  `asp_to_coupled` / `asp_from_coupled` and the DSLP counterparts. These maps
-  preserve the transformer and all five operations: pure, composition, first,
-  choice (`left`), and application. Application preservation also converts the
-  arrow stored in the input. [ArrowMorphism.v](../../Classes/ArrowMorphism.v)
-  supplies the exact option/state lifts, using explicit `*_leibniz` law
-  dictionaries from `SPostArr.v`. Qualify shared names such as `ASPostArr`
-  with `SPostArr` or `RelSPPairArr` when both presentations are imported.
+- [RelSPostArr.v](RelSPostArr.v) computes two readings of the existing
+  `Rel A B := A -> B -> Prop` carrier: `asp R P b := exists a, P a /\ R a b`
+  and `dslp R P b := forall a, R a b -> P a`. The arrow value is the relation,
+  not a relation/transformer pair or a new wrapper. At an unreachable output
+  ASP is false and DSLP is vacuously true; an empty input type has the same
+  effect. Determinism alone does not identify these readings: a many-to-one
+  function can distinguish them. The file retains `asp_inv` / `dslp_inv`,
+  their recovery facts, and the DSP/ASLP characterizations.
+- [SPostArrEquiv.v](SPostArrEquiv.v) uses `ASP_rel` / `relASP` and
+  `DSLP_rel` / `relDSLP` directly, with round trips `asp_from_to` /
+  `asp_to_from` and `dslp_from_to` / `dslp_to_from`. These use the selected
+  property-only `arrow_eq` or `Rel_eq`, not ordinary equality. The maps
+  preserve each transformer reading and all five operations: pure,
+  composition, first, choice (`left`), and application, under the destination
+  equality. Application preservation also converts the arrow stored in the
+  input. The packaged morphisms are
+  `asp_to_rel_morphism` / `asp_from_rel_morphism` and their DSLP counterparts.
+  The module aliases are `PropertySP := SPostArr` and `RelSP := RelSPostArr`.
+  See the [README equivalence section](../README.md#equivalence-with-rel) for
+  the public option/state-over-option maps and their morphism theorems.
 
-Both SP presentations provide `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`
-by instantiating the shared semantic packages in
+## Laws, stacks, and monads
+
+The property-only ASP and DSLP carriers provide `ArrowLaws`, `ArrowChoiceLaws`,
+and `ArrowApplyLaws` by instantiating the shared semantic packages in
 [RelArrowCoherence.v](../../Classes/RelArrowCoherence.v).
 `RelArrow`, `RelArrowChoice`, and `RelArrowApply` describe operation preservation;
 `RelArrowEq` connects the chosen equality to pointwise relation equivalence.
-The property-only reading is `ASP_rel` / `DSLP_rel`, with operation facts phrased
-using the existing operators in `Rel.v`. The coupled reading is
-`rel (proj1_sig f)`, with definitional operation facts and its existing Leibniz
-equality. Shared proofs supply composition/first/choice congruence and `app_ext`,
-including replacement of semantically equivalent arrows stored in inputs.
+The recovered relations are `ASP_rel` / `DSLP_rel`, with operation facts phrased
+using the existing operators in `Rel.v`. Shared proofs supply
+composition/first/choice congruence and `app_ext`, including replacement of
+semantically equivalent arrows stored in inputs.
 Relational-only helpers remain independent of equality reflection.
+
+The relational presentation reuses `Arrow_Rel`, `ArrowChoice_Rel`,
+`ArrowApply_Rel`, and their laws from [Rel.v](Rel.v). Its selected equality is
+`Rel_eq` (pointwise relation iff), not Leibniz equality. The existing
+`optionRel` and `progRelArr` stacks serve both SP readings; `RelSPostArr.v`
+adds no carrier, arrow instance, or stack law package.
+
+[ArrowMorphism.v](../../Classes/ArrowMorphism.v) lifts the direct-Rel morphisms
+through option and state. The existing record takes explicit source and
+destination `ArrowEq` dictionaries, requires `morphism_proper`, and states
+its five preservation fields under the destination `arrow_eq`. Inverse and
+lift proofs use the existing selected core/choice/application laws, not
+Leibniz law dictionaries or relational equality reflection. See the
+[Classes contract](../../Classes/CONTEXT.md#contracts-and-constructions) for
+the precise law requirements. All public base and lifted round trips retain
+the selected semantic equalities.
 
 `RelArrowCoherence.v` also supplies base application coherence and the
 state-over-option relational bind formula. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
 [StateArrowT.v](../../Classes/StateArrowT.v) lift the full contract generically.
 The state-over-option stack maps `A * S` to `option (B * S)`; propagated `None`
-carries no final state. `ASPostArr S` / `DSLPostArr S` fix its input to `unit`.
+carries no final state. On the property-only side, `ASPostArr S` /
+`DSLPostArr S` fix its input to `unit`; the relational counterpart is
+`progRelArr S`.
 
-SPostArrMonad supplies selected generic dictionaries, recovered relations,
-observation runners, and the ASP-to-DSLP monad map. Classes/ArrowMonad owns
-generic return/bind and laws at arbitrary fixed input; unit-input clients
-instantiate these rather than maintaining a duplicate generic implementation.
-OptionLoop studies loop transport and obstructions separately from monad laws.
-RelArrowCoherence derives application coherence from relational operation
-semantics. Transformer law proofs are generic, not concrete carrier inspections.
+[SPostArrMonad.v](SPostArrMonad.v) exposes the named `Monad_ASPostArr` /
+`Monad_DSLPostArr` dictionaries and `runASP` / `runDSLP` for observations.
+They use the exact `Monad_Arrow` operations from
+[ArrowMonad.v](../../Classes/ArrowMonad.v), whose laws hold for any fixed input
+type under `ArrowLaws` and `ArrowApplyLaws`. Effects are stacked before fixing
+the input. `asp_to_dslp` preserves the recovered relation and return/bind while
+changing its reading; each property-only/`Rel` equivalence preserves its reading.
 
 Main's ASPArr/DSLPArr/DSPArr/ASLPArr in BaseSpecMonads are retained distinct
 public bundles. ASP/DSLP and the property-only presentation now select
@@ -87,10 +112,19 @@ proof fields differ. Canonical-carrier consolidation is not yet done.
 when feedback ranges over all types, including `Empty_set`. Empty feedback hides
 the difference between an empty prefix and one returning `None`, while option
 composition outside the loop distinguishes them. `SPostArrEquiv.v` transports
-this obstruction to property-only option ASP and DSLP arrows. Its scope is this
-unrestricted law and these operations, rather than every possible feedback design.
-The no-lawful-loop corollaries bridge pointwise laws to the exact equalities
-used by the transport theorem with `PureASPostArr_eq` / `PureDSLPostArr_eq`.
+this obstruction through the direct-Rel option maps to property-only option ASP
+and DSLP arrows. Its scope is this unrestricted law and these operations,
+rather than every possible feedback design.
+The public `optionASP_no_left_tightening` / `optionDSLP_no_left_tightening`
+theorems and `optionASP_no_lawful_ArrowLoop` / `optionDSLP_no_lawful_ArrowLoop`
+corollaries use the property-only pointwise equalities.
+
+The local loop transport uses existing property-only extensionality to turn
+equivalence of recovered relations into equality of source arrows for one
+substitution under the loop. This is needed because an arbitrary `ArrowLoop`
+has no loop-congruence field. The projection-preservation facts remain
+semantic; this local step neither reflects `Rel_eq` into equality of relations
+nor changes the public obstruction's scope.
 
 ## Orders, boundaries, and clients
 

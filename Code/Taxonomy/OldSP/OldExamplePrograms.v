@@ -9,7 +9,7 @@
 From ExtLib Require Import MonadState MonadExc StateMonad OptionMonad.
 From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.Arrows Require Import RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import RelSPostArr.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 From Incorrectness.Taxonomy.OldSP Require Import OldSPObservations.
 

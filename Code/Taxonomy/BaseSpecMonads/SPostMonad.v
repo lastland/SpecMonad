@@ -20,7 +20,7 @@
     Monotonicity lets the proof replace a precondition by an equivalent one.
 
     Wrapped in [SPM] to distinguish this unary presentation from the binary
-    arrows in [Arrows/SPostArr.v] and [Arrows/RelSPPairArr.v].
+    arrows in [Arrows/SPostArr.v] and [Arrows/RelSPostArr.v].
     [SPPredicateTransformers.v] defines the unrestricted [SPPure] carrier. *)
 
 From ITree Require Import Basics.Monad.

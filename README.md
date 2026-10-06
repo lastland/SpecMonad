@@ -51,8 +51,10 @@ What is formalised:
   Pure and reader-indexed variants are also defined.
 
 - **Property-only ASP and DSLP arrows**, with lawful option/state stacks,
-  full application coherence, and operation-preserving equivalence to the
-  coupled relation/transformer presentation. See
+  full application coherence, and operation-preserving equivalences to the
+  existing `Rel` carrier under the selected pointwise equalities.
+  [`RelSPostArr.v`](Code/Taxonomy/Arrows/RelSPostArr.v)
+  computes the two readings of a relation, reusing `Rel`'s laws and stacks. See
   [`SPostArr.v`](Code/Taxonomy/Arrows/SPostArr.v) and the checked
   [examples](Code/Taxonomy/Arrows/Examples/SPostArrExamples.v).
 

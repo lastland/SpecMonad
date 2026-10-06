@@ -47,7 +47,7 @@ Taxonomy/BaseSpecMonads/RelPrePostMonad.v
 Taxonomy/BaseSpecMonads/SPPredicateTransformers.v
 Taxonomy/Arrows/Rel.v
 Taxonomy/Arrows/SPArr.v
-Taxonomy/Arrows/RelSPPairArr.v
+Taxonomy/Arrows/RelSPostArr.v
 Taxonomy/Arrows/PredicateTransformerProperties.v
 Taxonomy/Arrows/SPostArr.v
 Taxonomy/Arrows/SPostArrMonad.v

@@ -9,7 +9,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
 
 (** Pointwise transformer equivalence is the public equality, including
     for arrows selected at runtime and pointwise-related continuations. *)
@@ -101,73 +101,37 @@ Definition MonadLawsE__nditRelM (S : Type)
   MonadLawsE_stateT S (optionT (optionT (Rel unit))).
 
 (* ================================================================= *)
-(** ** Coupled presentations: option-level dictionaries                *)
+(** ** Relational stack coverage: option and state-over-option        *)
 (* ================================================================= *)
 
-(** These used to be registered (as local/global instances whose bodies
-    were [:= _]) in [RelSPPairArr.v].  They are plain definitions here:
-    resolution must compose [Arrow*_optionArrT] over the coupled base
-    laws, with no registered per-stack dictionary. *)
+(** The option and state-over-option stacks for both relational SP readings
+    use [optionRel] and [stateArrT S optionRel]. Resolution composes
+    the generic transformer laws over the base [Rel] instances. *)
 
-Module CoupledASP.
+Module RelOption.
 
-  Definition ArrowEq_option : ArrowEq RelSPPairArr.optionASPArr := _.
-  Definition ArrowLaws_option : ArrowLaws RelSPPairArr.optionASPArr := _.
-  Definition ArrowChoiceLaws_option
-    : ArrowChoiceLaws RelSPPairArr.optionASPArr := _.
-  Definition ArrowApplyLaws_option
-    : ArrowApplyLaws RelSPPairArr.optionASPArr := _.
+  Definition ArrowEq_option : ArrowEq optionRel := _.
 
   Section StateOption.
 
     Variable S : Type.
 
     Definition ArrowEq_state
-      : ArrowEq (stateArrT S RelSPPairArr.optionASPArr) := _.
+      : ArrowEq (stateArrT S optionRel) := _.
     Definition ArrowLaws_state
-      : ArrowLaws (stateArrT S RelSPPairArr.optionASPArr) := _.
+      : ArrowLaws (stateArrT S optionRel) := _.
     Definition ArrowChoice_state
-      : ArrowChoice (stateArrT S RelSPPairArr.optionASPArr) := _.
+      : ArrowChoice (stateArrT S optionRel) := _.
     Definition ArrowApply_state
-      : ArrowApply (stateArrT S RelSPPairArr.optionASPArr) := _.
+      : ArrowApply (stateArrT S optionRel) := _.
     Definition ArrowChoiceLaws_state
-      : ArrowChoiceLaws (stateArrT S RelSPPairArr.optionASPArr) := _.
+      : ArrowChoiceLaws (stateArrT S optionRel) := _.
     Definition ArrowApplyLaws_state
-      : ArrowApplyLaws (stateArrT S RelSPPairArr.optionASPArr) := _.
+      : ArrowApplyLaws (stateArrT S optionRel) := _.
 
   End StateOption.
 
-End CoupledASP.
-
-Module CoupledDSLP.
-
-  Definition ArrowEq_option : ArrowEq RelSPPairArr.optionDSLPArr := _.
-  Definition ArrowLaws_option : ArrowLaws RelSPPairArr.optionDSLPArr := _.
-  Definition ArrowChoiceLaws_option
-    : ArrowChoiceLaws RelSPPairArr.optionDSLPArr := _.
-  Definition ArrowApplyLaws_option
-    : ArrowApplyLaws RelSPPairArr.optionDSLPArr := _.
-
-  Section StateOption.
-
-    Variable S : Type.
-
-    Definition ArrowEq_state
-      : ArrowEq (stateArrT S RelSPPairArr.optionDSLPArr) := _.
-    Definition ArrowLaws_state
-      : ArrowLaws (stateArrT S RelSPPairArr.optionDSLPArr) := _.
-    Definition ArrowChoice_state
-      : ArrowChoice (stateArrT S RelSPPairArr.optionDSLPArr) := _.
-    Definition ArrowApply_state
-      : ArrowApply (stateArrT S RelSPPairArr.optionDSLPArr) := _.
-    Definition ArrowChoiceLaws_state
-      : ArrowChoiceLaws (stateArrT S RelSPPairArr.optionDSLPArr) := _.
-    Definition ArrowApplyLaws_state
-      : ArrowApplyLaws (stateArrT S RelSPPairArr.optionDSLPArr) := _.
-
-  End StateOption.
-
-End CoupledDSLP.
+End RelOption.
 
 (* ================================================================= *)
 (** ** Double-option application laws                                  *)

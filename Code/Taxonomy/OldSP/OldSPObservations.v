@@ -4,7 +4,7 @@ From Hammer Require Import Tactics.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws StDivExcNonDet.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr SPostArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.
 
@@ -33,28 +33,29 @@ Module OriginalTripleSP.
       end.
 
     (** Angelic strongest postcondition (total). *)
-    Definition obsASP {A} (m : stdivexcnd S A) : ASPostArr S A :=
-      mkASP (obsRel m).
+    Definition obsASP {A} (m : stdivexcnd S A) : SPostArr.ASPostArr S A :=
+      SPostArr.relASP (obsRel m).
 
     (** Demonic strongest liberal postcondition. *)
-    Definition obsDSLP {A} (m : stdivexcnd S A) : DSLPostArr S A :=
-      mkDSLP (obsRel m).
+    Definition obsDSLP {A} (m : stdivexcnd S A) : SPostArr.DSLPostArr S A :=
+      SPostArr.relDSLP (obsRel m).
 
     #[program] Definition obsDSP {A} (m : stdivexcnd S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    spost (obsASP m) pre r /\ spost (obsDSLP m) pre r.
+    SPostArr.getASP (obsASP m) pre r /\ SPostArr.getDSLP (obsDSLP m) pre r.
 
     #[program] Definition obsASLP {A} (m : stdivexcnd S A)
     (pre : unit * S -> Prop) (r : option (A * S)) : Prop :=
-    spost (obsASP m) pre r \/ spost (obsDSLP m) pre r.
+    SPostArr.getASP (obsASP m) pre r \/ SPostArr.getDSLP (obsDSLP m) pre r.
 
     Inductive approximationKind := | Correct | Incorrect.
 
     (** Typeclass for coercing an SP observation result to a predicate
     transformer [(unit * S -> Prop) -> option (A * S) -> Prop]:
     - a plain predicate transformer is the identity;
-    - [ASPostArr S A] and [DSLPostArr S A] (sigma types) have their
-      [spost] extracted;
+    - the property-only [SPostArr.ASPostArr S A] and
+      [SPostArr.DSLPostArr S A] (sigma types) expose their respective
+      readings through [SPostArr.getASP] and [SPostArr.getDSLP];
     - a plain relation [Rel (unit * S) (option (A * S))] is lifted
       angelically via [asp]. *)
     Class AsSPObs {S A : Type} (T : Type) :=
@@ -65,12 +66,12 @@ Module OriginalTripleSP.
       fun obs => obs.
 
     #[global] Instance AsSPObs_ASP {S A} :
-      @AsSPObs S A (ASPostArr S A) :=
-      fun d => spost (proj1_sig d).
+      @AsSPObs S A (SPostArr.ASPostArr S A) :=
+      fun d => SPostArr.getASP d.
     
     #[global] Instance AsSPObs_DSLP {S A} :
-      @AsSPObs S A (DSLPostArr S A) :=
-      fun d => spost (proj1_sig d).
+      @AsSPObs S A (SPostArr.DSLPostArr S A) :=
+      fun d => SPostArr.getDSLP d.
     
     #[global] Instance AsSPObs_Pred {S A} :
       @AsSPObs S A (Rel (unit * S) (option (A * S))) :=
@@ -172,9 +173,9 @@ Section NonDetItObservationSP.
       end.
 
   (** The four strongest-postcondition transformers are *readings* of the
-      single reachability relation [obsRel] — no [ASPostArr]/[RelSPPair]
-      wrapping.  [asp] (angelic) and [dslp] (demonic-liberal) come from
-      [RelSPPairArr.v], as are [spDSP]/[spASLP] (their meet/join). *)
+      single reachability relation [obsRel].  [asp] (angelic) and [dslp]
+      (demonic-liberal) come from [RelSPostArr.v]; [obsDSP] and [obsASLP]
+      take their meet and join below. *)
   Definition obsASP {A} (m : stdivexcnd S A)
     : Rel (S -> Prop) (option (A * S)) := asp (obsRel m).
   Definition obsDSLP {A} (m : stdivexcnd S A)
@@ -1711,7 +1712,7 @@ Qed.
     the precondition must be a *predicate* [S -> Prop] (this is what the
     old, commented-out [ProgSPObs] got wrong: it universally quantified the
     initial state, so [Under] degenerated — cf. [progSP_under_not_point]).
-    The extension along [S] is exactly the [asp] / [dslp] pair of [RelSPPairArr.v]
+    The extension along [S] is exactly the [asp] / [dslp] pair of [RelSPostArr.v]
     applied to [runSP], giving back the four readings verbatim. *)
 Definition spASP {S A} (M : SPStExc S A) : (S -> Prop) -> option (A * S) -> Prop :=
   asp (runSP M).
@@ -2674,7 +2675,7 @@ Qed.
     observation must carry BOTH the additive and the multiplicative
     element, and the two differ only in how the pair is read (meet vs
     join).  This is forced: [dsp = asp /\ dslp] and [aslp = asp \/ dslp]
-    ([RelSPPairArr.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
+    ([RelSPostArr.v]'s [dsp_asp_dslp] / [aslp_asp_dslp]) are the meet and join
     of the two extremes, and neither is an extreme itself.
 
     Note this breaks the [stateT S (optionT base)] shape used elsewhere:

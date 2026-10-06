@@ -1,219 +1,219 @@
-(** * Equivalence of property-only and coupled SP arrows.
+(** * Equivalence of property-only and relational SP arrows.
 
-    The conversions preserve the predicate transformer exactly.  Their
-    operation laws include higher-order application: the arrow stored in
-    an application's input is converted along with the application.
+    The conversions are the recovered relations [ASP_rel] / [DSLP_rel] and
+    the relation constructors [relASP] / [relDSLP] from [SPostArr.v]; the
+    arrow value on the relational side is the existing [Rel] carrier.  The
+    round trips preserve each transformer reading exactly, and all five
+    operations: pure, composition, first, choice ([left]), and application.
+    Application preservation also converts the arrow stored in the input.
 
     The generic machinery imported from [Classes/ArrowMorphism.v] lifts
-    these laws through the existing option and state transformers. *)
+    these laws through the existing option and state transformers.  The
+    [ArrowMorphism] API uses the selected equalities [Rel_eq] and pointwise
+    transformer equivalence, including properness of both maps. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality.
+From Coq Require Import Morphisms.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Classes Require Export ArrowMorphism.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr OptionLoop SPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr OptionLoop SPostArr.
 
 Module PropertySP := SPostArr.
-Module CoupledSP := RelSPPairArr.
+Module RelSP := RelSPostArr.
 
-Local Obligation Tactic := idtac.
-
-(** ** Transformer-preserving conversions *)
-
-#[program] Definition asp_to_coupled {A B}
-  (f : PropertySP.PureASPostArr A B) : CoupledSP.PureRelASPPairArr A B :=
-  CoupledSP.mkRelSPPair (PropertySP.getASP f)
-    (CoupledSP.asp_inv (PropertySP.getASP f)).
-Next Obligation.
-  intros A B f P b. apply PropertySP.ASP_normal_form.
-Qed.
-
-#[program] Definition dslp_to_coupled {A B}
-  (f : PropertySP.PureDSLPostArr A B) : CoupledSP.PureRelDSLPPairArr A B :=
-  CoupledSP.mkRelSPPair (PropertySP.getDSLP f)
-    (CoupledSP.dslp_inv (PropertySP.getDSLP f)).
-Next Obligation.
-  intros A B f P b. apply PropertySP.DSLP_normal_form.
-Qed.
-
-#[program] Definition asp_from_coupled {A B}
-  (f : CoupledSP.PureRelASPPairArr A B) : PropertySP.PureASPostArr A B :=
-  CoupledSP.spost f.
-Next Obligation.
-  intros A B f. split.
-  - intros b H. apply (proj2_sig f) in H. destruct H as [a [H _]]. exact H.
-  - intros I HI p b. split.
-    + intro H. apply (proj2_sig f) in H. destruct H as [a [[i HP] HR]].
-      exists i. apply (proj2_sig f). exists a. auto.
-    + intros [i H]. apply (proj2_sig f) in H. destruct H as [a [HP HR]].
-      apply (proj2_sig f). exists a. split; [exists i; exact HP | exact HR].
-Qed.
-
-#[program] Definition dslp_from_coupled {A B}
-  (f : CoupledSP.PureRelDSLPPairArr A B) : PropertySP.PureDSLPostArr A B :=
-  CoupledSP.spost f.
-Next Obligation.
-  intros A B f. split.
-  - intro b. apply (proj2_sig f). intros a _. constructor.
-  - intros I HI p b. split.
-    + intros H i. apply (proj2_sig f) in H.
-      apply (proj2_sig f). intros a HR. exact (H a HR i).
-    + intro H. apply (proj2_sig f). intros a HR i.
-      specialize (H i). apply (proj2_sig f) in H. exact (H a HR).
-Qed.
-
-Lemma asp_to_coupled_semantics {A B} (f : PropertySP.PureASPostArr A B) :
-  CoupledSP.spost (proj1_sig (asp_to_coupled f)) = PropertySP.getASP f.
-Proof. reflexivity. Qed.
-
-Lemma asp_from_coupled_semantics {A B} (f : CoupledSP.PureRelASPPairArr A B) :
-  PropertySP.getASP (asp_from_coupled f) = CoupledSP.spost (proj1_sig f).
-Proof. reflexivity. Qed.
-
-Lemma dslp_to_coupled_semantics {A B} (f : PropertySP.PureDSLPostArr A B) :
-  CoupledSP.spost (proj1_sig (dslp_to_coupled f)) = PropertySP.getDSLP f.
-Proof. reflexivity. Qed.
-
-Lemma dslp_from_coupled_semantics {A B} (f : CoupledSP.PureRelDSLPPairArr A B) :
-  PropertySP.getDSLP (dslp_from_coupled f) = CoupledSP.spost (proj1_sig f).
-Proof. reflexivity. Qed.
+(** ** Transformer-preserving round trips *)
 
 Theorem asp_from_to {A B} (f : PropertySP.PureASPostArr A B) :
-  asp_from_coupled (asp_to_coupled f) = f.
-Proof. apply PropertySP.PureASPostArr_eq. intros P b. reflexivity. Qed.
+  @arrow_eq _ PropertySP.ArrowEq_PureASPostArr A B
+    (relASP (PropertySP.ASP_rel f)) f.
+Proof. apply PropertySP.arrow_eq_relASP_ASP_rel. Qed.
 
-Theorem asp_to_from {A B} (f : CoupledSP.PureRelASPPairArr A B) :
-  asp_to_coupled (asp_from_coupled f) = f.
-Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P b. reflexivity. Qed.
+Theorem asp_to_from {A B} (R : Rel A B) :
+  Rel_eq (@PropertySP.ASP_rel A B (relASP R)) R.
+Proof. intros a b. apply PropertySP.ASP_rel_relASP. Qed.
 
 Theorem dslp_from_to {A B} (f : PropertySP.PureDSLPostArr A B) :
-  dslp_from_coupled (dslp_to_coupled f) = f.
-Proof. apply PropertySP.PureDSLPostArr_eq. intros P b. reflexivity. Qed.
+  @arrow_eq _ PropertySP.ArrowEq_PureDSLPostArr A B
+    (relDSLP (PropertySP.DSLP_rel f)) f.
+Proof. apply PropertySP.arrow_eq_relDSLP_DSLP_rel. Qed.
 
-Theorem dslp_to_from {A B} (f : CoupledSP.PureRelDSLPPairArr A B) :
-  dslp_to_coupled (dslp_from_coupled f) = f.
-Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. reflexivity. Qed.
+Theorem dslp_to_from {A B} (R : Rel A B) :
+  Rel_eq (@PropertySP.DSLP_rel A B (relDSLP R)) R.
+Proof. intros a b. apply PropertySP.DSLP_rel_relDSLP. Qed.
+
+(** ** Transformer readings agree on both sides *)
+
+Theorem asp_from_rel_reading {A B} (R : Rel A B) P b :
+  PropertySP.getASP (relASP R) P b <-> RelSP.asp R P b.
+Proof. apply PropertySP.getASP_relASP. Qed.
+
+Theorem asp_to_rel_reading {A B} (f : PropertySP.PureASPostArr A B) P b :
+  RelSP.asp (PropertySP.ASP_rel f) P b <-> PropertySP.getASP f P b.
+Proof. rewrite PropertySP.ASP_normal_form. reflexivity. Qed.
+
+Theorem dslp_from_rel_reading {A B} (R : Rel A B) P b :
+  PropertySP.getDSLP (relDSLP R) P b <-> RelSP.dslp R P b.
+Proof. apply PropertySP.getDSLP_relDSLP. Qed.
+
+Theorem dslp_to_rel_reading {A B} (f : PropertySP.PureDSLPostArr A B) P b :
+  RelSP.dslp (PropertySP.DSLP_rel f) P b <-> PropertySP.getDSLP f P b.
+Proof. rewrite PropertySP.DSLP_normal_form. reflexivity. Qed.
 
 (** ** Base operation preservation *)
 
-Local Notation CA := CoupledSP.Arrow_PureRelASPPairArr.
-Local Notation CD := CoupledSP.Arrow_PureRelDSLPPairArr.
-Local Notation CAC := CoupledSP.ArrowChoice_PureRelASPPairArr.
-Local Notation CDC := CoupledSP.ArrowChoice_PureRelDSLPPairArr.
-Local Notation CAA := CoupledSP.ArrowApply_PureRelASPPairArr.
-Local Notation CDA := CoupledSP.ArrowApply_PureRelDSLPPairArr.
+Theorem asp_to_rel_pure {A B} (h : A -> B) :
+  Rel_eq (@PropertySP.ASP_rel A B (PropertySP.arrASP h))
+    (@arr_pure Rel Arrow_Rel A B h).
+Proof. intros a b. apply PropertySP.ASP_rel_pure. Qed.
 
-Theorem asp_to_coupled_pure {A B} (h : A -> B) :
-  asp_to_coupled (PropertySP.arrASP h) = @arr_pure _ CA A B h.
-Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P b. reflexivity. Qed.
-
-Theorem asp_to_coupled_comp {A B C}
+Theorem asp_to_rel_comp {A B C}
   (f : PropertySP.PureASPostArr A B) (g : PropertySP.PureASPostArr B C) :
-  asp_to_coupled (PropertySP.compASP f g) =
-  @arr_comp _ CA A B C (asp_to_coupled f) (asp_to_coupled g).
-Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P c. reflexivity. Qed.
+  Rel_eq (@PropertySP.ASP_rel A C (PropertySP.compASP f g))
+    (@arr_comp Rel Arrow_Rel A B C (PropertySP.ASP_rel f) (PropertySP.ASP_rel g)).
+Proof. intros a c. apply PropertySP.ASP_rel_comp. Qed.
 
-Theorem asp_to_coupled_first {A B C} (f : PropertySP.PureASPostArr A B) :
-  asp_to_coupled (@PropertySP.firstASP A B C f) =
-  @arr_first _ CA A B C (asp_to_coupled f).
-Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P [b c]. reflexivity. Qed.
-
-Theorem asp_to_coupled_left {A B C} (f : PropertySP.PureASPostArr A B) :
-  asp_to_coupled (@PropertySP.leftASP A B C f) =
-  @arr_left _ CA CAC A B C (asp_to_coupled f).
-Proof. apply CoupledSP.PureRelASPPairArr_eq. intros P [b|c]; reflexivity. Qed.
-
-Theorem asp_to_coupled_app {A B} :
-  asp_to_coupled (@PropertySP.appASP A B) =
-  @arr_comp _ CA _ _ _
-    (@arr_pure _ CA _ _ (fun '(f, a) => (asp_to_coupled f, a)))
-    (@arr_app _ CA CAA A B).
+Theorem asp_to_rel_first {A B C} (f : PropertySP.PureASPostArr A B) :
+  Rel_eq (@PropertySP.ASP_rel (A * C)%type (B * C)%type (PropertySP.firstASP f))
+    (@arr_first Rel Arrow_Rel A B C (PropertySP.ASP_rel f)).
 Proof.
-  apply CoupledSP.PureRelASPPairArr_eq. intros P b. cbn. split.
-  - intros [f H]. apply PropertySP.ASP_normal_form in H.
-    destruct H as [a [HP HR]]. exists (asp_to_coupled f), a.
-    split; [exists (f, a); auto | exact HR].
-  - intros [g [a [[[f a0] [HP Heq]] HR]]].
-    injection Heq as Hg Ha. subst g a0.
-    exists f. apply PropertySP.ASP_normal_form. exists a. auto.
+  intros [a c] [b d]. apply PropertySP.ASP_rel_first.
 Qed.
 
-Theorem dslp_to_coupled_pure {A B} (h : A -> B) :
-  dslp_to_coupled (PropertySP.arrDSLP h) = @arr_pure _ CD A B h.
-Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. reflexivity. Qed.
+Theorem asp_to_rel_left {A B C} (f : PropertySP.PureASPostArr A B) :
+  Rel_eq (@PropertySP.ASP_rel (A + C)%type (B + C)%type (PropertySP.leftASP f))
+    (@arr_left Rel Arrow_Rel ArrowChoice_Rel A B C (PropertySP.ASP_rel f)).
+Proof. intros x y. apply PropertySP.ASP_rel_left. Qed.
 
-Theorem dslp_to_coupled_comp {A B C}
+Theorem asp_to_rel_app {A B} :
+  Rel_eq (@PropertySP.ASP_rel (PropertySP.PureASPostArr A B * A)%type B
+    (@arr_app PropertySP.PureASPostArr PropertySP.Arrow_PureASPostArr
+       PropertySP.ArrowApply_PureASPostArr A B))
+  (@arr_comp Rel Arrow_Rel
+    (PropertySP.PureASPostArr A B * A)%type
+    (Rel A B * A)%type B
+    (@arr_pure Rel Arrow_Rel
+      (PropertySP.PureASPostArr A B * A)%type
+      (Rel A B * A)%type
+      (fun '(f, a) => (PropertySP.ASP_rel f, a)))
+    (@arr_app Rel Arrow_Rel ArrowApply_Rel A B)).
+Proof.
+  intros [f a] b.
+  rewrite PropertySP.ASP_rel_app. unfold Arrow_Rel; cbn.
+  split.
+  - intros H. exists (PropertySP.ASP_rel f, a).
+    split; [reflexivity | exact H].
+  - intros [y [Heq H]]. subst y. exact H.
+Qed.
+
+Theorem dslp_to_rel_pure {A B} (h : A -> B) :
+  Rel_eq (@PropertySP.DSLP_rel A B (PropertySP.arrDSLP h))
+    (@arr_pure Rel Arrow_Rel A B h).
+Proof. intros a b. apply PropertySP.DSLP_rel_pure. Qed.
+
+Theorem dslp_to_rel_comp {A B C}
   (f : PropertySP.PureDSLPostArr A B) (g : PropertySP.PureDSLPostArr B C) :
-  dslp_to_coupled (PropertySP.compDSLP f g) =
-  @arr_comp _ CD A B C (dslp_to_coupled f) (dslp_to_coupled g).
-Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P c. reflexivity. Qed.
+  Rel_eq (@PropertySP.DSLP_rel A C (PropertySP.compDSLP f g))
+    (@arr_comp Rel Arrow_Rel A B C (PropertySP.DSLP_rel f) (PropertySP.DSLP_rel g)).
+Proof. intros a c. apply PropertySP.DSLP_rel_comp. Qed.
 
-Theorem dslp_to_coupled_first {A B C} (f : PropertySP.PureDSLPostArr A B) :
-  dslp_to_coupled (@PropertySP.firstDSLP A B C f) =
-  @arr_first _ CD A B C (dslp_to_coupled f).
-Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P [b c]. reflexivity. Qed.
-
-Theorem dslp_to_coupled_left {A B C} (f : PropertySP.PureDSLPostArr A B) :
-  dslp_to_coupled (@PropertySP.leftDSLP A B C f) =
-  @arr_left _ CD CDC A B C (dslp_to_coupled f).
-Proof. apply CoupledSP.PureRelDSLPPairArr_eq. intros P [b|c]; reflexivity. Qed.
-
-Theorem dslp_to_coupled_app {A B} :
-  dslp_to_coupled (@PropertySP.appDSLP A B) =
-  @arr_comp _ CD _ _ _
-    (@arr_pure _ CD _ _ (fun '(f, a) => (dslp_to_coupled f, a)))
-    (@arr_app _ CD CDA A B).
+Theorem dslp_to_rel_first {A B C} (f : PropertySP.PureDSLPostArr A B) :
+  Rel_eq (@PropertySP.DSLP_rel (A * C)%type (B * C)%type (PropertySP.firstDSLP f))
+    (@arr_first Rel Arrow_Rel A B C (PropertySP.DSLP_rel f)).
 Proof.
-  apply CoupledSP.PureRelDSLPPairArr_eq. intros P b. cbn. split.
-  - intros H g a HR [f a0] Heq. injection Heq as Hg Ha. subst g a0.
-    apply (proj1 (PropertySP.DSLP_normal_form f _ b) (H f) a HR).
-  - intros H f. apply PropertySP.DSLP_normal_form. intros a HR.
-    exact (H (dslp_to_coupled f) a HR (f, a) eq_refl).
+  intros [a c] [b d]. apply PropertySP.DSLP_rel_first.
 Qed.
 
-Theorem asp_to_coupled_morphism :
+Theorem dslp_to_rel_left {A B C} (f : PropertySP.PureDSLPostArr A B) :
+  Rel_eq (@PropertySP.DSLP_rel (A + C)%type (B + C)%type (PropertySP.leftDSLP f))
+    (@arr_left Rel Arrow_Rel ArrowChoice_Rel A B C (PropertySP.DSLP_rel f)).
+Proof. intros x y. apply PropertySP.DSLP_rel_left. Qed.
+
+Theorem dslp_to_rel_app {A B} :
+  Rel_eq (@PropertySP.DSLP_rel (PropertySP.PureDSLPostArr A B * A)%type B
+    (@arr_app PropertySP.PureDSLPostArr PropertySP.Arrow_PureDSLPostArr
+       PropertySP.ArrowApply_PureDSLPostArr A B))
+  (@arr_comp Rel Arrow_Rel
+    (PropertySP.PureDSLPostArr A B * A)%type
+    (Rel A B * A)%type B
+    (@arr_pure Rel Arrow_Rel
+      (PropertySP.PureDSLPostArr A B * A)%type
+      (Rel A B * A)%type
+      (fun '(f, a) => (PropertySP.DSLP_rel f, a)))
+    (@arr_app Rel Arrow_Rel ArrowApply_Rel A B)).
+Proof.
+  intros [f a] b.
+  rewrite PropertySP.DSLP_rel_app. unfold Arrow_Rel; cbn.
+  split.
+  - intros H. exists (PropertySP.DSLP_rel f, a).
+    split; [reflexivity | exact H].
+  - intros [y [Heq H]]. subst y. exact H.
+Qed.
+
+(** ** Base morphisms *)
+
+Lemma asp_from_rel_proper A B :
+  Proper (Rel_eq ==> @arrow_eq _ PropertySP.ArrowEq_PureASPostArr A B)
+    (@relASP A B).
+Proof.
+  intros R T H. apply PropertySP.ASP_arrow_eq_rel. intros a b.
+  rewrite !PropertySP.ASP_rel_relASP. apply H.
+Qed.
+
+Lemma dslp_from_rel_proper A B :
+  Proper (Rel_eq ==> @arrow_eq _ PropertySP.ArrowEq_PureDSLPostArr A B)
+    (@relDSLP A B).
+Proof.
+  intros R T H. apply PropertySP.DSLP_arrow_eq_rel. intros a b.
+  rewrite !PropertySP.DSLP_rel_relDSLP. apply H.
+Qed.
+
+Theorem asp_to_rel_morphism :
   ArrowMorphism PropertySP.Arrow_PureASPostArr
     PropertySP.ArrowChoice_PureASPostArr PropertySP.ArrowApply_PureASPostArr
-    CA CAC CAA (@asp_to_coupled).
+    PropertySP.ArrowEq_PureASPostArr
+    Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel (@PropertySP.ASP_rel).
 Proof.
   constructor.
-  - exact @asp_to_coupled_pure.
-  - exact @asp_to_coupled_comp.
-  - exact @asp_to_coupled_first.
-  - exact @asp_to_coupled_left.
-  - exact @asp_to_coupled_app.
+  - intros A B f g H. exact (proj1 (PropertySP.ASP_arrow_eq_rel f g) H).
+  - exact @asp_to_rel_pure.
+  - exact @asp_to_rel_comp.
+  - exact @asp_to_rel_first.
+  - exact @asp_to_rel_left.
+  - exact @asp_to_rel_app.
 Qed.
 
-Theorem dslp_to_coupled_morphism :
+Theorem asp_from_rel_morphism :
+  ArrowMorphism Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel
+    PropertySP.Arrow_PureASPostArr PropertySP.ArrowChoice_PureASPostArr
+    PropertySP.ArrowApply_PureASPostArr PropertySP.ArrowEq_PureASPostArr (@relASP).
+Proof.
+  exact (inverse_morphism (@PropertySP.ASP_rel) (@relASP)
+    asp_from_rel_proper (@asp_from_to) (@asp_to_from) asp_to_rel_morphism
+    ArrowLaws_Rel ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
+Qed.
+
+Theorem dslp_to_rel_morphism :
   ArrowMorphism PropertySP.Arrow_PureDSLPostArr
     PropertySP.ArrowChoice_PureDSLPostArr PropertySP.ArrowApply_PureDSLPostArr
-    CD CDC CDA (@dslp_to_coupled).
+    PropertySP.ArrowEq_PureDSLPostArr
+    Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel (@PropertySP.DSLP_rel).
 Proof.
   constructor.
-  - exact @dslp_to_coupled_pure.
-  - exact @dslp_to_coupled_comp.
-  - exact @dslp_to_coupled_first.
-  - exact @dslp_to_coupled_left.
-  - exact @dslp_to_coupled_app.
+  - intros A B f g H. exact (proj1 (PropertySP.DSLP_arrow_eq_rel f g) H).
+  - exact @dslp_to_rel_pure.
+  - exact @dslp_to_rel_comp.
+  - exact @dslp_to_rel_first.
+  - exact @dslp_to_rel_left.
+  - exact @dslp_to_rel_app.
 Qed.
 
-Theorem asp_from_coupled_morphism :
-  ArrowMorphism CA CAC CAA PropertySP.Arrow_PureASPostArr
-    PropertySP.ArrowChoice_PureASPostArr PropertySP.ArrowApply_PureASPostArr
-    (@asp_from_coupled).
+Theorem dslp_from_rel_morphism :
+  ArrowMorphism Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel
+    PropertySP.Arrow_PureDSLPostArr PropertySP.ArrowChoice_PureDSLPostArr
+    PropertySP.ArrowApply_PureDSLPostArr PropertySP.ArrowEq_PureDSLPostArr (@relDSLP).
 Proof.
-  exact (inverse_morphism (@asp_to_coupled) (@asp_from_coupled)
-    (@asp_from_to) (@asp_to_from) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelASPPairArr).
-Qed.
-
-Theorem dslp_from_coupled_morphism :
-  ArrowMorphism CD CDC CDA PropertySP.Arrow_PureDSLPostArr
-    PropertySP.ArrowChoice_PureDSLPostArr PropertySP.ArrowApply_PureDSLPostArr
-    (@dslp_from_coupled).
-Proof.
-  exact (inverse_morphism (@dslp_to_coupled) (@dslp_from_coupled)
-    (@dslp_from_to) (@dslp_to_from) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelDSLPPairArr).
+  exact (inverse_morphism (@PropertySP.DSLP_rel) (@relDSLP)
+    dslp_from_rel_proper (@dslp_from_to) (@dslp_to_from) dslp_to_rel_morphism
+    ArrowLaws_Rel ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
 Qed.
 
 (** ** Public option and state-over-option equivalences
@@ -223,207 +223,237 @@ Qed.
     and [morphism_app], in either conversion direction.  State-only lifts
     are obtained directly with [state_arrow_map] and [state_arrow_morphism]. *)
 
-Definition option_asp_to_coupled {A B} (f : PropertySP.optionASPArr A B) :
-  CoupledSP.optionASPArr A B := option_arrow_map (@asp_to_coupled) A B f.
-Definition option_asp_from_coupled {A B} (f : CoupledSP.optionASPArr A B) :
-  PropertySP.optionASPArr A B := option_arrow_map (@asp_from_coupled) A B f.
-Definition option_dslp_to_coupled {A B} (f : PropertySP.optionDSLPArr A B) :
-  CoupledSP.optionDSLPArr A B := option_arrow_map (@dslp_to_coupled) A B f.
-Definition option_dslp_from_coupled {A B} (f : CoupledSP.optionDSLPArr A B) :
-  PropertySP.optionDSLPArr A B := option_arrow_map (@dslp_from_coupled) A B f.
+Definition option_asp_to_rel {A B} (f : PropertySP.optionASPArr A B) :
+  optionRel A B := option_arrow_map (@PropertySP.ASP_rel) A B f.
+Definition option_asp_from_rel {A B} (f : optionRel A B) :
+  PropertySP.optionASPArr A B := option_arrow_map (@relASP) A B f.
+Definition option_dslp_to_rel {A B} (f : PropertySP.optionDSLPArr A B) :
+  optionRel A B := option_arrow_map (@PropertySP.DSLP_rel) A B f.
+Definition option_dslp_from_rel {A B} (f : optionRel A B) :
+  PropertySP.optionDSLPArr A B := option_arrow_map (@relDSLP) A B f.
 
-Definition state_option_asp_to_coupled {S A B}
+Definition state_option_asp_to_rel {S A B}
   (f : stateArrT S PropertySP.optionASPArr A B) :
-  stateArrT S CoupledSP.optionASPArr A B :=
-  state_arrow_map S (@option_asp_to_coupled) A B f.
-Definition state_option_asp_from_coupled {S A B}
-  (f : stateArrT S CoupledSP.optionASPArr A B) :
+  stateArrT S optionRel A B :=
+  state_arrow_map S (@option_asp_to_rel) A B f.
+Definition state_option_asp_from_rel {S A B}
+  (f : stateArrT S optionRel A B) :
   stateArrT S PropertySP.optionASPArr A B :=
-  state_arrow_map S (@option_asp_from_coupled) A B f.
-Definition state_option_dslp_to_coupled {S A B}
+  state_arrow_map S (@option_asp_from_rel) A B f.
+Definition state_option_dslp_to_rel {S A B}
   (f : stateArrT S PropertySP.optionDSLPArr A B) :
-  stateArrT S CoupledSP.optionDSLPArr A B :=
-  state_arrow_map S (@option_dslp_to_coupled) A B f.
-Definition state_option_dslp_from_coupled {S A B}
-  (f : stateArrT S CoupledSP.optionDSLPArr A B) :
+  stateArrT S optionRel A B :=
+  state_arrow_map S (@option_dslp_to_rel) A B f.
+Definition state_option_dslp_from_rel {S A B}
+  (f : stateArrT S optionRel A B) :
   stateArrT S PropertySP.optionDSLPArr A B :=
-  state_arrow_map S (@option_dslp_from_coupled) A B f.
+  state_arrow_map S (@option_dslp_from_rel) A B f.
 
 Theorem option_asp_from_to {A B} (f : PropertySP.optionASPArr A B) :
-  option_asp_from_coupled (option_asp_to_coupled f) = f.
+  @arrow_eq _ PropertySP.ArrowEq_optionASPArr A B
+    (option_asp_from_rel (option_asp_to_rel f)) f.
 Proof.
-  exact (option_arrow_map_roundtrip (@asp_to_coupled) (@asp_from_coupled)
+  exact (@option_arrow_map_roundtrip _ _ PropertySP.ArrowEq_PureASPostArr
+    (@PropertySP.ASP_rel) (@relASP)
     (@asp_from_to) A B f).
 Qed.
 
-Theorem option_asp_to_from {A B} (f : CoupledSP.optionASPArr A B) :
-  option_asp_to_coupled (option_asp_from_coupled f) = f.
+Theorem option_asp_to_from {A B} (f : optionRel A B) :
+  Rel_eq (option_asp_to_rel (option_asp_from_rel f)) f.
 Proof.
-  exact (option_arrow_map_roundtrip (@asp_from_coupled) (@asp_to_coupled)
+  exact (@option_arrow_map_roundtrip _ _ ArrowEq_Rel (@relASP) (@PropertySP.ASP_rel)
     (@asp_to_from) A B f).
 Qed.
 
 Theorem option_dslp_from_to {A B} (f : PropertySP.optionDSLPArr A B) :
-  option_dslp_from_coupled (option_dslp_to_coupled f) = f.
+  @arrow_eq _ PropertySP.ArrowEq_optionDSLPArr A B
+    (option_dslp_from_rel (option_dslp_to_rel f)) f.
 Proof.
-  exact (option_arrow_map_roundtrip (@dslp_to_coupled) (@dslp_from_coupled)
+  exact (@option_arrow_map_roundtrip _ _ PropertySP.ArrowEq_PureDSLPostArr
+    (@PropertySP.DSLP_rel) (@relDSLP)
     (@dslp_from_to) A B f).
 Qed.
 
-Theorem option_dslp_to_from {A B} (f : CoupledSP.optionDSLPArr A B) :
-  option_dslp_to_coupled (option_dslp_from_coupled f) = f.
+Theorem option_dslp_to_from {A B} (f : optionRel A B) :
+  Rel_eq (option_dslp_to_rel (option_dslp_from_rel f)) f.
 Proof.
-  exact (option_arrow_map_roundtrip (@dslp_from_coupled) (@dslp_to_coupled)
+  exact (@option_arrow_map_roundtrip _ _ ArrowEq_Rel (@relDSLP) (@PropertySP.DSLP_rel)
     (@dslp_to_from) A B f).
 Qed.
 
 Theorem state_option_asp_from_to {S A B}
   (f : stateArrT S PropertySP.optionASPArr A B) :
-  state_option_asp_from_coupled (state_option_asp_to_coupled f) = f.
+  @arrow_eq _ (PropertySP.ArrowEq_stateOptASP S) A B
+    (state_option_asp_from_rel (state_option_asp_to_rel f)) f.
 Proof.
-  exact (state_arrow_map_roundtrip S (@option_asp_to_coupled) (@option_asp_from_coupled)
+  exact (@state_arrow_map_roundtrip S _ _ PropertySP.ArrowEq_optionASPArr
+    (@option_asp_to_rel) (@option_asp_from_rel)
     (@option_asp_from_to) A B f).
 Qed.
 
 Theorem state_option_asp_to_from {S A B}
-  (f : stateArrT S CoupledSP.optionASPArr A B) :
-  state_option_asp_to_coupled (state_option_asp_from_coupled f) = f.
+  (f : stateArrT S optionRel A B) :
+  Rel_eq (state_option_asp_to_rel (state_option_asp_from_rel f)) f.
 Proof.
-  exact (state_arrow_map_roundtrip S (@option_asp_from_coupled) (@option_asp_to_coupled)
+  exact (@state_arrow_map_roundtrip S _ _ (@ArrowEq_optionArrT Rel ArrowEq_Rel)
+    (@option_asp_from_rel) (@option_asp_to_rel)
     (@option_asp_to_from) A B f).
 Qed.
 
 Theorem state_option_dslp_from_to {S A B}
   (f : stateArrT S PropertySP.optionDSLPArr A B) :
-  state_option_dslp_from_coupled (state_option_dslp_to_coupled f) = f.
+  @arrow_eq _ (PropertySP.ArrowEq_stateOptDSLP S) A B
+    (state_option_dslp_from_rel (state_option_dslp_to_rel f)) f.
 Proof.
-  exact (state_arrow_map_roundtrip S (@option_dslp_to_coupled) (@option_dslp_from_coupled)
+  exact (@state_arrow_map_roundtrip S _ _ PropertySP.ArrowEq_optionDSLPArr
+    (@option_dslp_to_rel) (@option_dslp_from_rel)
     (@option_dslp_from_to) A B f).
 Qed.
 
 Theorem state_option_dslp_to_from {S A B}
-  (f : stateArrT S CoupledSP.optionDSLPArr A B) :
-  state_option_dslp_to_coupled (state_option_dslp_from_coupled f) = f.
+  (f : stateArrT S optionRel A B) :
+  Rel_eq (state_option_dslp_to_rel (state_option_dslp_from_rel f)) f.
 Proof.
-  exact (state_arrow_map_roundtrip S (@option_dslp_from_coupled) (@option_dslp_to_coupled)
+  exact (@state_arrow_map_roundtrip S _ _ (@ArrowEq_optionArrT Rel ArrowEq_Rel)
+    (@option_dslp_from_rel) (@option_dslp_to_rel)
     (@option_dslp_to_from) A B f).
 Qed.
 
-Local Notation COA := (@Arrow_optionArrT CoupledSP.PureRelASPPairArr CA CAC).
-Local Notation COAC := (@ArrowChoice_optionArrT CoupledSP.PureRelASPPairArr CA CAC).
-Local Notation COAA := (@ArrowApply_optionArrT CoupledSP.PureRelASPPairArr CA CAC CAA).
-Local Notation COD := (@Arrow_optionArrT CoupledSP.PureRelDSLPPairArr CD CDC).
-Local Notation CODC := (@ArrowChoice_optionArrT CoupledSP.PureRelDSLPPairArr CD CDC).
-Local Notation CODA := (@ArrowApply_optionArrT CoupledSP.PureRelDSLPPairArr CD CDC CDA).
+Local Notation ROA := (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel).
+Local Notation ROAC := (@ArrowChoice_optionArrT Rel Arrow_Rel ArrowChoice_Rel).
+Local Notation ROAA := (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel
+  ArrowApply_Rel).
+Local Notation ROE := (@ArrowEq_optionArrT Rel ArrowEq_Rel).
+Local Notation RSE S := (@ArrowEq_stateArrT S optionRel ROE).
 
-Theorem option_asp_to_coupled_morphism :
+Theorem option_asp_to_rel_morphism :
   ArrowMorphism PropertySP.Arrow_optionASPArr PropertySP.ArrowChoice_optionASPArr
-    PropertySP.ArrowApply_optionASPArr COA COAC COAA (@option_asp_to_coupled).
+    PropertySP.ArrowApply_optionASPArr PropertySP.ArrowEq_optionASPArr
+    ROA ROAC ROAA ROE (@option_asp_to_rel).
 Proof.
-  exact (option_arrow_morphism (@asp_to_coupled) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelASPPairArr CoupledSP.ArrowChoiceLaws_PureRelASPPairArr).
+  exact (option_arrow_morphism (@PropertySP.ASP_rel) asp_to_rel_morphism
+    ArrowLaws_Rel ArrowChoiceLaws_Rel).
 Qed.
 
-Theorem option_asp_from_coupled_morphism :
-  ArrowMorphism COA COAC COAA PropertySP.Arrow_optionASPArr
+Theorem option_asp_from_rel_morphism :
+  ArrowMorphism ROA ROAC ROAA ROE PropertySP.Arrow_optionASPArr
     PropertySP.ArrowChoice_optionASPArr PropertySP.ArrowApply_optionASPArr
-    (@option_asp_from_coupled).
+    PropertySP.ArrowEq_optionASPArr (@option_asp_from_rel).
 Proof.
-  exact (option_arrow_morphism (@asp_from_coupled) asp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureASPostArr_leibniz PropertySP.ArrowChoiceLaws_PureASPostArr_leibniz).
+  exact (option_arrow_morphism (@relASP) asp_from_rel_morphism
+    PropertySP.ArrowLaws_PureASPostArr
+    PropertySP.ArrowChoiceLaws_PureASPostArr).
 Qed.
 
-Theorem option_dslp_to_coupled_morphism :
+Theorem option_dslp_to_rel_morphism :
   ArrowMorphism PropertySP.Arrow_optionDSLPArr PropertySP.ArrowChoice_optionDSLPArr
-    PropertySP.ArrowApply_optionDSLPArr COD CODC CODA (@option_dslp_to_coupled).
+    PropertySP.ArrowApply_optionDSLPArr PropertySP.ArrowEq_optionDSLPArr
+    ROA ROAC ROAA ROE (@option_dslp_to_rel).
 Proof.
-  exact (option_arrow_morphism (@dslp_to_coupled) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelDSLPPairArr CoupledSP.ArrowChoiceLaws_PureRelDSLPPairArr).
+  exact (option_arrow_morphism (@PropertySP.DSLP_rel) dslp_to_rel_morphism
+    ArrowLaws_Rel ArrowChoiceLaws_Rel).
 Qed.
 
-Theorem option_dslp_from_coupled_morphism :
-  ArrowMorphism COD CODC CODA PropertySP.Arrow_optionDSLPArr
+Theorem option_dslp_from_rel_morphism :
+  ArrowMorphism ROA ROAC ROAA ROE PropertySP.Arrow_optionDSLPArr
     PropertySP.ArrowChoice_optionDSLPArr PropertySP.ArrowApply_optionDSLPArr
-    (@option_dslp_from_coupled).
+    PropertySP.ArrowEq_optionDSLPArr (@option_dslp_from_rel).
 Proof.
-  exact (option_arrow_morphism (@dslp_from_coupled) dslp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureDSLPostArr_leibniz PropertySP.ArrowChoiceLaws_PureDSLPostArr_leibniz).
+  exact (option_arrow_morphism (@relDSLP) dslp_from_rel_morphism
+    PropertySP.ArrowLaws_PureDSLPostArr
+    PropertySP.ArrowChoiceLaws_PureDSLPostArr).
 Qed.
 
-Theorem state_option_asp_to_coupled_morphism (S : Type) :
+Theorem state_option_asp_to_rel_morphism (S : Type) :
   ArrowMorphism (PropertySP.Arrow_stateOptASP S)
     (PropertySP.ArrowChoice_stateOptASP S) (PropertySP.ArrowApply_stateOptASP S)
-    (@Arrow_stateArrT S CoupledSP.optionASPArr COA)
-    (@ArrowChoice_stateArrT S CoupledSP.optionASPArr COA COAC)
-    (@ArrowApply_stateArrT S CoupledSP.optionASPArr COA COAA)
-    (@state_option_asp_to_coupled S).
+    (PropertySP.ArrowEq_stateOptASP S)
+    (@Arrow_stateArrT S optionRel ROA)
+    (@ArrowChoice_stateArrT S optionRel ROA ROAC)
+    (@ArrowApply_stateArrT S optionRel ROA ROAA)
+    (RSE S) (@state_option_asp_to_rel S).
 Proof.
-  exact (state_option_arrow_morphism (@asp_to_coupled) asp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelASPPairArr S CoupledSP.ArrowChoiceLaws_PureRelASPPairArr).
+  exact (state_option_arrow_morphism (@PropertySP.ASP_rel) asp_to_rel_morphism
+    ArrowLaws_Rel S ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
 Qed.
 
-Theorem state_option_asp_from_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S CoupledSP.optionASPArr COA)
-    (@ArrowChoice_stateArrT S CoupledSP.optionASPArr COA COAC)
-    (@ArrowApply_stateArrT S CoupledSP.optionASPArr COA COAA)
+Theorem state_option_asp_from_rel_morphism (S : Type) :
+  ArrowMorphism (@Arrow_stateArrT S optionRel ROA)
+    (@ArrowChoice_stateArrT S optionRel ROA ROAC)
+    (@ArrowApply_stateArrT S optionRel ROA ROAA)
+    (RSE S)
     (PropertySP.Arrow_stateOptASP S)
     (PropertySP.ArrowChoice_stateOptASP S) (PropertySP.ArrowApply_stateOptASP S)
-    (@state_option_asp_from_coupled S).
+    (PropertySP.ArrowEq_stateOptASP S) (@state_option_asp_from_rel S).
 Proof.
-  exact (state_option_arrow_morphism (@asp_from_coupled) asp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureASPostArr_leibniz S PropertySP.ArrowChoiceLaws_PureASPostArr_leibniz).
+  exact (state_option_arrow_morphism (@relASP) asp_from_rel_morphism
+    PropertySP.ArrowLaws_PureASPostArr S
+    PropertySP.ArrowChoiceLaws_PureASPostArr PropertySP.ArrowApplyLaws_PureASPostArr).
 Qed.
 
-Theorem state_option_dslp_to_coupled_morphism (S : Type) :
+Theorem state_option_dslp_to_rel_morphism (S : Type) :
   ArrowMorphism (PropertySP.Arrow_stateOptDSLP S)
     (PropertySP.ArrowChoice_stateOptDSLP S) (PropertySP.ArrowApply_stateOptDSLP S)
-    (@Arrow_stateArrT S CoupledSP.optionDSLPArr COD)
-    (@ArrowChoice_stateArrT S CoupledSP.optionDSLPArr COD CODC)
-    (@ArrowApply_stateArrT S CoupledSP.optionDSLPArr COD CODA)
-    (@state_option_dslp_to_coupled S).
+    (PropertySP.ArrowEq_stateOptDSLP S)
+    (@Arrow_stateArrT S optionRel ROA)
+    (@ArrowChoice_stateArrT S optionRel ROA ROAC)
+    (@ArrowApply_stateArrT S optionRel ROA ROAA)
+    (RSE S) (@state_option_dslp_to_rel S).
 Proof.
-  exact (state_option_arrow_morphism (@dslp_to_coupled) dslp_to_coupled_morphism
-    CoupledSP.ArrowLaws_PureRelDSLPPairArr S CoupledSP.ArrowChoiceLaws_PureRelDSLPPairArr).
+  exact (state_option_arrow_morphism (@PropertySP.DSLP_rel) dslp_to_rel_morphism
+    ArrowLaws_Rel S ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
 Qed.
 
-Theorem state_option_dslp_from_coupled_morphism (S : Type) :
-  ArrowMorphism (@Arrow_stateArrT S CoupledSP.optionDSLPArr COD)
-    (@ArrowChoice_stateArrT S CoupledSP.optionDSLPArr COD CODC)
-    (@ArrowApply_stateArrT S CoupledSP.optionDSLPArr COD CODA)
+Theorem state_option_dslp_from_rel_morphism (S : Type) :
+  ArrowMorphism (@Arrow_stateArrT S optionRel ROA)
+    (@ArrowChoice_stateArrT S optionRel ROA ROAC)
+    (@ArrowApply_stateArrT S optionRel ROA ROAA)
+    (RSE S)
     (PropertySP.Arrow_stateOptDSLP S)
     (PropertySP.ArrowChoice_stateOptDSLP S) (PropertySP.ArrowApply_stateOptDSLP S)
-    (@state_option_dslp_from_coupled S).
+    (PropertySP.ArrowEq_stateOptDSLP S) (@state_option_dslp_from_rel S).
 Proof.
-  exact (state_option_arrow_morphism (@dslp_from_coupled) dslp_from_coupled_morphism
-    PropertySP.ArrowLaws_PureDSLPostArr_leibniz S PropertySP.ArrowChoiceLaws_PureDSLPostArr_leibniz).
+  exact (state_option_arrow_morphism (@relDSLP) dslp_from_rel_morphism
+    PropertySP.ArrowLaws_PureDSLPostArr S
+    PropertySP.ArrowChoiceLaws_PureDSLPostArr PropertySP.ArrowApplyLaws_PureDSLPostArr).
 Qed.
 
 (** ** Transport of the option-loop obstruction
 
-    Only composition, [first], and an invertible relation projection
+    Only composition, [first], and injectivity of the direct option lifts
     are needed.  The contradiction itself remains the theorem from
-    [OptionLoop], including its empty-feedback witness. *)
+    [OptionLoop], including its empty-feedback witness. Projection laws
+    use semantic equality. Source injectivity supplies exact substitution
+    under an arbitrary loop, which has no congruence assumption. *)
 
 Section OptionLoopTransport.
-  Context {arr : Type -> Type -> Type} {HA : Arrow arr}.
+  Context {arr : Type -> Type -> Type} {HA : Arrow arr} {SE : ArrowEq arr}.
   Variable project : forall A B, arr A B -> optionRel A B.
   Variable embed : forall A B, optionRel A B -> arr A B.
-  Hypothesis project_embed : forall A B f, project A B (embed A B f) = f.
+  Hypothesis project_proper : forall A B,
+    Proper (@arrow_eq arr SE A B ==> Rel_eq) (project A B).
+  Hypothesis project_embed : forall A B f, Rel_eq (project A B (embed A B f)) f.
   Hypothesis project_injective : forall A B (f g : arr A B),
-    project A B f = project A B g -> f = g.
+    Rel_eq (project A B f) (project A B g) -> f = g.
   Local Notation OPA := (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel).
   Hypothesis project_comp : forall A B C (f : arr A B) (g : arr B C),
-    project A C (@arr_comp arr HA A B C f g) =
-    @arr_comp optionRel OPA A B C (project A B f) (project B C g).
+    Rel_eq (project A C (@arr_comp arr HA A B C f g))
+    (@arr_comp optionRel OPA A B C (project A B f) (project B C g)).
   Hypothesis project_first : forall A B C (f : arr A B),
-    project (A * C)%type (B * C)%type (@arr_first arr HA A B C f) =
-    @arr_first optionRel OPA A B C (project A B f).
+    Rel_eq (project (A * C)%type (B * C)%type (@arr_first arr HA A B C f))
+    (@arr_first optionRel OPA A B C (project A B f)).
 
-  Theorem optionRel_no_left_tightening_transport (L : @ArrowLoop arr HA) :
+  Local Definition OPL : @ArrowLaws optionRel OPA ROE :=
+    @ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+      ArrowLaws_Rel ArrowChoiceLaws_Rel.
+  Local Existing Instance OPL.
+
+  Local Theorem optionRel_no_left_tightening_transport (L : @ArrowLoop arr HA) :
     ~ (forall (A B C D : Type) (h : arr A B) (f : arr (B * D) (C * D)),
-      @arr_loop arr HA L A C D
-        (@arr_comp arr HA _ _ _ (@arr_first arr HA A B D h) f) =
-      @arr_comp arr HA _ _ _ h (@arr_loop arr HA L B C D f)).
+      @arrow_eq arr SE A C
+        (@arr_loop arr HA L A C D
+          (@arr_comp arr HA _ _ _ (@arr_first arr HA A B D h) f))
+        (@arr_comp arr HA _ _ _ h (@arr_loop arr HA L B C D f))).
   Proof.
     intro Htight.
     pose (LP :=
@@ -437,76 +467,68 @@ Section OptionLoopTransport.
       @arr_comp arr HA _ _ _ (@arr_first arr HA A B D (embed A B h))
         (embed (B * D)%type (C * D)%type f)).
     { apply project_injective.
-      rewrite project_embed, project_comp, project_first, !project_embed.
-      reflexivity. }
-    change (forall a c,
-      project A C (@arr_loop arr HA L A C D
+      transitivity (@arr_comp optionRel OPA _ _ _
+        (@arr_first optionRel OPA A B D h) f).
+      - apply project_embed.
+      - symmetry. etransitivity; [apply project_comp |].
+        apply (@comp_proper _ _ _ OPL).
+        + etransitivity; [apply project_first |].
+          apply (@first_proper _ _ _ OPL). apply project_embed.
+        + apply project_embed. }
+    change (Rel_eq
+      (project A C (@arr_loop arr HA L A C D
         (embed (A * D)%type (C * D)%type
-          (@arr_comp optionRel OPA _ _ _ (@arr_first optionRel OPA A B D h) f))) a c
-      <-> @arr_comp optionRel OPA _ _ _ h
+          (@arr_comp optionRel OPA _ _ _ (@arr_first optionRel OPA A B D h) f))))
+      (@arr_comp optionRel OPA _ _ _ h
         (project B C (@arr_loop arr HA L B C D
-          (embed (B * D)%type (C * D)%type f))) a c).
-    rewrite HE, Htight, project_comp, project_embed. intros a c. reflexivity.
+          (embed (B * D)%type (C * D)%type f))))).
+    rewrite HE.
+    transitivity (project A C (@arr_comp arr HA _ _ _ (embed A B h)
+      (@arr_loop arr HA L B C D (embed (B * D)%type (C * D)%type f)))).
+    - apply project_proper. apply Htight.
+    - etransitivity; [apply project_comp |].
+      apply (@comp_proper _ _ _ OPL); [apply project_embed | reflexivity].
   Qed.
 End OptionLoopTransport.
-
-Local Definition option_asp_project A B (f : PropertySP.optionASPArr A B) :
-  optionRel A B := CoupledSP.rel (proj1_sig (option_asp_to_coupled f)).
-Local Definition option_dslp_project A B (f : PropertySP.optionDSLPArr A B) :
-  optionRel A B := CoupledSP.rel (proj1_sig (option_dslp_to_coupled f)).
 
 Theorem optionASP_no_left_tightening
   (L : @ArrowLoop PropertySP.optionASPArr PropertySP.Arrow_optionASPArr) :
   ~ (forall (A B C D : Type) (h : PropertySP.optionASPArr A B)
        (f : PropertySP.optionASPArr (B * D) (C * D)),
-    @arr_loop _ PropertySP.Arrow_optionASPArr L A C D
-      (@arr_comp _ PropertySP.Arrow_optionASPArr _ _ _
-        (@arr_first _ PropertySP.Arrow_optionASPArr A B D h) f) =
-    @arr_comp _ PropertySP.Arrow_optionASPArr _ _ _ h
-      (@arr_loop _ PropertySP.Arrow_optionASPArr L B C D f)).
+     @arrow_eq _ PropertySP.ArrowEq_optionASPArr A C
+       (@arr_loop _ PropertySP.Arrow_optionASPArr L A C D
+       (@arr_comp _ PropertySP.Arrow_optionASPArr _ _ _
+         (@arr_first _ PropertySP.Arrow_optionASPArr A B D h) f))
+       (@arr_comp _ PropertySP.Arrow_optionASPArr _ _ _ h
+         (@arr_loop _ PropertySP.Arrow_optionASPArr L B C D f))).
 Proof.
-  apply (optionRel_no_left_tightening_transport option_asp_project
-    (fun A B R => option_asp_from_coupled (CoupledSP.mkASP R))).
-  - intros A B R. unfold option_asp_project. rewrite option_asp_to_from. reflexivity.
-  - intros A B f g Heq. apply PropertySP.PureASPostArr_eq. intros P b.
-    rewrite !PropertySP.ASP_normal_form.
-    change ((exists a, P a /\ option_asp_project A B f a b) <->
-      exists a, P a /\ option_asp_project A B g a b).
-    now rewrite Heq.
-  - intros A B C f g. unfold option_asp_project.
-    rewrite (morphism_comp option_asp_to_coupled_morphism). reflexivity.
-  - intros A B C f. unfold option_asp_project.
-    rewrite (morphism_first option_asp_to_coupled_morphism).
-    extensionality p. destruct p as [a c]. extensionality q.
-    apply propositional_extensionality. cbn.
-    split; intros [[ob d] H]; exists (ob, d); exact H.
+  apply (optionRel_no_left_tightening_transport
+    (@option_asp_to_rel) (@option_asp_from_rel)).
+  - intros A B f g H. exact (morphism_proper option_asp_to_rel_morphism f g H).
+  - intros A B R. apply option_asp_to_from.
+  - intros A B f g Heq. exact (PropertySP.ASP_rel_ext f g Heq).
+  - intros A B C f g. exact (morphism_comp option_asp_to_rel_morphism f g).
+  - intros A B C f. exact (morphism_first option_asp_to_rel_morphism f).
 Qed.
 
 Theorem optionDSLP_no_left_tightening
   (L : @ArrowLoop PropertySP.optionDSLPArr PropertySP.Arrow_optionDSLPArr) :
   ~ (forall (A B C D : Type) (h : PropertySP.optionDSLPArr A B)
        (f : PropertySP.optionDSLPArr (B * D) (C * D)),
-    @arr_loop _ PropertySP.Arrow_optionDSLPArr L A C D
-      (@arr_comp _ PropertySP.Arrow_optionDSLPArr _ _ _
-        (@arr_first _ PropertySP.Arrow_optionDSLPArr A B D h) f) =
-    @arr_comp _ PropertySP.Arrow_optionDSLPArr _ _ _ h
-      (@arr_loop _ PropertySP.Arrow_optionDSLPArr L B C D f)).
+     @arrow_eq _ PropertySP.ArrowEq_optionDSLPArr A C
+       (@arr_loop _ PropertySP.Arrow_optionDSLPArr L A C D
+       (@arr_comp _ PropertySP.Arrow_optionDSLPArr _ _ _
+         (@arr_first _ PropertySP.Arrow_optionDSLPArr A B D h) f))
+       (@arr_comp _ PropertySP.Arrow_optionDSLPArr _ _ _ h
+         (@arr_loop _ PropertySP.Arrow_optionDSLPArr L B C D f))).
 Proof.
-  apply (optionRel_no_left_tightening_transport option_dslp_project
-    (fun A B R => option_dslp_from_coupled (CoupledSP.mkDSLP R))).
-  - intros A B R. unfold option_dslp_project. rewrite option_dslp_to_from. reflexivity.
-  - intros A B f g Heq. apply PropertySP.PureDSLPostArr_eq. intros P b.
-    rewrite !PropertySP.DSLP_normal_form.
-    change ((forall a, option_dslp_project A B f a b -> P a) <->
-      forall a, option_dslp_project A B g a b -> P a).
-    now rewrite Heq.
-  - intros A B C f g. unfold option_dslp_project.
-    rewrite (morphism_comp option_dslp_to_coupled_morphism). reflexivity.
-  - intros A B C f. unfold option_dslp_project.
-    rewrite (morphism_first option_dslp_to_coupled_morphism).
-    extensionality p. destruct p as [a c]. extensionality q.
-    apply propositional_extensionality. cbn.
-    split; intros [[ob d] H]; exists (ob, d); exact H.
+  apply (optionRel_no_left_tightening_transport
+    (@option_dslp_to_rel) (@option_dslp_from_rel)).
+  - intros A B f g H. exact (morphism_proper option_dslp_to_rel_morphism f g H).
+  - intros A B R. apply option_dslp_to_from.
+  - intros A B f g Heq. exact (PropertySP.DSLP_rel_ext f g Heq).
+  - intros A B C f g. exact (morphism_comp option_dslp_to_rel_morphism f g).
+  - intros A B C f. exact (morphism_first option_dslp_to_rel_morphism f).
 Qed.
 
 Corollary optionASP_no_lawful_ArrowLoop :
@@ -515,7 +537,7 @@ Corollary optionASP_no_lawful_ArrowLoop :
       PropertySP.ArrowEq_optionASPArr.
 Proof.
   intros [L HL]. apply (optionASP_no_left_tightening L).
-  intros A B C D h f. apply PropertySP.PureASPostArr_eq.
+  intros A B C D h f.
   exact (@loop_left_tightening _ _ L _ HL A B C D h f).
 Qed.
 
@@ -525,6 +547,6 @@ Corollary optionDSLP_no_lawful_ArrowLoop :
       PropertySP.ArrowEq_optionDSLPArr.
 Proof.
   intros [L HL]. apply (optionDSLP_no_left_tightening L).
-  intros A B C D h f. apply PropertySP.PureDSLPostArr_eq.
+  intros A B C D h f.
   exact (@loop_left_tightening _ _ L _ HL A B C D h f).
 Qed.

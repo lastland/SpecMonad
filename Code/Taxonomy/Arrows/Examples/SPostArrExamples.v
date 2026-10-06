@@ -3,12 +3,12 @@
 From Coq Require Import Lia.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
-  SPostArr SPostArrEquiv.
+  Rel SPostArr SPostArrEquiv.
 
 (** A many-to-one pure arrow still has an angelic witness after conversion
-    to the coupled presentation and back. *)
+    to its relation and back. *)
 Example asp_roundtrip_many_to_one :
-  getASP (asp_from_coupled (asp_to_coupled (arrASP (fun _ : bool => tt))))
+  getASP (relASP (ASP_rel (arrASP (fun _ : bool => tt))))
     (eq true) tt.
 Proof.
   rewrite asp_from_to. exists true. auto.
@@ -16,11 +16,21 @@ Qed.
 
 (** The same well-formed pure arrow has a rejected demonic predecessor. *)
 Example dslp_roundtrip_many_to_one :
-  ~ getDSLP (dslp_from_coupled (dslp_to_coupled (arrDSLP (fun _ : bool => tt))))
+  ~ getDSLP (relDSLP (DSLP_rel (arrDSLP (fun _ : bool => tt))))
       (eq true) tt.
 Proof.
   rewrite dslp_from_to, arrDSLP_spec. intro H.
   specialize (H false eq_refl). discriminate.
+Qed.
+
+(** The same relational arrow has distinct ASP and DSLP readings. *)
+Example relational_many_to_one :
+  let R := @arr_pure Rel Arrow_Rel bool unit (fun _ => tt) in
+  RelSP.asp R (eq true) tt /\ ~ RelSP.dslp R (eq true) tt.
+Proof.
+  split.
+  - exists true. split; reflexivity.
+  - intro H. specialize (H false eq_refl). discriminate.
 Qed.
 
 Example empty_domain :
@@ -88,8 +98,8 @@ Create HintDb sp_state_example_ops.
 #[local] Hint Unfold increment checked_double : sp_state_example_ops.
 
 Example state_roundtrip_threads_updates (r : option (unit * nat)) :
-  getASP (state_option_asp_from_coupled
-    (state_option_asp_to_coupled increment_then_double)) (eq (tt, 3)) r
+  getASP (state_option_asp_from_rel
+    (state_option_asp_to_rel increment_then_double)) (eq (tt, 3)) r
   <-> r = Some (tt, 8).
 Proof.
   rewrite state_option_asp_from_to. unfold increment_then_double.
@@ -110,32 +120,30 @@ Proof.
   - intros ->. right. exists (tt, 3). split; [exists (tt, 2); auto | reflexivity].
 Qed.
 
-Local Notation coupled_state_arrow :=
-  (@Arrow_stateArrT nat CoupledSP.optionASPArr
-    (@Arrow_optionArrT CoupledSP.PureRelASPPairArr
-      CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr)).
+Local Notation rel_state_arrow :=
+  (@Arrow_stateArrT nat optionRel
+    (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)).
 
-(** The coupled presentation registers no per-stack dictionaries; the
-    application dictionary is the generic transformer instance applied
-    to the coupled base arrows. *)
-Local Notation coupled_state_apply :=
-  (@ArrowApply_stateArrT nat CoupledSP.optionASPArr
-     (@Arrow_optionArrT CoupledSP.PureRelASPPairArr
-       CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr)
-     (@ArrowApply_optionArrT CoupledSP.PureRelASPPairArr
-       CoupledSP.Arrow_PureRelASPPairArr CoupledSP.ArrowChoice_PureRelASPPairArr
-       CoupledSP.ArrowApply_PureRelASPPairArr)).
+(** The application dictionary uses the generic state and option
+    transformer instances over [Rel]. *)
+Local Notation rel_state_apply :=
+  (@ArrowApply_stateArrT nat optionRel
+     (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+     (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel)).
 
 Example state_application_conversion :
-  getASP (state_option_asp_from_coupled
-    (@arr_comp _ coupled_state_arrow _ _ _
-      (@arr_pure _ coupled_state_arrow _ _
-        (fun '(f, a) => (state_option_asp_to_coupled f, a)))
-      (@arr_app _ coupled_state_arrow coupled_state_apply
+  getASP (state_option_asp_from_rel
+    (@arr_comp _ rel_state_arrow _ _ _
+      (@arr_pure _ rel_state_arrow _ _
+        (fun '(f, a) => (state_option_asp_to_rel f, a)))
+      (@arr_app _ rel_state_arrow rel_state_apply
         unit unit))) (eq ((increment_then_double, tt), 3)) (Some (tt, 8)).
 Proof.
-  rewrite <- (morphism_app (state_option_asp_to_coupled_morphism nat)),
-    state_option_asp_from_to.
+  pose proof (morphism_app (state_option_asp_to_rel_morphism nat)
+    (A := unit) (B := unit)) as Happ.
+  pose proof (morphism_proper (state_option_asp_from_rel_morphism nat)
+    _ _ Happ) as Hmap.
+  rewrite <- Hmap, state_option_asp_from_to.
   apply stateOptASP_app_spec. exists increment_then_double.
   pose proof (proj2 (state_roundtrip_threads_updates (Some (tt, 8))) eq_refl) as H.
   rewrite state_option_asp_from_to in H. eapply ASP_monotone; [|exact H].
@@ -201,17 +209,21 @@ Proof.
 Qed.
 
 Example converted_state_composition :
-  getASP (state_option_asp_from_coupled
-    (@arr_comp _ coupled_state_arrow _ _ _
-      (state_option_asp_to_coupled increment)
-      (state_option_asp_to_coupled checked_double))) (eq (tt, 3)) (Some (tt, 8)).
+  getASP (state_option_asp_from_rel
+    (@arr_comp _ rel_state_arrow _ _ _
+      (state_option_asp_to_rel increment)
+      (state_option_asp_to_rel checked_double))) (eq (tt, 3)) (Some (tt, 8)).
 Proof.
-  rewrite <- (morphism_comp (state_option_asp_to_coupled_morphism nat)).
+  pose proof (morphism_comp (state_option_asp_to_rel_morphism nat)
+    increment checked_double) as Hcomp.
+  pose proof (morphism_proper (state_option_asp_from_rel_morphism nat)
+    _ _ Hcomp) as Hmap.
+  rewrite <- Hmap.
   apply state_roundtrip_threads_updates. reflexivity.
 Qed.
 
 Example dslp_state_roundtrip_preserves_state :
-  getDSLP (state_option_dslp_from_coupled (state_option_dslp_to_coupled
+  getDSLP (state_option_dslp_from_rel (state_option_dslp_to_rel
     (@arr_pure (stateArrT nat optionDSLPArr) (Arrow_stateOptDSLP nat) nat nat S)))
     (eq (3, 7)) (Some (4, 7)).
 Proof.

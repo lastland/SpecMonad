@@ -77,7 +77,9 @@ predicates to initial-state predicates. Here `(A -> Prop) -> B -> Prop` is used
 forward: `A` indexes initial states and `B` indexes results. The same preservation
 algebra applies, with an interpretation determined by this orientation.[^bw]
 
-For `R : A -> B -> Prop`, the definitions in `RelSPPairArr.v` give:
+For a relation `R : A -> B -> Prop` (the existing `Rel A B` carrier),
+[`RelSPostArr.v`](RelSPostArr.v) computes two readings. Neither reading adds a
+carrier or stores a transformer:
 
 ```text
 asp  R P b = exists a, P a /\ R a b

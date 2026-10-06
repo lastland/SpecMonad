@@ -1,6 +1,7 @@
 (** Console assumption reports, compiled explicitly by [make check]. *)
 From Incorrectness.Classes Require Import RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad RelSPPairArr GaloisArr.
+From Incorrectness.Taxonomy.Arrows Require Import
+  SPostArrMonad RelSPostArr SPostArrEquiv GaloisArr.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import
   StExcNonDet_SPostArr StDivNonDet_SPostArr
   StDivITree_SPostArr StDivExcNonDet_SPostArr.
@@ -55,16 +56,42 @@ Print Assumptions RelArrowCoherence.rel_left_inr_fields.
 Print Assumptions RelArrowCoherence.rel_left_natural_fields.
 Print Assumptions RelArrowCoherence.rel_first_left_dist_fields.
 
-(** Concrete structural-law instances additionally use the SP presentations'
-    operation semantics and extensional equality principles. *)
+(** Concrete law packages for property-only SP arrows and the shared
+    relational carrier. *)
 Print Assumptions SPostArr.ArrowLaws_PureASPostArr.
 Print Assumptions SPostArr.ArrowChoiceLaws_PureASPostArr.
+Print Assumptions SPostArr.ArrowApplyLaws_PureASPostArr.
 Print Assumptions SPostArr.ArrowLaws_PureDSLPostArr.
 Print Assumptions SPostArr.ArrowChoiceLaws_PureDSLPostArr.
-Print Assumptions RelSPPairArr.ArrowLaws_PureRelASPPairArr.
-Print Assumptions RelSPPairArr.ArrowChoiceLaws_PureRelASPPairArr.
-Print Assumptions RelSPPairArr.ArrowLaws_PureRelDSLPPairArr.
-Print Assumptions RelSPPairArr.ArrowChoiceLaws_PureRelDSLPPairArr.
+Print Assumptions SPostArr.ArrowApplyLaws_PureDSLPostArr.
+Print Assumptions Rel.ArrowLaws_Rel.
+Print Assumptions Rel.ArrowChoiceLaws_Rel.
+Print Assumptions Rel.ArrowApplyLaws_Rel.
+
+(** Direct-Rel round trips and semantic morphisms, including higher-order
+    application and state-over-option lifts. *)
+Print Assumptions ArrowMorphism.inverse_morphism.
+Print Assumptions ArrowMorphism.option_arrow_morphism.
+Print Assumptions ArrowMorphism.state_arrow_morphism.
+Print Assumptions ArrowMorphism.state_option_arrow_morphism.
+Print Assumptions SPostArrEquiv.asp_from_to.
+Print Assumptions SPostArrEquiv.asp_to_from.
+Print Assumptions SPostArrEquiv.dslp_from_to.
+Print Assumptions SPostArrEquiv.dslp_to_from.
+Print Assumptions SPostArrEquiv.option_asp_to_from.
+Print Assumptions SPostArrEquiv.option_dslp_to_from.
+Print Assumptions SPostArrEquiv.state_option_asp_to_from.
+Print Assumptions SPostArrEquiv.state_option_dslp_to_from.
+Print Assumptions SPostArrEquiv.asp_to_rel_morphism.
+Print Assumptions SPostArrEquiv.asp_from_rel_morphism.
+Print Assumptions SPostArrEquiv.dslp_to_rel_morphism.
+Print Assumptions SPostArrEquiv.dslp_from_rel_morphism.
+Print Assumptions SPostArrEquiv.state_option_asp_to_rel_morphism.
+Print Assumptions SPostArrEquiv.state_option_asp_from_rel_morphism.
+Print Assumptions SPostArrEquiv.state_option_dslp_to_rel_morphism.
+Print Assumptions SPostArrEquiv.state_option_dslp_from_rel_morphism.
+Print Assumptions SPostArrEquiv.optionASP_no_lawful_ArrowLoop.
+Print Assumptions SPostArrEquiv.optionDSLP_no_lawful_ArrowLoop.
 
 (** Generic coherence and concrete return readings: axiom-free. *)
 Print Assumptions RelArrowCoherence.rel_state_option_bind_fields.

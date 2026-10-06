@@ -9,7 +9,7 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivEx
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad PredMonad SPPredicateTransformers.
 From Incorrectness.Taxonomy.BaseSpecMonads.OldMonads Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import BaseGaloisConnections NewGaloisConnections.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPPairArr.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.EffectObservations.WP Require Import StDivExcNonDet_WStExc.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import StDivExcNonDet_SPStExc.
 

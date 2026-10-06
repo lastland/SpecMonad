@@ -20,7 +20,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
   - `#[export]` is not supported for `Instance` inside `Section` — use `#[global]`.
   - **Ltac hygiene**: Don't define Ltac if unused or used only once (inline instead). For repeated `unfold` lists within a file, use `Create HintDb db` + `#[local] Hint Unfold ... : db` + `autounfold with db`.
   - **CoqHammer in proof bodies**: Always use `sauto limit: 200` (not bare `sauto`) — bare `sauto` loops on typeclass-heavy goals. Works well for propositional tails after manual preprocessing (`unfold`/`cbn`/`destruct`). Keep manual proofs for witness construction (pair/sum `exists`), `rewrite` with `IsASP_rewrite`/`IsDSLP_rewrite`, `Proper_bind` setoid reasoning, and typeclass-derived `reflexivity`/`transitivity`. No global limit option exists — limits are per-tactic only.
-- **Sort inference in match bodies**: A bare `forall r, ... -> post r` as the body of a `match` against `mkOptionT` / `mkRelSPPair` has its sort inferred as `Type`, not `Prop`, breaking `optionT PureWP` / `Pred` unification with a confusing universe error. Wrap in a connective (`/\`, `\/`, `exists`) or add a `(_ : Prop)` cast.
+- **Sort inference in match bodies**: A bare `forall r, ... -> post r` as the body of a `match` against `mkOptionT` has its sort inferred as `Type`, not `Prop`, breaking `optionT PureWP` unification with a confusing universe error. Wrap in a connective (`/\`, `\/`, `exists`) or add a `(_ : Prop)` cast.
 - **Classical `itree void1` termination**: Reasoning that a deterministic ITree either converges or diverges requires `eutt_reta_or_div`, `ret_not_div`, `any_infinite_proper_eutt` from `ITree.Extra.Dijkstra.PureITreeBasics` — *not* in the default `From ITree Require Import ITree Eq Props.Infinite.`. `ret_not_div` takes `A` and `E` implicit, so call it as `ret_not_div Hinf`, not `ret_not_div _ _ _ Hinf`.
 
 ## Architecture
@@ -31,6 +31,8 @@ boundaries. `Taxonomy/deprecated/` is excluded from `_CoqProject`; omit it from
 normal symbol searches.
 
 Concrete arrow instantiation checks live in `Taxonomy/Arrows/Tests/`.
+
+All generic arrow-transformer law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type. Relational SP arrows reuse `Rel` and its existing laws and stacks; `RelSPostArr.v` computes the `asp` / `dslp` readings. The property-only equivalences use `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP` directly. Their round trips and morphisms use the selected pointwise equalities through `ArrowMorphism`, not Leibniz law dictionaries or relational equality reflection. The local exact source substitution in loop-obstruction transport is separate; see the [Arrows context](Code/Taxonomy/Arrows/CONTEXT.md).
 
 ## Agent skills
 
@@ -46,15 +48,13 @@ See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
 
 ### Domain docs
 
-`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPPairArr.v` defines the coupled presentation (`PureRelASPPairArr`, `PureRelDSLPPairArr`). See `Code/Taxonomy/README.md` for their well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify shared names such as `ASPostArr` and `DSLPostArr` when both presentations are in scope.
+`Arrows/SPostArr.v` defines property-only strongest-postcondition arrows (`PureASPostArr`, `PureDSLPostArr`); `Arrows/RelSPostArr.v` computes readings of `Rel`. See `Code/Taxonomy/README.md` for well-formedness properties, operation-preserving equivalence, and transformer stacks. Qualify shared names when both presentations are in scope.
 
 Multi-context: the root map links to contexts for active Coq directories.
 See [docs/agents/domain.md](docs/agents/domain.md).
 
 `ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Classes/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
 
-All generic arrow-transformer law proofs are purely algebraic: they derive
-from base arrow laws without inspecting the concrete arrow type.
 
 ## CI
 

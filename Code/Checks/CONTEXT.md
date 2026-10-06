@@ -22,10 +22,11 @@ The selected reports cover:
   [StDivExcNonDet_WStExc.v](../Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v).
   Their `Check` commands use `bool` state and `0 : nat`, exercising the
   independent state/result types supported by `WPureMonad.retP S a`.
-- The 16 shared structural equations in
-  [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and their eight concrete
-  `ArrowLaws` / `ArrowChoiceLaws` instances across the property-only and coupled
-  SP presentations.
+- Shared structural equations in
+  [RelArrowCoherence.v](../Classes/RelArrowCoherence.v), concrete property-only
+  SP law packages in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v), and the existing
+  relational laws in [Rel.v](../Taxonomy/Arrows/Rel.v). Both relational SP
+  readings reuse those `Rel` laws, rather than contributing duplicate packages.
 - `rel_state_option_bind` in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and `asp_to_dslp_bind`
   in [SPostArrMonad.v](../Taxonomy/Arrows/SPostArrMonad.v).
@@ -71,6 +72,16 @@ Read `Assumptions.v` for the exact report selection and the `check` target
 of [Makefile](../Makefile) for execution membership. Consult the current output
 for theorem dependencies rather than inferring them from imports. The target
 reports assumptions; it does not compare them against an allowlist.
+
+For direct-Rel equivalence results in
+[SPostArrEquiv.v](../Taxonomy/Arrows/SPostArrEquiv.v), the public round trips,
+morphisms, and operation-preservation results use the selected pointwise
+equalities. The direct-Rel morphisms do not use Leibniz bridges. Loop-obstruction
+transport in the same module has a separate local source-carrier equality step,
+justified by property-only extensionality because arbitrary `ArrowLoop`
+operations lack congruence; public obstruction statements remain semantic.
+Use the audit source and its current output to determine which declarations
+are reported and what assumptions they use.
 
 Related contexts: [Classes](../Classes/CONTEXT.md),
 [generic regressions](../Classes/Tests/CONTEXT.md), and

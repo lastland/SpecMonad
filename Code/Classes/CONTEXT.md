@@ -24,21 +24,42 @@ bind semantics from faithful relational presentations; it does not add
 well-formedness fields to concrete carriers. Loop has its own laws; neither
 transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 
+- [ArrowMorphism.v](ArrowMorphism.v) uses an ordinary `ArrowMorphism` record
+  with explicit operation and equality dictionaries:
+  `ArrowMorphism SA SC SX SE DA DC DX DE map`. `SE` and `DE` select the source
+  and destination `ArrowEq`. `morphism_proper` maps source-equivalent arrows
+  to destination-equivalent arrows. The five preservation fields,
+  `morphism_pure`, `morphism_comp`, `morphism_first`, `morphism_left`, and
+  `morphism_app`, use the destination `arrow_eq`. Application preservation
+  also maps the embedded arrow in the input.
+  Inverse morphisms and option/state lifts reuse this record and the selected
+  law dictionaries, not a separate exact-equality contract:
+  - `inverse_morphism` requires semantic round trips, properness of the back
+    map, and destination core/choice/application laws. Inverse application
+    uses `app_ext` to replace equivalent embedded arrows.
+  - `option_arrow_morphism` requires destination core/choice laws.
+  - `state_arrow_morphism` requires destination core/application laws,
+    including the law-derived `pure_ext`.
+  - `state_option_arrow_morphism` requires all three destination law packages.
+
+  `ArrowEq_leibniz` remains an ordinary definition for independent consumers;
+  direct-Rel equivalences do not use it.
 - [RelArrowCoherence.v](RelArrowCoherence.v) separates relational operation
   contracts (`RelArrow`, `RelArrowChoice`, `RelArrowApply`) from `RelArrowEq`,
   which identifies the chosen `arrow_eq` with pointwise relation equivalence.
   The shared `rel_arrow_laws`, `rel_arrow_choice_laws`, and
   `rel_arrow_apply_laws` instances supply complete law packages, including
   `Proper` fields and `app_ext`. Core laws need neither choice nor application;
-  choice laws need no application. Concrete SP modules instantiate these
-  contracts with recovered or stored relations.
+  choice laws need no application. Property-only SP arrows instantiate these
+  contracts with recovered relations. The relational carrier reuses its
+  existing laws in [Rel.v](../Taxonomy/Arrows/Rel.v).
   Relational-only `rel_<equation>_iff` lemmas and state-over-option formulas,
   including `rel_state_option_bind_fields`, do not require faithfulness.
   The exact-equality `rel_<equation>_fields` helpers and `RelArrowPresentation`
-  wrappers remain available. `rel_arrow_*_laws_leibniz` transports semantic
-  laws when equivalence reflects into ordinary equality; exact morphism
-  clients use explicit transported dictionaries rather than changing the
-  carrier's selected equality. Transformer laws remain in the generic
+  wrappers remain independent APIs. `rel_arrow_*_laws_leibniz` transports
+  semantic laws when equivalence reflects into ordinary equality. These
+  helpers do not change the carrier's selected equality, and the direct-Rel
+  morphisms do not use them. Transformer laws remain in the generic
   option/state modules.
 
 [Galois.v](Galois.v) relates two ordered binary carriers via alpha/gamma,

@@ -8,10 +8,10 @@
 
 From Coq Require Import Morphisms.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad.
+From Incorrectness.Classes Require Import Arrow ArrowMonad RelArrowCoherence.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
-  Rel PrePostArr RelPrePostArr RelSPPairArr SPostArr SPostArrMonad.
+  Rel PrePostArr RelPrePostArr SPostArr SPostArrMonad.
 
 Create HintDb sp_arrow_bind.
 #[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id
@@ -178,153 +178,115 @@ Proof.
 Qed.
 
 (* ================================================================= *)
-(** ** Coupled [PureRelASPPairArr] / [PureRelDSLPPairArr]              *)
+(** ** [progRelArr] and state-over-option Rel monad                   *)
 (* ================================================================= *)
 
-(** Angelic. *)
+(** The relational specification monad [progRelArr S] specializes the
+    input of [stateArrT S optionRel] to [unit]. Non-unit inputs
+    exercise the reader-like threading through [stateArrT S optionRel I]. *)
 
-Definition Monad_PureRelASPPairArr (I : Type)
-  : Monad (PureRelASPPairArr I) :=
-  @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-    ArrowApply_PureRelASPPairArr I.
+Definition Monad_progRelArr (S : Type) : Monad (progRelArr S) :=
+  @Monad_Arrow (stateArrT S optionRel)
+    (@Arrow_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel))
+    (@ArrowApply_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+      (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel)) unit.
 
-Definition Eq1Equivalence_PureRelASPPairArr (I : Type)
-  : @Eq1Equivalence (PureRelASPPairArr I) (Monad_PureRelASPPairArr I)
-    (@Eq1_PureRelASPPairArr I) :=
-  @Eq1Equivalence_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-    ArrowApply_PureRelASPPairArr ArrowEq_PureRelASPPairArr I.
+Definition MonadLawsE_progRelArr (S : Type)
+  : @MonadLawsE (progRelArr S)
+      (@Eq1_Arrow _ (@ArrowEq_stateArrT S optionRel
+          (@ArrowEq_optionArrT _ ArrowEq_Rel)) unit)
+      (Monad_progRelArr S) :=
+  @MonadLawsE_Arrow (stateArrT S optionRel)
+    (@Arrow_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel))
+    (@ArrowApply_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+      (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel))
+    (@ArrowEq_stateArrT S optionRel
+      (@ArrowEq_optionArrT _ ArrowEq_Rel))
+    (@ArrowLaws_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+      (@ArrowEq_optionArrT _ ArrowEq_Rel)
+      (@ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel
+        ArrowEq_Rel ArrowLaws_Rel ArrowChoiceLaws_Rel))
+    (@ArrowApplyLaws_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+      (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel)
+      (@ArrowEq_optionArrT _ ArrowEq_Rel)
+      (@ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel
+        ArrowEq_Rel ArrowLaws_Rel ArrowChoiceLaws_Rel)
+      (@ArrowApplyLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel
+        ArrowEq_Rel ArrowLaws_Rel ArrowChoiceLaws_Rel ArrowApplyLaws_Rel))
+    unit.
 
-(** Compact relational descriptions of return and bind. *)
+(** Compact return and bind agreement for [stateArrT S optionRel],
+    exercising arbitrary (non-unit) input [I]. *)
 
-Definition ret_ASP {I A} (a : A) : PureRelASPPairArr I A :=
-  mkASP (fun _ a' => a = a').
-
-(** For the angelic bind, we extract the underlying relation directly
-    via [rel (proj1_sig ...)], mirroring the demonic bind. *)
-Definition bind_ASP {I A B}
-    (m : PureRelASPPairArr I A) (k : A -> PureRelASPPairArr I B)
-    : PureRelASPPairArr I B :=
-  mkASP (fun i c => exists b,
-           rel (proj1_sig m) i b /\
-           rel (proj1_sig (k b)) i c).
-
-Lemma ret_ASP_eq_ret_arrow {I A} (a : A) :
-  @arrow_eq PureRelASPPairArr ArrowEq_PureRelASPPairArr I A
-    (ret_ASP a) (@ret_arrow PureRelASPPairArr Arrow_PureRelASPPairArr I A a).
-Proof. apply RelSPPairArr.ASP_rel_ext; intros i b. reflexivity. Qed.
-
-Lemma bind_ASP_eq_bind_arrow {I A B}
-    (m : PureRelASPPairArr I A) (k : A -> PureRelASPPairArr I B) :
-  @arrow_eq PureRelASPPairArr ArrowEq_PureRelASPPairArr I B
-    (bind_ASP m k)
-    (@bind_arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowApply_PureRelASPPairArr I A B m k).
+Lemma state_option_rel_ret_eq {S I A} (a : A) (i : I) (s : S) r :
+  @ret_arrow (stateArrT S optionRel)
+    (@Arrow_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel))
+    I A a (i, s) r <-> Some (a, s) = r.
 Proof.
-  autounfold with sp_arrow_bind.
-  rewrite (@first_pure PureRelASPPairArr Arrow_PureRelASPPairArr
-    ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr).
-  repeat rewrite (@pure_comp PureRelASPPairArr Arrow_PureRelASPPairArr
-    ArrowEq_PureRelASPPairArr ArrowLaws_PureRelASPPairArr).
-  apply RelSPPairArr.ASP_rel_ext; intros i c. cbn. split.
-  - intros [b [Hm Hk]]. exists (b, i). split.
-    + exists (i, i). split; [reflexivity |].
-      exists (b, i). cbn [swap]. auto.
-    + exists (k b, i). cbn. auto.
-  - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
-    subst p0. destruct p1 as [b i']. cbn [swap] in Hp. subst p.
-    cbn in Hm, Hp2. destruct Hm as [Hm Hi]. subst i' p2.
-    exists b. exact (conj Hm Hk).
+  apply (@rel_state_option_pure_fields Rel Arrow_Rel ArrowChoice_Rel
+    (fun _ _ f => f)
+    (fun _ _ _ _ _ => iff_refl _)
+    S I A (fun _ => a) i s r).
 Qed.
 
-Definition MonadLawsE_PureRelASPPairArr (I : Type)
-  : @MonadLawsE (PureRelASPPairArr I) (@Eq1_PureRelASPPairArr I)
-    (Monad_PureRelASPPairArr I) :=
-  @MonadLawsE_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-    ArrowApply_PureRelASPPairArr ArrowEq_PureRelASPPairArr
-    ArrowLaws_PureRelASPPairArr ArrowApplyLaws_PureRelASPPairArr I.
-
-(** Demonic. *)
-
-Definition Monad_PureRelDSLPPairArr (I : Type)
-  : Monad (PureRelDSLPPairArr I) :=
-  @Monad_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-    ArrowApply_PureRelDSLPPairArr I.
-
-Definition Eq1Equivalence_PureRelDSLPPairArr (I : Type)
-  : @Eq1Equivalence (PureRelDSLPPairArr I) (Monad_PureRelDSLPPairArr I)
-    (@Eq1_PureRelDSLPPairArr I) :=
-  @Eq1Equivalence_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-    ArrowApply_PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I.
-
-Definition ret_DSLP {I A} (a : A) : PureRelDSLPPairArr I A :=
-  mkDSLP (fun _ a' => a = a').
-
-(** For the demonic bind, we extract the underlying relation directly
-    via [rel (proj1_sig ...)], avoiding classical axioms. *)
-Definition bind_DSLP {I A B}
-    (m : PureRelDSLPPairArr I A) (k : A -> PureRelDSLPPairArr I B)
-    : PureRelDSLPPairArr I B :=
-  mkDSLP (fun i c => exists b,
-            rel (proj1_sig m) i b /\
-            rel (proj1_sig (k b)) i c).
-
-Lemma ret_DSLP_eq_ret_arrow {I A} (a : A) :
-  @arrow_eq PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I A
-    (ret_DSLP a) (@ret_arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr I A a).
-Proof. apply RelSPPairArr.DSLP_rel_ext; intros i b. reflexivity. Qed.
-
-Lemma bind_DSLP_eq_bind_arrow {I A B}
-    (m : PureRelDSLPPairArr I A) (k : A -> PureRelDSLPPairArr I B) :
-  @arrow_eq PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr I B
-    (bind_DSLP m k)
-    (@bind_arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowApply_PureRelDSLPPairArr I A B m k).
+Lemma state_option_rel_bind_eq {S I A B}
+    (m : stateArrT S optionRel I A) (k : A -> stateArrT S optionRel I B)
+    (i : I) (s : S) r :
+  @bind_arrow (stateArrT S optionRel)
+    (@Arrow_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel))
+    (@ArrowApply_stateArrT S optionRel
+      (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+      (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel))
+    I A B m k (i, s) r <->
+  exists om, m (i, s) om /\
+    match om with
+    | Some (a, t) => k a (i, t) r
+    | None => r = None
+    end.
 Proof.
-  autounfold with sp_arrow_bind.
-  rewrite (@first_pure PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-    ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr).
-  repeat rewrite (@pure_comp PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-    ArrowEq_PureRelDSLPPairArr ArrowLaws_PureRelDSLPPairArr).
-  apply RelSPPairArr.DSLP_rel_ext; intros i c. cbn. split.
-  - intros [b [Hm Hk]]. exists (b, i). split.
-    + exists (i, i). split; [reflexivity |].
-      exists (b, i). cbn [swap]. auto.
-    + exists (k b, i). cbn. auto.
-  - intros [p [[p0 [Hp0 [p1 [Hm Hp]]]] [p2 [Hp2 Hk]]]].
-    subst p0. destruct p1 as [b i']. cbn [swap] in Hp. subst p.
-    cbn in Hm, Hp2. destruct Hm as [Hm Hi]. subst i' p2.
-    exists b. exact (conj Hm Hk).
+  apply (@rel_state_option_bind_fields Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel
+    (fun _ _ f => f)
+    (fun _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ _ => iff_refl _)
+    (fun _ _ _ _ _ => iff_refl _)
+    S I A B m k i s r).
 Qed.
 
-Lemma proj_mkDSLP {J B} (R : Rel J B) pre b :
-  spost (proj1_sig (mkDSLP R)) pre b <-> dslp R pre b.
-Proof. reflexivity. Qed.
+(** Compact return and bind agreement for [progRelArr S] (specialized to [unit]). *)
 
-Definition MonadLawsE_PureRelDSLPPairArr (I : Type)
-  : @MonadLawsE (PureRelDSLPPairArr I) (@Eq1_PureRelDSLPPairArr I)
-    (Monad_PureRelDSLPPairArr I) :=
-  @MonadLawsE_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-    ArrowApply_PureRelDSLPPairArr ArrowEq_PureRelDSLPPairArr
-    ArrowLaws_PureRelDSLPPairArr ArrowApplyLaws_PureRelDSLPPairArr I.
+Lemma progRelArr_ret_eq {S A} (a : A) (s : S) r :
+  @ret _ (Monad_progRelArr S) A a (tt, s) r <-> Some (a, s) = r.
+Proof. exact (state_option_rel_ret_eq a tt s r). Qed.
+
+Lemma progRelArr_bind_eq {S A B} (m : progRelArr S A) (k : A -> progRelArr S B)
+    (s : S) r :
+  @bind _ (Monad_progRelArr S) A B m k (tt, s) r <->
+  exists om, m (tt, s) om /\
+    match om with
+    | Some (a, t) => k a (tt, t) r
+    | None => r = None
+    end.
+Proof. exact (state_option_rel_bind_eq m k tt s r). Qed.
 
 (* ================================================================= *)
 (** ** Resolution checks                                               *)
 (* ================================================================= *)
-
-(** The concrete bundle must reuse the generic dictionary itself. *)
-Example coupled_asp_reuses_arrow (I : Type) :
-  @Monad_PureRelASPPairArr I =
-  @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-    ArrowApply_PureRelASPPairArr I.
-Proof. reflexivity. Qed.
 
 (** These monads are inferred without naming the concrete aliases.  The
     equalities check both automatic resolution and the public alias bodies. *)
 Definition inferred_rel_monad : Monad (Rel bool) := _.
 Definition inferred_prepost_monad : Monad (PrePostArr bool) := _.
 Definition inferred_relprepost_monad : Monad (RelPrePostArr bool) := _.
-Definition inferred_asp_monad : Monad (PureRelASPPairArr bool) := _.
-Definition inferred_dslp_monad : Monad (PureRelDSLPPairArr bool) := _.
 
 Example rel_reuses_arrow :
   inferred_rel_monad = @Monad_Rel bool /\
@@ -342,20 +304,6 @@ Example relprepost_reuses_arrow :
     @Monad_Arrow RelPrePostArr Arrow_RelPrePost ArrowApply_RelPrePost bool.
 Proof. split; reflexivity. Qed.
 
-Example asp_resolution_uses_arrow :
-  inferred_asp_monad = @Monad_PureRelASPPairArr bool /\
-  @Monad_PureRelASPPairArr bool =
-    @Monad_Arrow PureRelASPPairArr Arrow_PureRelASPPairArr
-      ArrowApply_PureRelASPPairArr bool.
-Proof. split; reflexivity. Qed.
-
-Example dslp_reuses_arrow :
-  inferred_dslp_monad = @Monad_PureRelDSLPPairArr bool /\
-  @Monad_PureRelDSLPPairArr bool =
-    @Monad_Arrow PureRelDSLPPairArr Arrow_PureRelDSLPPairArr
-      ArrowApply_PureRelDSLPPairArr bool.
-Proof. split; reflexivity. Qed.
-
 (** Canonical concrete equalities must resolve the generic law instances. *)
 Definition rel_canonical_laws :
   @MonadLawsE (Rel bool) (@Eq1_Rel bool) inferred_rel_monad := _.
@@ -364,12 +312,6 @@ Definition prepost_canonical_laws :
 Definition relprepost_canonical_laws :
   @MonadLawsE (RelPrePostArr bool) (@Eq1_RelPrePost bool)
     inferred_relprepost_monad := _.
-Definition asp_canonical_laws :
-  @MonadLawsE (PureRelASPPairArr bool)
-    (@Eq1_PureRelASPPairArr bool) inferred_asp_monad := _.
-Definition dslp_canonical_laws :
-  @MonadLawsE (PureRelDSLPPairArr bool)
-    (@Eq1_PureRelDSLPPairArr bool) inferred_dslp_monad := _.
 
 Definition rel_canonical_equivalence :
   @Eq1Equivalence (Rel bool) inferred_rel_monad (@Eq1_Rel bool) := _.
@@ -378,12 +320,6 @@ Definition prepost_canonical_equivalence :
 Definition relprepost_canonical_equivalence :
   @Eq1Equivalence (RelPrePostArr bool) inferred_relprepost_monad
     (@Eq1_RelPrePost bool) := _.
-Definition asp_canonical_equivalence :
-  @Eq1Equivalence (PureRelASPPairArr bool) inferred_asp_monad
-    (@Eq1_PureRelASPPairArr bool) := _.
-Definition dslp_canonical_equivalence :
-  @Eq1Equivalence (PureRelDSLPPairArr bool) inferred_dslp_monad
-    (@Eq1_PureRelDSLPPairArr bool) := _.
 
 (** Pointwise arrow equalities, rather than Leibniz equality. *)
 Definition rel_monad_laws :
@@ -422,45 +358,33 @@ Definition property_state_option_asp_monad_laws (S : Type) :
     (@Monad_Arrow _ (SPostArr.Arrow_stateOptASP S)
       (SPostArr.ArrowApply_stateOptASP S) bool) := _.
 
-(** Coupled demonic-liberal arrows exercise the other SP presentation. *)
-Definition coupled_dslp_monad_laws :
-  @MonadLawsE (PureRelDSLPPairArr bool)
-    (@Eq1_Arrow _ ArrowEq_PureRelDSLPPairArr bool)
-    (@Monad_Arrow _ Arrow_PureRelDSLPPairArr
-      ArrowApply_PureRelDSLPPairArr bool) := _.
+(** Relational arrows: base, option, state, and state-over-option stacks.
+    These exercise the shared [Rel] presentation with non-unit inputs. *)
+Definition rel_option_monad_laws :
+  @MonadLawsE (optionRel bool)
+    (@Eq1_Arrow _ (@ArrowEq_optionArrT _ ArrowEq_Rel) bool)
+    (@Monad_Arrow _ (@Arrow_optionArrT _ Arrow_Rel ArrowChoice_Rel)
+      (@ArrowApply_optionArrT _ Arrow_Rel ArrowChoice_Rel ArrowApply_Rel) bool) := _.
 
-Definition coupled_option_dslp_monad_laws :
-  @MonadLawsE (RelSPPairArr.optionDSLPArr bool)
-    (@Eq1_Arrow _ (@ArrowEq_optionArrT _ ArrowEq_PureRelDSLPPairArr) bool)
-    (@Monad_Arrow _ (@Arrow_optionArrT _ Arrow_PureRelDSLPPairArr
-        ArrowChoice_PureRelDSLPPairArr)
-      (@ArrowApply_optionArrT _ Arrow_PureRelDSLPPairArr
-        ArrowChoice_PureRelDSLPPairArr
-        ArrowApply_PureRelDSLPPairArr) bool) := _.
+Definition rel_state_monad_laws (S : Type) :
+  @MonadLawsE (stateArrT S Rel bool)
+    (@Eq1_Arrow _ (@ArrowEq_stateArrT S _ ArrowEq_Rel) bool)
+    (@Monad_Arrow _ (@Arrow_stateArrT S _ Arrow_Rel)
+      (@ArrowApply_stateArrT S _ Arrow_Rel ArrowApply_Rel) bool) := _.
 
-Definition coupled_state_dslp_monad_laws (S : Type) :
-  @MonadLawsE (stateArrT S PureRelDSLPPairArr bool)
-    (@Eq1_Arrow _ (@ArrowEq_stateArrT S _ ArrowEq_PureRelDSLPPairArr) bool)
-    (@Monad_Arrow _ (@Arrow_stateArrT S _ Arrow_PureRelDSLPPairArr)
-      (@ArrowApply_stateArrT S _ Arrow_PureRelDSLPPairArr
-        ArrowApply_PureRelDSLPPairArr) bool) := _.
-
-(** The state-over-option stack is spelled with the generic transformer
-    dictionaries applied to the coupled base: no per-stack instances
-    are registered for this presentation. *)
-Definition coupled_state_option_dslp_monad_laws (S : Type) :
-  @MonadLawsE (stateArrT S RelSPPairArr.optionDSLPArr bool)
-    (@Eq1_Arrow _ (@ArrowEq_stateArrT S RelSPPairArr.optionDSLPArr
-        (@ArrowEq_optionArrT _ ArrowEq_PureRelDSLPPairArr)) bool)
+Definition rel_state_option_monad_laws (S : Type) :
+  @MonadLawsE (stateArrT S optionRel bool)
+    (@Eq1_Arrow _ (@ArrowEq_stateArrT S optionRel
+        (@ArrowEq_optionArrT _ ArrowEq_Rel)) bool)
     (@Monad_Arrow _ (@Arrow_stateArrT S _
-        (@Arrow_optionArrT _ Arrow_PureRelDSLPPairArr
-          ArrowChoice_PureRelDSLPPairArr))
+        (@Arrow_optionArrT _ Arrow_Rel
+          ArrowChoice_Rel))
       (@ArrowApply_stateArrT S _
-        (@Arrow_optionArrT _ Arrow_PureRelDSLPPairArr
-          ArrowChoice_PureRelDSLPPairArr)
-        (@ArrowApply_optionArrT _ Arrow_PureRelDSLPPairArr
-          ArrowChoice_PureRelDSLPPairArr
-          ArrowApply_PureRelDSLPPairArr)) bool) := _.
+        (@Arrow_optionArrT _ Arrow_Rel
+          ArrowChoice_Rel)
+        (@ArrowApply_optionArrT _ Arrow_Rel
+          ArrowChoice_Rel
+          ArrowApply_Rel)) bool) := _.
 
 (** The named monad dictionaries of [SPostArrMonad] alias the same
     property-only stacks.  Typeclass resolution does not see through the
