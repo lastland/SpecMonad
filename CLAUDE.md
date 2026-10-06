@@ -11,7 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development rules
 
-- Use **well-formed** / **well-formedness** for the properties constraining SP transformers.
+- Reserve **healthy** / **healthiness** for predicate transformers and their class-defining conditions from refinement calculus and related literature. Use **well-formed** / **well-formedness** for general validity constraints; healthiness does not assert algebraic arrow or monad laws.
 - Always look up ITree and ExtLib libraries first before defining something new, to avoid reinventing the wheel.
 - Do not use proof mode for definitions; write explicit terms. Prefer `#[program] Definition` over `refine` for subset types, and keep tactics for proof obligations only. This lets Coq insert `proj1_sig` coercions automatically (so you don't write `proj1_sig` everywhere) and generate proof obligations (so you don't explicitly use the `exist` constructor).
 - Coq typeclass resolution can cause infinite loops; if you see unusually long compile time, do not wait — try to figure out if there is a typeclass resolution issue. For a project of this size, compilation time should NOT be very long.

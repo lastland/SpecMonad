@@ -1,4 +1,4 @@
-# Predicate-transformer well-formedness
+# Predicate-transformer healthiness conditions
 
 Research date: 2026-09-10. Subject:
 [`PredicateTransformerProperties.v`](PredicateTransformerProperties.v).
@@ -6,15 +6,22 @@ Research date: 2026-09-10. Subject:
 ## Adopted name and terminology
 
 **`Code/Taxonomy/Arrows/PredicateTransformerProperties.v`** names the file's role:
-it defines well-formedness properties and proves consequences and specializations.
+it defines predicate-transformer healthiness conditions and proves consequences
+and specializations.
 The agreed layout places all SP properties under `Taxonomy/Arrows/` and the
 generic `ArrowMorphism` material under `Classes/`.
 
 The properties follow Back and von Wright's **homomorphism properties of
 predicate transformers**, with roots in Dijkstra's weakest-precondition
-semantics.[^bw][^dijkstra] The project uses **well-formed** and **well-formedness**.
-Morgan, McIver, and Seidel use the phrase **“healthiness” (well-formedness)
-conditions**.[^mms] Different combinations select different well-formed fragments.
+semantics.[^bw][^dijkstra] Morgan, McIver, and Seidel use the phrase
+**“healthiness” (well-formedness) conditions**.[^mms]
+
+Here **healthiness conditions** characterize classes of predicate transformers,
+as in refinement calculus and related literature. A transformer is **healthy**
+for its class when it satisfies that class's conditions. Different classes may
+require different combinations of properties. These terms are not general synonyms
+for **well-formed** / **well-formedness**, which we retain for general validity
+constraints. Healthiness does not assert algebraic arrow or monad laws.
 
 ## Exact correspondence with the code
 
