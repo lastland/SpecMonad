@@ -7,6 +7,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad ArrowMonad RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPMonad.
 
 Definition ASLP (A : Type) : Type := ASLPArr unit A.
 #[global] Instance Monad_ASLP : Monad ASLP := Monad_Arrow ASLPArr unit.
@@ -179,4 +180,170 @@ Theorem not_OrderedMonad_ASLPSt :
 Proof.
   intros [_ _ Hbind]. apply aslp_bind_R1_R0.
   apply (Hbind unit unit _ _ aslp_R1_le_R0). intros a P b Hb. exact Hb.
+Qed.
+
+(** ** Without state, ASLP is DSLP
+
+    The dual of the collapse in [DSPMonad.v].  At input [unit] the ASP
+    disjunct of an ASLP reading implies the DSLP one ([aslpOf_unit]), so the
+    two healthiness conditions cut the same transformers out of
+    [SPArrT unit A] ([dslp_aslp_unit_hom], [aslp_dslp_unit_hom]), and the
+    identity on transformers is an isomorphism between the monads [ASLP] and
+    [DSLP]: [aslp_to_dslp] and [dslp_to_aslp] are mutually inverse, preserve
+    [ret] and [bind], and carry the pointwise orders to each other.
+
+    [OldMonads/ASLPMonad.v] builds this collapse in by defining its pure
+    ASLP monad through DSLP's.  Here the two monads are given independently,
+    each by its own arrow.  Only [aslpOf_unit] is constructive: an ASLP
+    element preserves joins, and is read through its relation, classically. *)
+
+Lemma aslpOf_unit {A} (R : SPureArr unit A) (P : unit -> Prop) (a : A) :
+  aslpOf R P a <-> dslpOf R P a.
+Proof.
+  unfold aslpOf, aspOf, dslpOf, asp, dslp. split.
+  - intros [[[] [Hp _]] | H].
+    + intros [] _. exact Hp.
+    + exact H.
+  - intro H. right. exact H.
+Qed.
+
+Lemma dslp_aslp_unit_hom {A} (w : SPArrT unit A) :
+  sp_monotone w /\ sp_terminating w /\ sp_conjunctive w ->
+  sp_monotone w /\ sp_terminating w /\ sp_disjunctive w.
+Proof.
+  intro H. apply aslp_healthy_hom.
+  exists (dslpRelT w). intros P y.
+  etransitivity; [ exact (dslp_hom_meet w H P y) |].
+  symmetry. exact (aslpOf_unit (dslpRelT w) P y).
+Qed.
+
+Lemma aslp_dslp_unit_hom {A} (w : SPArrT unit A) :
+  sp_monotone w /\ sp_terminating w /\ sp_disjunctive w ->
+  sp_monotone w /\ sp_terminating w /\ sp_conjunctive w.
+Proof.
+  intro H. destruct (aslp_hom_healthy w H) as [R HR].
+  apply dslp_meet_hom. intros P b.
+  etransitivity; [ exact (HR P b) |].
+  etransitivity; [ exact (aslpOf_unit R P b) |].
+  split.
+  - intros Hd a Ha. apply Ha.
+    exact (proj2 (HR P b) (proj2 (aslpOf_unit R P b) Hd)).
+  - intros Hall x Hx. apply Hall. intros Q HQ.
+    exact (proj1 (aslpOf_unit R Q b) (proj1 (HR Q b) HQ) x Hx).
+Qed.
+
+Definition aslp_to_dslp {A} (l : ASLP A) : DSLP A :=
+  exist _ (getASLP l) (aslp_dslp_unit_hom _ (proj2_sig l)).
+
+Definition dslp_to_aslp {A} (n : DSLP A) : ASLP A :=
+  exist _ (getDSLPArr n) (dslp_aslp_unit_hom _ (proj2_sig n)).
+
+Lemma get_aslp_to_dslp {A} (l : ASLP A) P a :
+  getDSLPArr (aslp_to_dslp l) P a <-> getASLP l P a.
+Proof. reflexivity. Qed.
+
+Lemma get_dslp_to_aslp {A} (n : DSLP A) P a :
+  getASLP (dslp_to_aslp n) P a <-> getDSLPArr n P a.
+Proof. reflexivity. Qed.
+
+Lemma dslp_to_aslp_to_dslp {A} (n : DSLP A) :
+  @eq1 DSLP Eq1_DSLP A (aslp_to_dslp (dslp_to_aslp n)) n.
+Proof. intros P a. reflexivity. Qed.
+
+Lemma aslp_to_dslp_to_aslp {A} (l : ASLP A) :
+  @eq1 ASLP Eq1_ASLP A (dslp_to_aslp (aslp_to_dslp l)) l.
+Proof. intros P a. reflexivity. Qed.
+
+Lemma ordASLP_aslp_to_dslp {A} (l l' : ASLP A) :
+  ordASLP l l' <-> ordDSLP (aslp_to_dslp l) (aslp_to_dslp l').
+Proof. split; intro H; exact H. Qed.
+
+Lemma ordDSLP_dslp_to_aslp {A} (n n' : DSLP A) :
+  ordDSLP n n' <-> ordASLP (dslp_to_aslp n) (dslp_to_aslp n').
+Proof. split; intro H; exact H. Qed.
+
+(** The two elements denote one relation. *)
+Lemma aslp_to_dslp_rel {A} (l : ASLP A) i a :
+  dslpRel (aslp_to_dslp l) i a <-> aslpRel l i a.
+Proof.
+  destruct i. destruct (proj2_sig l) as [Hm [Ht _]].
+  change ((forall P : unit -> Prop, getASLP l P a -> P tt)
+          <-> ~ getASLP l (fun _ => False) a /\ getASLP l (fun z => z = tt) a).
+  split.
+  - intro H. split.
+    + intro Hf. exact (H (fun _ => False) Hf).
+    + refine (Hm _ _ _ a (Ht a)). intros [] _. reflexivity.
+  - intros [Hn _] P HP. apply NNPP. intro Hp. apply Hn.
+    refine (Hm _ _ _ a HP). intros [] Hx. exact (Hp Hx).
+Qed.
+
+Lemma dslp_to_aslp_rel {A} (n : DSLP A) i a :
+  aslpRel (dslp_to_aslp n) i a <-> dslpRel n i a.
+Proof. exact (iff_sym (aslp_to_dslp_rel (dslp_to_aslp n) i a)). Qed.
+
+Lemma aslp_to_dslp_ret {A} (x : A) :
+  @eq1 DSLP Eq1_DSLP A (aslp_to_dslp (@ret ASLP Monad_ASLP A x)) (@ret DSLP Monad_DSLP A x).
+Proof.
+  apply (proj2 (dslpRel_eq (aslp_to_dslp (@ret ASLP Monad_ASLP A x))
+                  (@ret DSLP Monad_DSLP A x))).
+  intros i a.
+  etransitivity; [ exact (aslp_to_dslp_rel (@ret ASLP Monad_ASLP A x) i a) |].
+  etransitivity;
+    [ exact (@rel_pure ASLPArr Arrow_ASLPArr RelArrow_ASLPArr unit A (fun _ => x) i a) |].
+  symmetry. exact (dslpRel_retDSLP x i a).
+Qed.
+
+Lemma aslp_to_dslp_bind {A B} (l : ASLP A) (k : A -> ASLP B) :
+  @eq1 DSLP Eq1_DSLP B (aslp_to_dslp (@bind ASLP Monad_ASLP A B l k))
+    (@bind DSLP Monad_DSLP A B (aslp_to_dslp l) (fun a => aslp_to_dslp (k a))).
+Proof.
+  apply (proj2 (dslpRel_eq (aslp_to_dslp (@bind ASLP Monad_ASLP A B l k))
+                  (@bind DSLP Monad_DSLP A B (aslp_to_dslp l)
+                     (fun a => aslp_to_dslp (k a))))).
+  intros i b.
+  etransitivity; [ exact (aslp_to_dslp_rel (@bind ASLP Monad_ASLP A B l k) i b) |].
+  etransitivity;
+    [ exact (@rel_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr RelArrow_ASLPArr
+               RelArrowApply_ASLPArr unit A B l k i b) |].
+  etransitivity;
+    [| symmetry;
+       exact (dslpRel_bindDSLP (aslp_to_dslp l) (fun a => aslp_to_dslp (k a)) i b) ].
+  split; intros [a [H1 H2]]; exists a; split.
+  - exact (proj2 (aslp_to_dslp_rel l i a) H1).
+  - exact (proj2 (aslp_to_dslp_rel (k a) i b) H2).
+  - exact (proj1 (aslp_to_dslp_rel l i a) H1).
+  - exact (proj1 (aslp_to_dslp_rel (k a) i b) H2).
+Qed.
+
+Lemma dslp_to_aslp_ret {A} (x : A) :
+  @eq1 ASLP Eq1_ASLP A (dslp_to_aslp (@ret DSLP Monad_DSLP A x)) (@ret ASLP Monad_ASLP A x).
+Proof.
+  apply (aslpRel_faithful (dslp_to_aslp (@ret DSLP Monad_DSLP A x))
+           (@ret ASLP Monad_ASLP A x)).
+  intros i a.
+  etransitivity; [ exact (dslp_to_aslp_rel (@ret DSLP Monad_DSLP A x) i a) |].
+  etransitivity; [ exact (dslpRel_retDSLP x i a) |].
+  symmetry.
+  exact (@rel_pure ASLPArr Arrow_ASLPArr RelArrow_ASLPArr unit A (fun _ => x) i a).
+Qed.
+
+Lemma dslp_to_aslp_bind {A B} (n : DSLP A) (k : A -> DSLP B) :
+  @eq1 ASLP Eq1_ASLP B (dslp_to_aslp (@bind DSLP Monad_DSLP A B n k))
+    (@bind ASLP Monad_ASLP A B (dslp_to_aslp n) (fun a => dslp_to_aslp (k a))).
+Proof.
+  apply (aslpRel_faithful (dslp_to_aslp (@bind DSLP Monad_DSLP A B n k))
+           (@bind ASLP Monad_ASLP A B (dslp_to_aslp n) (fun a => dslp_to_aslp (k a)))).
+  intros i b.
+  etransitivity; [ exact (dslp_to_aslp_rel (@bind DSLP Monad_DSLP A B n k) i b) |].
+  etransitivity; [ exact (dslpRel_bindDSLP n k i b) |].
+  etransitivity;
+    [| symmetry;
+       exact (@rel_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr RelArrow_ASLPArr
+                RelArrowApply_ASLPArr unit A B (dslp_to_aslp n)
+                (fun a => dslp_to_aslp (k a)) i b) ].
+  split; intros [a [H1 H2]]; exists a; split.
+  - exact (proj2 (dslp_to_aslp_rel n i a) H1).
+  - exact (proj2 (dslp_to_aslp_rel (k a) i b) H2).
+  - exact (proj1 (dslp_to_aslp_rel n i a) H1).
+  - exact (proj1 (dslp_to_aslp_rel (k a) i b) H2).
 Qed.

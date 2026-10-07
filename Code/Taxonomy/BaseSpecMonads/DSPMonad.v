@@ -8,6 +8,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad ArrowMonad RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPMonad.
 
 Definition DSP (A : Type) : Type := DSPArr unit A.
 #[global] Instance Monad_DSP : Monad DSP := Monad_Arrow DSPArr unit.
@@ -193,4 +194,166 @@ Theorem not_OrderedMonad_DSPSt :
 Proof.
   intros [_ _ Hbind]. apply dsp_bind_R0_R1.
   apply (Hbind unit unit _ _ dsp_R0_le_R1). intros a P b Hb. exact Hb.
+Qed.
+
+(** ** Without state, DSP is ASP
+
+    At input [unit] a precondition is a single proposition, and the DSLP
+    conjunct of a DSP reading follows from the ASP one ([dspOf_unit]).  So
+    the two healthiness conditions cut the same transformers out of
+    [SPArrT unit A] ([asp_dsp_unit_hom], [dsp_asp_unit_hom]), and the
+    identity on transformers is an isomorphism between the monads [DSP] and
+    [ASP]: [dsp_to_asp] and [asp_to_dsp] are mutually inverse, preserve
+    [ret] and [bind], and carry the pointwise orders to each other.
+
+    This is the collapse that [OldMonads/DSPMonad.v] builds in by defining
+    its pure DSP monad through ASP's.  Here the two monads are given
+    independently, each by its own arrow, so preservation of [ret] and
+    [bind] is a theorem.  [dspOf_unit], [asp_dsp_unit_hom] and [asp_to_dsp]
+    are constructive; the converse inclusion of carriers, and so everything
+    stated with [dsp_to_asp], is classical. *)
+
+Lemma dspOf_unit {A} (R : SPureArr unit A) (P : unit -> Prop) (a : A) :
+  dspOf R P a <-> aspOf R P a.
+Proof.
+  unfold dspOf, aspOf, dslpOf, asp, dslp. split.
+  - intros [H _]. exact H.
+  - intros [[] [Hp Hr]]. split.
+    + exists tt. split; assumption.
+    + intros [] _. exact Hp.
+Qed.
+
+Lemma asp_dsp_unit_hom {A} (w : SPArrT unit A) :
+  sp_monotone w /\ sp_strict w /\ sp_disjunctive w ->
+  sp_monotone w /\ sp_strict w /\ sp_conjunctive w.
+Proof.
+  intro H. apply dsp_healthy_hom.
+  exists (fun x y => w (fun z => z = x) y). intros P y.
+  etransitivity; [ exact (asp_hom_join w H P y) |].
+  symmetry. exact (dspOf_unit (fun x y => w (fun z => z = x) y) P y).
+Qed.
+
+Lemma dsp_asp_unit_hom {A} (w : SPArrT unit A) :
+  sp_monotone w /\ sp_strict w /\ sp_conjunctive w ->
+  sp_monotone w /\ sp_strict w /\ sp_disjunctive w.
+Proof.
+  intro H. destruct (dsp_hom_healthy w H) as [R HR].
+  apply asp_join_hom. intros P b.
+  etransitivity; [ exact (HR P b) |].
+  etransitivity; [ exact (dspOf_unit R P b) |].
+  etransitivity; [ exact (aspOf_join R P b) |].
+  split; intros [x [Hp Hx]]; exists x; (split; [ exact Hp |]).
+  - exact (proj2 (HR _ b) (proj2 (dspOf_unit R _ b) Hx)).
+  - exact (proj1 (dspOf_unit R _ b) (proj1 (HR _ b) Hx)).
+Qed.
+
+Definition dsp_to_asp {A} (d : DSP A) : ASP A :=
+  exist _ (getDSP d) (dsp_asp_unit_hom _ (proj2_sig d)).
+
+Definition asp_to_dsp {A} (m : ASP A) : DSP A :=
+  exist _ (getASPArr m) (asp_dsp_unit_hom _ (proj2_sig m)).
+
+Lemma get_dsp_to_asp {A} (d : DSP A) P a :
+  getASPArr (dsp_to_asp d) P a <-> getDSP d P a.
+Proof. reflexivity. Qed.
+
+Lemma get_asp_to_dsp {A} (m : ASP A) P a :
+  getDSP (asp_to_dsp m) P a <-> getASPArr m P a.
+Proof. reflexivity. Qed.
+
+Lemma asp_to_dsp_to_asp {A} (m : ASP A) :
+  @eq1 ASP Eq1_ASP A (dsp_to_asp (asp_to_dsp m)) m.
+Proof. intros P a. reflexivity. Qed.
+
+Lemma dsp_to_asp_to_dsp {A} (d : DSP A) :
+  @eq1 DSP Eq1_DSP A (asp_to_dsp (dsp_to_asp d)) d.
+Proof. intros P a. reflexivity. Qed.
+
+Lemma ordDSP_dsp_to_asp {A} (d d' : DSP A) :
+  ordDSP d d' <-> ordASP (dsp_to_asp d) (dsp_to_asp d').
+Proof. split; intro H; exact H. Qed.
+
+Lemma ordASP_asp_to_dsp {A} (m m' : ASP A) :
+  ordASP m m' <-> ordDSP (asp_to_dsp m) (asp_to_dsp m').
+Proof. split; intro H; exact H. Qed.
+
+(** The two elements denote one relation. *)
+Lemma dsp_to_asp_rel {A} (d : DSP A) i a :
+  aspRel (dsp_to_asp d) i a <-> dspRel d i a.
+Proof.
+  destruct i. destruct (proj2_sig d) as [Hm [Hs _]].
+  change (getDSP d (fun x => x = tt) a
+          <-> getDSP d (fun _ => True) a /\ ~ getDSP d (fun z => z <> tt) a).
+  split.
+  - intro H. split.
+    + exact (Hm _ _ (fun _ _ => I) a H).
+    + intro H2. apply (Hs a). refine (Hm _ _ _ a H2). intros [] Hn. exact (Hn eq_refl).
+  - intros [H _]. refine (Hm _ _ _ a H). intros [] _. reflexivity.
+Qed.
+
+Lemma asp_to_dsp_rel {A} (m : ASP A) i a :
+  dspRel (asp_to_dsp m) i a <-> aspRel m i a.
+Proof. exact (iff_sym (dsp_to_asp_rel (asp_to_dsp m) i a)). Qed.
+
+Lemma dsp_to_asp_ret {A} (x : A) :
+  @eq1 ASP Eq1_ASP A (dsp_to_asp (@ret DSP Monad_DSP A x)) (@ret ASP Monad_ASP A x).
+Proof.
+  apply (proj2 (aspRel_eq (dsp_to_asp (@ret DSP Monad_DSP A x)) (@ret ASP Monad_ASP A x))).
+  intros i a.
+  etransitivity; [ exact (dsp_to_asp_rel (@ret DSP Monad_DSP A x) i a) |].
+  etransitivity;
+    [ exact (@rel_pure DSPArr Arrow_DSPArr RelArrow_DSPArr unit A (fun _ => x) i a) |].
+  symmetry. exact (aspRel_retASP x i a).
+Qed.
+
+Lemma dsp_to_asp_bind {A B} (d : DSP A) (k : A -> DSP B) :
+  @eq1 ASP Eq1_ASP B (dsp_to_asp (@bind DSP Monad_DSP A B d k))
+    (@bind ASP Monad_ASP A B (dsp_to_asp d) (fun a => dsp_to_asp (k a))).
+Proof.
+  apply (proj2 (aspRel_eq (dsp_to_asp (@bind DSP Monad_DSP A B d k))
+                  (@bind ASP Monad_ASP A B (dsp_to_asp d) (fun a => dsp_to_asp (k a))))).
+  intros i b.
+  etransitivity; [ exact (dsp_to_asp_rel (@bind DSP Monad_DSP A B d k) i b) |].
+  etransitivity;
+    [ exact (@rel_bind DSPArr Arrow_DSPArr ArrowApply_DSPArr RelArrow_DSPArr
+               RelArrowApply_DSPArr unit A B d k i b) |].
+  etransitivity;
+    [| symmetry;
+       exact (aspRel_bindASP (dsp_to_asp d) (fun a => dsp_to_asp (k a)) i b) ].
+  split; intros [a [H1 H2]]; exists a; split.
+  - exact (proj2 (dsp_to_asp_rel d i a) H1).
+  - exact (proj2 (dsp_to_asp_rel (k a) i b) H2).
+  - exact (proj1 (dsp_to_asp_rel d i a) H1).
+  - exact (proj1 (dsp_to_asp_rel (k a) i b) H2).
+Qed.
+
+Lemma asp_to_dsp_ret {A} (x : A) :
+  @eq1 DSP Eq1_DSP A (asp_to_dsp (@ret ASP Monad_ASP A x)) (@ret DSP Monad_DSP A x).
+Proof.
+  apply (dspRel_faithful (asp_to_dsp (@ret ASP Monad_ASP A x)) (@ret DSP Monad_DSP A x)).
+  intros i a.
+  etransitivity; [ exact (asp_to_dsp_rel (@ret ASP Monad_ASP A x) i a) |].
+  etransitivity; [ exact (aspRel_retASP x i a) |].
+  symmetry. exact (@rel_pure DSPArr Arrow_DSPArr RelArrow_DSPArr unit A (fun _ => x) i a).
+Qed.
+
+Lemma asp_to_dsp_bind {A B} (m : ASP A) (k : A -> ASP B) :
+  @eq1 DSP Eq1_DSP B (asp_to_dsp (@bind ASP Monad_ASP A B m k))
+    (@bind DSP Monad_DSP A B (asp_to_dsp m) (fun a => asp_to_dsp (k a))).
+Proof.
+  apply (dspRel_faithful (asp_to_dsp (@bind ASP Monad_ASP A B m k))
+           (@bind DSP Monad_DSP A B (asp_to_dsp m) (fun a => asp_to_dsp (k a)))).
+  intros i b.
+  etransitivity; [ exact (asp_to_dsp_rel (@bind ASP Monad_ASP A B m k) i b) |].
+  etransitivity; [ exact (aspRel_bindASP m k i b) |].
+  etransitivity;
+    [| symmetry;
+       exact (@rel_bind DSPArr Arrow_DSPArr ArrowApply_DSPArr RelArrow_DSPArr
+                RelArrowApply_DSPArr unit A B (asp_to_dsp m)
+                (fun a => asp_to_dsp (k a)) i b) ].
+  split; intros [a [H1 H2]]; exists a; split.
+  - exact (proj2 (asp_to_dsp_rel m i a) H1).
+  - exact (proj2 (asp_to_dsp_rel (k a) i b) H2).
+  - exact (proj1 (asp_to_dsp_rel m i a) H1).
+  - exact (proj1 (asp_to_dsp_rel (k a) i b) H2).
 Qed.
