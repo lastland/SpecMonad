@@ -191,3 +191,54 @@ End PredStExc.
     converse direction to [ordWStExc], which lifts [WP_le]. *)
 Definition ordPredStExc {S A} (m1 m2 : PredStExc S A) : Prop :=
   forall s r, unOptionT (runStateT m1 s) r -> unOptionT (runStateT m2 s) r.
+
+
+Module PredSt.
+Section PredSt.
+
+  Variable S : Type.
+
+  Definition PredSt := stateT S Pred.
+
+  (* Copy-pasted from [Prog.v]. *)
+  #[local] Existing Instance Monad_stateT.
+
+  Definition retP {A} (a : A) : PredSt A :=
+    @ret (stateT _ _) _ _ a.
+
+  Definition bindP {A B}
+    (m : PredSt A) (k : A -> PredSt B) : PredSt B :=
+    @bind (stateT _ _) _ _ _ m k.
+
+  #[global]
+    Instance Monad__PredSt : Monad PredSt :=
+    {| ret := fun _ => @retP _ ;
+       bind := fun _ _ => @bindP _ _ |}.
+
+  Definition getP : PredSt S :=
+    @get _ (stateT _ _) _.
+
+  Definition putP (s : S) : PredSt unit :=
+    @put _ (stateT _ _) _ s.
+
+  #[global]
+    Instance MonadState__PredSt : MonadState S PredSt :=
+    {| get := getP ;
+       put := putP |}.
+
+  #[local] Existing Instance OptionTError.
+
+  Definition Eq1__PredSt : Eq1 PredSt :=
+    Eq1_stateT S Pred.
+
+  Definition MonadLawsE__PredSt
+    : @MonadLawsE PredSt _ Monad__PredSt :=
+    MonadLawsE_stateT S Pred.
+
+End PredSt.
+
+(** Refinement on [PredSt]: pointwise inclusion of outcome sets -- the
+    converse direction to [ordWSt], which lifts [WP_le]. *)
+Definition ordPredSt {S A} (m1 m2 : PredSt S A) : Prop :=
+  forall s r, runStateT m1 s r -> runStateT m2 s r.
+End PredSt.
