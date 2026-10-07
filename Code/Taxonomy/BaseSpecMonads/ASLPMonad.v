@@ -4,10 +4,9 @@
 From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad ArrowMonad.
-From Incorrectness.Taxonomy.Arrows Require Import Rel.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPure.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Export ASLPArrowCore ASLPArrowRel.
+From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad ArrowMonad RelArrowCoherence.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
+From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 
 Definition ASLP (A : Type) : Type := ASLPArr unit A.
 #[global] Instance Monad_ASLP : Monad ASLP := Monad_Arrow ASLPArr unit.
@@ -17,42 +16,6 @@ Definition Eq1Equivalence_ASLP : @Eq1Equivalence ASLP _ Eq1_ASLP :=
 Definition MonadLawsE_ASLP : @MonadLawsE ASLP Eq1_ASLP Monad_ASLP :=
   @MonadLawsE_Arrow ASLPArr _ _ ArrowEq_ASLPArr _ _ unit.
 
-Section Stacks.
-  Definition ASLPStArr (S : Type) := stateArrT S ASLPArr.
-  Definition ArrowEq_ASLPStArr (S : Type) : ArrowEq (ASLPStArr S) :=
-    @ArrowEq_stateArrT S ASLPArr ArrowEq_ASLPArr.
-  Definition ArrowLaws_ASLPStArr (S : Type) : ArrowLaws (ASLPStArr S) :=
-    @ArrowLaws_stateArrT S ASLPArr Arrow_ASLPArr ArrowEq_ASLPArr ArrowLaws_ASLPArr.
-  Definition ArrowApply_ASLPStArr (S : Type) : ArrowApply (ASLPStArr S) :=
-    @ArrowApply_stateArrT S ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr.
-  Definition ArrowApplyLaws_ASLPStArr (S : Type) : ArrowApplyLaws (ASLPStArr S) :=
-    @ArrowApplyLaws_stateArrT S ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
-      ArrowEq_ASLPArr ArrowLaws_ASLPArr ArrowApplyLaws_ASLPArr.
-  Definition optASLP := optionArrT ASLPArr.
-  Definition Arrow_optASLP : Arrow optASLP :=
-    @Arrow_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr.
-  Definition ArrowEq_optASLP : ArrowEq optASLP :=
-    @ArrowEq_optionArrT ASLPArr ArrowEq_ASLPArr.
-  Definition ArrowLaws_optASLP : ArrowLaws optASLP :=
-    @ArrowLaws_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr
-      ArrowEq_ASLPArr ArrowLaws_ASLPArr ArrowChoiceLaws_ASLPArr.
-  Definition ArrowApply_optASLP : ArrowApply optASLP :=
-    @ArrowApply_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr ArrowApply_ASLPArr.
-  Definition ArrowApplyLaws_optASLP : ArrowApplyLaws optASLP :=
-    @ArrowApplyLaws_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr
-      ArrowApply_ASLPArr ArrowEq_ASLPArr ArrowLaws_ASLPArr
-      ArrowChoiceLaws_ASLPArr ArrowApplyLaws_ASLPArr.
-  Definition ASLPStExcArr (S : Type) := stateArrT S optASLP.
-  Definition ArrowEq_ASLPStExcArr (S : Type) : ArrowEq (ASLPStExcArr S) :=
-    @ArrowEq_stateArrT S optASLP ArrowEq_optASLP.
-  Definition ArrowLaws_ASLPStExcArr (S : Type) : ArrowLaws (ASLPStExcArr S) :=
-    @ArrowLaws_stateArrT S optASLP Arrow_optASLP ArrowEq_optASLP ArrowLaws_optASLP.
-  Definition ArrowApply_ASLPStExcArr (S : Type) : ArrowApply (ASLPStExcArr S) :=
-    @ArrowApply_stateArrT S optASLP Arrow_optASLP ArrowApply_optASLP.
-  Definition ArrowApplyLaws_ASLPStExcArr (S : Type) : ArrowApplyLaws (ASLPStExcArr S) :=
-    @ArrowApplyLaws_stateArrT S optASLP Arrow_optASLP ArrowApply_optASLP
-      ArrowEq_optASLP ArrowLaws_optASLP ArrowApplyLaws_optASLP.
-End Stacks.
 Definition ASLPSt (S A : Type) : Type := ASLPStArr S unit A.
 Definition ASLPStExc (S A : Type) : Type := ASLPStExcArr S unit A.
 #[global] Instance Monad_ASLPSt S : Monad (ASLPSt S) := Monad_Arrow _ unit.
@@ -68,15 +31,6 @@ Definition MonadLawsE_ASLPStExc S : @MonadLawsE (ASLPStExc S) (Eq1_ASLPStExc S) 
   @MonadLawsE_Arrow (ASLPStExcArr S) _ (ArrowApply_ASLPStExcArr S)
     (ArrowEq_ASLPStExcArr S) (ArrowLaws_ASLPStExcArr S) (ArrowApplyLaws_ASLPStExcArr S) unit.
 
-#[global] Instance RelDenote_ASLP : @RelDenote ASLPArr _ _ _ (@aslpRel).
-Proof.
-  constructor.
-  - intros X Y h x y. exact (aslpRel_pure h x y).
-  - intros X Y Z f g x z. exact (aslpRel_comp f g x z).
-  - intros X Y C f [x c] [y c']. exact (aslpRel_first f (x, c) (y, c')).
-  - intros X Y C f x y. exact (aslpRel_left f x y).
-  - intros X Y p y. exact (aslpRel_app p y).
-Qed.
 Definition ordASLP {A} (m n : ASLP A) : Prop := forall P b, getASLP m P b -> getASLP n P b.
 Definition ordASLPSt {S A} (m n : ASLPSt S A) : Prop := forall P b, getASLP m P b -> getASLP n P b.
 Definition ordASLPStExc {S A} (m n : ASLPStExc S A) : Prop := forall P b, getASLP m P b -> getASLP n P b.
@@ -90,8 +44,10 @@ Proof.
       [ intros m a b H; exact H | intros m n o H1 H2 a b H; exact (H2 a b (H1 a b H)) ].
   - intros A m n H a b. exact (proj1 (aslpRel_faithful_conv m n H a b)).
   - intros A B m1 m2 Hm k1 k2 Hk a b H.
-    destruct (proj1 (rel_bind (arr := ASLPArr) (rel := @aslpRel) m1 k1 a b) H) as [x [H1 H2]].
-    apply (proj2 (rel_bind (arr := ASLPArr) (rel := @aslpRel) m2 k2 a b)).
+    destruct (proj1 (@rel_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr unit A B m1 k1 a b) H) as [x [H1 H2]].
+    apply (proj2 (@rel_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr unit A B m2 k2 a b)).
     exists x. split; [ exact (Hm _ _ H1) | exact (Hk x _ _ H2) ].
 Qed.
 #[global] Instance OrderedMonad_ASLPSt S : OrderedMonad (ASLPSt S) (@ordASLPStRel S).
@@ -101,8 +57,10 @@ Proof.
       [ intros m a b H; exact H | intros m n o H1 H2 a b H; exact (H2 a b (H1 a b H)) ].
   - intros A m n H a b. exact (proj1 (aslpRel_faithful_conv m n H a b)).
   - intros A B m1 m2 Hm k1 k2 Hk [i s] b H.
-    destruct (proj1 (relS_bind (arr := ASLPArr) (rel := @aslpRel) S m1 k1 i s b) H) as [x [s' [H1 H2]]].
-    apply (proj2 (relS_bind (arr := ASLPArr) (rel := @aslpRel) S m2 k2 i s b)).
+    destruct (proj1 (@relS_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr S unit A B m1 k1 i s b) H) as [x [s' [H1 H2]]].
+    apply (proj2 (@relS_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr S unit A B m2 k2 i s b)).
     exists x, s'. split; [ exact (Hm _ _ H1) | exact (Hk x _ _ H2) ].
 Qed.
 #[global] Instance OrderedMonad_ASLPStExc S : OrderedMonad (ASLPStExc S) (@ordASLPStExcRel S).
@@ -112,26 +70,16 @@ Proof.
       [ intros m a b H; exact H | intros m n o H1 H2 a b H; exact (H2 a b (H1 a b H)) ].
   - intros A m n H a b. exact (proj1 (aslpRel_faithful_conv m n H a b)).
   - intros A B m1 m2 Hm k1 k2 Hk [i s] b H.
-    destruct (proj1 (relE_bind (arr := ASLPArr) (rel := @aslpRel) S m1 k1 i s b) H) as [o1 [H1 H2]].
-    apply (proj2 (relE_bind (arr := ASLPArr) (rel := @aslpRel) S m2 k2 i s b)).
+    destruct (proj1 (@relE_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr ArrowChoice_ASLPArr RelArrowChoice_ASLPArr
+      S unit A B m1 k1 i s b) H) as [o1 [H1 H2]].
+    apply (proj2 (@relE_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr ArrowChoice_ASLPArr RelArrowChoice_ASLPArr
+      S unit A B m2 k2 i s b)).
     exists o1. split; [ exact (Hm _ _ H1) |].
     destruct o1 as [[x s']|]; [ exact (Hk x _ _ H2) | exact H2 ].
 Qed.
 
-Definition aslpOfRelArr {X Y} (R : SPureArr X Y) : ASLPArr X Y :=
-  exist _ (aslpOf R) (aslp_healthy_hom _ (ex_intro _ R (fun P y => iff_refl _))).
-Lemma aslpRel_ofRelArr {X Y} (R : SPureArr X Y) x y : aslpRel (aslpOfRelArr R) x y <-> R x y.
-Proof. exact (aslpRel_of R (aslpOfRelArr R) (fun P y => iff_refl _) x y). Qed.
-Lemma getASLP_cong {X Y} (w : ASLPArr X Y) (P Q : X -> Prop) y :
-  (forall x, P x <-> Q x) -> (getASLP w P y <-> getASLP w Q y).
-Proof.
-  intro H. rewrite (aslpRel_spec w P y), (aslpRel_spec w Q y).
-  unfold aslpOf, aspOf, dslpOf. split; intros [[x [Hx Hr]] | Hall].
-  - left. exists x. split; [ apply H; exact Hx | exact Hr ].
-  - right. intros x' Hr'. apply H. exact (Hall x' Hr').
-  - left. exists x. split; [ apply H; exact Hx | exact Hr ].
-  - right. intros x' Hr'. apply H. exact (Hall x' Hr').
-Qed.
 Definition aslpOfPred {A} (Q : A -> Prop) : ASLP A := aslpOfRelArr (fun (_ : unit) a => Q a).
 Definition getASLPPure {A} (w : ASLP A) (p : Prop) (a : A) : Prop := getASLP w (fun _ => p) a.
 Lemma getASLPPure_of {A} (Q : A -> Prop) p a :
@@ -176,7 +124,8 @@ Lemma aslpRelSt_bind_of {S A B} (R : S -> A * S -> Prop) (K : A -> S -> B * S ->
   aslpRel (bind (aslpOfRelSt R) (fun a => aslpOfRelSt (K a))) (tt, s) r <-> exists a s', R s (a, s') /\ K a s' r.
 Proof.
   etransitivity;
-    [ exact (relS_bind (arr := ASLPArr) (rel := @aslpRel) S
+    [ exact (@relS_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+               RelArrow_ASLPArr RelArrowApply_ASLPArr S unit A B
                (aslpOfRelSt R) (fun a => aslpOfRelSt (K a)) tt s r) |].
   setoid_rewrite aslpRelSt_of. reflexivity.
 Qed.

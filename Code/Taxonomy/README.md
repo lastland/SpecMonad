@@ -43,19 +43,20 @@ Taxonomy/
                          RelPrePostMonad             -- the five DM4all monads
                          SPPredicateTransformers     -- earlier raw SP carriers + healthiness
                          ASPMonad, DSLPMonad, DSPMonad, ASLPMonad
-                         *ArrowCore, *ArrowRel, SPure -- canonical SP arrows and readings
+                         SPostArrMonad               -- unary ASP/DSLP observation bridge
+                         SPure                       -- unary relational monads and orders
                          DivExcSP, SpecificationMonads, SPStBindComparisons
                          BaseGaloisConnections, NewGaloisConnections
       OldMonads/         ASPMonad, DSLPMonad, DSPMonad, ASLPMonad -- earlier SP carriers
   Arrows/                Rel, PrePostArr, RelPrePostArr, WPArr, GaloisArr
-                         SPArr, PredicateTransformerProperties -- SP healthiness conditions
-                         SPostArr                    -- canonical ASP/DSLP compatibility API
-                         RelSPostArr                 -- ASP/DSLP readings of Rel
-                         SPostArrMonad               -- monad dictionaries and SP readings
+                         PredicateTransformerProperties -- SP healthiness conditions
+                         SPostArr                    -- all four property-only SP arrows
+                         RelSPostArr                 -- four SP readings of Rel
                          SPostArrEquiv               -- equivalence and transformer lifts
                          OptionLoop                  -- obstruction to option feedback
      Examples/           SPostArrExamples             -- checked clients
-     Tests/              ArrowMonadInstances          -- concrete monad dictionaries
+     Tests/              SPostArrInfrastructure       -- standalone four-flavour arrow checks
+                         ArrowMonadInstances          -- concrete monad dictionaries
                          ArrowTransformerInstances    -- transformer resolution checks
   EffectObservations/
       WP/                StDivITree_WStExc, StExcNonDet_WStExc,
@@ -166,9 +167,9 @@ for the law inventory.
 
 > The four files named below now live in `BaseSpecMonads/OldMonads/`, and
 > the earlier healthy-carrier clients import them from there. The files of the same
-> names directly in `BaseSpecMonads/` are the arrow presentation
-> (`*ArrowCore.v`, `*ArrowRel.v`, `*Monad.v`, `SPure.v`),
-> described in `BaseSpecMonads/CONTEXT.md`; the two sets of names collide,
+> names directly in `BaseSpecMonads/` are unary monads built from the binary
+> arrows in `Arrows/SPostArr.v`, described in
+> [BaseSpecMonads/CONTEXT.md](BaseSpecMonads/CONTEXT.md). The two sets of names collide,
 > so import only one unqualified.
 
 Four healthiness conditions select the SP monads from the raw transformer
@@ -531,7 +532,7 @@ thing whenever `R⁻¹(a)` is inhabited. See §3 for the carrier-level reason.
 ### Arrow-derived ASP/DSLP observations
 
 The four `EffectObservations/SP/*_SPostArr.v` files observe computations into
-the property-only stacks from `Arrows/SPostArr.v`. `Arrows/SPostArrMonad.v`
+the property-only stacks from `Arrows/SPostArr.v`. `BaseSpecMonads/SPostArrMonad.v`
 supplies named `Monad_Arrow` dictionaries for `ASPostArr S` and `DSLPostArr S`;
 their laws follow from `MonadLawsE_Arrow`. Effects are stacked as arrows before
 fixing the input to `unit`; `runASP` and `runDSLP` expose the familiar shape
@@ -544,10 +545,11 @@ For example, the single-option nondeterministic observations use:
 relASP (fun us r => unOptionT (runStateT m (snd us)) r)
 ```
 
-`obsDSLP` is `asp_to_dslp` applied to `obsASP`. The conversion preserves the
-recovered relation and the monad operations, so the DSLP return/bind proofs
-reuse the ASP proofs. The nondeterministic files combine generic arrow
-normalization with computation-owned raw laws; the double-option file derives
+`obsDSLP` is `asp_to_dslp` applied to `obsASP`. `SPostArr.v` owns this binary
+conversion and its relation-reading facts; the unary bridge proves return/bind
+preservation. The DSLP return/bind proofs therefore reuse the ASP proofs.
+The nondeterministic files combine generic arrow normalization with
+computation-owned raw laws; the double-option file derives
 a local slice bind adapter and slice get/put/raise/`pickP` facts from those
 laws. The ITree file uses convergence facts. Both observations preserve the
 exact arrow-derived return and bind.
@@ -722,7 +724,7 @@ presentations**:
 |---|---|---|
 | `Pred` / `Rel` | `BaseSpecMonads/PredMonad.v` — `Pred A = A -> Prop` | `Arrows/Rel.v` — `Rel A B = A -> B -> Prop` |
 | `PrePost` | `BaseSpecMonads/PrePostMonad.v` — `PrePost A = Prop * (A -> Prop)` | `Arrows/PrePostArr.v` |
-| `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — property-only `PureASPostArr`, `PureDSLPostArr`; `Arrows/RelSPostArr.v` — ASP/DSLP readings of the existing `Rel` carrier |
+| `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — property-only `ASPArr`, `DSLPArr`, `DSPArr`, `ASLPArr`; `Arrows/RelSPostArr.v` — four SP readings of the existing `Rel` carrier |
 | `RelPrePost` | `BaseSpecMonads/RelPrePostMonad.v` — over `Assuming p` | `Arrows/RelPrePostArr.v` |
 | `WPure` / `WP` | `BaseSpecMonads/WPureMonad.v` | `Arrows/WPArr.v` |
 
@@ -732,28 +734,46 @@ The five unary specification-monad files define their carriers **in terms of the
 `PredicateTransformerProperties.v` defines binary SP healthiness
 properties independently of the base-monad development.
 
+The four public flavour monads instead consume the binary implementation in
+`Arrows/SPostArr.v`, fixing the input and adding unary runners, orders, and
+monad-specific results. `SPostArr.v` owns the raw `SPArrT`, all four canonical
+carriers, operations, normal forms, recovered relations, laws, binary stacks,
+and arrow-level conversions. Their public names live under `SPostArr`; no
+BaseSpecMonads module, including `SPure.v`, is a dependency of this implementation.
+The SP dependency direction is Classes and arrow-owned helpers → SPostArr →
+BaseSpecMonads → observations.
+
+`Rel.v` separately owns the relation carrier, stacks, and congruence;
+`RelSPostArr.v` owns their four SP readings and supporting facts. `SPure.v`
+retains only unary relational monads, their return/bind facts, and orders.
+`BaseSpecMonads/SPostArrMonad.v` supplies the unary ASP/DSLP observation bridge.
+
 General arrow infrastructure lives in `Code/Classes/`. `ArrowMonad.v` defines
 the generic return/bind operations for `arr I` and proves their monad laws;
 `ArrowApplyFacts.v` supplies the shared algebraic application and arrow
 extensionality lemmas used by the monad and option-transformer proofs.
 `ArrowMorphism.v` packages maps that respect the selected source and destination
 equalities, proves operation preservation, and lifts the maps through option/state.
+
 `RelArrowCoherence.v` derives complete core, choice, and application law
 packages from relational operation contracts and `RelArrowEq`, which connects
 the chosen arrow equivalence to pointwise relation equivalence. Its
 relational-only helpers do not require equality reflection.
-The retained `rel_state_option_pure` and
-`rel_state_option_bind` theorems also normalize the actual arrow-derived
-return and bind of a state-over-option stack at any fixed input type `I`.
-Bind keeps the input, threads the intermediate state, and propagates `None`.
-The SP monads use `rel_state_option_bind_fields` with their operation facts;
-`ASP_rel_presentation` and `DSLP_rel_presentation` also expose the bundled
+
+Its `rel_bind` / `relS_bind` normalize base and state bind. The `relO_comp`,
+`relO_pure`, and `relO_first` lemmas handle option arrows; `relE_comp`,
+`relE_pure`, `relE_first`, `relE_app`, and `relE_bind` handle state-over-option
+arrows. These formulas use the existing `RelArrow`, `RelArrowChoice`, and
+`RelArrowApply` dictionaries, without arrow-law premises or equality reflection.
+Bind keeps the fixed input, threads the intermediate state, and propagates
+`None` without a final state. The canonical relation-reading wrappers in
+`SPostArr.v` specialize this shared normalization.
+
+The retained `rel_state_option_pure` / `rel_state_option_bind` and
+`ASP_rel_presentation` / `DSLP_rel_presentation` also expose the bundled
 exact-equality interface for independent consumers; the direct-Rel equivalences
 below do not use it. Concrete proofs retain the assumptions used to establish
 their relational readings.
-Canonical SP carriers and their relational contracts live in
-`BaseSpecMonads/*ArrowCore.v` / `*ArrowRel.v`; the compatibility interface,
-representation morphisms, and loop obstruction live in `Taxonomy/Arrows/`.
 
 ### Arrow-derived monad laws
 
@@ -784,8 +804,8 @@ The concrete arrows register their chosen `Eq1` aliases. Generic instances
 provide `Monad`, `Eq1Equivalence`, and `MonadLawsE`. Test-only named dictionary
 aliases and compact return/bind agreement proofs live in `Arrows/Tests/`.
 Production modules retain the compact Pred and RelPrePost operations used by
-their mathematical consumers, and `SPostArrMonad.v` retains the two named
-stack dictionaries used by effect observations.
+their mathematical consumers, and `BaseSpecMonads/SPostArrMonad.v` retains
+the two named stack dictionaries used by effect observations.
 
 The option and state arrow transformers preserve the full law contract, so
 the same monad-law proof applies at each layer:
@@ -806,7 +826,14 @@ lawful monad on stateArrT S (optionArrT arr) I
 `Classes/Tests/ArrowMonadRegression.v` checks generic law resolution and a
 counterexample: a lawful arrow whose application satisfies the old fixed-arrow
 law but violates monad right identity. The stronger application contract
-rejects it. `Arrows/Tests/ArrowMonadInstances.v` collects the concrete monad,
+rejects it.
+
+`Arrows/Tests/SPostArrInfrastructure.v` checks core, choice, and application
+laws for all four property-only flavours without importing BaseSpecMonads.
+Its semantic regressions distinguish DSP composition from raw transformer
+composition and exercise binary state-over-option bind with a non-unit input.
+
+`Arrows/Tests/ArrowMonadInstances.v` collects the concrete monad,
 `Eq1Equivalence`, and `MonadLawsE` dictionaries of the specification arrows
 together with their compact relational `ret`/`bind` descriptions and agreement
 facts. It checks the exact derived monad dictionary for `Rel`, the property-only
@@ -824,24 +851,30 @@ the generic transformers. The file also checks the definition of
 property-only pointwise equality, automatic base core/choice/application law
 resolution, and semantic `app_ext` and bind-continuation congruence for both
 ASP and DSLP.
-Both test modules are in `_CoqProject`, so the normal build checks them.
-They register no helper instances. Explicit generic applications check
-specialization; `:= _` checks automatic resolution. The two named SP-stack
-law witnesses use explicit applications to pin the exact dictionaries and avoid
-competing recursive option/state search paths. `CanonicalSP` additionally checks
+All three concrete test modules are in `_CoqProject`, so the normal build checks
+them. The two instance-test modules register no helper instances. Explicit
+generic applications check specialization; `:= _` checks automatic resolution.
+The two named SP-stack law witnesses use explicit applications to pin the exact
+dictionaries and avoid competing recursive option/state search paths.
+`CanonicalSP` additionally checks
 cross-API application and bind, pure/state clients, runner identity, and a state
 update followed by propagated failure.
 
 ### Relational SP readings
 
-[`Arrows/RelSPostArr.v`](Arrows/RelSPostArr.v) computes two SP readings of the
+[`Arrows/RelSPostArr.v`](Arrows/RelSPostArr.v) computes four SP readings of the
 existing `Rel A B := A -> B -> Prop` carrier. **An arrow value is a relation**,
 not a pair of a relation and a transformer or a new wrapper:
 
 ```text
-asp  R P b = exists a, P a /\ R a b
-dslp R P b = forall a, R a b -> P a
+asp    R P b = exists a, P a /\ R a b
+dslp   R P b = forall a, R a b -> P a
+dspOf  R P b = asp R P b /\ dslp R P b
+aslpOf R P b = asp R P b \/ dslp R P b
 ```
+
+`aspOf` / `dslpOf` are transparent aliases of `asp` / `dslp`. The module also
+owns the readings' healthiness, recovery, inclusion, and operation facts.
 
 ASP asks for some predecessor in the precondition; DSLP requires every
 predecessor to satisfy it. At an unreachable output, ASP is false and DSLP is
@@ -850,10 +883,10 @@ does not identify the readings: for the constant function `bool -> unit` and
 precondition `eq true`, ASP holds at `tt`, but DSLP fails because `false` is
 also a predecessor.
 
-Both readings use `Arrow_Rel`, `ArrowChoice_Rel`, `ArrowApply_Rel`, and their
+All four readings use `Arrow_Rel`, `ArrowChoice_Rel`, `ArrowApply_Rel`, and their
 existing laws in [`Rel.v`](Arrows/Rel.v). The selected equality remains
 `Rel_eq`, namely `forall a b, R a b <-> R' a b`. The same `optionRel` and
-`progRelArr` stacks serve both readings; choosing `asp` or `dslp` changes the
+`progRelArr` stacks serve all four readings; choosing a reading changes the
 predicate transformer, not the relation, its operations, or its law packages.
 
 `RelSPostArr.v` also retains `asp_inv` / `dslp_inv` and their recovery facts.
@@ -881,18 +914,29 @@ termination supplies empty-meet preservation. Here, termination means **top
 preservation**, with its operational interpretation determined by the direction
 of the transformer.
 
-The canonical ASP/DSLP carriers store only a transformer and healthiness proofs,
-including explicit monotonicity. `Arrows/SPostArr.v` exposes compatibility aliases
-to the public carriers in `BaseSpecMonads/`:
+`Arrows/SPostArr.v` implements all four canonical carriers over
+`SPArrT A B := (A -> Prop) -> B -> Prop`. Each stores only a transformer and
+healthiness proofs, including explicit monotonicity:
+
+| Carrier | Additional healthiness conditions |
+|---|---|
+| `ASPArr` | strict and disjunctive |
+| `DSLPArr` | top-preserving and conjunctive |
+| `DSPArr` | strict and conjunctive |
+| `ASLPArr` | top-preserving and disjunctive |
+
+The same module retains the ASP/DSLP compatibility aliases:
 
 ```coq
 PureASPostArr A B := ASPArr A B.
 PureDSLPostArr A B := DSLPArr A B.
 ```
 
-The accessors are `getASP` and `getDSLP`. `arrASP` / `arrDSLP` lift functions;
+The binary compatibility accessors are `SPostArr.getASP` and
+`SPostArr.getDSLP`; distinguish them from the unary `ASPMonad.getASP` and
+`DSLPMonad.getDSLP`. `arrASP` / `arrDSLP` alias `pureASP` / `pureDSLP`;
 `arrASP_spec` / `arrDSLP_spec` expose their direct and universal images.
-Composition forwards the precondition:
+ASP/DSLP composition forwards the precondition:
 `comp f g P = g (f P)`. Application satisfies these normal-form equivalences:
 
 ```text
@@ -900,9 +944,14 @@ appASP  P b <-> exists f, getASP  f (fun a => P (f,a)) b
 appDSLP P b <-> forall f, getDSLP f (fun a => P (f,a)) b
 ```
 
-The compatibility operations and dictionaries are definitions over the canonical
-ones, with no duplicate global registrations. Both carriers satisfy `ArrowLaws`,
-`ArrowChoiceLaws`, and `ArrowApplyLaws`.
+DSP/ASLP sequencing instead recovers each argument's relation, composes its
+ASP/DSLP readings, and recombines the results by conjunction/disjunction.
+In particular, DSP composition is **not** raw forward transformer composition.
+
+Canonical operation names such as `compASP` and `appASP` belong to `SPostArr`.
+Compatibility dictionary names remain plain definitions over the canonical
+instances, with no duplicate global registrations. All four carriers satisfy
+`ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws`.
 The existing option/state transformers lift these laws, including to
 `stateArrT S (optionArrT PureASPostArr)` and its DSLP counterpart. This stack
 has input `A * S` and output `option (B * S)`: `None` propagates without a final
@@ -919,19 +968,23 @@ equivalence, including pointwise-equivalent continuations.
 `SPostArr.v` groups the recovered relations `ASP_rel` / `DSLP_rel` with
 `relASP` / `relDSLP`, their round trips, and normal-form rewrite consequences.
 Their operation-preservation facts use the existing operators in `Rel.v`.
+The canonical `aspRel` probes `fun x => x = a`, while `ASP_rel` probes `eq a`
+(`fun x => a = x`). These singleton predicates are logically equivalent, not
+definitionally equal; the proofs use predicate-iff bridges. The canonical and
+compatibility DSLP recovered relations are definitionally identical.
 All four canonical SP carriers instantiate the shared `RelArrow`,
 `RelArrowChoice`, `RelArrowApply`, and `RelArrowEq` contracts in
 `Classes/RelArrowCoherence.v`. Those contracts supply their complete
 core/choice/application law packages under pointwise transformer iff.
 The ASP/DSLP normal forms and base law packages are constructive; exact bundled
-equality remains available separately with extensionality. DSP/ASLP recovery and
-law packages retain classical reasoning. The relational carrier reuses its
-existing laws in `Rel.v`.
+equality remains available separately with extensionality. The separate
+`dslpRel_probe` complement characterization is classical, as are DSP/ASLP recovery
+and law packages. The relational carrier reuses its existing laws in `Rel.v`.
 The generic transformers preserve both sets of laws algebraically.
 
 ### Equivalence with `Rel`
 
-[`SPostArrEquiv.v`](Arrows/SPostArrEquiv.v) relates each property-only carrier
+[`SPostArrEquiv.v`](Arrows/SPostArrEquiv.v) relates property-only ASP and DSLP
 directly to `Rel`, using the existing maps in `SPostArr.v`:
 
 | Property-only carrier | Map to `Rel` | Map from `Rel` | Packaged morphisms (to / from) |

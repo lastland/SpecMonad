@@ -1,34 +1,15 @@
 (** * Effect-observation helpers for the ASP and DSLP specification monads.
 
-    Minimal monad-facing layer for [Taxonomy/EffectObservations/SP]: the
-    monad dictionaries of the arrow stacks, the relational readings of
-    their [ret] and [bind] — [ret] read through the pure layers of the
-    stack directly at the base pure law of [SPostArr], [bind] by
-    instantiating [Classes.RelArrowCoherence.rel_state_option_bind_fields]
-    with the five base relational operation laws — the angelic-to-demonic
-    conversion with its operation preservation, and the evaluators over
-    an initial-state precondition. *)
+    The bridge reuses the canonical unary monad dictionaries and runners.
+    Its relational return/bind formulas and unit-input conversion results
+    support observations. Binary carriers and conversion live in [SPostArr]. *)
 
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad RelArrowCoherence.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPMonad DSLPMonad.
 From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 Import MonadNotation.
-
-Local Obligation Tactic := idtac.
-
-(** ** Angelic-to-demonic conversion *)
-
-Definition asp_to_dslp {A B} (w : PureASPostArr A B) : PureDSLPostArr A B :=
-  relDSLP (ASP_rel w).
-
-Lemma asp_to_dslp_spec {A B} (w : PureASPostArr A B) P b :
-  getDSLP (asp_to_dslp w) P b <-> forall a, ASP_rel w a b -> P a.
-Proof. exact (getDSLP_relDSLP (ASP_rel w) P b). Qed.
-
-Lemma DSLP_rel_asp_to_dslp {A B} (w : PureASPostArr A B) a b :
-  DSLP_rel (asp_to_dslp w) a b <-> ASP_rel w a b.
-Proof. exact (DSLP_rel_relDSLP (ASP_rel w) a b). Qed.
 
 (** ** Monad dictionaries
 
@@ -39,21 +20,18 @@ Proof. exact (DSLP_rel_relDSLP (ASP_rel w) a b). Qed.
      monad dictionaries against those laws. *)
 
 Definition Monad_ASPostArr (S : Type) : Monad (ASPostArr S) :=
-  @Monad_Arrow (stateArrT S optionASPArr) (Arrow_stateOptASP S)
-    (ArrowApply_stateOptASP S) unit.
+  ASPMonad.Monad_ASPStExc S.
 
 Definition Monad_DSLPostArr (S : Type) : Monad (DSLPostArr S) :=
-  @Monad_Arrow (stateArrT S optionDSLPArr) (Arrow_stateOptDSLP S)
-    (ArrowApply_stateOptDSLP S) unit.
+  DSLPMonad.Monad_DSLPStExc S.
 
 (** ** Relational [ret] and [bind] on the concrete stacks
 
      [ret] reads only the base pure law [ASP_rel_pure] / [DSLP_rel_pure].
      Its function keeps [Some] outside the state-pair match, matching
      the option-over-base pure operation by conversion.  [bind]
-     instantiates the generic [rel_state_option_bind_fields] with the
-     stack's relation and the five base relational operation laws of
-     [SPostArr]; [apply] closes the goal by conversion. *)
+     instantiates the generic [relE_bind] with the existing compatibility
+     semantic dictionaries; conversion identifies the canonical monad bind. *)
 
 Lemma ASP_rel_ret {S A} (a : A) (i : unit) (s : S) r :
   ASP_rel (@ret _ (Monad_ASPostArr S) A a) (i, s) r <-> Some (a, s) = r.
@@ -70,10 +48,9 @@ Lemma ASP_rel_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B)
     | None => r = None
     end.
 Proof.
-  apply (@rel_state_option_bind_fields PureASPostArr Arrow_PureASPostArr
-    ArrowChoice_PureASPostArr ArrowApply_PureASPostArr
-    (@ASP_rel) (@ASP_rel_pure) (@ASP_rel_comp)
-    (@ASP_rel_first) (@ASP_rel_left) (@ASP_rel_app)
+  exact (@relE_bind PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
+    RelArrow_PureASPostArr RelArrowApply_PureASPostArr
+    ArrowChoice_PureASPostArr RelArrowChoice_PureASPostArr
     S unit A B m k tt s r).
 Qed.
 
@@ -92,20 +69,19 @@ Lemma DSLP_rel_bind {S A B} (m : DSLPostArr S A) (k : A -> DSLPostArr S B)
     | None => r = None
     end.
 Proof.
-  apply (@rel_state_option_bind_fields PureDSLPostArr Arrow_PureDSLPostArr
-    ArrowChoice_PureDSLPostArr ArrowApply_PureDSLPostArr
-    (@DSLP_rel) (@DSLP_rel_pure) (@DSLP_rel_comp)
-    (@DSLP_rel_first) (@DSLP_rel_left) (@DSLP_rel_app)
+  exact (@relE_bind PureDSLPostArr Arrow_PureDSLPostArr ArrowApply_PureDSLPostArr
+    RelArrow_PureDSLPostArr RelArrowApply_PureDSLPostArr
+    ArrowChoice_PureDSLPostArr RelArrowChoice_PureDSLPostArr
     S unit A B m k tt s r).
 Qed.
 
 (** ** Evaluators *)
 
 Definition runASP {S A} (w : ASPostArr S A) (pre : S -> Prop)
-  (r : option (A * S)) : Prop := getASP w (fun us => pre (snd us)) r.
+  (r : option (A * S)) : Prop := ASPMonad.getASPStExc w pre r.
 
 Definition runDSLP {S A} (w : DSLPostArr S A) (pre : S -> Prop)
-  (r : option (A * S)) : Prop := getDSLP w (fun us => pre (snd us)) r.
+  (r : option (A * S)) : Prop := DSLPMonad.getDSLPStExc w pre r.
 
 Lemma runASP_rel {S A} (w : ASPostArr S A) (pre : S -> Prop) r :
   runASP w pre r <-> exists s, pre s /\ ASP_rel w (tt, s) r.

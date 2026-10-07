@@ -6,7 +6,7 @@
 
 From ITree Require Import ITree Basics.Monad Eq.
 From ExtLib Require Import StateMonad OptionMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivITree.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.

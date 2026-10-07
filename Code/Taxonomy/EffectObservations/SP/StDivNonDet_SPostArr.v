@@ -17,7 +17,7 @@ From Coq Require Import Morphisms_Prop.
 From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StExcNonDet StDivNonDet.
 

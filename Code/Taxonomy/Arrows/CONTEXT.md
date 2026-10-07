@@ -11,8 +11,9 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   from unary PredM.Pred. Read its module for exact names during renames.
 - PrePostArr pairs a precondition and an input-indexed post-relation;
   equality compares both by iff, while order reverses pre implication.
-- SPArrT is the raw `(A -> Prop) -> B -> Prop`. Its monotone/strict/terminating/
-  conjunctive/disjunctive properties do not supply a generic arrow instance.
+- SPostArr.v defines the raw `SPArrT := (A -> Prop) -> B -> Prop` and its
+  monotone/strict/terminating/conjunctive/disjunctive properties. The raw carrier
+  has no generic arrow instance.
   Conjunctive/disjunctive families are nonempty; strict/top preservation cover
   the empty cases where required.
 - WPArr is a reader-WP Kleisli arrow over the raw WPureT, with Leibniz equality
@@ -27,24 +28,37 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   **nonempty indexed families**; strictness supplies the empty join and termination
   the empty meet. `TerminatingArr` means **top preservation** here. See
   [PROPERTY_TERMINOLOGY.md](PROPERTY_TERMINOLOGY.md) for its semantic interpretation.
-- [SPostArr.v](SPostArr.v) exposes the **property-only** presentation through
-  compatibility aliases: `PureASPostArr := ASPArr` and
-  `PureDSLPostArr := DSLPArr`. The canonical carriers in `BaseSpecMonads/`
-  bundle monotonicity with strictness/disjunctivity or termination/conjunctivity.
-  `getASP` / `getDSLP` expose the transformer; operations reuse the canonical
-  implementation. Constructive `ASP_normal_form` / `DSLP_normal_form` recover
-  relational readings without storing a relation in the carrier.
+- [SPostArr.v](SPostArr.v) implements all four **property-only** binary carriers,
+  their operations, normal forms, recovered relations, laws, stacks, and
+  arrow-level conversions. It depends on Classes and arrow-owned helpers,
+  not BaseSpecMonads. `ASPArr` / `DSLPArr` bundle monotonicity with
+  strictness/disjunctivity or termination/conjunctivity; `DSPArr` / `ASLPArr`
+  instead use strictness/conjunctivity or termination/disjunctivity.
+  Compatibility aliases remain `PureASPostArr := ASPArr` and
+  `PureDSLPostArr := DSLPArr`. Constructive `ASP_normal_form` /
+  `DSLP_normal_form` recover relational readings without storing a relation;
+  DSP/ASLP recovery is classical. DSP/ASLP operations split into ASP/DSLP parts,
+  operate, then recombine by conjunction/disjunction. In particular, DSP
+  composition is not raw forward transformer composition.
+  `getASP` / `getDSLP` expose the ASP/DSLP transformers.
   `arrASP` / `arrDSLP` lift functions, with `arrASP_spec` / `arrDSLP_spec`
   exposing direct/universal images. `ASP_rel` / `DSLP_rel`, constructors
   `relASP` / `relDSLP`, their round trips, and relational rewrite facts all
   live in this arrow layer. `arrow_eq` is pointwise transformer iff;
   `PureASPostArr_eq` / `PureDSLPostArr_eq` separately recover bundled equality.
-- [RelSPostArr.v](RelSPostArr.v) computes two readings of the existing
+- The ASP singleton orientations remain distinct: canonical `aspRel` probes
+  `fun x => x = a`, while `ASP_rel` probes `eq a` (`fun x => a = x`). Relate
+  them by predicate equivalence, not definitional equality. The canonical and
+  compatibility DSLP recovered relations are definitionally identical.
+- [RelSPostArr.v](RelSPostArr.v) computes four readings of the existing
   `Rel A B := A -> B -> Prop` carrier: `asp R P b := exists a, P a /\ R a b`
-  and `dslp R P b := forall a, R a b -> P a`. The arrow value is the relation,
-  not a relation/transformer pair or a new wrapper. At an unreachable output
-  ASP is false and DSLP is vacuously true; an empty input type has the same
-  effect. Determinism alone does not identify these readings: a many-to-one
+  and `dslp R P b := forall a, R a b -> P a`, with `dspOf` / `aslpOf` their
+  conjunction/disjunction. `aspOf` / `dslpOf` are aliases of `asp` / `dslp`.
+  The file owns the readings' healthiness, recovery, inclusion, and operation
+  facts. The arrow value is the relation, not a relation/transformer pair or a
+  new wrapper. At an unreachable output, ASP is false and DSLP is vacuously
+  true; an empty input type has the same effect. Determinism alone does not
+  identify these readings: a many-to-one
   function can distinguish them. The file retains `asp_inv` / `dslp_inv`,
   their recovery facts, and the DSP/ASLP characterizations.
 - [SPostArrEquiv.v](SPostArrEquiv.v) uses `ASP_rel` / `relASP` and
@@ -76,7 +90,7 @@ Relational-only helpers remain independent of equality reflection.
 The relational presentation reuses `Arrow_Rel`, `ArrowChoice_Rel`,
 `ArrowApply_Rel`, and their laws from [Rel.v](Rel.v). Its selected equality is
 `Rel_eq` (pointwise relation iff), not Leibniz equality. The existing
-`optionRel` and `progRelArr` stacks serve both SP readings; `RelSPostArr.v`
+`optionRel` and `progRelArr` stacks serve all four SP readings; `RelSPostArr.v`
 adds no carrier, arrow instance, or stack law package.
 
 [ArrowMorphism.v](../../Classes/ArrowMorphism.v) lifts the direct-Rel morphisms
@@ -89,27 +103,34 @@ Leibniz law dictionaries or relational equality reflection. See the
 the precise law requirements. All public base and lifted round trips retain
 the selected semantic equalities.
 
-`RelArrowCoherence.v` also supplies base application coherence and the
-state-over-option relational bind formula. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
+`RelArrowCoherence.v` also owns `rel_bind`, `relS_bind`, `relO_*`, and `relE_*`
+for base, state, option, and state-over-option normalization. These use the
+existing `RelArrow` / `RelArrowChoice` / `RelArrowApply` contracts, without
+arrow-law premises or equality reflection. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
 [StateArrowT.v](../../Classes/StateArrowT.v) lift the full contract generically.
 The state-over-option stack maps `A * S` to `option (B * S)`; propagated `None`
 carries no final state. On the property-only side, `ASPostArr S` /
 `DSLPostArr S` fix its input to `unit`; the relational counterpart is
 `progRelArr S`.
 
-[SPostArrMonad.v](SPostArrMonad.v) exposes the named `Monad_ASPostArr` /
+[SPostArrMonad.v](../BaseSpecMonads/SPostArrMonad.v) exposes the named `Monad_ASPostArr` /
 `Monad_DSLPostArr` dictionaries and `runASP` / `runDSLP` for observations.
 They use the exact `Monad_Arrow` operations from
 [ArrowMonad.v](../../Classes/ArrowMonad.v), whose laws hold for any fixed input
 type under `ArrowLaws` and `ArrowApplyLaws`. Effects are stacked before fixing
-the input. `asp_to_dslp` preserves the recovered relation and return/bind while
-changing its reading; each property-only/`Rel` equivalence preserves its reading.
+the input. The binary `asp_to_dslp` conversion and its relation-reading facts
+belong to `SPostArr.v`; the bridge proves its unit-input return/bind preservation.
+The conversion changes the SP reading while preserving the recovered relation;
+each property-only/`Rel` equivalence instead preserves its reading.
 
 `ASPostArr` / `DSLPostArr` are definitionally the public `ASPStExc` /
 `DSLPStExc` stacks. Compatibility dictionaries are plain definitions over
 the canonical instances, avoiding competing registrations for equal aliases.
-The normal-build `CanonicalSP` clients in `Tests/ArrowMonadInstances.v` check
-cross-API application/bind, dictionary and runner identity, and propagated failure.
+[Tests/SPostArrInfrastructure.v](Tests/SPostArrInfrastructure.v) checks all four
+flavours' law packages, the DSP composition distinction, and non-unit
+state-over-option bind without importing BaseSpecMonads. `CanonicalSP` in
+`Tests/ArrowMonadInstances.v` checks cross-API application/bind, dictionary and
+runner identity, and propagated failure.
 
 [OptionLoop.v](OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
 `ArrowLoop` for the existing `optionRel` operations and pointwise equivalence
@@ -143,7 +164,8 @@ Read constructors → equality/laws → chosen monad dictionaries/orders →
 [examples](Examples/CONTEXT.md) and [tests](Tests/CONTEXT.md).
 Start with the properties, then `SPostArr.v`, then the
 [checked clients](Examples/CONTEXT.md); read `SPostArrEquiv.v` for representation
-changes and `SPostArrMonad.v` for observation-facing use.
+changes and [BaseSpecMonads/SPostArrMonad.v](../BaseSpecMonads/SPostArrMonad.v)
+for observation-facing use.
 For other carriers, [Rel.v](Rel.v) defines relations,
 [PrePostArr.v](PrePostArr.v) pairs a precondition with an input-indexed
 post-relation, and [RelPrePostArr.v](RelPrePostArr.v) defines validators whose

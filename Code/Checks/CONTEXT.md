@@ -30,21 +30,23 @@ The selected reports cover:
 - Shared structural equations in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v), concrete property-only
   SP law packages in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v), and the existing
-  relational laws in [Rel.v](../Taxonomy/Arrows/Rel.v). Both relational SP
+  relational laws in [Rel.v](../Taxonomy/Arrows/Rel.v). All four relational SP
   readings reuse those `Rel` laws, rather than contributing duplicate packages.
-- Constructive canonical ASP/DSLP normal forms, all four canonical SP law
-  packages, and selected `CanonicalSP` interoperability clients in
+- Constructive canonical ASP/DSLP normal forms and all four canonical SP law
+  packages in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v), plus selected
+  `CanonicalSP` interoperability clients in
   [ArrowMonadInstances.v](../Taxonomy/Arrows/Tests/ArrowMonadInstances.v).
   The clients exercise canonical/compatibility application, bind dictionary
   identity, and state update followed by propagated failure. DSP/ASLP law
   packages retain classical relation recovery.
 - `rel_state_option_bind` in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and `asp_to_dslp_bind`
-  in [SPostArrMonad.v](../Taxonomy/Arrows/SPostArrMonad.v).
+  in [SPostArrMonad.v](../Taxonomy/BaseSpecMonads/SPostArrMonad.v).
 - Canonical ASP/DSLP fixed-input, state, option, and state-option relation
-  readings in [ASPArrowRel.v](../Taxonomy/BaseSpecMonads/ASPArrowRel.v) and
-  [DSLPArrowRel.v](../Taxonomy/BaseSpecMonads/DSLPArrowRel.v). These wrappers
-  specialize the generic `RelDenote` facts through explicit local definitions.
+  readings in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v). These wrappers
+  specialize `rel_bind`, `relS_bind`, `relO_*`, and `relE_*` from
+  [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) through the existing
+  `RelArrow` / `RelArrowChoice` / `RelArrowApply` dictionaries.
 - ASP/DSLP bind laws and examples for state, exceptions, and nondeterminism
   in [StExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v),
   and state, divergence, and nondeterminism in
@@ -73,6 +75,12 @@ in [StDivExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivExcNonDet_
 check which outcomes the terminating slice retains. These are proofs in the
 normal build, not new audit commands. The audit's WP `Check` commands only
 instantiate existing theorem types.
+
+[SPostArrInfrastructure.v](../Taxonomy/Arrows/Tests/SPostArrInfrastructure.v)
+checks core, choice, and application laws for all four property-only flavours
+without importing BaseSpecMonads. Its semantic regressions distinguish DSP
+composition from raw transformer composition and exercise non-unit
+state-over-option bind. These checks are separate from the assumption reports.
 
 ## Build boundary and reading
 

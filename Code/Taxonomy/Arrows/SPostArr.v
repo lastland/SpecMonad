@@ -1,17 +1,496 @@
 (** * Property-only strongest-postcondition arrows.
 
-    Compatibility names reuse the canonical ASP/DSLP carriers and operations.
-    The carriers contain only predicate transformers and healthiness proofs.
-    Constructive normal forms support reasoning; no relation is stored. *)
+    The four canonical carriers contain predicate transformers and healthiness
+    proofs, not stored relations. ASP/DSLP have constructive normal forms;
+    DSP/ASLP recover relations classically and split operations into both readings.
+    Compatibility names and binary transformer stacks share these definitions. *)
 
-From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Morphisms.
+From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses Morphisms Setoid Classical_Prop.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Export ArrowMonad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT ArrowMorphism RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import Rel.
+From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export PredicateTransformerProperties.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPArrowCore ASPArrowRel DSLPArrowCore DSLPArrowRel.
 
+(** ** Raw transformers and healthiness conditions
+    Nonempty families define conjunctivity/disjunctivity; strictness and top
+    preservation supply the respective empty cases. The raw carrier has no
+    generic arrow structure: the four readings have different operations. *)
+Definition SPArrT (A B : Type) : Type := (A -> Prop) -> B -> Prop.
+Definition sp_monotone {A B} (f : SPArrT A B) : Prop :=
+  forall (P Q : A -> Prop), (forall a, P a -> Q a) -> forall b, f P b -> f Q b.
+Definition sp_strict := @StrictArr.
+Definition sp_terminating := @TerminatingArr.
+Definition sp_conjunctive := @ConjunctiveArr.
+Definition sp_disjunctive := @DisjunctiveArr.
+Arguments sp_strict {A B} _.
+Arguments sp_terminating {A B} _.
+Arguments sp_conjunctive {A B} _.
+Arguments sp_disjunctive {A B} _.
+
+(** ** Canonical ASP arrows: constructive singleton joins *)
+Section ASPImplementation.
+Definition asp_join {A B} (f : SPArrT A B) : Prop :=
+  forall P b, f P b <-> exists a, P a /\ f (fun x => x = a) b.
+Lemma asp_join_hom {A B} (f : SPArrT A B) :
+  asp_join f -> sp_monotone f /\ sp_strict f /\ sp_disjunctive f.
+Proof.
+  intro H. split; [|split].
+  - intros P Q HPQ b Hf. apply H. apply H in Hf. destruct Hf as [a [Ha Hf]].
+    exists a. split; [exact (HPQ a Ha) | exact Hf].
+  - intros b Hf. destruct (proj1 (H _ b) Hf) as [a [[] _]].
+  - intros I _ P b. rewrite (H _ b). split.
+    + intros [a [[i Hi] Hf]]. exists i. apply (H _ b). exists a. split; assumption.
+    + intros [i Hf]. apply (H _ b) in Hf. destruct Hf as [a [Hi Hf]].
+      exists a. split; [exists i; exact Hi | exact Hf].
+Qed.
+Lemma asp_hom_join {A B} (f : SPArrT A B) :
+  sp_monotone f /\ sp_strict f /\ sp_disjunctive f -> asp_join f.
+Proof.
+  intros [Hm [Hs Hd]] P b. split.
+  - intro Hf.
+    pose (Q := fun (i : option {a : A | P a}) (x : A) =>
+      match i with Some a => x = proj1_sig a | None => False end).
+    assert (HQ : f (fun x => exists i, Q i x) b).
+    { apply (Hm P); [|exact Hf]. intros x Hx. exists (Some (exist _ x Hx)). reflexivity. }
+    apply (Hd _ (inhabits None) Q b) in HQ.
+    destruct HQ as [[[a Ha]|] Hq];
+      [exists a; split; [exact Ha | exact Hq] | destruct (Hs b Hq)].
+  - intros [a [Ha Hf]]. apply (Hm (fun x => x = a)); [intros x ->; exact Ha | exact Hf].
+Qed.
+Theorem asp_join_iff {A B} (f : SPArrT A B) :
+  asp_join f <-> sp_monotone f /\ sp_strict f /\ sp_disjunctive f.
+Proof. split; [apply asp_join_hom | apply asp_hom_join]. Qed.
+Definition ASPArr (A B : Type) : Type :=
+  {f : SPArrT A B | sp_monotone f /\ sp_strict f /\ sp_disjunctive f}.
+Definition getASPArr {A B} (f : ASPArr A B) : (A -> Prop) -> B -> Prop := proj1_sig f.
+Coercion getASPArr : ASPArr >-> Funclass.
+Lemma getASPArr_join {A B} (f : ASPArr A B) P b :
+  f P b <-> exists a, P a /\ f (fun x => x = a) b.
+Proof. exact (asp_hom_join _ (proj2_sig f) P b). Qed.
+Definition mkASPArr {A B} (f : SPArrT A B) (H : asp_join f) : ASPArr A B :=
+  exist _ f (asp_join_hom f H).
+Lemma getASPArr_mono {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
+  (forall a, P a -> Q a) -> f P b -> f Q b.
+Proof.
+  intro H. rewrite !(getASPArr_join f _ b).
+  intros [a [Hp Hf]]. exists a. split; [apply H, Hp | exact Hf].
+Qed.
+Lemma getASPArr_ext {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
+  (forall a, P a <-> Q a) -> f P b -> f Q b.
+Proof. intro H. apply getASPArr_mono. intros; apply H; assumption. Qed.
+Lemma getASPArr_ext_iff {A B} (f : ASPArr A B) (P Q : A -> Prop) b :
+  (forall a, P a <-> Q a) -> f P b <-> f Q b.
+Proof. split; now apply getASPArr_ext. Qed.
+#[program] Definition ofRelASPArr {A B} (R : A -> B -> Prop) : ASPArr A B :=
+  fun P b => exists a, P a /\ R a b.
+Next Obligation.
+  apply asp_join_hom. intros P b. split.
+  - intros [a [Hp HR]]. exists a. split; [exact Hp | exists a; auto].
+  - intros [a [Hp [x [Hx HR]]]]. subst x. exists a. auto.
+Qed.
+#[program] Definition pureASP {A B} (h : A -> B) : ASPArr A B :=
+  fun P b => exists a, P a /\ h a = b.
+Next Obligation.
+  apply asp_join_hom. intros P b. split.
+  - intros [a [Hp Hb]]. exists a. split; [exact Hp | exists a; auto].
+  - intros [a [Hp [x [Hx Hb]]]]. subst. eauto.
+Qed.
+#[program] Definition compASP {A B C} (f : ASPArr A B) (g : ASPArr B C) : ASPArr A C :=
+  fun P c => g (f P) c.
+Next Obligation.
+  apply asp_join_hom. intros P c. rewrite getASPArr_join. split.
+  - intros [b [Hf Hg]]. apply getASPArr_join in Hf. destruct Hf as [a [Hp Hf]].
+    exists a. split; [exact Hp |]. apply getASPArr_join. exists b. exact (conj Hf Hg).
+  - intros [a [Hp Hg]]. apply getASPArr_join in Hg. destruct Hg as [b [Hf Hg]].
+    exists b. split; [|exact Hg]. apply getASPArr_join. exists a. exact (conj Hp Hf).
+Qed.
+#[program] Definition firstASP {A B C} (f : ASPArr A B) : ASPArr (A * C) (B * C) :=
+  fun P bc => f (fun a => P (a, snd bc)) (fst bc).
+Next Obligation.
+  apply asp_join_hom. intros P [b c]. cbn [fst snd]. rewrite getASPArr_join. split.
+  - intros [a [Hp Hf]]. exists (a, c). split; [exact Hp |].
+    apply (getASPArr_ext f (fun x => x = a)); [|exact Hf].
+    intro x. split; [intros ->; reflexivity | intro H; injection H; auto].
+  - intros [[a c'] [Hp Hf]]. apply getASPArr_join in Hf. destruct Hf as [x [Hx Hf]].
+    injection Hx as Hx1 Hx2. subst. eauto.
+Qed.
+Definition leftASPT {A B C} (f : ASPArr A B) : SPArrT (A + C) (B + C) :=
+  fun P y => match y with inl b => f (fun a => P (inl a)) b | inr c => P (inr c) end.
+#[program] Definition leftASP {A B C} (f : ASPArr A B) : ASPArr (A + C) (B + C) := leftASPT f.
+Next Obligation.
+  apply asp_join_hom. intros P [b|c]; cbn.
+  - rewrite getASPArr_join. split.
+    + intros [a [Hp Hf]]. exists (inl a). split; [exact Hp |].
+      apply (getASPArr_ext f (fun x => x = a)); [|exact Hf].
+      intro x. split; [intros ->; reflexivity | intro H; injection H; auto].
+    + intros [[a|c] [Hp Hf]].
+      * apply getASPArr_join in Hf. destruct Hf as [x [Hx Hf]]. injection Hx as Hx1. subst. eauto.
+      * apply getASPArr_join in Hf. destruct Hf as [x [Hx _]]. discriminate Hx.
+  - split; [intro Hp; exists (inr c); auto |].
+    intros [[a|c'] [Hp Hc]]; [discriminate Hc | injection Hc as Hc; subst; exact Hp].
+Qed.
+#[program] Definition appASP {A B} : ASPArr (ASPArr A B * A) B :=
+  fun P b => exists f a, P (f, a) /\ f (fun x => x = a) b.
+Next Obligation.
+  apply asp_join_hom. intros P b. split.
+  - intros [f [a [Hp Hf]]]. exists (f, a). split; [exact Hp |]. exists f, a. auto.
+  - intros [[f a] [Hp [f' [a' [Heq Hf]]]]]. injection Heq as H1 H2. subst. eauto.
+Qed.
+#[global] Instance Arrow_ASPArr : Arrow ASPArr :=
+  {|arr_pure := @pureASP; arr_comp := @compASP; arr_first := @firstASP|}.
+#[global] Instance ArrowChoice_ASPArr : ArrowChoice ASPArr := {|arr_left := @leftASP|}.
+#[global] Instance ArrowApply_ASPArr : ArrowApply ASPArr := {|arr_app := @appASP|}.
+Definition ASPArr_eq {A B} (f g : ASPArr A B) : Prop := forall P b, f P b <-> g P b.
+#[global] Instance ASPArr_eq_Equivalence {A B} : Equivalence (@ASPArr_eq A B).
+Proof.
+  constructor.
+  - intros f P b. reflexivity.
+  - intros f g H P b. symmetry. apply H.
+  - intros f g h H1 H2 P b. etransitivity; [apply H1 | apply H2].
+Qed.
+#[global] Instance ArrowEq_ASPArr : ArrowEq ASPArr := {|arrow_eq := @ASPArr_eq|}.
+Lemma getASPArr_pure {A B} (h : A -> B) :
+  getASPArr (pureASP h) = fun P b => exists a, P a /\ h a = b.
+Proof. reflexivity. Qed.
+Lemma getASPArr_comp {A B C} (f : ASPArr A B) (g : ASPArr B C) :
+  getASPArr (compASP f g) = fun P c => g (f P) c.
+Proof. reflexivity. Qed.
+Lemma getASPArr_first {A B C} (f : ASPArr A B) :
+  getASPArr (@firstASP A B C f) = fun P bc => f (fun a => P (a, snd bc)) (fst bc).
+Proof. reflexivity. Qed.
+Lemma getASPArr_left {A B C} (f : ASPArr A B) : getASPArr (@leftASP A B C f) = leftASPT f.
+Proof. reflexivity. Qed.
+Lemma getASPArr_app {A B} :
+  getASPArr (@appASP A B) = fun P b => exists f a, P (f, a) /\ f (fun x => x = a) b.
+Proof. reflexivity. Qed.
+Definition aspRel {A B} (f : ASPArr A B) (a : A) (b : B) : Prop := f (fun x => x = a) b.
+Lemma aspRel_pure {A B} (h : A -> B) a b : aspRel (arr_pure h) a b <-> h a = b.
+Proof. cbn. split; [intros [x [-> H]]; exact H | intro H; exists a; auto]. Qed.
+Lemma aspRel_comp {A B C} (f : ASPArr A B) (g : ASPArr B C) a c :
+  aspRel (arr_comp f g) a c <-> exists b, aspRel f a b /\ aspRel g b c.
+Proof. exact (getASPArr_join g _ c). Qed.
+Lemma aspRel_first {A B C} (f : ASPArr A B) (p : A * C) (q : B * C) :
+  aspRel (arr_first f) p q <-> aspRel f (fst p) (fst q) /\ snd p = snd q.
+Proof.
+  destruct p as [a c], q as [b d]. unfold aspRel.
+  change (f (fun x => (x, d) = (a, c)) b <-> f (fun x => x = a) b /\ c = d).
+  rewrite getASPArr_join. split.
+  - intros [x [H Hr]]. injection H as -> ->. auto.
+  - intros [Hr ->]. exists a. auto.
+Qed.
+Lemma aspRel_left {A B C} (f : ASPArr A B) (x : A + C) (y : B + C) :
+  aspRel (arr_left f) x y <->
+  match x, y with inl a, inl b => aspRel f a b | inr c, inr d => c = d | _, _ => False end.
+Proof.
+  unfold aspRel. destruct x as [a|c], y as [b|d]; cbn [arr_left ArrowChoice_ASPArr];
+    rewrite getASPArr_left; unfold leftASPT; cbn.
+  - apply getASPArr_ext_iff. intro z. split; [intro H; injection H; auto | intros ->; reflexivity].
+  - split; [discriminate | contradiction].
+  - rewrite getASPArr_join. split; [intros [z [H _]]; discriminate | contradiction].
+  - split; [intro H; injection H; auto | intros ->; reflexivity].
+Qed.
+Lemma aspRel_app {A B} (p : ASPArr A B * A) b :
+  aspRel arr_app p b <-> aspRel (fst p) (snd p) b.
+Proof.
+  destruct p as [f a]. unfold aspRel. cbn [fst snd arr_app ArrowApply_ASPArr].
+  rewrite getASPArr_app. split.
+  - intros [g [x [H Hr]]]. injection H as <- <-. exact Hr.
+  - intro H. exists f, a. auto.
+Qed.
+Lemma aspRel_eq {A B} (f g : ASPArr A B) :
+  ASPArr_eq f g <-> (forall a b, aspRel f a b <-> aspRel g a b).
+Proof.
+  split; [intros H a b; apply H |]. intros H P b.
+  rewrite !getASPArr_join. split; intros [a [HP Hr]]; exists a; split;
+    solve [exact HP | apply H, Hr].
+Qed.
+#[global] Instance RelArrow_ASPArr : RelArrow ASPArr := {|
+  rel_reading := @aspRel; rel_pure := @aspRel_pure; rel_comp := @aspRel_comp;
+  rel_first := fun A B C f a c b d => aspRel_first f (a, c) (b, d)
+|}.
+#[global] Instance RelArrowChoice_ASPArr : RelArrowChoice ASPArr := {|rel_left := @aspRel_left|}.
+#[global] Instance RelArrowApply_ASPArr : RelArrowApply ASPArr := {|
+  rel_app := fun A B f a b => aspRel_app (f, a) b
+|}.
+#[global] Instance RelArrowEq_ASPArr : RelArrowEq ASPArr := {|rel_arrow_eq := @aspRel_eq|}.
+#[global] Instance ArrowLaws_ASPArr : ArrowLaws ASPArr :=
+  @rel_arrow_laws ASPArr Arrow_ASPArr ArrowEq_ASPArr RelArrow_ASPArr RelArrowEq_ASPArr.
+#[global] Instance ArrowChoiceLaws_ASPArr : ArrowChoiceLaws ASPArr :=
+  @rel_arrow_choice_laws ASPArr Arrow_ASPArr ArrowEq_ASPArr RelArrow_ASPArr
+    RelArrowEq_ASPArr ArrowChoice_ASPArr RelArrowChoice_ASPArr.
+#[global] Instance ArrowApplyLaws_ASPArr : ArrowApplyLaws ASPArr :=
+  @rel_arrow_apply_laws ASPArr Arrow_ASPArr ArrowEq_ASPArr RelArrow_ASPArr
+    RelArrowEq_ASPArr ArrowApply_ASPArr RelArrowApply_ASPArr.
+End ASPImplementation.
+
+(** ** Canonical DSLP arrows: constructive accepted-predicate meets *)
+Section DSLPImplementation.
+Definition dslpRelT {A B} (f : SPArrT A B) (a : A) (b : B) : Prop :=
+  forall P, f P b -> P a.
+Definition dslp_meet {A B} (f : SPArrT A B) : Prop :=
+  forall P b, f P b <-> forall a, dslpRelT f a b -> P a.
+Lemma dslp_meet_hom {A B} (f : SPArrT A B) :
+  dslp_meet f -> sp_monotone f /\ sp_terminating f /\ sp_conjunctive f.
+Proof.
+  intro H. split; [| split ].
+  - intros P Q HPQ b Hf. apply H. intros a Hr. exact (HPQ a (proj1 (H P b) Hf a Hr)).
+  - intro b. apply (H _ b). intros a _. exact I.
+  - intros I _ P b. rewrite (H _ b). split.
+    + intros Hall i. apply (H _ b). intros a Hr. exact (Hall a Hr i).
+    + intros Hall a Hr i. exact (proj1 (H _ b) (Hall i) a Hr).
+Qed.
+Lemma dslp_hom_meet {A B} (f : SPArrT A B) :
+  sp_monotone f /\ sp_terminating f /\ sp_conjunctive f -> dslp_meet f.
+Proof.
+  intros [Hm [Ht Hc]] P b. split.
+  - intros Hf a Hr. exact (Hr P Hf).
+  - intro H.
+    apply (Hm (fun a => forall i : { Q : A -> Prop | f Q b }, proj1_sig i a)).
+    + intros a Ha. apply H. intros Q HQ. exact (Ha (exist _ Q HQ)).
+    + exact (proj2 (Hc _ (inhabits (exist (fun Q => f Q b) (fun _ => True) (Ht b)))
+                     (fun i => proj1_sig i) b) (fun i => proj2_sig i)).
+Qed.
+Theorem dslp_meet_iff {A B} (f : SPArrT A B) :
+  dslp_meet f <-> sp_monotone f /\ sp_terminating f /\ sp_conjunctive f.
+Proof. split; [ apply dslp_meet_hom | apply dslp_hom_meet ]. Qed.
+Definition DSLPArr (A B : Type) : Type :=
+  { f : SPArrT A B | sp_monotone f /\ sp_terminating f /\ sp_conjunctive f }.
+Definition getDSLPArr {A B} (f : DSLPArr A B) : (A -> Prop) -> B -> Prop := proj1_sig f.
+Coercion getDSLPArr : DSLPArr >-> Funclass.
+Lemma getDSLPArr_meet {A B} (f : DSLPArr A B) P b :
+  f P b <-> forall a, dslpRelT (getDSLPArr f) a b -> P a.
+Proof. exact (dslp_hom_meet _ (proj2_sig f) P b). Qed.
+Definition mkDSLPArr {A B} (f : SPArrT A B) (H : dslp_meet f) : DSLPArr A B :=
+  exist _ f (dslp_meet_hom f H).
+Lemma getDSLPArr_ext_iff {A B} (f : DSLPArr A B) (P Q : A -> Prop) b :
+  (forall a, P a <-> Q a) -> f P b <-> f Q b.
+Proof.
+  intro H. rewrite !(getDSLPArr_meet f _ b).
+  split; intros HP a Hr; solve [ apply H, HP, Hr | apply H; apply HP, Hr ].
+Qed.
+Lemma getDSLPArr_ext {A B} (f : DSLPArr A B) (P Q : A -> Prop) b :
+  (forall a, P a <-> Q a) -> f P b -> f Q b.
+Proof. intro H. apply (getDSLPArr_ext_iff f P Q b H). Qed.
+Lemma getDSLPArr_mono {A B} (f : DSLPArr A B) (P Q : A -> Prop) b :
+  (forall a, P a -> Q a) -> f P b -> f Q b.
+Proof. intro H. exact (proj1 (proj2_sig f) P Q H b). Qed.
+#[program] Definition ofRelDSLPArr {A B} (R : A -> B -> Prop) : DSLPArr A B :=
+  fun P b => forall a, R a b -> P a.
+Next Obligation.
+  apply dslp_meet_hom. intros P b. split.
+  - intros H a Hr. apply H. apply (Hr (fun x => R x b)). intros a' Hr'. exact Hr'.
+  - intros H a Hr. apply H. intros Q HQ. exact (HQ a Hr).
+Qed.
+#[program] Definition pureDSLP {A B} (h : A -> B) : DSLPArr A B :=
+  fun P b => forall a, h a = b -> P a.
+Next Obligation.
+  apply dslp_meet_hom. intros P b. split.
+  - intros H a Hr. apply H. apply (Hr (fun x => h x = b)). intros a' Hr'. exact Hr'.
+  - intros H a Hr. apply H. intros Q HQ. exact (HQ a Hr).
+Qed.
+#[program] Definition compDSLP {A B C} (f : DSLPArr A B) (g : DSLPArr B C) : DSLPArr A C :=
+  fun P c => g (f P) c.
+Next Obligation.
+  apply dslp_meet_hom. intros P c. split.
+  - intros H a Hr. exact (Hr P H).
+  - intros H.
+    apply (getDSLPArr_meet g (f P) c). intros b Hg.
+    apply (getDSLPArr_meet f P b). intros a Hf.
+    apply H. intros Q HQ.
+    apply (proj1 (getDSLPArr_meet f Q b)); [| exact Hf ].
+    apply (proj1 (getDSLPArr_meet g (f Q) c)); [ exact HQ | exact Hg ].
+Qed.
+#[program] Definition firstDSLP {A B C} (f : DSLPArr A B) : DSLPArr (A * C) (B * C) :=
+  fun P bc => f (fun a => P (a, snd bc)) (fst bc).
+Next Obligation.
+  apply dslp_meet_hom. intros P [b c]. cbn [fst snd]. split.
+  - intros H [a c'] Hr. exact (Hr P H).
+  - intros H.
+    apply (getDSLPArr_meet f (fun a => P (a, c)) b). intros a Hf.
+    apply H. intros Q HQ. cbn [fst snd] in HQ.
+    apply (proj1 (getDSLPArr_meet f (fun a0 => Q (a0, c)) b)); [ exact HQ | exact Hf ].
+Qed.
+Definition leftDSLPT {A B C} (f : DSLPArr A B) : SPArrT (A + C) (B + C) :=
+  fun P y => match y with inl b => f (fun a => P (inl a)) b | inr c => P (inr c) end.
+#[program] Definition leftDSLP {A B C} (f : DSLPArr A B) : DSLPArr (A + C) (B + C) := leftDSLPT f.
+Next Obligation.
+  apply dslp_meet_hom. intros P [b | c]; cbn.
+  - split.
+    + intros H [a | c'] Hr; exact (Hr P H).
+    + intros H.
+      apply (getDSLPArr_meet f (fun a => P (inl a)) b). intros a Hf.
+      apply (H (inl a)). intros Q HQ. cbn in HQ.
+      apply (proj1 (getDSLPArr_meet f (fun a0 => Q (inl a0)) b)); [ exact HQ | exact Hf ].
+  - split.
+    + intros H [a | c'] Hr; exact (Hr P H).
+    + intro H. apply (H (inr c)). intros Q HQ. cbn in HQ. exact HQ.
+Qed.
+#[program] Definition appDSLP {A B} : DSLPArr (DSLPArr A B * A) B :=
+  fun P b => forall f a, dslpRelT (getDSLPArr f) a b -> P (f, a).
+Next Obligation.
+  apply dslp_meet_hom. intros P b. split.
+  - intros H [f a] Hr. exact (Hr P H).
+  - intros H f a Hr. apply H. intros Q HQ. exact (HQ f a Hr).
+Qed.
+#[global] Instance Arrow_DSLPArr : Arrow DSLPArr :=
+  {| arr_pure := @pureDSLP ; arr_comp := @compDSLP ; arr_first := @firstDSLP |}.
+#[global] Instance ArrowChoice_DSLPArr : ArrowChoice DSLPArr := {| arr_left := @leftDSLP |}.
+#[global] Instance ArrowApply_DSLPArr : ArrowApply DSLPArr := {| arr_app := @appDSLP |}.
+Definition DSLPArr_eq {A B} (f g : DSLPArr A B) : Prop := forall P b, f P b <-> g P b.
+#[global] Instance DSLPArr_eq_Equivalence {A B} : Equivalence (@DSLPArr_eq A B).
+Proof.
+  constructor.
+  - intros f P b. reflexivity.
+  - intros f g H P b. symmetry. apply H.
+  - intros f g h H1 H2 P b. etransitivity; [ apply H1 | apply H2 ].
+Qed.
+#[global] Instance ArrowEq_DSLPArr : ArrowEq DSLPArr := {| arrow_eq := @DSLPArr_eq |}.
+Lemma getDSLPArr_pure {A B} (h : A -> B) :
+  getDSLPArr (pureDSLP h) = fun P b => forall a, h a = b -> P a.
+Proof. reflexivity. Qed.
+Lemma getDSLPArr_comp {A B C} (f : DSLPArr A B) (g : DSLPArr B C) :
+  getDSLPArr (compDSLP f g) = fun P c => g (f P) c.
+Proof. reflexivity. Qed.
+Lemma getDSLPArr_first {A B C} (f : DSLPArr A B) :
+  getDSLPArr (@firstDSLP A B C f) = fun P bc => f (fun a => P (a, snd bc)) (fst bc).
+Proof. reflexivity. Qed.
+Lemma getDSLPArr_left {A B C} (f : DSLPArr A B) : getDSLPArr (@leftDSLP A B C f) = leftDSLPT f.
+Proof. reflexivity. Qed.
+Lemma getDSLPArr_app {A B} :
+  getDSLPArr (@appDSLP A B) = fun P b => forall f a, dslpRelT (getDSLPArr f) a b -> P (f, a).
+Proof. reflexivity. Qed.
+End DSLPImplementation.
+
+(** ** DSLP relation recovery and operation contracts *)
+Section DSLPRelation.
+Definition dslpRel {A B} (f : DSLPArr A B) (a : A) (b : B) : Prop :=
+  dslpRelT (getDSLPArr f) a b.
+Lemma get_dslpRel {A B} (f : DSLPArr A B) P b :
+  f P b <-> forall a, dslpRel f a b -> P a.
+Proof. exact (getDSLPArr_meet f P b). Qed.
+(** Only this optional complement probe needs excluded middle. *)
+Lemma dslpRel_probe {A B} (f : DSLPArr A B) a b :
+  dslpRel f a b <-> ~ f (fun x => x <> a) b.
+Proof.
+  split.
+  - intros Hr Hf. exact (Hr (fun x => x <> a) Hf eq_refl).
+  - intros Hf P HP.
+    destruct (classic (dslpRel f a b)) as [Hin | Hout].
+    + exact (proj1 (get_dslpRel f P b) HP a Hin).
+    + exfalso. apply Hf.
+      apply (proj2 (get_dslpRel f (fun x => x <> a) b)).
+      intros a' Hr' Heq. subst a'. exact (Hout Hr').
+Qed.
+Lemma dslpRel_ofRel {A B} (R : A -> B -> Prop) a b :
+  dslpRel (ofRelDSLPArr R) a b <-> R a b.
+Proof.
+  unfold dslpRel, dslpRelT, ofRelDSLPArr. cbn. split.
+  - intro H. exact (H (fun x => R x b) (fun a' Hr => Hr)).
+  - intros HR Q HQ. exact (HQ a HR).
+Qed.
+Lemma ofRel_dslpRel {A B} (f : DSLPArr A B) P b :
+  ofRelDSLPArr (dslpRel f) P b <-> f P b.
+Proof. unfold dslpRel, dslpRelT, ofRelDSLPArr. cbn. split; apply getDSLPArr_meet. Qed.
+Lemma dslpRel_pure {A B} (h : A -> B) a b : dslpRel (arr_pure h) a b <-> h a = b.
+Proof.
+  cbn. unfold dslpRel, dslpRelT. cbn. split.
+  - intro H. exact (H (fun x => h x = b) (fun a' Hr => Hr)).
+  - intros H Q HQ. exact (HQ a H).
+Qed.
+Lemma dslpRel_comp {A B C} (f : DSLPArr A B) (g : DSLPArr B C) a c :
+  dslpRel (arr_comp f g) a c <-> exists b, dslpRel f a b /\ dslpRel g b c.
+Proof.
+  split.
+  - intro H.
+    exact (H (fun x => exists b, dslpRel f x b /\ dslpRel g b c)
+             (proj2 (get_dslpRel g _ c)
+                (fun b Hg => proj2 (get_dslpRel f _ b)
+                               (fun a' Hf => ex_intro _ b (conj Hf Hg))))).
+  - intros [b [Hf Hg]] Q HQ. cbn in HQ.
+    apply (proj1 (get_dslpRel f Q b)); [| exact Hf ].
+    apply (proj1 (get_dslpRel g (f Q) c)); [ exact HQ | exact Hg ].
+Qed.
+Lemma dslpRel_first {A B C} (f : DSLPArr A B) (p : A * C) (q : B * C) :
+  dslpRel (arr_first f) p q <-> dslpRel f (fst p) (fst q) /\ snd p = snd q.
+Proof.
+  destruct p as [a c], q as [b c']. cbn [fst snd]. split.
+  - intro H. split.
+    + intros Q HQ. exact (H (fun p => Q (fst p)) HQ).
+    + exact (H (fun p => snd p = c')
+               (proj2 (get_dslpRel f (fun x => c' = c') b) (fun a' _ => eq_refl))).
+  - intros [Hf Hc]. cbn in Hc. subst c'. intros Q HQ.
+    apply (proj1 (get_dslpRel f (fun a0 => Q (a0, c)) b)); [ exact HQ | exact Hf ].
+Qed.
+Lemma dslpRel_left {A B C} (f : DSLPArr A B) (x : A + C) (y : B + C) :
+  dslpRel (arr_left f) x y <->
+  match x, y with inl a, inl b => dslpRel f a b | inr c, inr c' => c = c' | _, _ => False end.
+Proof.
+  unfold dslpRel, dslpRelT. cbn [getDSLPArr arr_left ArrowChoice_DSLPArr].
+  rewrite getDSLPArr_left. unfold leftDSLPT.
+  destruct y as [b | c'].
+  - destruct x as [a | c]; split.
+    + intros H Q HQ.
+      exact (H (fun z => match z with inl a0 => Q a0 | inr _ => True end) HQ).
+    + intros Hr P HP. exact (proj1 (get_dslpRel f _ b) HP a Hr).
+    + intro H.
+      exact (H (fun z => match z with inl _ => True | inr _ => False end)
+               (proj2 (get_dslpRel f (fun _ => True) b) (fun _ _ => I))).
+    + intros [].
+  - destruct x as [a | c]; split.
+    + intro H.
+      exact (H (fun z => match z with inl _ => False | inr _ => True end) I).
+    + intros [].
+    + intro H. injection (H (fun z => z = inr c') eq_refl) as ->. reflexivity.
+    + intros -> P HP. exact HP.
+Qed.
+Lemma dslpRel_app {A B} (p : DSLPArr A B * A) (b : B) :
+  dslpRel arr_app p b <-> dslpRel (fst p) (snd p) b.
+Proof.
+  destruct p as [f a]. cbn [fst snd]. split.
+  - intro H. exact (H (fun q => dslpRel (fst q) (snd q) b) (fun f' a' Hr => Hr)).
+  - intros Hr P HP. exact (HP f a Hr).
+Qed.
+Lemma dslpRel_eq {A B} (f g : DSLPArr A B) :
+  DSLPArr_eq f g <-> (forall a b, dslpRel f a b <-> dslpRel g a b).
+Proof.
+  split.
+  - intros H a b. unfold dslpRel, dslpRelT. split; intros Hr P HP.
+    + apply Hr, H, HP.
+    + apply Hr, H, HP.
+  - intros H P b. rewrite !get_dslpRel.
+    split; intros HP a Hr; apply HP, H, Hr.
+Qed.
+Lemma dslpRel_incl {A B} (f g : DSLPArr A B) :
+  (forall P b, f P b -> g P b) <-> (forall a b, dslpRel g a b -> dslpRel f a b).
+Proof.
+  split.
+  - intros H a b Hg P HP. exact (Hg P (H P b HP)).
+  - intros H P b Hf. apply get_dslpRel. intros a Hg.
+    exact (proj1 (get_dslpRel f P b) Hf a (H a b Hg)).
+Qed.
+#[global] Instance RelArrow_DSLPArr : RelArrow DSLPArr := {|
+  rel_reading := @dslpRel; rel_pure := @dslpRel_pure; rel_comp := @dslpRel_comp;
+  rel_first := fun A B C f a c b d => dslpRel_first f (a, c) (b, d)
+|}.
+#[global] Instance RelArrowChoice_DSLPArr : RelArrowChoice DSLPArr := {|rel_left := @dslpRel_left|}.
+#[global] Instance RelArrowApply_DSLPArr : RelArrowApply DSLPArr := {|
+  rel_app := fun A B f a b => dslpRel_app (f, a) b
+|}.
+#[global] Instance RelArrowEq_DSLPArr : RelArrowEq DSLPArr := {|rel_arrow_eq := @dslpRel_eq|}.
+#[global] Instance ArrowLaws_DSLPArr : ArrowLaws DSLPArr :=
+  @rel_arrow_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr RelArrowEq_DSLPArr.
+#[global] Instance ArrowChoiceLaws_DSLPArr : ArrowChoiceLaws DSLPArr :=
+  @rel_arrow_choice_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr
+    RelArrowEq_DSLPArr ArrowChoice_DSLPArr RelArrowChoice_DSLPArr.
+#[global] Instance ArrowApplyLaws_DSLPArr : ArrowApplyLaws DSLPArr :=
+  @rel_arrow_apply_laws DSLPArr Arrow_DSLPArr ArrowEq_DSLPArr RelArrow_DSLPArr
+    RelArrowEq_DSLPArr ArrowApply_DSLPArr RelArrowApply_DSLPArr.
+End DSLPRelation.
+
+(** ** Public ASP/DSLP compatibility interface
+    Carrier and dictionary aliases are plain definitions, not competing global
+    registrations. The public ASP probe retains its opposite equality direction. *)
 Definition PureASPostArr (A B : Type) : Type :=
   ASPArr A B.
 
@@ -90,7 +569,7 @@ Proof.
   destruct f as [f Hf], g as [g Hg]. cbn. intro H.
   assert (HE : f = g).
   { extensionality P. extensionality b. apply propositional_extensionality, H. }
-  subst. f_equal. apply proof_irrelevance.
+  subst. f_equal. apply PropExtensionality.proof_irrelevance.
 Qed.
 
 Lemma PureDSLPostArr_eq {A B} (f g : PureDSLPostArr A B) :
@@ -99,23 +578,15 @@ Proof.
   destruct f as [f Hf], g as [g Hg]. cbn. intro H.
   assert (HE : f = g).
   { extensionality P. extensionality b. apply propositional_extensionality, H. }
-  subst. f_equal. apply proof_irrelevance.
+  subst. f_equal. apply PropExtensionality.proof_irrelevance.
 Qed.
 
-(** ** Canonical operations under compatibility names *)
+(** ** Function-lifting aliases and canonical operation dictionaries *)
 
 Local Obligation Tactic := idtac.
 
-Definition arrASP := @ASPArrowCore.pureASP.
-Definition compASP := @ASPArrowCore.compASP.
-Definition firstASP := @ASPArrowCore.firstASP.
-Definition leftASP := @ASPArrowCore.leftASP.
-Definition appASP := @ASPArrowCore.appASP.
-Definition arrDSLP := @DSLPArrowCore.pureDSLP.
-Definition compDSLP := @DSLPArrowCore.compDSLP.
-Definition firstDSLP := @DSLPArrowCore.firstDSLP.
-Definition leftDSLP := @DSLPArrowCore.leftDSLP.
-Definition appDSLP := @DSLPArrowCore.appDSLP.
+Definition arrASP := @pureASP.
+Definition arrDSLP := @pureDSLP.
 Arguments arrASP {A B} _.
 Arguments compASP {A B C} _ _.
 Arguments firstASP {A B C} _.
@@ -490,7 +961,7 @@ Proof.
     exists a. split; [reflexivity | exact Hr].
 Qed.
 
-(** ** Generic semantic instances and derived law packages *)
+(** ** Compatibility semantic dictionaries and derived law packages *)
 
 Definition RelArrow_PureASPostArr : RelArrow PureASPostArr := {|
   rel_reading := @ASP_rel;
@@ -862,4 +1333,747 @@ Proof.
     + intro f. eapply DSLP_monotone; [|exact (H f)].
       intros [a s] HP [[f0 a0] s0] Heq. injection Heq as Hf Ha Hs. subst.
       exact HP.
+Qed.
+
+(** ** Canonical ASP recovery and fixed-input bind wrappers *)
+Section ASPRelationWrappers.
+Lemma get_aspRel {A B} (f : ASPArr A B) P b :
+  f P b <-> exists a, P a /\ aspRel f a b.
+Proof. exact (getASPArr_join f P b). Qed.
+Lemma aspRel_ofRel {A B} (R : A -> B -> Prop) a b :
+  aspRel (ofRelASPArr R) a b <-> R a b.
+Proof.
+  unfold aspRel, ofRelASPArr. cbn. split.
+  - intros [x [Hx HR]]. subst x. exact HR.
+  - intro HR. exists a. auto.
+Qed.
+Lemma ofRel_aspRel {A B} (f : ASPArr A B) P b :
+  ofRelASPArr (aspRel f) P b <-> f P b.
+Proof. unfold aspRel, ofRelASPArr. cbn. split; apply getASPArr_join. Qed.
+Lemma aspRel_incl {A B} (f g : ASPArr A B) :
+  (forall P b, f P b -> g P b) <-> (forall a b, aspRel f a b -> aspRel g a b).
+Proof.
+  split.
+  - intros H a b. apply H.
+  - intros H P b Hf. apply get_aspRel in Hf. destruct Hf as [a [Hp Hr]].
+    apply get_aspRel. exists a. split; [ exact Hp | apply H, Hr ].
+Qed.
+Lemma aspRel_bind {I A B} (m : ASPArr I A) (k : A -> ASPArr I B) i b :
+  aspRel (@bind_arrow ASPArr Arrow_ASPArr ArrowApply_ASPArr I A B m k) i b <->
+  exists a, aspRel m i a /\ aspRel (k a) i b.
+Proof.
+  exact (@rel_bind ASPArr Arrow_ASPArr ArrowApply_ASPArr
+    RelArrow_ASPArr RelArrowApply_ASPArr I A B m k i b).
+Qed.
+Lemma aspRelS_ret (S : Type) {I A} (x : A) i s r :
+  aspRel (@ret_arrow (stateArrT S ASPArr) _ I A x) (i, s) r <-> r = (x, s).
+Proof.
+  unfold ret_arrow. cbn [arr_pure Arrow_stateArrT]. rewrite aspRel_pure.
+  split; intro H; symmetry; exact H.
+Qed.
+Lemma aspRelS_bind (S : Type) {I A B} (m : stateArrT S ASPArr I A)
+  (k : A -> stateArrT S ASPArr I B) i s r :
+  aspRel (@bind_arrow (stateArrT S ASPArr) _ _ I A B m k) (i, s) r <->
+  exists a s', aspRel m (i, s) (a, s') /\ aspRel (k a) (i, s') r.
+Proof.
+  exact (@relS_bind ASPArr Arrow_ASPArr ArrowApply_ASPArr
+    RelArrow_ASPArr RelArrowApply_ASPArr S I A B m k i s r).
+Qed.
+Lemma aspRelO_comp {X Y Z} (f : optionArrT ASPArr X Y) (g : optionArrT ASPArr Y Z) x o :
+  aspRel (@arr_comp (optionArrT ASPArr) _ X Y Z f g) x o <->
+  exists o1, aspRel f x o1 /\ match o1 with Some y => aspRel g y o | None => o = None end.
+Proof.
+  exact (@relO_comp ASPArr Arrow_ASPArr RelArrow_ASPArr
+    ArrowChoice_ASPArr RelArrowChoice_ASPArr X Y Z f g x o).
+Qed.
+Lemma aspRelO_pure {X Y} (h : X -> Y) x o :
+  aspRel (@arr_pure (optionArrT ASPArr) _ X Y h) x o <-> o = Some (h x).
+Proof. exact (@relO_pure ASPArr Arrow_ASPArr RelArrow_ASPArr ArrowChoice_ASPArr X Y h x o). Qed.
+Lemma aspRelO_first {X Y C} (f : optionArrT ASPArr X Y) x (c : C) o :
+  aspRel (@arr_first (optionArrT ASPArr) _ X Y C f) (x, c) o <->
+  exists o1, aspRel f x o1 /\ o = match o1 with Some y => Some (y, c) | None => None end.
+Proof. exact (@relO_first ASPArr Arrow_ASPArr RelArrow_ASPArr ArrowChoice_ASPArr X Y C f x c o). Qed.
+Section ASPStateOptionWrappers.
+  Variable S : Type.
+  Local Notation T := (stateArrT S (optionArrT ASPArr)).
+  Lemma aspRelE_comp {X Y Z} (f : T X Y) (g : T Y Z) p o :
+    aspRel (@arr_comp T _ X Y Z f g) p o <->
+    exists o1, aspRel f p o1 /\ match o1 with Some q => aspRel g q o | None => o = None end.
+  Proof.
+    exact (@relE_comp ASPArr Arrow_ASPArr RelArrow_ASPArr
+      ArrowChoice_ASPArr RelArrowChoice_ASPArr S X Y Z f g p o).
+  Qed.
+  Lemma aspRelE_pure {X Y} (h : X -> Y) x s o :
+    aspRel (@arr_pure T _ X Y h) (x, s) o <-> o = Some (h x, s).
+  Proof. exact (@relE_pure ASPArr Arrow_ASPArr RelArrow_ASPArr ArrowChoice_ASPArr S X Y h x s o). Qed.
+  Lemma aspRelE_first {X Y C} (f : T X Y) x (c : C) s o :
+    aspRel (@arr_first T _ X Y C f) ((x, c), s) o <->
+    exists o1, aspRel f (x, s) o1 /\
+      o = match o1 with Some (y, s') => Some ((y, c), s') | None => None end.
+  Proof.
+    exact (@relE_first ASPArr Arrow_ASPArr RelArrow_ASPArr
+      ArrowChoice_ASPArr RelArrowChoice_ASPArr S X Y C f x c s o).
+  Qed.
+  Lemma aspRelE_app {X Y} (f : T X Y) x s o :
+    aspRel (@arr_app T _ _ X Y) ((f, x), s) o <-> aspRel f (x, s) o.
+  Proof.
+    exact (@relE_app ASPArr Arrow_ASPArr ArrowApply_ASPArr RelArrow_ASPArr RelArrowApply_ASPArr
+      ArrowChoice_ASPArr RelArrowChoice_ASPArr S X Y f x s o).
+  Qed.
+  Lemma aspRelE_bind {I A B} (m : T I A) (k : A -> T I B) i s o :
+    aspRel (@bind_arrow T _ _ I A B m k) (i, s) o <->
+    exists o1, aspRel m (i, s) o1 /\
+      match o1 with Some (a, s') => aspRel (k a) (i, s') o | None => o = None end.
+  Proof.
+    exact (@relE_bind ASPArr Arrow_ASPArr ArrowApply_ASPArr RelArrow_ASPArr RelArrowApply_ASPArr
+      ArrowChoice_ASPArr RelArrowChoice_ASPArr S I A B m k i s o).
+  Qed.
+  Lemma aspRelE_ret {I A} (a : A) i s o :
+    aspRel (@ret_arrow T _ I A a) (i, s) o <-> o = Some (a, s).
+  Proof.
+    exact (@relE_pure ASPArr Arrow_ASPArr RelArrow_ASPArr ArrowChoice_ASPArr S I A (fun _ => a) i s o).
+  Qed.
+End ASPStateOptionWrappers.
+End ASPRelationWrappers.
+
+(** ** Canonical DSLP fixed-input bind wrappers *)
+Section DSLPRelationWrappers.
+Lemma dslpRel_bind {I A B} (m : DSLPArr I A) (k : A -> DSLPArr I B) i b :
+  dslpRel (@bind_arrow DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr I A B m k) i b <->
+  exists a, dslpRel m i a /\ dslpRel (k a) i b.
+Proof.
+  exact (@rel_bind DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr
+    RelArrow_DSLPArr RelArrowApply_DSLPArr I A B m k i b).
+Qed.
+Lemma dslpRelS_ret (S : Type) {I A} (x : A) i s r :
+  dslpRel (@ret_arrow (stateArrT S DSLPArr) _ I A x) (i, s) r <-> r = (x, s).
+Proof.
+  unfold ret_arrow. cbn [arr_pure Arrow_stateArrT]. rewrite dslpRel_pure.
+  split; intro H; symmetry; exact H.
+Qed.
+Lemma dslpRelS_bind (S : Type) {I A B} (m : stateArrT S DSLPArr I A)
+  (k : A -> stateArrT S DSLPArr I B) i s r :
+  dslpRel (@bind_arrow (stateArrT S DSLPArr) _ _ I A B m k) (i, s) r <->
+  exists a s', dslpRel m (i, s) (a, s') /\ dslpRel (k a) (i, s') r.
+Proof.
+  exact (@relS_bind DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr
+    RelArrow_DSLPArr RelArrowApply_DSLPArr S I A B m k i s r).
+Qed.
+Lemma dslpRelO_comp {X Y Z} (f : optionArrT DSLPArr X Y) (g : optionArrT DSLPArr Y Z) x o :
+  dslpRel (@arr_comp (optionArrT DSLPArr) _ X Y Z f g) x o <->
+  exists o1, dslpRel f x o1 /\ match o1 with Some y => dslpRel g y o | None => o = None end.
+Proof.
+  exact (@relO_comp DSLPArr Arrow_DSLPArr RelArrow_DSLPArr
+    ArrowChoice_DSLPArr RelArrowChoice_DSLPArr X Y Z f g x o).
+Qed.
+Lemma dslpRelO_pure {X Y} (h : X -> Y) x o :
+  dslpRel (@arr_pure (optionArrT DSLPArr) _ X Y h) x o <-> o = Some (h x).
+Proof. exact (@relO_pure DSLPArr Arrow_DSLPArr RelArrow_DSLPArr ArrowChoice_DSLPArr X Y h x o). Qed.
+Lemma dslpRelO_first {X Y C} (f : optionArrT DSLPArr X Y) x (c : C) o :
+  dslpRel (@arr_first (optionArrT DSLPArr) _ X Y C f) (x, c) o <->
+  exists o1, dslpRel f x o1 /\ o = match o1 with Some y => Some (y, c) | None => None end.
+Proof. exact (@relO_first DSLPArr Arrow_DSLPArr RelArrow_DSLPArr ArrowChoice_DSLPArr X Y C f x c o). Qed.
+Section DSLPStateOptionWrappers.
+  Variable S : Type.
+  Local Notation T := (stateArrT S (optionArrT DSLPArr)).
+  Lemma dslpRelE_comp {X Y Z} (f : T X Y) (g : T Y Z) p o :
+    dslpRel (@arr_comp T _ X Y Z f g) p o <->
+    exists o1, dslpRel f p o1 /\ match o1 with Some q => dslpRel g q o | None => o = None end.
+  Proof.
+    exact (@relE_comp DSLPArr Arrow_DSLPArr RelArrow_DSLPArr
+      ArrowChoice_DSLPArr RelArrowChoice_DSLPArr S X Y Z f g p o).
+  Qed.
+  Lemma dslpRelE_pure {X Y} (h : X -> Y) x s o :
+    dslpRel (@arr_pure T _ X Y h) (x, s) o <-> o = Some (h x, s).
+  Proof. exact (@relE_pure DSLPArr Arrow_DSLPArr RelArrow_DSLPArr ArrowChoice_DSLPArr S X Y h x s o). Qed.
+  Lemma dslpRelE_first {X Y C} (f : T X Y) x (c : C) s o :
+    dslpRel (@arr_first T _ X Y C f) ((x, c), s) o <->
+    exists o1, dslpRel f (x, s) o1 /\
+      o = match o1 with Some (y, s') => Some ((y, c), s') | None => None end.
+  Proof.
+    exact (@relE_first DSLPArr Arrow_DSLPArr RelArrow_DSLPArr
+      ArrowChoice_DSLPArr RelArrowChoice_DSLPArr S X Y C f x c s o).
+  Qed.
+  Lemma dslpRelE_app {X Y} (f : T X Y) x s o :
+    dslpRel (@arr_app T _ _ X Y) ((f, x), s) o <-> dslpRel f (x, s) o.
+  Proof.
+    exact (@relE_app DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr RelArrow_DSLPArr RelArrowApply_DSLPArr
+      ArrowChoice_DSLPArr RelArrowChoice_DSLPArr S X Y f x s o).
+  Qed.
+  Lemma dslpRelE_bind {I A B} (m : T I A) (k : A -> T I B) i s o :
+    dslpRel (@bind_arrow T _ _ I A B m k) (i, s) o <->
+    exists o1, dslpRel m (i, s) o1 /\
+      match o1 with Some (a, s') => dslpRel (k a) (i, s') o | None => o = None end.
+  Proof.
+    exact (@relE_bind DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr RelArrow_DSLPArr RelArrowApply_DSLPArr
+      ArrowChoice_DSLPArr RelArrowChoice_DSLPArr S I A B m k i s o).
+  Qed.
+  Lemma dslpRelE_ret {I A} (a : A) i s o :
+    dslpRel (@ret_arrow T _ I A a) (i, s) o <-> o = Some (a, s).
+  Proof.
+    exact (@relE_pure DSLPArr Arrow_DSLPArr RelArrow_DSLPArr ArrowChoice_DSLPArr S I A (fun _ => a) i s o).
+  Qed.
+End DSLPStateOptionWrappers.
+End DSLPRelationWrappers.
+
+(** ** Angelic-to-demonic binary conversion *)
+Definition asp_to_dslp {A B} (w : PureASPostArr A B) : PureDSLPostArr A B :=
+  relDSLP (ASP_rel w).
+Lemma asp_to_dslp_spec {A B} (w : PureASPostArr A B) P b :
+  getDSLP (asp_to_dslp w) P b <-> forall a, ASP_rel w a b -> P a.
+Proof. exact (getDSLP_relDSLP (ASP_rel w) P b). Qed.
+Lemma DSLP_rel_asp_to_dslp {A B} (w : PureASPostArr A B) a b :
+  DSLP_rel (asp_to_dslp w) a b <-> ASP_rel w a b.
+Proof. exact (DSLP_rel_relDSLP (ASP_rel w) a b). Qed.
+
+(** ** Canonical DSP arrows
+    Composition splits into ASP and DSLP, operates on each part, and conjoins.
+    Composing the conjoined transformers directly would be strictly stronger
+    than the relational reading. Relation recovery uses excluded middle. *)
+Section DSPImplementation.
+Definition DSPhealthy {X Y} (w : SPArrT X Y) : Prop :=
+  exists R : SPureArr X Y, forall P y, w P y <-> dspOf R P y.
+Lemma dsp_healthy_hom {X Y} (w : SPArrT X Y) :
+  DSPhealthy w -> sp_monotone w /\ sp_strict w /\ sp_conjunctive w.
+Proof.
+  intros [R HR]. split; [| split ].
+  - intros P Q HPQ y Hw. apply HR in Hw. apply HR. destruct Hw as [[x [Hx HRx]] Hd]. split.
+    + exists x. split; [ exact (HPQ x Hx) | exact HRx ].
+    + intros x' Hx'. exact (HPQ x' (Hd x' Hx')).
+  - intros y Hw. apply HR in Hw. destruct Hw as [[x [[] _]] _].
+  - intros I [i0] P y. rewrite (HR _ y). split.
+    + intros [[x [Hx HRx]] Hd] i. apply (HR _ y). split.
+      * exists x. split; [ exact (Hx i) | exact HRx ].
+      * intros x' Hx'. exact (Hd x' Hx' i).
+    + intro Hall. split.
+      * destruct (proj1 (HR _ y) (Hall i0)) as [[x [_ HRx]] _].
+        exists x. split; [| exact HRx ].
+        intro i. exact (proj2 (proj1 (HR _ y) (Hall i)) x HRx).
+      * intros x HRx i. exact (proj2 (proj1 (HR _ y) (Hall i)) x HRx).
+Qed.
+Lemma dsp_hom_healthy {X Y} (w : SPArrT X Y) :
+  sp_monotone w /\ sp_strict w /\ sp_conjunctive w -> DSPhealthy w.
+Proof.
+  intros [Hm [Hs Hc]].
+  exists (fun x y => w (fun _ => True) y /\ forall i : { Q : X -> Prop | w Q y }, proj1_sig i x).
+  intros P y. unfold dspOf, aspOf, dslpOf. split.
+  - intro Hw.
+    assert (Htop : w (fun _ => True) y).
+    { apply (Hm P); [ intros; exact I | exact Hw ]. }
+    assert (Hleast : w (fun x => forall i : { Q : X -> Prop | w Q y }, proj1_sig i x) y).
+    { exact (proj2 (Hc _ (inhabits (exist (fun Q => w Q y) P Hw)) (fun i => proj1_sig i) y)
+                   (fun i => proj2_sig i)). }
+    split.
+    + apply NNPP. intro Hno. apply (Hs y).
+      apply (Hm (fun x => forall i : { Q : X -> Prop | w Q y }, proj1_sig i x)); [| exact Hleast ].
+      intros x Hx. apply Hno. exists x.
+      split; [ exact (Hx (exist _ P Hw)) | split; [ exact Htop | exact Hx ] ].
+    + intros x [_ Hx]. exact (Hx (exist _ P Hw)).
+  - intros [[x0 [_ [Htop _]]] Hall].
+    apply (Hm (fun x => forall i : { Q : X -> Prop | w Q y }, proj1_sig i x)).
+    + intros x Hx. exact (Hall x (conj Htop Hx)).
+    + exact (proj2 (Hc _ (inhabits (exist (fun Q => w Q y) (fun _ => True) Htop))
+                      (fun i => proj1_sig i) y) (fun i => proj2_sig i)).
+Qed.
+Theorem dsp_hom_iff {X Y} (w : SPArrT X Y) :
+  DSPhealthy w <-> sp_monotone w /\ sp_strict w /\ sp_conjunctive w.
+Proof. split; [ apply dsp_healthy_hom | apply dsp_hom_healthy ]. Qed.
+Definition DSPArr (X Y : Type) : Type :=
+  { w : SPArrT X Y | sp_monotone w /\ sp_strict w /\ sp_conjunctive w }.
+Definition getDSP {X Y} (w : DSPArr X Y) : (X -> Prop) -> Y -> Prop := proj1_sig w.
+Definition DSPArr_eq {X Y} (w v : DSPArr X Y) : Prop :=
+  forall P y, getDSP w P y <-> getDSP v P y.
+Definition dspRel {X Y} (w : DSPArr X Y) : SPureArr X Y :=
+  fun x y => getDSP w (fun _ => True) y /\ ~ getDSP w (fun z => z <> x) y.
+Lemma dspRel_of {X Y} (R : SPureArr X Y) (w : DSPArr X Y) :
+  (forall P y, getDSP w P y <-> dspOf R P y) -> Rel_eq (dspRel w) R.
+Proof. intros Hw x y. unfold dspRel. rewrite !Hw. symmetry. apply dspOf_rel. Qed.
+Lemma dspRel_spec {X Y} (w : DSPArr X Y) P y :
+  getDSP w P y <-> dspOf (dspRel w) P y.
+Proof.
+  destruct (dsp_hom_healthy _ (proj2_sig w)) as [R HR].
+  assert (Hrel : Rel_eq (dspRel w) R) by (apply dspRel_of; exact HR).
+  unfold getDSP. rewrite HR. unfold dspOf, aspOf, dslpOf.
+  split; intros [Ha Hd]; split.
+  - destruct Ha as [x [HP Hx]]. exists x. split; [ exact HP | apply Hrel; exact Hx ].
+  - intros x Hx. apply Hd. apply Hrel. exact Hx.
+  - destruct Ha as [x [HP Hx]]. exists x. split; [ exact HP | apply Hrel; exact Hx ].
+  - intros x Hx. apply Hd. apply Hrel. exact Hx.
+Qed.
+(** Both parts are canonical property-only arrows. *)
+Definition aspPartArr {X Y} (w : DSPArr X Y) : ASPArr X Y :=
+  mkASPArr (aspOf (dspRel w)) (fun P b => aspOf_join (dspRel w) P b).
+Definition dslpPartArr {X Y} (w : DSPArr X Y) : DSLPArr X Y :=
+  mkDSLPArr (dslpOf (dspRel w)) (fun P b => dslpOf_meet (dspRel w) P b).
+Definition aspPart {X Y} (w : DSPArr X Y) : (X -> Prop) -> Y -> Prop := getASPArr (aspPartArr w).
+Definition dslpPart {X Y} (w : DSPArr X Y) : (X -> Prop) -> Y -> Prop := getDSLPArr (dslpPartArr w).
+Theorem dsp_split {X Y} (w : DSPArr X Y) P y :
+  getDSP w P y <-> (aspPart w P y /\ dslpPart w P y).
+Proof. exact (dspRel_spec w P y). Qed.
+Theorem dspRel_faithful {X Y} (w v : DSPArr X Y) :
+  Rel_eq (dspRel w) (dspRel v) -> DSPArr_eq w v.
+Proof.
+  intros H P y. rewrite (dspRel_spec w P y), (dspRel_spec v P y).
+  exact (dspOf_cong _ _ H P y).
+Qed.
+Theorem dspRel_faithful_conv {X Y} (w v : DSPArr X Y) :
+  DSPArr_eq w v -> Rel_eq (dspRel w) (dspRel v).
+Proof.
+  intros H x y. unfold dspRel. split.
+  - intros [Ht Hn]. split; [ apply H; exact Ht |].
+    intro Hc. apply Hn. apply H. exact Hc.
+  - intros [Ht Hn]. split; [ apply H; exact Ht |].
+    intro Hc. apply Hn. apply H. exact Hc.
+Qed.
+#[local] Obligation Tactic := idtac.
+#[program] Definition pure_DSP {X Y} (h : X -> Y) : DSPArr X Y :=
+  fun P y => pureASP h P y /\ pureDSLP h P y.
+Next Obligation.
+  intros X Y h. apply dsp_healthy_hom. exists (arr_pure h). intros P y. reflexivity.
+Qed.
+#[program] Definition comp_DSP {X Y Z} (w : DSPArr X Y) (v : DSPArr Y Z) : DSPArr X Z :=
+  fun P z => compASP (aspPartArr w) (aspPartArr v) P z
+             /\ compDSLP (dslpPartArr w) (dslpPartArr v) P z.
+Next Obligation.
+  intros X Y Z w v. apply dsp_healthy_hom. exists (arr_comp (dspRel w) (dspRel v)). intros P z.
+  unfold aspPart, dslpPart, dspOf.
+  rewrite (aspOf_comp (dspRel w) (dspRel v)), (dslpOf_comp (dspRel w) (dspRel v)).
+  reflexivity.
+Qed.
+#[program] Definition first_DSP {X Y C} (w : DSPArr X Y) : DSPArr (X * C) (Y * C) :=
+  fun P q => @firstASP _ _ C (aspPartArr w) P q /\ @firstDSLP _ _ C (dslpPartArr w) P q.
+Next Obligation.
+  intros X Y C w. apply dsp_healthy_hom. exists (arr_first (dspRel w)). intros P q.
+  unfold aspPart, dslpPart, dspOf.
+  rewrite (aspOf_first (dspRel w)), (dslpOf_first (dspRel w)). reflexivity.
+Qed.
+#[global] Instance Arrow_DSPArr : Arrow DSPArr := {
+  arr_pure := @pure_DSP; arr_comp := @comp_DSP; arr_first := @first_DSP
+}.
+#[global] Instance DSPArr_eq_Equivalence {X Y} : Equivalence (@DSPArr_eq X Y).
+Proof.
+  constructor.
+  - intros w P y. reflexivity.
+  - intros w v H P y. symmetry. exact (H P y).
+  - intros u w v H1 H2 P y. exact (iff_trans (H1 P y) (H2 P y)).
+Qed.
+#[global] Instance ArrowEq_DSPArr : ArrowEq DSPArr := {
+  arrow_eq := @DSPArr_eq; arrow_eq_equiv := @DSPArr_eq_Equivalence
+}.
+#[program] Definition left_DSP {X Y C} (w : DSPArr X Y) : DSPArr (X + C) (Y + C) :=
+  fun P y => @leftASP _ _ C (aspPartArr w) P y /\ @leftDSLP _ _ C (dslpPartArr w) P y.
+Next Obligation.
+  intros X Y C w. apply dsp_healthy_hom. exists (arr_left (dspRel w)). intros P [b|c]; unfold dspOf.
+  - unfold aspPart, dslpPart.
+    rewrite (aspOf_left_inl (dspRel w)), (dslpOf_left_inl (dspRel w)). reflexivity.
+  - rewrite (aspOf_left_inr (dspRel w)), (dslpOf_left_inr (dspRel w)). tauto.
+Qed.
+#[global] Instance ArrowChoice_DSPArr : ArrowChoice DSPArr := { arr_left := @left_DSP }.
+(** Application reads the stored DSP arrow itself, so its domain is DSP-specific. *)
+Definition appRel {A B} : SPureArr (DSPArr A B * A) B :=
+  fun p b => dspRel (fst p) (snd p) b.
+#[program] Definition app_DSP {A B} : DSPArr (DSPArr A B * A) B :=
+  fun P b => aspOf appRel P b /\ dslpOf appRel P b.
+Next Obligation.
+  intros A B. apply dsp_healthy_hom. exists appRel. intros P b. reflexivity.
+Qed.
+#[global] Instance ArrowApply_DSPArr : ArrowApply DSPArr := { arr_app := @app_DSP }.
+End DSPImplementation.
+
+(** ** DSP relation contracts and selected-equality laws *)
+Section DSPRelation.
+Lemma dspRel_pure {X Y} (h : X -> Y) : Rel_eq (dspRel (pure_DSP h)) (arr_pure h).
+Proof. apply dspRel_of. intros P y. reflexivity. Qed.
+Lemma dspRel_comp {X Y Z} (w : DSPArr X Y) (v : DSPArr Y Z) :
+  Rel_eq (dspRel (comp_DSP w v)) (arr_comp (dspRel w) (dspRel v)).
+Proof.
+  apply dspRel_of. intros P z. unfold comp_DSP, getDSP. cbn [proj1_sig].
+  unfold aspPart, dslpPart, dspOf.
+  rewrite (aspOf_comp (dspRel w) (dspRel v)), (dslpOf_comp (dspRel w) (dspRel v)). reflexivity.
+Qed.
+Lemma dspRel_first {X Y C} (w : DSPArr X Y) :
+  Rel_eq (dspRel (@first_DSP X Y C w)) (arr_first (dspRel w)).
+Proof.
+  apply dspRel_of. intros P q. unfold first_DSP, getDSP. cbn [proj1_sig].
+  unfold aspPart, dslpPart, dspOf.
+  rewrite (aspOf_first (dspRel w)), (dslpOf_first (dspRel w)). reflexivity.
+Qed.
+Lemma dspRel_left {X Y C} (w : DSPArr X Y) :
+  Rel_eq (dspRel (@left_DSP X Y C w)) (arr_left (dspRel w)).
+Proof.
+  apply dspRel_of. intros P [b|c]; unfold left_DSP, getDSP; cbn [proj1_sig]; unfold dspOf.
+  - unfold aspPart, dslpPart.
+    rewrite (aspOf_left_inl (dspRel w)), (dslpOf_left_inl (dspRel w)). reflexivity.
+  - rewrite (aspOf_left_inr (dspRel w)), (dslpOf_left_inr (dspRel w)). tauto.
+Qed.
+Lemma dspRel_app {A B} : Rel_eq (dspRel (@app_DSP A B)) appRel.
+Proof. apply dspRel_of. intros P b. reflexivity. Qed.
+Lemma dspRel_second {X Y C} (w : DSPArr X Y) :
+  Rel_eq (dspRel (@arr_second DSPArr Arrow_DSPArr X Y C w))
+    (@arr_second Rel Arrow_Rel X Y C (dspRel w)).
+Proof.
+  unfold arr_second. cbn [arr_comp arr_pure arr_first Arrow_DSPArr].
+  repeat first [setoid_rewrite dspRel_comp | setoid_rewrite dspRel_pure | setoid_rewrite dspRel_first].
+  reflexivity.
+Qed.
+Lemma dspRel_pure_sym {X Y} (h : X -> Y) : Rel_eq (arr_pure h) (dspRel (pure_DSP h)).
+Proof. intros x y. symmetry. apply dspRel_pure. Qed.
+Lemma dspRel_comp_sym {X Y Z} (w : DSPArr X Y) (v : DSPArr Y Z) :
+  Rel_eq (arr_comp (dspRel w) (dspRel v)) (dspRel (comp_DSP w v)).
+Proof. intros x z. symmetry. apply dspRel_comp. Qed.
+Lemma dspRel_first_sym {X Y C} (w : DSPArr X Y) :
+  Rel_eq (arr_first (dspRel w)) (dspRel (@first_DSP X Y C w)).
+Proof. intros p q. symmetry. apply dspRel_first. Qed.
+Lemma dspRel_left2 {A B C D} (f : DSPArr A B) :
+  Rel_eq (dspRel (@left_DSP _ _ D (@left_DSP A B C f))) (arr_left (arr_left (dspRel f))).
+Proof. etransitivity; [apply dspRel_left | apply Rel_left_cong; apply dspRel_left]. Qed.
+Lemma dspRel_first_left {A B C D} (f : DSPArr A B) :
+  Rel_eq (dspRel (@first_DSP _ _ D (@left_DSP A B C f))) (arr_first (arr_left (dspRel f))).
+Proof. etransitivity; [apply dspRel_first | apply Rel_first_cong; apply dspRel_left]. Qed.
+Lemma dspRel_left_first {A B C D} (f : DSPArr A B) :
+  Rel_eq (dspRel (@left_DSP _ _ (C * D)%type (@first_DSP A B D f))) (arr_left (arr_first (dspRel f))).
+Proof. etransitivity; [apply dspRel_left | apply Rel_left_cong; apply dspRel_first]. Qed.
+#[global] Instance RelArrow_DSPArr : RelArrow DSPArr := {|
+  rel_reading := @dspRel; rel_pure := @dspRel_pure; rel_comp := @dspRel_comp;
+  rel_first := fun A B C f a c b d => dspRel_first f (a, c) (b, d)
+|}.
+#[global] Instance RelArrowChoice_DSPArr : RelArrowChoice DSPArr := {|rel_left := @dspRel_left|}.
+#[global] Instance RelArrowApply_DSPArr : RelArrowApply DSPArr := {|
+  rel_app := fun A B f a b => dspRel_app (f, a) b
+|}.
+#[global] Instance RelArrowEq_DSPArr : RelArrowEq DSPArr := {|
+  rel_arrow_eq := fun A B f g => conj (dspRel_faithful_conv f g) (dspRel_faithful f g)
+|}.
+#[global] Instance ArrowLaws_DSPArr : ArrowLaws DSPArr :=
+  @rel_arrow_laws DSPArr Arrow_DSPArr ArrowEq_DSPArr RelArrow_DSPArr RelArrowEq_DSPArr.
+#[global] Instance ArrowChoiceLaws_DSPArr : ArrowChoiceLaws DSPArr :=
+  @rel_arrow_choice_laws DSPArr Arrow_DSPArr ArrowEq_DSPArr RelArrow_DSPArr
+    RelArrowEq_DSPArr ArrowChoice_DSPArr RelArrowChoice_DSPArr.
+#[global] Instance ArrowApplyLaws_DSPArr : ArrowApplyLaws DSPArr :=
+  @rel_arrow_apply_laws DSPArr Arrow_DSPArr ArrowEq_DSPArr RelArrow_DSPArr
+    RelArrowEq_DSPArr ArrowApply_DSPArr RelArrowApply_DSPArr.
+End DSPRelation.
+
+(** ** Canonical ASLP arrows
+    The dual split recipe disjoins ASP and DSLP operation results. The relation
+    probe rejects the empty precondition and accepts the singleton. *)
+Section ASLPImplementation.
+Definition ASLPhealthy {X Y} (w : SPArrT X Y) : Prop :=
+  exists R : SPureArr X Y, forall P y, w P y <-> aslpOf R P y.
+Lemma aslp_healthy_hom {X Y} (w : SPArrT X Y) :
+  ASLPhealthy w -> sp_monotone w /\ sp_terminating w /\ sp_disjunctive w.
+Proof.
+  intros [R HR]. split; [| split ].
+  - intros P Q HPQ y Hw. apply HR in Hw. apply HR. destruct Hw as [[x [Hx HRx]] | Hd].
+    + left. exists x. split; [ exact (HPQ x Hx) | exact HRx ].
+    + right. intros x Hx. exact (HPQ x (Hd x Hx)).
+  - intro y. apply (HR _ y). right. intros x _. exact I.
+  - intros I [i0] P y. rewrite (HR _ y). split.
+    + intros [[x [[i Hi] HRx]] | Hd].
+      * exists i. apply (HR _ y). left. exists x. split; assumption.
+      * destruct (classic (exists x, R x y)) as [[x HRx] | Hno].
+        -- destruct (Hd x HRx) as [i Hi]. exists i. apply (HR _ y). left. exists x. split; assumption.
+        -- exists i0. apply (HR _ y). right. intros x HRx. destruct (Hno (ex_intro _ x HRx)).
+    + intros [i Hw]. apply (HR _ y) in Hw. destruct Hw as [[x [Hx HRx]] | Hd].
+      * left. exists x. split; [ exists i; exact Hx | exact HRx ].
+      * right. intros x HRx. exists i. exact (Hd x HRx).
+Qed.
+Lemma aslp_hom_healthy {X Y} (w : SPArrT X Y) :
+  sp_monotone w /\ sp_terminating w /\ sp_disjunctive w -> ASLPhealthy w.
+Proof.
+  intros [Hm [Ht Hd]].
+  assert (Hsplit : forall P y,
+             w P y <-> w (fun _ => False) y \/ exists x, P x /\ w (fun z => z = x) y).
+  { intros P y. split.
+    - intro Hw.
+      pose (F := fun (i : option { x : X | P x }) (z : X) =>
+                   match i with Some x => z = proj1_sig x | None => False end).
+      assert (HF : w (fun z => exists i, F i z) y).
+      { apply (Hm P); [| exact Hw ]. intros z Hz. exists (Some (exist _ z Hz)). reflexivity. }
+      apply (Hd _ (inhabits None) F y) in HF.
+      destruct HF as [[[x Hx] |] Hw']; [ right; exists x; split; [ exact Hx | exact Hw' ] | left; exact Hw' ].
+    - intros [Hw | [x [Hx Hw]]].
+      + apply (Hm (fun _ => False)); [ intros z [] | exact Hw ].
+      + apply (Hm (fun z => z = x)); [ intros z ->; exact Hx | exact Hw ]. }
+  exists (fun x y => ~ w (fun _ => False) y /\ w (fun z => z = x) y).
+  intros P y. unfold aslpOf, aspOf, dslpOf.
+  destruct (classic (w (fun _ => False) y)) as [Hbot | Hnbot].
+  - split.
+    + intros _. right. intros x [Hn _]. destruct (Hn Hbot).
+    + intros _. apply (Hm (fun _ => False)); [ intros x [] | exact Hbot ].
+  - rewrite (Hsplit P y). split.
+    + intros [Hw | [x [Hx Hw]]]; [ contradiction |].
+      left. exists x. split; [ exact Hx | split; assumption ].
+    + intros [[x [Hx [_ Hw]]] | Hall]; [ right; exists x; split; assumption |].
+      destruct (proj1 (Hsplit (fun _ => True) y) (Ht y)) as [Hw | [x0 [_ Hw0]]]; [ contradiction |].
+      right. exists x0. split; [ exact (Hall x0 (conj Hnbot Hw0)) | exact Hw0 ].
+Qed.
+Theorem aslp_hom_iff {X Y} (w : SPArrT X Y) :
+  ASLPhealthy w <-> sp_monotone w /\ sp_terminating w /\ sp_disjunctive w.
+Proof. split; [ apply aslp_healthy_hom | apply aslp_hom_healthy ]. Qed.
+Definition ASLPArr (X Y : Type) : Type :=
+  { w : SPArrT X Y | sp_monotone w /\ sp_terminating w /\ sp_disjunctive w }.
+Definition getASLP {X Y} (w : ASLPArr X Y) : (X -> Prop) -> Y -> Prop := proj1_sig w.
+Definition ASLPArr_eq {X Y} (w v : ASLPArr X Y) : Prop :=
+  forall P y, getASLP w P y <-> getASLP v P y.
+Definition aslpRel {X Y} (w : ASLPArr X Y) : SPureArr X Y :=
+  fun x y => ~ getASLP w (fun _ => False) y /\ getASLP w (fun z => z = x) y.
+Lemma aslpRel_of {X Y} (R : SPureArr X Y) (w : ASLPArr X Y) :
+  (forall P y, getASLP w P y <-> aslpOf R P y) -> Rel_eq (aslpRel w) R.
+Proof. intros Hw x y. unfold aslpRel. rewrite !Hw. symmetry. apply aslpOf_rel. Qed.
+Lemma aslpRel_spec {X Y} (w : ASLPArr X Y) P y :
+  getASLP w P y <-> aslpOf (aslpRel w) P y.
+Proof.
+  destruct (aslp_hom_healthy _ (proj2_sig w)) as [R HR].
+  assert (Hrel : Rel_eq (aslpRel w) R) by (apply aslpRel_of; exact HR).
+  unfold getASLP. rewrite HR. exact (aslpOf_cong R (aslpRel w) (fun a b => iff_sym (Hrel a b)) P y).
+Qed.
+Definition aspPartAArr {X Y} (w : ASLPArr X Y) : ASPArr X Y :=
+  mkASPArr (aspOf (aslpRel w)) (fun P b => aspOf_join (aslpRel w) P b).
+Definition dslpPartAArr {X Y} (w : ASLPArr X Y) : DSLPArr X Y :=
+  mkDSLPArr (dslpOf (aslpRel w)) (fun P b => dslpOf_meet (aslpRel w) P b).
+Definition aspPartA {X Y} (w : ASLPArr X Y) : (X -> Prop) -> Y -> Prop := getASPArr (aspPartAArr w).
+Definition dslpPartA {X Y} (w : ASLPArr X Y) : (X -> Prop) -> Y -> Prop := getDSLPArr (dslpPartAArr w).
+Theorem aslp_split {X Y} (w : ASLPArr X Y) P y :
+  getASLP w P y <-> (aspPartA w P y \/ dslpPartA w P y).
+Proof. exact (aslpRel_spec w P y). Qed.
+Theorem aslpRel_faithful {X Y} (w v : ASLPArr X Y) :
+  Rel_eq (aslpRel w) (aslpRel v) -> ASLPArr_eq w v.
+Proof.
+  intros H P y. rewrite (aslpRel_spec w P y), (aslpRel_spec v P y).
+  exact (aslpOf_cong _ _ H P y).
+Qed.
+Theorem aslpRel_faithful_conv {X Y} (w v : ASLPArr X Y) :
+  ASLPArr_eq w v -> Rel_eq (aslpRel w) (aslpRel v).
+Proof.
+  intros H x y. unfold aslpRel. split.
+  - intros [Hn Hs]. split; [| apply H; exact Hs ].
+    intro Hc. apply Hn. apply H. exact Hc.
+  - intros [Hn Hs]. split; [| apply H; exact Hs ].
+    intro Hc. apply Hn. apply H. exact Hc.
+Qed.
+#[local] Obligation Tactic := idtac.
+#[program] Definition pure_ASLP {X Y} (h : X -> Y) : ASLPArr X Y :=
+  fun P y => pureASP h P y \/ pureDSLP h P y.
+Next Obligation.
+  intros X Y h. apply aslp_healthy_hom. exists (arr_pure h). intros P y. reflexivity.
+Qed.
+#[program] Definition comp_ASLP {X Y Z} (w : ASLPArr X Y) (v : ASLPArr Y Z) : ASLPArr X Z :=
+  fun P z => compASP (aspPartAArr w) (aspPartAArr v) P z
+             \/ compDSLP (dslpPartAArr w) (dslpPartAArr v) P z.
+Next Obligation.
+  intros X Y Z w v. apply aslp_healthy_hom. exists (arr_comp (aslpRel w) (aslpRel v)). intros P z.
+  unfold aspPartA, dslpPartA, aslpOf.
+  rewrite (aspOf_comp (aslpRel w) (aslpRel v)), (dslpOf_comp (aslpRel w) (aslpRel v)). reflexivity.
+Qed.
+#[program] Definition first_ASLP {X Y C} (w : ASLPArr X Y) : ASLPArr (X * C) (Y * C) :=
+  fun P q => @firstASP _ _ C (aspPartAArr w) P q \/ @firstDSLP _ _ C (dslpPartAArr w) P q.
+Next Obligation.
+  intros X Y C w. apply aslp_healthy_hom. exists (arr_first (aslpRel w)). intros P q.
+  unfold aspPartA, dslpPartA, aslpOf.
+  rewrite (aspOf_first (aslpRel w)), (dslpOf_first (aslpRel w)). reflexivity.
+Qed.
+#[global] Instance Arrow_ASLPArr : Arrow ASLPArr := {
+  arr_pure := @pure_ASLP; arr_comp := @comp_ASLP; arr_first := @first_ASLP
+}.
+#[global] Instance ASLPArr_eq_Equivalence {X Y} : Equivalence (@ASLPArr_eq X Y).
+Proof.
+  constructor.
+  - intros w P y. reflexivity.
+  - intros w v H P y. symmetry. exact (H P y).
+  - intros u w v H1 H2 P y. exact (iff_trans (H1 P y) (H2 P y)).
+Qed.
+#[global] Instance ArrowEq_ASLPArr : ArrowEq ASLPArr := {
+  arrow_eq := @ASLPArr_eq; arrow_eq_equiv := @ASLPArr_eq_Equivalence
+}.
+Definition appRelA {A B} : SPureArr (ASLPArr A B * A) B :=
+  fun p b => aslpRel (fst p) (snd p) b.
+#[program] Definition app_ASLP {A B} : ASLPArr (ASLPArr A B * A) B :=
+  fun P b => aspOf appRelA P b \/ dslpOf appRelA P b.
+Next Obligation.
+  intros A B. apply aslp_healthy_hom. exists appRelA. intros P b. reflexivity.
+Qed.
+#[global] Instance ArrowApply_ASLPArr : ArrowApply ASLPArr := { arr_app := @app_ASLP }.
+#[program] Definition left_ASLP {X Y C} (w : ASLPArr X Y) : ASLPArr (X + C) (Y + C) :=
+  fun P y => @leftASP _ _ C (aspPartAArr w) P y \/ @leftDSLP _ _ C (dslpPartAArr w) P y.
+Next Obligation.
+  intros X Y C w. apply aslp_healthy_hom. exists (arr_left (aslpRel w)). intros P [b|c]; unfold aslpOf.
+  - unfold aspPartA, dslpPartA.
+    rewrite (aspOf_left_inl (aslpRel w)), (dslpOf_left_inl (aslpRel w)). reflexivity.
+  - rewrite (aspOf_left_inr (aslpRel w)), (dslpOf_left_inr (aslpRel w)). tauto.
+Qed.
+#[global] Instance ArrowChoice_ASLPArr : ArrowChoice ASLPArr := { arr_left := @left_ASLP }.
+End ASLPImplementation.
+
+(** ** ASLP relation contracts and selected-equality laws *)
+Section ASLPRelation.
+Lemma aslpRel_pure {X Y} (h : X -> Y) : Rel_eq (aslpRel (pure_ASLP h)) (arr_pure h).
+Proof. apply aslpRel_of. intros P y. reflexivity. Qed.
+Lemma aslpRel_comp {X Y Z} (w : ASLPArr X Y) (v : ASLPArr Y Z) :
+  Rel_eq (aslpRel (comp_ASLP w v)) (arr_comp (aslpRel w) (aslpRel v)).
+Proof.
+  apply aslpRel_of. intros P z. unfold comp_ASLP, getASLP. cbn [proj1_sig].
+  unfold aspPartA, dslpPartA, aslpOf.
+  rewrite (aspOf_comp (aslpRel w) (aslpRel v)), (dslpOf_comp (aslpRel w) (aslpRel v)). reflexivity.
+Qed.
+Lemma aslpRel_first {X Y C} (w : ASLPArr X Y) :
+  Rel_eq (aslpRel (@first_ASLP X Y C w)) (arr_first (aslpRel w)).
+Proof.
+  apply aslpRel_of. intros P q. unfold first_ASLP, getASLP. cbn [proj1_sig].
+  unfold aspPartA, dslpPartA, aslpOf.
+  rewrite (aspOf_first (aslpRel w)), (dslpOf_first (aslpRel w)). reflexivity.
+Qed.
+Lemma aslpRel_left {X Y C} (w : ASLPArr X Y) :
+  Rel_eq (aslpRel (@left_ASLP X Y C w)) (arr_left (aslpRel w)).
+Proof.
+  apply aslpRel_of. intros P [b|c]; unfold left_ASLP, getASLP; cbn [proj1_sig]; unfold aslpOf.
+  - unfold aspPartA, dslpPartA.
+    rewrite (aspOf_left_inl (aslpRel w)), (dslpOf_left_inl (aslpRel w)). reflexivity.
+  - rewrite (aspOf_left_inr (aslpRel w)), (dslpOf_left_inr (aslpRel w)). tauto.
+Qed.
+Lemma aslpRel_app {A B} : Rel_eq (aslpRel (@app_ASLP A B)) appRelA.
+Proof. apply aslpRel_of. intros P b. reflexivity. Qed.
+Lemma aslpRel_second {X Y C} (w : ASLPArr X Y) :
+  Rel_eq (aslpRel (@arr_second ASLPArr Arrow_ASLPArr X Y C w))
+    (@arr_second Rel Arrow_Rel X Y C (aslpRel w)).
+Proof.
+  unfold arr_second. cbn [arr_comp arr_pure arr_first Arrow_ASLPArr].
+  repeat first [setoid_rewrite aslpRel_comp | setoid_rewrite aslpRel_pure | setoid_rewrite aslpRel_first].
+  reflexivity.
+Qed.
+Lemma aslpRel_left2 {A B C D} (f : ASLPArr A B) :
+  Rel_eq (aslpRel (@left_ASLP _ _ D (@left_ASLP A B C f))) (arr_left (arr_left (aslpRel f))).
+Proof. etransitivity; [apply aslpRel_left | apply Rel_left_cong; apply aslpRel_left]. Qed.
+Lemma aslpRel_first_left {A B C D} (f : ASLPArr A B) :
+  Rel_eq (aslpRel (@first_ASLP _ _ D (@left_ASLP A B C f))) (arr_first (arr_left (aslpRel f))).
+Proof. etransitivity; [apply aslpRel_first | apply Rel_first_cong; apply aslpRel_left]. Qed.
+Lemma aslpRel_left_first {A B C D} (f : ASLPArr A B) :
+  Rel_eq (aslpRel (@left_ASLP _ _ (C * D)%type (@first_ASLP A B D f))) (arr_left (arr_first (aslpRel f))).
+Proof. etransitivity; [apply aslpRel_left | apply Rel_left_cong; apply aslpRel_first]. Qed.
+#[global] Instance RelArrow_ASLPArr : RelArrow ASLPArr := {|
+  rel_reading := @aslpRel; rel_pure := @aslpRel_pure; rel_comp := @aslpRel_comp;
+  rel_first := fun A B C f a c b d => aslpRel_first f (a, c) (b, d)
+|}.
+#[global] Instance RelArrowChoice_ASLPArr : RelArrowChoice ASLPArr := {|rel_left := @aslpRel_left|}.
+#[global] Instance RelArrowApply_ASLPArr : RelArrowApply ASLPArr := {|
+  rel_app := fun A B f a b => aslpRel_app (f, a) b
+|}.
+#[global] Instance RelArrowEq_ASLPArr : RelArrowEq ASLPArr := {|
+  rel_arrow_eq := fun A B f g => conj (aslpRel_faithful_conv f g) (aslpRel_faithful f g)
+|}.
+#[global] Instance ArrowLaws_ASLPArr : ArrowLaws ASLPArr :=
+  @rel_arrow_laws ASLPArr Arrow_ASLPArr ArrowEq_ASLPArr RelArrow_ASLPArr RelArrowEq_ASLPArr.
+#[global] Instance ArrowChoiceLaws_ASLPArr : ArrowChoiceLaws ASLPArr :=
+  @rel_arrow_choice_laws ASLPArr Arrow_ASLPArr ArrowEq_ASLPArr RelArrow_ASLPArr
+    RelArrowEq_ASLPArr ArrowChoice_ASLPArr RelArrowChoice_ASLPArr.
+#[global] Instance ArrowApplyLaws_ASLPArr : ArrowApplyLaws ASLPArr :=
+  @rel_arrow_apply_laws ASLPArr Arrow_ASLPArr ArrowEq_ASLPArr RelArrow_ASLPArr
+    RelArrowEq_ASLPArr ArrowApply_ASLPArr RelArrowApply_ASLPArr.
+End ASLPRelation.
+
+(** ** DSP and ASLP binary transformer stacks
+    Explicit dictionaries avoid recursive instance search. Unary monads and
+    their runners fix the input in the specification-monad layer. *)
+Section DSPStacks.
+  Definition DSPStArr (S : Type) := stateArrT S DSPArr.
+  Definition ArrowEq_DSPStArr (S : Type) : ArrowEq (DSPStArr S) :=
+    @ArrowEq_stateArrT S DSPArr ArrowEq_DSPArr.
+  Definition ArrowLaws_DSPStArr (S : Type) : ArrowLaws (DSPStArr S) :=
+    @ArrowLaws_stateArrT S DSPArr Arrow_DSPArr ArrowEq_DSPArr ArrowLaws_DSPArr.
+  Definition ArrowApply_DSPStArr (S : Type) : ArrowApply (DSPStArr S) :=
+    @ArrowApply_stateArrT S DSPArr Arrow_DSPArr ArrowApply_DSPArr.
+  Definition ArrowApplyLaws_DSPStArr (S : Type) : ArrowApplyLaws (DSPStArr S) :=
+    @ArrowApplyLaws_stateArrT S DSPArr Arrow_DSPArr ArrowApply_DSPArr
+      ArrowEq_DSPArr ArrowLaws_DSPArr ArrowApplyLaws_DSPArr.
+  Definition optDSP := optionArrT DSPArr.
+  Definition Arrow_optDSP : Arrow optDSP :=
+    @Arrow_optionArrT DSPArr Arrow_DSPArr ArrowChoice_DSPArr.
+  Definition ArrowEq_optDSP : ArrowEq optDSP :=
+    @ArrowEq_optionArrT DSPArr ArrowEq_DSPArr.
+  Definition ArrowLaws_optDSP : ArrowLaws optDSP :=
+    @ArrowLaws_optionArrT DSPArr Arrow_DSPArr ArrowChoice_DSPArr
+      ArrowEq_DSPArr ArrowLaws_DSPArr ArrowChoiceLaws_DSPArr.
+  Definition ArrowApply_optDSP : ArrowApply optDSP :=
+    @ArrowApply_optionArrT DSPArr Arrow_DSPArr ArrowChoice_DSPArr ArrowApply_DSPArr.
+  Definition ArrowApplyLaws_optDSP : ArrowApplyLaws optDSP :=
+    @ArrowApplyLaws_optionArrT DSPArr Arrow_DSPArr ArrowChoice_DSPArr
+      ArrowApply_DSPArr ArrowEq_DSPArr ArrowLaws_DSPArr ArrowChoiceLaws_DSPArr
+      ArrowApplyLaws_DSPArr.
+  Definition DSPStExcArr (S : Type) := stateArrT S optDSP.
+  Definition ArrowEq_DSPStExcArr (S : Type) : ArrowEq (DSPStExcArr S) :=
+    @ArrowEq_stateArrT S optDSP ArrowEq_optDSP.
+  Definition ArrowLaws_DSPStExcArr (S : Type) : ArrowLaws (DSPStExcArr S) :=
+    @ArrowLaws_stateArrT S optDSP Arrow_optDSP ArrowEq_optDSP ArrowLaws_optDSP.
+  Definition ArrowApply_DSPStExcArr (S : Type) : ArrowApply (DSPStExcArr S) :=
+    @ArrowApply_stateArrT S optDSP Arrow_optDSP ArrowApply_optDSP.
+  Definition ArrowApplyLaws_DSPStExcArr (S : Type) : ArrowApplyLaws (DSPStExcArr S) :=
+    @ArrowApplyLaws_stateArrT S optDSP Arrow_optDSP ArrowApply_optDSP
+      ArrowEq_optDSP ArrowLaws_optDSP ArrowApplyLaws_optDSP.
+End DSPStacks.
+
+Section ASLPStacks.
+  Definition ASLPStArr (S : Type) := stateArrT S ASLPArr.
+  Definition ArrowEq_ASLPStArr (S : Type) : ArrowEq (ASLPStArr S) :=
+    @ArrowEq_stateArrT S ASLPArr ArrowEq_ASLPArr.
+  Definition ArrowLaws_ASLPStArr (S : Type) : ArrowLaws (ASLPStArr S) :=
+    @ArrowLaws_stateArrT S ASLPArr Arrow_ASLPArr ArrowEq_ASLPArr ArrowLaws_ASLPArr.
+  Definition ArrowApply_ASLPStArr (S : Type) : ArrowApply (ASLPStArr S) :=
+    @ArrowApply_stateArrT S ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr.
+  Definition ArrowApplyLaws_ASLPStArr (S : Type) : ArrowApplyLaws (ASLPStArr S) :=
+    @ArrowApplyLaws_stateArrT S ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      ArrowEq_ASLPArr ArrowLaws_ASLPArr ArrowApplyLaws_ASLPArr.
+  Definition optASLP := optionArrT ASLPArr.
+  Definition Arrow_optASLP : Arrow optASLP :=
+    @Arrow_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr.
+  Definition ArrowEq_optASLP : ArrowEq optASLP :=
+    @ArrowEq_optionArrT ASLPArr ArrowEq_ASLPArr.
+  Definition ArrowLaws_optASLP : ArrowLaws optASLP :=
+    @ArrowLaws_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr
+      ArrowEq_ASLPArr ArrowLaws_ASLPArr ArrowChoiceLaws_ASLPArr.
+  Definition ArrowApply_optASLP : ArrowApply optASLP :=
+    @ArrowApply_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr ArrowApply_ASLPArr.
+  Definition ArrowApplyLaws_optASLP : ArrowApplyLaws optASLP :=
+    @ArrowApplyLaws_optionArrT ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr
+      ArrowApply_ASLPArr ArrowEq_ASLPArr ArrowLaws_ASLPArr
+      ArrowChoiceLaws_ASLPArr ArrowApplyLaws_ASLPArr.
+  Definition ASLPStExcArr (S : Type) := stateArrT S optASLP.
+  Definition ArrowEq_ASLPStExcArr (S : Type) : ArrowEq (ASLPStExcArr S) :=
+    @ArrowEq_stateArrT S optASLP ArrowEq_optASLP.
+  Definition ArrowLaws_ASLPStExcArr (S : Type) : ArrowLaws (ASLPStExcArr S) :=
+    @ArrowLaws_stateArrT S optASLP Arrow_optASLP ArrowEq_optASLP ArrowLaws_optASLP.
+  Definition ArrowApply_ASLPStExcArr (S : Type) : ArrowApply (ASLPStExcArr S) :=
+    @ArrowApply_stateArrT S optASLP Arrow_optASLP ArrowApply_optASLP.
+  Definition ArrowApplyLaws_ASLPStExcArr (S : Type) : ArrowApplyLaws (ASLPStExcArr S) :=
+    @ArrowApplyLaws_stateArrT S optASLP Arrow_optASLP ArrowApply_optASLP
+      ArrowEq_optASLP ArrowLaws_optASLP ArrowApplyLaws_optASLP.
+End ASLPStacks.
+
+(** ** DSP/ASLP relation constructors and predicate congruence *)
+Definition dspOfRelArr {X Y} (R : SPureArr X Y) : DSPArr X Y :=
+  exist _ (dspOf R) (dsp_healthy_hom _ (ex_intro _ R (fun P y => iff_refl _))).
+Lemma dspRel_ofRelArr {X Y} (R : SPureArr X Y) x y : dspRel (dspOfRelArr R) x y <-> R x y.
+Proof. exact (dspRel_of R (dspOfRelArr R) (fun P y => iff_refl _) x y). Qed.
+Lemma getDSP_cong {X Y} (w : DSPArr X Y) (P Q : X -> Prop) y :
+  (forall x, P x <-> Q x) -> (getDSP w P y <-> getDSP w Q y).
+Proof.
+  intro H. rewrite (dspRel_spec w P y), (dspRel_spec w Q y).
+  unfold dspOf, aspOf, dslpOf. split; intros [[x [Hx Hr]] Hall]; split.
+  - exists x. split; [ apply H; exact Hx | exact Hr ].
+  - intros x' Hr'. apply H. exact (Hall x' Hr').
+  - exists x. split; [ apply H; exact Hx | exact Hr ].
+  - intros x' Hr'. apply H. exact (Hall x' Hr').
+Qed.
+Definition aslpOfRelArr {X Y} (R : SPureArr X Y) : ASLPArr X Y :=
+  exist _ (aslpOf R) (aslp_healthy_hom _ (ex_intro _ R (fun P y => iff_refl _))).
+Lemma aslpRel_ofRelArr {X Y} (R : SPureArr X Y) x y : aslpRel (aslpOfRelArr R) x y <-> R x y.
+Proof. exact (aslpRel_of R (aslpOfRelArr R) (fun P y => iff_refl _) x y). Qed.
+Lemma getASLP_cong {X Y} (w : ASLPArr X Y) (P Q : X -> Prop) y :
+  (forall x, P x <-> Q x) -> (getASLP w P y <-> getASLP w Q y).
+Proof.
+  intro H. rewrite (aslpRel_spec w P y), (aslpRel_spec w Q y).
+  unfold aslpOf, aspOf, dslpOf. split; intros [[x [Hx Hr]] | Hall].
+  - left. exists x. split; [ apply H; exact Hx | exact Hr ].
+  - right. intros x' Hr'. apply H. exact (Hall x' Hr').
+  - left. exists x. split; [ apply H; exact Hx | exact Hr ].
+  - right. intros x' Hr'. apply H. exact (Hall x' Hr').
 Qed.

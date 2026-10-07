@@ -43,19 +43,6 @@ with ordinary forward transformer composition. Pure DSPSP/ASLPSP collapse to
 ASP/DSLP via property equivalences; reader lifts preserve this per environment.
 StASP/StDSLP/StDSP/StASLP supply state-only variants.
 
-## New four-flavour public API
-
-ASPArrowCore/Rel, DSLPArrowCore/Rel, DSPArrowCore/Rel, and ASLPArrowCore/Rel
-define canonical binary SPArrT subsets and their operations. All are monotone;
-ASP is strict/disjunctive, DSLP terminating/conjunctive, DSP strict/conjunctive,
-ASLP terminating/disjunctive. ASP singleton joins and DSLP accepted-predicate
-meets recover relations constructively; DSP/ASLP recovery is classical.
-Equalities are transformer iff, not automatically Leibniz bundle equality.
-All four flavours instantiate the shared law packages from
-`Classes/RelArrowCoherence.v`. `Arrows/SPostArr.v` aliases ASPArr/DSLPArr as
-PureASPostArr/PureDSLPostArr and reuses their operations and dictionaries.
-The compatibility API adds no second carrier or global instance registration.
-
 ## Earlier-carrier recovery proof ownership
 
 [OldMonads/DSPMonad.v](OldMonads/DSPMonad.v) and [OldMonads/ASLPMonad.v](OldMonads/ASLPMonad.v) each share local,
@@ -70,19 +57,39 @@ observation proofs lift the resulting equivalence with specialized congruence
 and combine it with `bindDSPProg_dsp` / `bindASLPProg_aslp`. Pair-outcome clients
 use `StDSP.comp_cong` and their specialized recovery lemmas directly.
 
+## Four-flavour public API
+
+The four public monads consume [Arrows/SPostArr.v](../Arrows/SPostArr.v), which
+implements `ASPArr`, `DSLPArr`, `DSPArr`, and `ASLPArr`, their operations,
+recovered relations, laws, binary stacks, and conversions. `SPostArr.v` does
+not depend on this directory, including `SPure.v`. Its ASP/DSLP normal forms
+and semantic law packages are constructive; DSP/ASLP recovery is classical.
+The selected equalities are transformer iff, not Leibniz bundle equality.
+The `PureASPostArr` / `PureDSLPostArr` compatibility aliases and their plain
+dictionary definitions add neither a second carrier nor instance registrations.
+
 ## Arrow-derived monad consumers
 
-ASPMonad/DSLPMonad/DSPMonad/ASLPMonad fix input unit and use generic
-Classes/ArrowMonad operations/laws. Each exposes pure/state/state-option APIs.
-SPure gives a relational carrier, four readings, OrderedMonad_flip, and the
-five-operation RelDenote contract; rel_bind/relS_bind/relE_bind describe the
-chosen bind through relations, reusing generic state-option normalization.
-`ASPArrowRel` and `DSLPArrowRel` specialize those generic reading facts through
-explicit local `RelDenote` definitions built from their operation lemmas.
-Their public fixed-input, state, option, and state-option reading wrappers
-reuse the same semantic proofs.
-The canonical ASPStExc/DSLPStExc monads are definitionally the compatibility
-ASPostArr/DSLPostArr stacks, including their named monad dictionaries and runners.
+`ASPMonad.v`, `DSLPMonad.v`, `DSPMonad.v`, and `ASLPMonad.v` fix input `unit`
+and use generic `Classes/ArrowMonad.v` operations and laws. Each exposes
+pure/state/state-option monads, runners, refinement orders, ordered-bind proofs,
+and monad-specific results. Qualify unary accessors such as `ASPMonad.getASP`
+against the binary `SPostArr.getASP` (and likewise for DSLP).
+
+[SPostArrMonad.v](SPostArrMonad.v) is the unary observation bridge: named
+`Monad_ASPostArr` / `Monad_DSLPostArr` dictionaries, `runASP` / `runDSLP`, and
+unit-input return/bind conversion results. Its binary `asp_to_dslp` conversion
+and relation-reading facts live in `SPostArr.v`. The canonical `ASPStExc` /
+`DSLPStExc` monads are definitionally the compatibility `ASPostArr` /
+`DSLPostArr` stacks, including their named monad dictionaries and runners.
+
+[SPure.v](SPure.v) owns only unary relational monads, return/bind facts, and
+orders. [Rel.v](../Arrows/Rel.v) owns the binary relation carrier, stacks, and
+congruence; [RelSPostArr.v](../Arrows/RelSPostArr.v) owns the four SP readings.
+Generic normalization (`rel_bind`, `relS_bind`, `relO_*`, `relE_*`) lives in
+[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v) and uses the existing
+`RelArrow` / `RelArrowChoice` / `RelArrowApply` contracts. `SPostArr.v` specializes
+these facts for its canonical relation-reading wrappers.
 
 - [`SPBindOrderCounterexample.v`](SPBindOrderCounterexample.v) refutes ordered
   bind for `StDSP.DSPSt` / `StASLP.ASLPSt` under their global pointwise orders.

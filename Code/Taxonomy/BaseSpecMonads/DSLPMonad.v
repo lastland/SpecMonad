@@ -7,13 +7,13 @@
       [DSLPStExc S] = [stateArrT S (optionArrT DSLPArr) unit] (* SLP^StExc  *)
 
     Fixing the input at [unit] gives a SPECIFICATION MONAD in each case.
-    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Arrows/SPostArr.v])
+    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Classes/ArrowMonad.v])
     at the arrow and at its two transformer stacks; [bind] monotonicity is
     proved from [dslpRel_incl], which runs backwards relative to ASP's.
 
-    The arrow itself is in [DSLPArrowCore.v] and the relation it denotes in
-    [DSLPArrowRel.v]; both are re-exported here, so a client still needs
-    only [Require Import DSLPMonad]. *)
+    [Arrows/SPostArr.v] owns the binary carrier, operations, recovered-relation
+    facts and laws. This module re-exports that infrastructure and fixes the
+    input for unary specifications, runners and refinement orders. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid Relation_Definitions.
 From Coq Require Import Classical_Prop.
@@ -22,7 +22,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
 From Incorrectness.Classes Require Import ArrowMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Export DSLPArrowCore DSLPArrowRel.
+From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 
 
 
@@ -30,7 +30,7 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Export DSLPArrowCore DSLPArro
 (** ** [DSLP = DSLPArr unit]: a specification monad                *)
 (* ================================================================= *)
 
-(** [ret_arrow] / [bind_arrow] ([SPostArr.v]) at input [unit], ordered by
+(** [ret_arrow] / [bind_arrow] ([Classes/ArrowMonad.v]) at input [unit], ordered by
     pointwise implication. *)
 
 Section DSLP.

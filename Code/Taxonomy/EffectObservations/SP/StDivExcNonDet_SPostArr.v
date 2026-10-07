@@ -8,7 +8,7 @@ From Coq Require Import PeanoNat Lia.
 From Hammer Require Import Tactics.
 From ITree Require Import ITree Basics.Monad.
 From ExtLib Require Import StateMonad OptionMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArrMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import SPostArrObservation.
 From Incorrectness.Taxonomy.ComputationMonads Require Import StDivExcNonDet.
 From Incorrectness.Taxonomy Require Import ExampleProgramDefs.

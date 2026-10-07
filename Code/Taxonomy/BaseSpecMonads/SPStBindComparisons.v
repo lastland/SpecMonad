@@ -1,23 +1,25 @@
 (** State bind formulas and monotone SP transformer comparisons. *)
 
 From ExtLib Require Import Monad.
+From Incorrectness.Classes Require Import RelArrowCoherence.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad SPure SPPredicateTransformers.
+  ASPMonad DSLPMonad DSPMonad ASLPMonad SPPredicateTransformers.
+
+Local Obligation Tactic := idtac.
 
 (** Reading an [ASPSt] arrow as a monotone stateful predicate transformer
     identifies its bind with the angelic bind of [SPStMonotone]. *)
 Section ASPStMonotoneBind.
   Context {S : Type}.
 
-  Definition asSPStMon {A} (m : ASPSt S A) : SPStMonotone.SPStMon S A.
-  Proof.
-    exists (getASPSt m).
-    intros pre pre' r Hpre Hm.
-    eapply getASPSt_mono; eassumption.
-  Defined.
+  #[program] Definition asSPStMon {A} (m : ASPSt S A) : SPStMonotone.SPStMon S A :=
+    getASPSt m.
+  Next Obligation.
+    unfold SPStMonotone.SPStMonotone. intros; eapply getASPSt_mono; eassumption.
+  Qed.
 
   Definition bindASPSt_angelic_formula {A B}
-      (m : ASPSt S A) (k : A -> ASPSt S B) : @SPSt S B :=
+      (m : ASPSt S A) (k : A -> ASPSt S B) : @SPPredicateTransformers.SPSt S B :=
     fun pre r =>
       exists a s',
         getASPSt m pre (a, s') /\
@@ -42,13 +44,12 @@ End ASPStMonotoneBind.
 Section ASPStExcMonotoneBind.
   Context {S : Type}.
 
-  Definition successASPStExc {A} (m : ASPStExc S A)
-    : SPStMonotone.SPStMon S A.
-  Proof.
-    exists (fun pre r => getASPStExc m pre (Some r)).
-    intros pre pre' r Hpre Hm.
-    eapply getASPStExc_mono; eassumption.
-  Defined.
+  #[program] Definition successASPStExc {A} (m : ASPStExc S A)
+    : SPStMonotone.SPStMon S A :=
+    fun pre r => getASPStExc m pre (Some r).
+  Next Obligation.
+    unfold SPStMonotone.SPStMonotone. intros; eapply getASPStExc_mono; eassumption.
+  Qed.
 
   Lemma bindASPStExc_success_angelic {A B}
       (m : ASPStExc S A) (k : A -> ASPStExc S B) pre (r : B * S) :
@@ -79,16 +80,14 @@ End ASPStExcMonotoneBind.
 Section DSLPStMonotoneBind.
   Context {S : Type}.
 
-  Definition asDSLPStMon {A} (m : DSLPSt S A)
-    : SPStMonotone.SPStMon S A.
-  Proof.
-    exists (getDSLPSt m).
-    intros pre pre' r Hpre Hm.
-    eapply getDSLPSt_mono; eassumption.
-  Defined.
+  #[program] Definition asDSLPStMon {A} (m : DSLPSt S A)
+    : SPStMonotone.SPStMon S A := getDSLPSt m.
+  Next Obligation.
+    unfold SPStMonotone.SPStMonotone. intros; eapply getDSLPSt_mono; eassumption.
+  Qed.
 
   Definition bindDSLPSt_demonic_formula {A B}
-      (m : DSLPSt S A) (k : A -> DSLPSt S B) : @SPSt S B :=
+      (m : DSLPSt S A) (k : A -> DSLPSt S B) : @SPPredicateTransformers.SPSt S B :=
     fun pre r =>
       forall a s',
         (forall prei, getDSLPSt (k a) prei r -> prei s') ->
@@ -134,21 +133,21 @@ Section RelationReadings.
       (s : S) (r : B * S) : Prop :=
     exists a s', R s (a, s') /\ K a s' r.
 
-  Definition angelicRelSPSt {A} (R : S -> A * S -> Prop)
-    : SPStMonotone.SPStMon S A.
-  Proof.
-    exists (fun pre r => exists s, pre s /\ R s r).
-    intros pre pre' r Hpre [s [Hp Hr]].
+  #[program] Definition angelicRelSPSt {A} (R : S -> A * S -> Prop)
+    : SPStMonotone.SPStMon S A := fun pre r => exists s, pre s /\ R s r.
+  Next Obligation.
+    unfold SPStMonotone.SPStMonotone.
+    intros A R pre pre' r Hpre [s [Hp Hr]].
     exists s. split; [ apply Hpre, Hp | exact Hr ].
-  Defined.
+  Qed.
 
-  Definition demonicRelSPSt {A} (R : S -> A * S -> Prop)
-    : SPStMonotone.SPStMon S A.
-  Proof.
-    exists (fun pre r => forall s, R s r -> pre s).
-    intros pre pre' r Hpre Hm s Hr.
+  #[program] Definition demonicRelSPSt {A} (R : S -> A * S -> Prop)
+    : SPStMonotone.SPStMon S A := fun pre r => forall s, R s r -> pre s.
+  Next Obligation.
+    unfold SPStMonotone.SPStMonotone.
+    intros A R pre pre' r Hpre Hm s Hr.
     apply Hpre, Hm, Hr.
-  Defined.
+  Qed.
 
   Lemma angelicRelSPSt_bind {A B}
       (R : S -> A * S -> Prop) (K : A -> S -> B * S -> Prop)
@@ -209,7 +208,7 @@ Section DSPStBind.
     exists a s', dspRel m (tt, s) (a, s') /\ dspRel (k a) (tt, s') r.
 
   Definition bindDSPSt_formula {A B}
-      (m : DSPSt S A) (k : A -> DSPSt S B) : @SPSt S B :=
+      (m : DSPSt S A) (k : A -> DSPSt S B) : @SPPredicateTransformers.SPSt S B :=
     fun pre r =>
       (exists s, pre s /\ bindDSPSt_relation m k s r) /\
       (forall s, bindDSPSt_relation m k s r -> pre s).
@@ -220,7 +219,8 @@ Section DSPStBind.
   Proof.
     rewrite getDSPSt_rel. unfold bindDSPSt_formula.
     unfold bindDSPSt_relation.
-    setoid_rewrite (relS_bind (arr := DSPArr) (rel := @dspRel) S m k tt).
+    setoid_rewrite (@relS_bind DSPArr Arrow_DSPArr ArrowApply_DSPArr
+      RelArrow_DSPArr RelArrowApply_DSPArr S unit A B m k tt).
     reflexivity.
   Qed.
 
@@ -255,7 +255,7 @@ Section ASLPStBind.
     exists a s', aslpRel m (tt, s) (a, s') /\ aslpRel (k a) (tt, s') r.
 
   Definition bindASLPSt_formula {A B}
-      (m : ASLPSt S A) (k : A -> ASLPSt S B) : @SPSt S B :=
+      (m : ASLPSt S A) (k : A -> ASLPSt S B) : @SPPredicateTransformers.SPSt S B :=
     fun pre r =>
       (exists s, pre s /\ bindASLPSt_relation m k s r) \/
       (forall s, bindASLPSt_relation m k s r -> pre s).
@@ -266,7 +266,8 @@ Section ASLPStBind.
   Proof.
     rewrite getASLPSt_rel. unfold bindASLPSt_formula.
     unfold bindASLPSt_relation.
-    setoid_rewrite (relS_bind (arr := ASLPArr) (rel := @aslpRel) S m k tt).
+    setoid_rewrite (@relS_bind ASLPArr Arrow_ASLPArr ArrowApply_ASLPArr
+      RelArrow_ASLPArr RelArrowApply_ASLPArr S unit A B m k tt).
     reflexivity.
   Qed.
 

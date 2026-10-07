@@ -2,7 +2,8 @@
 From Incorrectness.Classes Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import
-  SPostArrMonad RelSPostArr SPostArrEquiv GaloisArr.
+  SPostArr RelSPostArr SPostArrEquiv GaloisArr.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostArrMonad.
 From Incorrectness.Taxonomy.EffectObservations.SP Require Import
   StExcNonDet_SPostArr StDivNonDet_SPostArr
   StDivITree_SPostArr StDivExcNonDet_SPostArr.
@@ -187,43 +188,47 @@ Print Assumptions DivExcNonDet_SPDivExc.mixed_ASLP_outcomes.
     ASP/DSLP normal forms and base laws are constructive; DSP/ASLP recovery
     retains excluded middle. Cross-API clients check the selected dictionaries
     without reflecting pointwise equivalence into bundled equality. *)
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  ASPArrowCore ASPArrowRel DSLPArrowRel DSPArrowRel ASLPArrowRel.
 From Incorrectness.Taxonomy.Arrows.Tests Require Import ArrowMonadInstances.
 Print Assumptions SPostArr.ASP_normal_form.
 Print Assumptions SPostArr.DSLP_normal_form.
-Print Assumptions ASPArrowCore.ArrowLaws_ASPArr.
-Print Assumptions ASPArrowCore.ArrowChoiceLaws_ASPArr.
-Print Assumptions ASPArrowCore.ArrowApplyLaws_ASPArr.
-Print Assumptions DSLPArrowRel.ArrowLaws_DSLPArr.
-Print Assumptions DSLPArrowRel.ArrowChoiceLaws_DSLPArr.
-Print Assumptions DSLPArrowRel.ArrowApplyLaws_DSLPArr.
-Print Assumptions DSPArrowRel.ArrowLaws_DSPArr.
-Print Assumptions DSPArrowRel.ArrowChoiceLaws_DSPArr.
-Print Assumptions DSPArrowRel.ArrowApplyLaws_DSPArr.
-Print Assumptions ASLPArrowRel.ArrowLaws_ASLPArr.
-Print Assumptions ASLPArrowRel.ArrowChoiceLaws_ASLPArr.
-Print Assumptions ASLPArrowRel.ArrowApplyLaws_ASLPArr.
+Print Assumptions SPostArr.ArrowLaws_ASPArr.
+Print Assumptions SPostArr.ArrowChoiceLaws_ASPArr.
+Print Assumptions SPostArr.ArrowApplyLaws_ASPArr.
+Print Assumptions SPostArr.ArrowLaws_DSLPArr.
+Print Assumptions SPostArr.ArrowChoiceLaws_DSLPArr.
+Print Assumptions SPostArr.ArrowApplyLaws_DSLPArr.
+Print Assumptions SPostArr.ArrowLaws_DSPArr.
+Print Assumptions SPostArr.ArrowChoiceLaws_DSPArr.
+Print Assumptions SPostArr.ArrowApplyLaws_DSPArr.
+Print Assumptions SPostArr.ArrowLaws_ASLPArr.
+Print Assumptions SPostArr.ArrowChoiceLaws_ASLPArr.
+Print Assumptions SPostArr.ArrowApplyLaws_ASLPArr.
 
-(** Canonical relation readings reuse the generic RelDenote facts through
-    explicit local dictionaries. These semantic wrappers are constructive. *)
-Print Assumptions ASPArrowRel.aspRel_bind.
-Print Assumptions ASPArrowRel.aspRelS_bind.
-Print Assumptions ASPArrowRel.aspRelO_comp.
-Print Assumptions ASPArrowRel.aspRelO_first.
-Print Assumptions ASPArrowRel.aspRelE_first.
-Print Assumptions ASPArrowRel.aspRelE_app.
-Print Assumptions ASPArrowRel.aspRelE_bind.
-Print Assumptions DSLPArrowRel.dslpRel_bind.
-Print Assumptions DSLPArrowRel.dslpRelS_bind.
-Print Assumptions DSLPArrowRel.dslpRelO_comp.
-Print Assumptions DSLPArrowRel.dslpRelO_first.
-Print Assumptions DSLPArrowRel.dslpRelE_first.
-Print Assumptions DSLPArrowRel.dslpRelE_app.
-Print Assumptions DSLPArrowRel.dslpRelE_bind.
+(** Canonical relation readings specialize the generic normalization facts
+    through existing RelArrow/RelArrowChoice/RelArrowApply dictionaries.
+    These semantic wrappers are constructive. *)
+Print Assumptions SPostArr.aspRel_bind.
+Print Assumptions SPostArr.aspRelS_bind.
+Print Assumptions SPostArr.aspRelO_comp.
+Print Assumptions SPostArr.aspRelO_first.
+Print Assumptions SPostArr.aspRelE_first.
+Print Assumptions SPostArr.aspRelE_app.
+Print Assumptions SPostArr.aspRelE_bind.
+Print Assumptions SPostArr.dslpRel_bind.
+Print Assumptions SPostArr.dslpRelS_bind.
+Print Assumptions SPostArr.dslpRelO_comp.
+Print Assumptions SPostArr.dslpRelO_first.
+Print Assumptions SPostArr.dslpRelE_first.
+Print Assumptions SPostArr.dslpRelE_app.
+Print Assumptions SPostArr.dslpRelE_bind.
 
 Print Assumptions CanonicalSP.asp_mixed_application.
 Print Assumptions CanonicalSP.dslp_mixed_application.
 Print Assumptions CanonicalSP.asp_mixed_bind_identity.
 Print Assumptions CanonicalSP.dslp_mixed_bind_identity.
 Print Assumptions CanonicalSP.mixed_update_failure.
+
+(** Generic base/state bind normalization uses only the semantic dictionaries
+    and is closed under the global context. *)
+Print Assumptions RelArrowCoherence.rel_bind.
+Print Assumptions RelArrowCoherence.relS_bind.

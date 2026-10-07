@@ -11,25 +11,25 @@
     [bind] is monotone in both arguments ([OrderedMonad],
     [Classes/OrderedMonad.v]).
 
-    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Arrows/SPostArr.v])
+    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Classes/ArrowMonad.v])
     at the arrow and at its two transformer stacks.  The orders are not
     generic -- [bind] monotonicity is proved below from [aspRel_incl].
 
-    The arrow itself is in [ASPArrowCore.v] and the relation it denotes in
-    [ASPArrowRel.v]; both are re-exported here, so a client still needs
-    only [Require Import ASPMonad]. *)
+    [Arrows/SPostArr.v] owns the binary carrier, operations, recovered-relation
+    facts and laws. This module re-exports that infrastructure and fixes the
+    input for unary specifications, runners and refinement orders. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
 From Incorrectness.Classes Require Import ArrowMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Export ASPArrowCore ASPArrowRel.
+From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 (* ================================================================= *)
 (** ** [ASP = ASPArr unit]: a specification monad                *)
 (* ================================================================= *)
 
-(** [ret_arrow] / [bind_arrow] ([SPostArr.v]) at input [unit], ordered by
+(** [ret_arrow] / [bind_arrow] ([Classes/ArrowMonad.v]) at input [unit], ordered by
     pointwise implication. *)
 
 Section ASP.

@@ -1,15 +1,16 @@
 (** * SP judgments over observed specifications.
 
     Shared Over/Under triple judgments for computations that have already
-    been observed into the specification arrows of [SPostArrMonad].
-    [tripleASP] and [tripleDSL] run the observation at the intended
-    precondition [pre]; [tripleASPspec] and [tripleDSLspec] run it at an
-    arbitrary precondition [p] transferred to [pre] by [pp2_over] or
+    been observed into the specification monads of
+    [BaseSpecMonads/SPostArrMonad]. [tripleASP] and [tripleDSL] run the
+    observation at the intended precondition [pre]; [tripleASPspec] and
+    [tripleDSLspec] run it at an arbitrary precondition [p] transferred to
+    [pre] by [pp2_over] or
     [pp2_under].  The [DefEq] theorems bridge the two presentations for
     every specification arrow, by monotonicity alone — no hypothesis on
     [w] beyond its carrier. *)
 
-From Incorrectness.Taxonomy.Arrows Require Export SPostArrMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Export SPostArrMonad.
 
 (** ** Approximation direction *)
 

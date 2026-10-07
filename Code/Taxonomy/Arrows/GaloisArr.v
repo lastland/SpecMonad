@@ -36,7 +36,7 @@
 From Coq Require Import RelationClasses.
 
 From Incorrectness.Classes Require Import Galois.
-From Incorrectness.Taxonomy.Arrows Require Import RelSPostArr Rel PrePostArr WPArr RelPrePostArr SPArr.
+From Incorrectness.Taxonomy.Arrows Require Import RelSPostArr Rel PrePostArr WPArr RelPrePostArr SPostArr.
 
 (* ================================================================= *)
 (** ** Local subtypes                                                  *)

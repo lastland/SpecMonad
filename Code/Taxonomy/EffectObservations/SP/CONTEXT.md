@@ -25,8 +25,10 @@ SPostArrObservation shares the property-only ASP/DSLP observation interface
 and Taxonomy-style judgments. StDivITree_SPostArr, StExcNonDet_SPostArr,
 StDivNonDet_SPostArr, and StDivExcNonDet_SPostArr instantiate it using each
 computation's outcome relation. StExcNonDet owns the shared single-option raw
-outcome laws. Generic relational bind facts and SPostArrMonad select the exact target
-arrow dictionaries; neither adds a relation field to property-only values.
+outcome laws. [BaseSpecMonads/SPostArrMonad.v](../../BaseSpecMonads/SPostArrMonad.v)
+supplies the unary dictionaries and runners over `Arrows/SPostArr.v`; generic
+relational bind facts normalize those exact target operations. The bridge adds
+no relation field to property-only values.
 
 SP Over includes observed in asserted post; Under includes asserted in observed.
 Old in-monad targets can need an inhabited precondition for ASP Under and an
@@ -40,8 +42,8 @@ inhabited complement for DSLP Over. Preserve those hypotheses. Read outcomes
   [StDivExcNonDet.v](../../ComputationMonads/StDivExcNonDet.v) for the double-option
   stack. [StDivNonDet.v](../../ComputationMonads/StDivNonDet.v) owns `outcomes_diverge`.
   Full-outcome clients use these laws directly; slice clients derive adapters.
-- [SPostArrObservation.v](SPostArrObservation.v) depends only on specification
-  arrows, even though it lives in this directory.
+- [SPostArrObservation.v](SPostArrObservation.v) depends on the specification
+  arrows and their unary bridge, not a concrete computation model.
 - [DivExcNonDet_SPDivExc.v](DivExcNonDet_SPDivExc.v) observes the full raw
   outcomes of stateless `divexcnd` into `DSPDivExc` / `ASLPDivExc`.
   `obsDSP` reads `p /\ outcomes m o`; `obsASLP` reads `p \/ ~ outcomes m o`.
@@ -103,6 +105,7 @@ This specification-side recovery is separate from raw computation normalization.
 
 Read the computation-owned raw laws, the chosen outcome relation, and any
 slice adapter before the `obs*` preservation proofs. For arrow clients, read
-`SPostArrMonad.v` and the shared judgments before an effect file. Finish with
-its triples/examples and the matching [taxonomy comparison](../CONTEXT.md); use the
+[BaseSpecMonads/SPostArrMonad.v](../../BaseSpecMonads/SPostArrMonad.v) and the
+shared judgments before an effect file. Finish with its triples/examples and
+the matching [taxonomy comparison](../CONTEXT.md); use the
 [README](../../README.md#arrow-derived-aspdslp-observations) for presentation details.

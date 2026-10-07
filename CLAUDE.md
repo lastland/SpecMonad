@@ -48,7 +48,12 @@ See [docs/agents/triage-labels.md](docs/agents/triage-labels.md).
 
 ### Domain docs
 
-`Arrows/SPostArr.v` exposes compatibility names for the canonical `ASPArr` / `DSLPArr` carriers in `BaseSpecMonads/`; `Arrows/RelSPostArr.v` computes readings of `Rel`. See `Code/Taxonomy/README.md` for healthiness conditions, operation-preserving equivalence, and transformer stacks. Qualify shared names when both presentations are in scope.
+`Arrows/SPostArr.v` implements all four property-only binary SP arrows. The
+four flavour monads and the unary `SPostArrMonad.v` bridge in `BaseSpecMonads/`
+consume it; `SPostArr.v` must not depend on that directory, including `SPure.v`.
+`Rel.v` owns the relation carrier and stacks; `RelSPostArr.v` owns their four SP
+readings. See `Code/Taxonomy/README.md` for healthiness conditions, equivalences,
+and stacks. Qualify shared names, especially binary and unary accessors.
 
 Multi-context: the root map links to contexts for active Coq directories.
 See [docs/agents/domain.md](docs/agents/domain.md).

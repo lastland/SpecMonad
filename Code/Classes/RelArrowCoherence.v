@@ -614,7 +614,7 @@ Section RelationalCoherence.
   Local Notation oapp :=
     (@arr_app (optionArrT arr) OA (@ArrowApply_optionArrT arr HA HC HAA)).
 
-  Local Lemma rel_option_pure {A B} (f : A -> B) a ob :
+  Lemma rel_option_pure {A B} (f : A -> B) a ob :
     R (opure f) a ob <-> Some (f a) = ob.
   Proof. exact (rel_pure (fun a => Some (f a)) a ob). Qed.
 
@@ -635,7 +635,7 @@ Section RelationalCoherence.
     - intro Heq. exists (inr tt). split; [rewrite rel_left; reflexivity | exact Heq].
   Qed.
 
-  Local Lemma rel_option_comp {A B C}
+  Lemma rel_option_comp {A B C}
       (f : optionArrT arr A B) (g : optionArrT arr B C) a oc :
     R (ocomp f g) a oc <-> exists ob, R f a ob /\
       match ob with Some b => R g b oc | None => None = oc end.
@@ -668,7 +668,7 @@ Section RelationalCoherence.
     - destruct ob; [apply rel_option_pure |]; exact Hg.
   Qed.
 
-  Local Lemma rel_option_first {A B C} (f : optionArrT arr A B) a (c : C) q :
+  Lemma rel_option_first {A B C} (f : optionArrT arr A B) a (c : C) q :
     R (ofirst f) (a, c) q <->
     exists ob, R f a ob /\ option_map (fun b => (b, c)) ob = q.
   Proof.
@@ -721,7 +721,7 @@ Section RelationalCoherence.
         match obs with Some bs => R g bs q | None => None = q end.
     Proof. exact (rel_option_comp f g p q). Qed.
 
-    Local Lemma rel_state_option_first {A B C}
+    Lemma rel_state_option_first {A B C}
       (f : stateArrT S (optionArrT arr) A B) a (c : C) s q :
       R (sofirst f) ((a, c), s) q <-> exists obs, R f (a, s) obs /\
         option_map (fun '(b, t) => ((b, c), t)) obs = q.
@@ -759,7 +759,7 @@ Section RelationalCoherence.
         + destruct obs as [[b t]|]; exact Heq.
     Qed.
 
-    Local Lemma rel_state_option_app {A B}
+    Lemma rel_state_option_app {A B}
       (f : stateArrT S (optionArrT arr) A B) a s q :
       R soapp ((f, a), s) q <-> R f (a, s) q.
     Proof.
@@ -994,6 +994,163 @@ Class RelArrowApply (arr : Type -> Type -> Type)
 }.
 
 Arguments rel_app {arr HA HAA HRA} {_ A B} _ _ _.
+
+(** ** Bind and transformer normalization through semantic dictionaries
+
+    These formulas need only operation semantics, not arrow laws or equality
+    reflection.  Bind evaluates every continuation at the original input;
+    state bind additionally threads the intermediate state.  The option
+    wrappers retain the output-on-the-left equalities of the public SP API,
+    delegating normalization to the explicit-field proofs above. *)
+Create HintDb rel_arrow_bind.
+#[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id
+  : rel_arrow_bind.
+
+Section SemanticNormalization.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HAA : @ArrowApply arr HA}
+    {HRA : @RelArrow arr HA} {HRAA : @RelArrowApply arr HA HAA HRA}.
+
+  Local Notation R := (@rel_reading arr HA HRA).
+
+  Local Lemma rel_first_pair {A B C} (f : arr A B) (p : A * C) (q : B * C) :
+    R (@arr_first arr HA A B C f) p q <->
+    R f (fst p) (fst q) /\ snd p = snd q.
+  Proof. destruct p, q. apply (@rel_first arr HA HRA). Qed.
+
+  Local Lemma rel_app_pair {A B} (p : arr A B * A) b :
+    R (@arr_app arr HA HAA A B) p b <-> R (fst p) (snd p) b.
+  Proof. destruct p. apply (@rel_app arr HA HAA HRA HRAA). Qed.
+
+  (** Shared preprocessing for the base and state-only bind proofs. *)
+  Local Ltac normalize_bind :=
+    repeat first [ setoid_rewrite (@rel_comp arr HA HRA)
+                 | setoid_rewrite (@rel_pure arr HA HRA)
+                 | setoid_rewrite rel_first_pair
+                 | setoid_rewrite rel_app_pair ].
+  Local Ltac flatten_bind :=
+    repeat match goal with
+    | H : exists _, _ |- _ => destruct H
+    | H : _ /\ _ |- _ => destruct H
+    | p : _ * _ |- _ => destruct p
+    | H : (_, _) = (_, _) |- _ => inversion H; clear H
+    | H : ?x = ?y |- _ => first [ subst x | subst y ]
+    | _ => progress cbn in *
+    end.
+  Local Ltac build_bind :=
+    repeat first [ progress cbn | eassumption | reflexivity | split
+                 | eexists (_, _) | eexists ].
+
+  Lemma rel_bind {I A B} (m : arr I A) (k : A -> arr I B) i b :
+    R (@bind_arrow arr HA HAA I A B m k) i b <->
+    exists a, R m i a /\ R (k a) i b.
+  Proof.
+    autounfold with rel_arrow_bind.
+    normalize_bind.
+    split; [ intro H; flatten_bind; eauto
+           | intros [a [Hm Hk]]; build_bind ].
+  Qed.
+
+  Lemma relS_bind (S : Type) {I A B} (m : stateArrT S arr I A)
+    (k : A -> stateArrT S arr I B) i s r :
+    R (@bind_arrow (stateArrT S arr) (@Arrow_stateArrT S arr HA)
+      (@ArrowApply_stateArrT S arr HA HAA) I A B m k) (i, s) r <->
+    exists a s', R m (i, s) (a, s') /\ R (k a) (i, s') r.
+  Proof.
+    autounfold with rel_arrow_bind.
+    cbn [arr_comp arr_pure arr_first arr_app Arrow_stateArrT ArrowApply_stateArrT].
+    normalize_bind.
+    split; [ intro H; flatten_bind; eauto
+           | intros [a [s' [Hm Hk]]]; build_bind ].
+  Qed.
+
+  Section OptionNormalization.
+    Context {HC : @ArrowChoice arr HA}
+      {HRAC : @RelArrowChoice arr HA HC HRA}.
+
+    Local Notation OA := (@Arrow_optionArrT arr HA HC).
+
+    Lemma relO_comp {X Y Z} (f : optionArrT arr X Y)
+      (g : optionArrT arr Y Z) x o :
+      R (@arr_comp (optionArrT arr) OA X Y Z f g) x o <->
+      exists o1, R f x o1 /\
+        match o1 with Some y => R g y o | None => o = None end.
+    Proof.
+      rewrite (rel_option_comp (@rel_reading arr HA HRA) (@rel_pure arr HA HRA)
+        (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
+      split; intros [o1 [Hf Hg]]; exists o1; (split; [exact Hf |]);
+        (destruct o1; [exact Hg | symmetry; exact Hg]).
+    Qed.
+
+    Lemma relO_pure {X Y} (h : X -> Y) x o :
+      R (@arr_pure (optionArrT arr) OA X Y h) x o <-> o = Some (h x).
+    Proof.
+      rewrite (rel_option_pure (@rel_reading arr HA HRA) (@rel_pure arr HA HRA)).
+      split; intro H; symmetry; exact H.
+    Qed.
+
+    Lemma relO_first {X Y C} (f : optionArrT arr X Y) x (c : C) o :
+      R (@arr_first (optionArrT arr) OA X Y C f) (x, c) o <->
+      exists o1, R f x o1 /\
+        o = match o1 with Some y => Some (y, c) | None => None end.
+    Proof.
+      rewrite (rel_option_first (@rel_reading arr HA HRA) (@rel_pure arr HA HRA)
+        (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+      split; intros [o1 [Hf Ho]]; exists o1; (split; [exact Hf |]);
+        destruct o1; symmetry; exact Ho.
+    Qed.
+
+    Section StateOptionNormalization.
+      Variable S : Type.
+      Local Notation T := (stateArrT S (optionArrT arr)).
+      Local Notation SOA := (@Arrow_stateArrT S (optionArrT arr) OA).
+
+      Lemma relE_comp {X Y Z} (f : T X Y) (g : T Y Z) p o :
+        R (@arr_comp T SOA X Y Z f g) p o <->
+        exists o1, R f p o1 /\
+          match o1 with Some q => R g q o | None => o = None end.
+      Proof. exact (relO_comp f g p o). Qed.
+
+      Lemma relE_pure {X Y} (h : X -> Y) x s o :
+        R (@arr_pure T SOA X Y h) (x, s) o <-> o = Some (h x, s).
+      Proof. exact (relO_pure (fun '(x, s) => (h x, s)) (x, s) o). Qed.
+
+      Lemma relE_first {X Y C} (f : T X Y) x (c : C) s o :
+        R (@arr_first T SOA X Y C f) ((x, c), s) o <->
+        exists o1, R f (x, s) o1 /\
+          o = match o1 with Some (y, s') => Some ((y, c), s') | None => None end.
+      Proof.
+        rewrite (rel_state_option_first (@rel_reading arr HA HRA) (@rel_pure arr HA HRA)
+          (@rel_comp arr HA HRA) (@rel_first arr HA HRA)
+          (@rel_left arr HA HC HRA HRAC) S).
+        split; intros [o1 [Hf Ho]]; exists o1; (split; [exact Hf |]);
+          destruct o1 as [[y s']|]; symmetry; exact Ho.
+      Qed.
+
+      Lemma relE_app {X Y} (f : T X Y) x s o :
+        R (@arr_app T SOA (@ArrowApply_stateArrT S (optionArrT arr) OA
+          (@ArrowApply_optionArrT arr HA HC HAA)) X Y) ((f, x), s) o <->
+        R f (x, s) o.
+      Proof.
+        exact (rel_state_option_app (@rel_reading arr HA HRA) (@rel_pure arr HA HRA)
+          (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)
+          (@rel_app arr HA HAA HRA HRAA) S f x s o).
+      Qed.
+
+      Lemma relE_bind {I A B} (m : T I A) (k : A -> T I B) i s o :
+        R (@bind_arrow T SOA (@ArrowApply_stateArrT S (optionArrT arr) OA
+          (@ArrowApply_optionArrT arr HA HC HAA)) I A B m k) (i, s) o <->
+        exists o1, R m (i, s) o1 /\
+          match o1 with Some (a, s') => R (k a) (i, s') o | None => o = None end.
+      Proof.
+        exact (rel_state_option_bind_fields (@rel_reading arr HA HRA) (@rel_pure arr HA HRA)
+          (@rel_comp arr HA HRA) (@rel_first arr HA HRA)
+          (@rel_left arr HA HC HRA HRAC) (@rel_app arr HA HAA HRA HRAA)
+          S m k i s o).
+      Qed.
+    End StateOptionNormalization.
+  End OptionNormalization.
+End SemanticNormalization.
 
 Class RelArrowEq (arr : Type -> Type -> Type)
   `{HA : Arrow arr} {HE : ArrowEq arr} {HRA : RelArrow arr} := {

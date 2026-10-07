@@ -11,7 +11,8 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad RelArrowCoherence.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
-  Rel PrePostArr RelPrePostArr SPostArr SPostArrMonad.
+  Rel PrePostArr RelPrePostArr SPostArr.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostArrMonad.
 
 Create HintDb sp_arrow_bind.
 #[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id
@@ -386,9 +387,10 @@ Definition rel_state_option_monad_laws (S : Type) :
           ArrowChoice_Rel
           ArrowApply_Rel)) bool) := _.
 
-(** The named monad dictionaries of [SPostArrMonad] alias the canonical
-    stacks. Explicit generic dictionaries pin the exact instance at arbitrary
-    state and avoid competing recursive option/state resolution paths. *)
+(** The named monad dictionaries of [BaseSpecMonads/SPostArrMonad] alias
+    the canonical stacks. Explicit generic dictionaries pin the exact instance
+    at arbitrary state and avoid competing recursive option/state resolution
+    paths. *)
 Definition spostarr_asp_monad_laws (S : Type) :
   @MonadLawsE (SPostArr.ASPostArr S)
     (@Eq1_Arrow _ (SPostArr.ArrowEq_stateOptASP S) unit)
@@ -409,9 +411,9 @@ Definition spostarr_dslp_monad_laws (S : Type) :
 
 (** Cross-API clients: these must typecheck by conversion, without a map
     between bundles or equality reflection. They also pin the dictionaries
-    selected after importing both public presentations. *)
+    selected after importing the arrow and unary monad APIs. *)
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  ASPMonad DSLPMonad DSPArrowCore DSPArrowRel ASLPArrowCore ASLPArrowRel.
+  ASPMonad DSLPMonad.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArrEquiv.
 
 Module CanonicalSP.

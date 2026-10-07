@@ -1,5 +1,4 @@
-(** * The relational strongest-postcondition arrow [Rel] and
-      composed spec types.
+(** * Binary relational arrows and specification stacks.
 
     [Rel A B := A -> B -> Prop] represents a relation from [A] to [B].
     Its composition existentially joins relations at an intermediate
@@ -28,9 +27,14 @@
     the monad view uses the generic [optionT] / [stateT] laws from
     [ComputationMonads/TransformerLaws.v].  Named dictionaries and
     resolution checks live in [Tests/ArrowMonadInstances.v] and
-    [Tests/ArrowTransformerInstances.v].  This file proves the base
-    arrow laws, including [ArrowLoopLaws]; loop laws do not extend to
-    [optionRel] (see [OptionLoop.v]). *)
+    [Tests/ArrowTransformerInstances.v].  This file owns the binary
+    [SPureArr], [SPStArr], and [SPStExcArr] compatibility names, their
+    selected equality/law dictionaries, and relational congruence facts.
+    [BaseSpecMonads/SPure.v] supplies their unit-input monad interfaces
+    and orders; [RelSPostArr.v] supplies the four SP readings.
+
+    This file proves the base arrow laws, including [ArrowLoopLaws];
+    loop laws do not extend to [optionRel] (see [OptionLoop.v]). *)
 
 From Coq Require Import RelationClasses.
 From ExtLib Require Import StateMonad OptionMonad.
@@ -157,6 +161,22 @@ Definition optionRel_eq {A B} (f g : optionRel A B) : Prop :=
   forall a ob, f a ob <-> g a ob.
 
 (* ================================================================= *)
+(** ** Binary relational specification aliases                      *)
+(* ================================================================= *)
+
+Notation SPureArr := Rel (only parsing).
+
+Definition SPStArr (S : Type) := stateArrT S Rel.
+Definition SPStExcArr (S : Type) := stateArrT S optionRel.
+
+(** Pin the base equality dictionaries explicitly to avoid recursive
+    option/state typeclass search. These aliases add no registrations. *)
+Definition ArrowEq_SPStArr (S : Type) : ArrowEq (SPStArr S) :=
+  @ArrowEq_stateArrT S Rel ArrowEq_Rel.
+Definition ArrowEq_SPStExcArr (S : Type) : ArrowEq (SPStExcArr S) :=
+  @ArrowEq_stateArrT S optionRel (@ArrowEq_optionArrT Rel ArrowEq_Rel).
+
+(* ================================================================= *)
 (** ** Arrow-view specification types                                 *)
 (* ================================================================= *)
 
@@ -200,7 +220,7 @@ Section MonadSpec.
 End MonadSpec.
 
 (* ================================================================= *)
-(** * Facts and laws (merged from the former PredArrFacts.v)                          *)
+(** * Relational facts and laws                                      *)
 (* ================================================================= *)
 
 (** * Laws for [Rel] and [optionRel].
@@ -488,4 +508,78 @@ Proof.
       destruct Hfs as [Hf Hc]. subst.
       inversion Heq2; subst.
       split; [eexists; exact Hf | reflexivity].
+Qed.
+
+(* ================================================================= *)
+(** ** Selected law witnesses for the binary specification stacks    *)
+(* ================================================================= *)
+
+(** All stack laws lift the existing [Rel] laws through the generic
+    state/option transformers. Explicit dictionaries keep the selected
+    operations and pointwise iff equality fixed. *)
+
+Definition ArrowLaws_SPStArr (S : Type) : ArrowLaws (SPStArr S) :=
+  @ArrowLaws_stateArrT S Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel.
+Definition ArrowChoiceLaws_SPStArr (S : Type) : ArrowChoiceLaws (SPStArr S) :=
+  @ArrowChoiceLaws_stateArrT S Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+    ArrowLaws_Rel ArrowChoiceLaws_Rel.
+Definition ArrowApplyLaws_SPStArr (S : Type) : ArrowApplyLaws (SPStArr S) :=
+  @ArrowApplyLaws_stateArrT S Rel Arrow_Rel ArrowApply_Rel ArrowEq_Rel
+    ArrowLaws_Rel ArrowApplyLaws_Rel.
+
+Definition ArrowLaws_SPStExcArr (S : Type) : ArrowLaws (SPStExcArr S) :=
+  @ArrowLaws_stateArrT S optionRel
+    (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowEq_optionArrT Rel ArrowEq_Rel)
+    (@ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+      ArrowLaws_Rel ArrowChoiceLaws_Rel).
+Definition ArrowChoiceLaws_SPStExcArr (S : Type) : ArrowChoiceLaws (SPStExcArr S) :=
+  @ArrowChoiceLaws_stateArrT S optionRel
+    (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowChoice_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowEq_optionArrT Rel ArrowEq_Rel)
+    (@ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+      ArrowLaws_Rel ArrowChoiceLaws_Rel)
+    (@ArrowChoiceLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+      ArrowLaws_Rel ArrowChoiceLaws_Rel).
+Definition ArrowApplyLaws_SPStExcArr (S : Type) : ArrowApplyLaws (SPStExcArr S) :=
+  @ArrowApplyLaws_stateArrT S optionRel
+    (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel)
+    (@ArrowEq_optionArrT Rel ArrowEq_Rel)
+    (@ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+      ArrowLaws_Rel ArrowChoiceLaws_Rel)
+    (@ArrowApplyLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel
+      ArrowEq_Rel ArrowLaws_Rel ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
+
+(* ================================================================= *)
+(** ** Relational congruences for rewriting                          *)
+(* ================================================================= *)
+
+(** These restate the existing properness fields with [arrow_eq] reduced
+    to [Rel_eq], so congruence applies directly at the head of a goal. *)
+
+Lemma Rel_comp_cong {X Y Z} (R R' : SPureArr X Y) (T T' : SPureArr Y Z) :
+  Rel_eq R R' -> Rel_eq T T' ->
+  Rel_eq (@arr_comp Rel _ X Y Z R T) (arr_comp R' T').
+Proof.
+  intros HR HT.
+  exact (@comp_proper Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel
+           X Y Z R R' HR T T' HT).
+Qed.
+
+Lemma Rel_first_cong {X Y C} (R R' : SPureArr X Y) :
+  Rel_eq R R' -> Rel_eq (@arr_first Rel _ X Y C R) (arr_first R').
+Proof.
+  intro HR.
+  exact (@first_proper Rel Arrow_Rel ArrowEq_Rel ArrowLaws_Rel
+           X Y C R R' HR).
+Qed.
+
+Lemma Rel_left_cong {X Y C} (R R' : SPureArr X Y) :
+  Rel_eq R R' -> Rel_eq (@arr_left Rel _ _ X Y C R) (arr_left R').
+Proof.
+  intro HR.
+  exact (@left_proper Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+           ArrowChoiceLaws_Rel X Y C R R' HR).
 Qed.
