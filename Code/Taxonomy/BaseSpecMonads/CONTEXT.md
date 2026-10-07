@@ -89,11 +89,18 @@ which holds by construction, stays in OldMonads under the same map names.
 `MonoPT` and states implication, contrapositive, and Galois connection as
 monadic relations ([Classes/MonadRelation.v](../../Classes/MonadRelation.v)):
 on WPure and its transformer stacks, on SPStMon with its angelic and demonic
-structures, and between the flavour monads at the state and state-option
+structures, and between the flavour monads at the pure, state, and state-option
 stacks. DSP and ASLP enter SP implications through one part, because bind does
 not preserve their pointwise orders. `GaloisSPWP` / `GaloisWPSP` are `Ladj` /
 `Radj` of SPPredicateTransformers; use the bridge lemmas, never the admitted
 `Radj_bind`. Name the angelic or demonic SPStMon structure explicitly.
+Every flavour instance that involves an SP monad goes through the relation the
+SP element denotes: implication is inclusion and contrapositive is equality of
+the denoted relations, each one index-generic lemma. A Galois instance is the
+base relation between `PredM.Pred` and `WPure` (`GaloisPredWP`,
+`GaloisWPPred`), lifted by the monad transformers on the WP side and read at
+the denoted results on the SP side (`MonadRelation_rel_pred` and its two stack
+versions). The Galois instances use no axiom.
 
 [SPostArrMonad.v](SPostArrMonad.v) is the unary observation bridge: named
 `Monad_ASPostArr` / `Monad_DSLPostArr` dictionaries, `runASP` / `runDSLP`, and

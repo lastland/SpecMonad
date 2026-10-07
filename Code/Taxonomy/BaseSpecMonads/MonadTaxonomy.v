@@ -75,6 +75,26 @@
     at any indices ([Section PartInclusion]); the arrow transformers only
     change the indices, so the eight instances hold again between the
     state-and-exception monads ([MonadRelation_dsp_implies_asp_exc] &c.).
+    An SP contrapositive is of the same kind: two elements are
+    contrapositive exactly when they denote one relation, at any indices
+    ([Section ContraRelation]), so the instances hold without state and
+    with state and exceptions too ([MonadRelation_contra_asp_dslp_pure],
+    [MonadRelation_contra_asp_dslp_exc_one] &c.).
+
+    A Galois relation has an SP side and a WP side.  Its base is a relation
+    between [WPure] and the monad [Pred] of sets of results ([GaloisPredWP],
+    [GaloisWPPred]; [PredMonad.v]), a relation of monads proved once.  The
+    monad transformers lift it on the WP side.  On the SP side an element
+    enters through the results it denotes, which form an element of the
+    [Pred] stack, and denoting preserves [ret] and [bind] at every stack of
+    arrow transformers ([Section Denoted]).  From each start state, an ASP
+    element is left adjoint to a WP element exactly when the two are
+    related in this way, and likewise a DSLP element right adjoint to one
+    ([galois_asp_rel], [galois_dslp_rel]).  So each of the two Galois
+    instances holds without state, with state, and with state and
+    exceptions ([MonadRelation_galois_asp_dwlp_pure],
+    [MonadRelation_galois_asp_dwlp], [MonadRelation_galois_asp_dwlp_exc]
+    &c.).
 
     Without any transformer the flavours collapse two by two
     ([DSPMonad.v], [ASLPMonad.v]): a DSP element and an ASP element that
@@ -86,7 +106,8 @@
     Every statement about an ASLP element is classical, because the ASLP
     element of a relation preserves joins only classically; so is every
     statement about the relation or the [bind] of a DSP element, which
-    recovers its relation by a classical probe. *)
+    recovers its relation by a classical probe.  The contrapositives are
+    classical.  The Galois relations are not, at any stack. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions Setoid Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
@@ -99,12 +120,15 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPStBindComparisons.
 From Incorrectness.Taxonomy.BaseSpecMonads Require
-  SPPredicateTransformers SpecificationMonads.
+  PredMonad SPPredicateTransformers SpecificationMonads.
 
 Import SPPredicateTransformers.SPStMonotone.
 
 Local Notation Monad_SPStMon_angelic := (@AngelicMonotone.Monad__AngelicSPStMon _).
 Local Notation Monad_SPStMon_demonic := (@DemonicMonotone.Monad__DemonicSPStMon _).
+
+Local Notation Pred := PredMonad.PredM.Pred.
+Local Notation Monad_Pred := PredMonad.PredM.Monad_Pred.
 
 (* ================================================================= *)
 (** * The carriers of the SP and WP monads inside the monotone arrow carrier *)
@@ -1798,6 +1822,326 @@ Section PartInclusion.
   Qed.
 End PartInclusion.
 
+(* ================================================================= *)
+(** ** The contrapositive between SP flavours, at any indices        *)
+(* ================================================================= *)
+
+(** An ASP element and a DSLP element are contrapositive exactly when they
+    denote one relation, and so are a DSP element and an ASLP element.  As
+    in [PartInclusion] the indices are arbitrary, so one statement serves
+    every stack of arrow transformers.  Classical. *)
+
+Section ContraRelation.
+  Context {X Y : Type}.
+
+  Lemma contra_asp_dslp_rel (a : ASPArr X Y) (n : DSLPArr X Y) :
+    Contrapositive (aspMono a) (dslpMono n)
+    <-> (forall x y, aspRel a x y <-> dslpRel n x y).
+  Proof.
+    split.
+    - intros H x y.
+      exact (iff_trans (H (fun z => z = x) y) (iff_sym (dslpRel_probe n x y))).
+    - intros H P y. split.
+      + intros Ha Hn.
+        destruct (proj1 (get_aspRel a P y) Ha) as [x [Hp Hr]].
+        exact (proj1 (get_dslpRel n (fun z => ~ P z) y) Hn x (proj1 (H x y) Hr) Hp).
+      + intro Hn. refine (proj2 (get_aspRel a P y) _).
+        apply NNPP. intro Hex. apply Hn.
+        refine (proj2 (get_dslpRel n (fun z => ~ P z) y) _). intros x Hr Hp.
+        apply Hex. exists x. exact (conj Hp (proj2 (H x y) Hr)).
+  Qed.
+
+  Lemma contra_dsp_aslp_rel (d : DSPArr X Y) (l : ASLPArr X Y) :
+    Contrapositive (dspMono d) (aslpMono l)
+    <-> (forall x y, dspRel d x y <-> aslpRel l x y).
+  Proof.
+    assert (Hd : forall P y,
+               getDSP d P y
+               <-> (exists x, P x /\ dspRel d x y) /\ (forall x, dspRel d x y -> P x))
+      by (intros P y; exact (dspRel_spec d P y)).
+    assert (Hl : forall P y,
+               getASLP l P y
+               <-> (exists x, P x /\ aslpRel l x y) \/ (forall x, aslpRel l x y -> P x))
+      by (intros P y; exact (aslpRel_spec l P y)).
+    split.
+    - intros H x y.
+      assert (HR : forall P : X -> Prop,
+                 ((exists x', P x' /\ dspRel d x' y)
+                  /\ (forall x', dspRel d x' y -> P x'))
+                 <-> ~ ((exists x', ~ P x' /\ aslpRel l x' y)
+                        \/ (forall x', aslpRel l x' y -> ~ P x'))).
+      { intro P. etransitivity; [ symmetry; exact (Hd P y) |].
+        etransitivity; [ exact (H P y) |].
+        split; intros Hn Hx.
+        - exact (Hn (proj2 (Hl (fun x' => ~ P x') y) Hx)).
+        - exact (Hn (proj1 (Hl (fun x' => ~ P x') y) Hx)). }
+      split.
+      + intro Hdr.
+        assert (Hne : exists x0, aslpRel l x0 y).
+        { apply NNPP. intro Hno.
+          refine (proj1 (HR (fun _ => True)) _ _).
+          - split; [ exists x; exact (conj I Hdr) | intros; exact I ].
+          - right. intros x' Hx' _. exact (Hno (ex_intro _ x' Hx')). }
+        destruct Hne as [x0 Hx0].
+        apply NNPP. intro Hna.
+        destruct (proj2 (HR (fun x' => x' <> x))) as [_ Hall].
+        * intros [[x' [Hx' Hr']] | Hall'].
+          -- apply Hna. assert (Heq : x' = x) by (apply NNPP; exact Hx').
+             subst x'. exact Hr'.
+          -- apply Hna. assert (Heq : x0 = x) by (apply NNPP; exact (Hall' x0 Hx0)).
+             subst x0. exact Hx0.
+        * exact (Hall x Hdr eq_refl).
+      + intro Ha.
+        assert (Hne : exists x0, dspRel d x0 y).
+        { destruct (proj2 (HR (fun _ => True))) as [[x0 [_ Hx0]] _].
+          - intros [[x' [Hf _]] | Hall]; [ exact (Hf I) | exact (Hall x Ha I) ].
+          - exists x0. exact Hx0. }
+        destruct Hne as [x0 Hx0].
+        apply NNPP. intro Hnd.
+        refine (proj1 (HR (fun x' => x' <> x)) _ _).
+        * split.
+          -- exists x0. split; [ intro Heq; subst x0; exact (Hnd Hx0) | exact Hx0 ].
+          -- intros x' Hr' Heq. subst x'. exact (Hnd Hr').
+        * left. exists x. split; [ intro Hx; exact (Hx eq_refl) | exact Ha ].
+    - intros H P y. split.
+      + intros Hg Hn.
+        destruct (proj1 (Hd P y) Hg) as [[x [Hp Hr]] Hall].
+        destruct (proj1 (Hl (fun x' => ~ P x') y) Hn) as [[x' [Hn' Hr']] | Hall'].
+        * exact (Hn' (Hall x' (proj2 (H x' y) Hr'))).
+        * exact (Hall' x (proj1 (H x y) Hr) Hp).
+      + intro Hn. refine (proj2 (Hd P y) _). split.
+        * apply NNPP. intro Hex. apply Hn.
+          refine (proj2 (Hl (fun x' => ~ P x') y) _). right. intros x Hr Hp.
+          apply Hex. exists x. exact (conj Hp (proj2 (H x y) Hr)).
+        * intros x Hr. apply NNPP. intro Hp. apply Hn.
+          refine (proj2 (Hl (fun x' => ~ P x') y) _). left.
+          exists x. exact (conj Hp (proj1 (H x y) Hr)).
+  Qed.
+End ContraRelation.
+
+(* ================================================================= *)
+(** ** The Galois relations between [Pred] and [WPure]               *)
+(* ================================================================= *)
+
+(** With no transformer an SP element at input [unit] denotes a set of
+    results, an element of the monad [Pred] ([PredMonad.v]).  The set [p]
+    is left adjoint to the WP element [w] when [w] holds of exactly the
+    postconditions that contain [p], and right adjoint to it when [w] holds
+    of exactly the postconditions that meet [p].  Each is a relation of
+    monads, proved once, here.  Neither needs excluded middle. *)
+
+Section GaloisPred.
+
+  Definition GaloisPredWP {A} (p : Pred A) (w : WPure A) : Prop :=
+    forall Q : A -> Prop, w Q <-> (forall a, p a -> Q a).
+
+  Definition GaloisWPPred {A} (w : WPure A) (p : Pred A) : Prop :=
+    forall Q : A -> Prop, w Q <-> (exists a, p a /\ Q a).
+
+  (** The two adjunctions, with a proposition for the precondition. *)
+  Lemma GaloisPredWP_adj {A} (p : Pred A) (w : WPure A) :
+    GaloisPredWP p w
+    <-> (forall (P : Prop) (Q : A -> Prop), (forall a, P -> p a -> Q a) <-> (P -> w Q)).
+  Proof.
+    split.
+    - intros H P Q. split.
+      + intros Hq HP. apply (proj2 (H Q)). intros a Ha. exact (Hq a HP Ha).
+      + intros Hw a HP Ha. exact (proj1 (H Q) (Hw HP) a Ha).
+    - intros H Q. split.
+      + intros Hw a Ha. exact (proj2 (H True Q) (fun _ => Hw) a I Ha).
+      + intro Hq. exact (proj1 (H True Q) (fun a _ Ha => Hq a Ha) I).
+  Qed.
+
+  Lemma GaloisWPPred_adj {A} (w : WPure A) (p : Pred A) :
+    GaloisWPPred w p
+    <-> (forall (Q : A -> Prop) (P : Prop), (w Q -> P) <-> (forall a, Q a -> p a -> P)).
+  Proof.
+    split.
+    - intros H Q P. split.
+      + intros Hw a Hq Ha. apply Hw. apply (proj2 (H Q)). exists a. exact (conj Ha Hq).
+      + intros Hall Hw. destruct (proj1 (H Q) Hw) as [a [Ha Hq]]. exact (Hall a Hq Ha).
+    - intros H Q. split.
+      + intro Hw.
+        exact (proj2 (H Q (exists a, p a /\ Q a))
+                 (fun a Hq Ha => ex_intro _ a (conj Ha Hq)) Hw).
+      + intros [a [Ha Hq]]. exact (proj1 (H Q (w Q)) (fun Hw => Hw) a Hq Ha).
+  Qed.
+
+  Lemma GaloisPredWP_ext {A} (p p' : Pred A) (w : WPure A) :
+    (forall a, p a <-> p' a) -> GaloisPredWP p' w -> GaloisPredWP p w.
+  Proof.
+    intros E H Q. etransitivity; [ exact (H Q) |].
+    split; intros Hq a Ha; apply Hq; apply E; exact Ha.
+  Qed.
+
+  Lemma GaloisWPPred_ext {A} (w : WPure A) (p p' : Pred A) :
+    (forall a, p a <-> p' a) -> GaloisWPPred w p' -> GaloisWPPred w p.
+  Proof.
+    intros E H Q. etransitivity; [ exact (H Q) |].
+    split; intros [a [Ha Hq]]; exists a; (split; [ apply E; exact Ha | exact Hq ]).
+  Qed.
+
+  Theorem MonadRelation_GaloisPredWP :
+    @MonadRelation Pred WPure Monad_Pred Monad_WPure (fun A => @GaloisPredWP A).
+  Proof.
+    constructor.
+    - intros A a Q. change (Q a <-> (forall a', a' = a -> Q a')). split.
+      + intros H a' E. subst a'. exact H.
+      + intro H. exact (H a eq_refl).
+    - intros A B m n k k' Hm Hk Q.
+      change (getWPure n (fun a => getWPure (k' a) Q)
+              <-> (forall b, (exists a, m a /\ k a b) -> Q b)).
+      etransitivity; [ exact (Hm (fun a => getWPure (k' a) Q)) |].
+      split.
+      + intros H b [a [Ha Hb]]. exact (proj1 (Hk a Q) (H a Ha) b Hb).
+      + intros H a Ha. apply (proj2 (Hk a Q)). intros b Hb.
+        exact (H b (ex_intro _ a (conj Ha Hb))).
+  Qed.
+
+  Theorem MonadRelation_GaloisWPPred :
+    @MonadRelation WPure Pred Monad_WPure Monad_Pred (fun A => @GaloisWPPred A).
+  Proof.
+    constructor.
+    - intros A a Q. change (Q a <-> (exists a', a' = a /\ Q a')). split.
+      + intro H. exists a. exact (conj eq_refl H).
+      + intros [a' [E H]]. subst a'. exact H.
+    - intros A B m n k k' Hm Hk Q.
+      change (getWPure m (fun a => getWPure (k a) Q)
+              <-> (exists b, (exists a, n a /\ k' a b) /\ Q b)).
+      etransitivity; [ exact (Hm (fun a => getWPure (k a) Q)) |].
+      split.
+      + intros [a [Ha Hq]]. destruct (proj1 (Hk a Q) Hq) as [b [Hb HQ]].
+        exists b. exact (conj (ex_intro _ a (conj Ha Hb)) HQ).
+      + intros [b [[a [Ha Hb]] HQ]]. exists a. split; [ exact Ha |].
+        exact (proj2 (Hk a Q) (ex_intro _ b (conj Hb HQ))).
+  Qed.
+
+  (** Any WP flavour, through its inclusion into [WPure]. *)
+  Lemma MonadRelation_GaloisPredWP_toWPure (h : WPHealth) :
+    @MonadRelation Pred (WPSub h) Monad_Pred (Monad_WPSub h)
+      (fun A p w => GaloisPredWP p (toWPure w)).
+  Proof.
+    refine (@MonadRelation_pullback Pred (WPSub h) Monad_Pred (Monad_WPSub h)
+              Pred WPure Monad_Pred Monad_WPure
+              (fun A => @GaloisPredWP A)
+              (fun A => @eq (Pred A)) (fun A => @eq1 WPure Eq1_WPure A)
+              (fun A p => p) (fun A => @toWPure h A)
+              _
+              (fun A a => eq_refl) (fun A B m k => eq_refl)
+              (fun A a => toWPure_ret h a) (fun A B n k => toWPure_bind h n k)
+              MonadRelation_GaloisPredWP).
+    intros A x x' y y' Ex Ey H Q. subst x'.
+    etransitivity; [ exact (Ey Q) | exact (H Q) ].
+  Qed.
+
+  Lemma MonadRelation_GaloisWPPred_toWPure (h : WPHealth) :
+    @MonadRelation (WPSub h) Pred (Monad_WPSub h) Monad_Pred
+      (fun A w p => GaloisWPPred (toWPure w) p).
+  Proof.
+    refine (@MonadRelation_pullback (WPSub h) Pred (Monad_WPSub h) Monad_Pred
+              WPure Pred Monad_WPure Monad_Pred
+              (fun A => @GaloisWPPred A)
+              (fun A => @eq1 WPure Eq1_WPure A) (fun A => @eq (Pred A))
+              (fun A => @toWPure h A) (fun A p => p)
+              _
+              (fun A a => toWPure_ret h a) (fun A B m k => toWPure_bind h m k)
+              (fun A a => eq_refl) (fun A B n k => eq_refl)
+              MonadRelation_GaloisWPPred).
+    intros A x x' y y' Ex Ey H Q. subst y'.
+    etransitivity; [ exact (Ex Q) | exact (H Q) ].
+  Qed.
+End GaloisPred.
+
+(* ================================================================= *)
+(** ** The results an arrow denotes, in a [Pred] stack               *)
+(* ================================================================= *)
+
+(** At a fixed input an arrow with relational semantics denotes a set of
+    results: an element of [Pred]; of [stateT S Pred] under [stateArrT];
+    of [stateT S (optionT Pred)] under [stateArrT] over [optionArrT].
+    [ret] denotes the [ret] of that stack and [bind] its [bind] ([rel_pure],
+    [rel_bind], [relS_bind], [relE_pure], [relE_bind]).  So a relation of
+    monads between the [Pred] stack and a monad [N], read at the results an
+    arrow denotes, is a relation of monads between the arrow's monad and
+    [N]. *)
+
+Section Denoted.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HAA : @ArrowApply arr HA}
+    {HR : @RelArrow arr HA} {HRA : @RelArrowApply arr HA HAA HR}.
+  Context {N : Type -> Type} {MonadN : Monad N}.
+
+  Local Notation R := (@rel_reading arr HA HR).
+
+  Theorem MonadRelation_rel_pred {I : Type} (i : I)
+    (G : forall A, Pred A -> N A -> Prop) :
+    @MonadRelation Pred N Monad_Pred MonadN G ->
+    (forall A (p p' : Pred A) n, (forall a, p a <-> p' a) -> G A p' n -> G A p n) ->
+    @MonadRelation (arr I) N (@Monad_Arrow arr HA HAA I) MonadN
+      (fun A m n => G A (fun a => R m i a) n).
+  Proof.
+    intros [Hret Hbind] Hext. constructor.
+    - intros A a. refine (Hext A _ _ _ _ (Hret A a)). intro a'. split.
+      + intro H. exact (eq_sym (proj1 (@rel_pure arr HA HR I A (fun _ => a) i a') H)).
+      + intro H. exact (proj2 (@rel_pure arr HA HR I A (fun _ => a) i a') (eq_sym H)).
+    - intros A B m n k k' Hm Hk.
+      refine (Hext B _ _ _ _ (Hbind A B _ n _ k' Hm Hk)). intro b.
+      exact (@rel_bind arr HA HAA HR HRA I A B m k i b).
+  Qed.
+
+  Theorem MonadRelation_rel_pred_state (S : Type) {I : Type} (i : I)
+    (G : forall A, stateT S Pred A -> N A -> Prop) :
+    @MonadRelation (stateT S Pred) N (@Monad_stateT S Pred Monad_Pred) MonadN G ->
+    (forall A (p p' : stateT S Pred A) n,
+        (forall s r, runStateT p s r <-> runStateT p' s r) -> G A p' n -> G A p n) ->
+    @MonadRelation (stateArrT S arr I) N
+      (@Monad_Arrow (stateArrT S arr) (@Arrow_stateArrT S arr HA)
+         (@ArrowApply_stateArrT S arr HA HAA) I) MonadN
+      (fun A m n => G A (@mkStateT S Pred A (fun s r => R m (i, s) r)) n).
+  Proof.
+    intros [Hret Hbind] Hext. constructor.
+    - intros A a. refine (Hext A _ _ _ _ (Hret A a)). intros s r. split.
+      + intro H.
+        exact (eq_sym (proj1 (@rel_pure arr HA HR _ _ (fun '(_, s0) => (a, s0)) (i, s) r) H)).
+      + intro H.
+        exact (proj2 (@rel_pure arr HA HR _ _ (fun '(_, s0) => (a, s0)) (i, s) r) (eq_sym H)).
+    - intros A B m n k k' Hm Hk.
+      refine (Hext B _ _ _ _ (Hbind A B _ n _ k' Hm Hk)). intros s r.
+      etransitivity; [ exact (@relS_bind arr HA HAA HR HRA S I A B m k i s r) |].
+      split.
+      + intros [a [s' [H1 H2]]]. exists (a, s'). exact (conj H1 H2).
+      + intros [[a s'] [H1 H2]]. exists a, s'. exact (conj H1 H2).
+  Qed.
+
+  Context {HC : @ArrowChoice arr HA} {HRC : @RelArrowChoice arr HA HC HR}.
+
+  Theorem MonadRelation_rel_pred_state_option (S : Type) {I : Type} (i : I)
+    (G : forall A, stateT S (optionT Pred) A -> N A -> Prop) :
+    @MonadRelation (stateT S (optionT Pred)) N
+      (@Monad_stateT S (optionT Pred) (@Monad_optionT Pred Monad_Pred)) MonadN G ->
+    (forall A (p p' : stateT S (optionT Pred) A) n,
+        (forall s o, unOptionT (runStateT p s) o <-> unOptionT (runStateT p' s) o) ->
+        G A p' n -> G A p n) ->
+    @MonadRelation (stateArrT S (optionArrT arr) I) N
+      (@Monad_Arrow (stateArrT S (optionArrT arr))
+         (@Arrow_stateArrT S (optionArrT arr) (@Arrow_optionArrT arr HA HC))
+         (@ArrowApply_stateArrT S (optionArrT arr) (@Arrow_optionArrT arr HA HC)
+            (@ArrowApply_optionArrT arr HA HC HAA)) I) MonadN
+      (fun A m n =>
+         G A (@mkStateT S (optionT Pred) A
+                (fun s => @mkOptionT Pred (A * S) (fun o => R m (i, s) o))) n).
+  Proof.
+    intros [Hret Hbind] Hext. constructor.
+    - intros A a. refine (Hext A _ _ _ _ (Hret A a)). intros s o.
+      exact (@relE_pure arr HA HR HC S I A (fun _ => a) i s o).
+    - intros A B m n k k' Hm Hk.
+      refine (Hext B _ _ _ _ (Hbind A B _ n _ k' Hm Hk)). intros s o.
+      etransitivity; [ exact (@relE_bind arr HA HAA HR HRA HC HRC S I A B m k i s o) |].
+      split; intros [o1 [H1 H2]]; exists o1; (split; [ exact H1 |]);
+        destruct o1 as [[a s']|]; exact H2.
+  Qed.
+End Denoted.
+
 
 (* ================================================================= *)
 (** ** The edges between the flavours                                *)
@@ -2202,19 +2546,91 @@ Section Flavours.
       (fun A d l => contraWSt (toWSt l) (toWSt d)).
   Proof. exact (MonadRelation_flip _ (MonadRelation_contra_toWSt awlp_health dwp_health)). Qed.
 
+  (** Between SP flavours two elements are contrapositive exactly when they
+      denote one relation ([ContraRelation]).  A flavour's monad fixes the
+      input [unit], and its precondition is on the start state. *)
+  Lemma unit_input_pre (P : unit * S -> Prop) p : P p <-> P (tt, snd p).
+  Proof. destruct p as [[] s]. reflexivity. Qed.
+
+  Lemma contra_unit_input {T : Type} (f g : (unit * S -> Prop) -> T -> Prop) :
+    (forall P Q r, (forall p, P p <-> Q p) -> (f P r <-> f Q r)) ->
+    (forall P Q r, (forall p, P p <-> Q p) -> (g P r <-> g Q r)) ->
+    ((forall (P : S -> Prop) r,
+         f (fun p => P (snd p)) r <-> ~ g (fun p => ~ P (snd p)) r)
+     <-> (forall (P : unit * S -> Prop) r, f P r <-> ~ g (fun p => ~ P p) r)).
+  Proof.
+    intros Hf Hg. split.
+    - intros H P r.
+      etransitivity;
+        [ exact (Hf P (fun p => P (tt, snd p)) r (unit_input_pre P)) |].
+      etransitivity; [ exact (H (fun s => P (tt, s)) r) |].
+      apply not_iff_compat.
+      exact (Hg (fun p => ~ P (tt, snd p)) (fun p => ~ P p) r
+               (fun p => not_iff_compat (iff_sym (unit_input_pre P p)))).
+    - intros H P r. exact (H (fun p => P (snd p)) r).
+  Qed.
+
+  (** The result type is arbitrary, so each statement serves with and
+      without exceptions. *)
+  Lemma contra_asp_dslp_unit {Y} (m : ASPArr (unit * S) Y) (n : DSLPArr (unit * S) Y) :
+    (forall (P : S -> Prop) r,
+        getASPArr m (fun p => P (snd p)) r <-> ~ getDSLPArr n (fun p => ~ P (snd p)) r)
+    <-> (forall p r, aspRel m p r <-> dslpRel n p r).
+  Proof.
+    exact (iff_trans
+             (contra_unit_input (getASPArr m) (getDSLPArr n)
+                (getASPArr_ext_iff m) (getDSLPArr_ext_iff n))
+             (contra_asp_dslp_rel m n)).
+  Qed.
+
+  Lemma contra_dslp_asp_unit {Y} (m : ASPArr (unit * S) Y) (n : DSLPArr (unit * S) Y) :
+    (forall (P : S -> Prop) r,
+        getDSLPArr n (fun p => P (snd p)) r <-> ~ getASPArr m (fun p => ~ P (snd p)) r)
+    <-> (forall p r, aspRel m p r <-> dslpRel n p r).
+  Proof.
+    refine (iff_trans
+              (contra_unit_input (getDSLPArr n) (getASPArr m)
+                 (getDSLPArr_ext_iff n) (getASPArr_ext_iff m)) _).
+    refine (iff_trans _ (contra_asp_dslp_rel m n)).
+    split; intro H.
+    - exact (Contrapositive_sym (dslpMono n) (aspMono m) H).
+    - exact (Contrapositive_sym (aspMono m) (dslpMono n) H).
+  Qed.
+
+  Lemma contra_dsp_aslp_unit {Y} (d : DSPArr (unit * S) Y) (l : ASLPArr (unit * S) Y) :
+    (forall (P : S -> Prop) r,
+        getDSP d (fun p => P (snd p)) r <-> ~ getASLP l (fun p => ~ P (snd p)) r)
+    <-> (forall p r, dspRel d p r <-> aslpRel l p r).
+  Proof.
+    exact (iff_trans
+             (contra_unit_input (getDSP d) (getASLP l) (getDSP_cong d) (getASLP_cong l))
+             (contra_dsp_aslp_rel d l)).
+  Qed.
+
+  Lemma contra_aslp_dsp_unit {Y} (d : DSPArr (unit * S) Y) (l : ASLPArr (unit * S) Y) :
+    (forall (P : S -> Prop) r,
+        getASLP l (fun p => P (snd p)) r <-> ~ getDSP d (fun p => ~ P (snd p)) r)
+    <-> (forall p r, dspRel d p r <-> aslpRel l p r).
+  Proof.
+    refine (iff_trans
+              (contra_unit_input (getASLP l) (getDSP d) (getASLP_cong l) (getDSP_cong d)) _).
+    refine (iff_trans _ (contra_dsp_aslp_rel d l)).
+    split; intro H.
+    - exact (Contrapositive_sym (aslpMono l) (dspMono d) H).
+    - exact (Contrapositive_sym (dspMono d) (aslpMono l) H).
+  Qed.
+
+  (** [stateArrT] preserves "denote one relation"
+      ([MonadRelation_rel_eq_state]). *)
   Theorem MonadRelation_contra_asp_dslp_one :
     @MonadRelation (ASPSt S) (DSLPSt S) (Monad_ASPSt S) (Monad_DSLPSt S)
       (fun A m n => contraSPSt (asSPStMon m) (asDSLPStMon n)).
   Proof.
-    exact (@MonadRelation_pullback (ASPSt S) (DSLPSt S) (Monad_ASPSt S) (Monad_DSLPSt S)
-             (SPStMon S) (SPStMon S) Monad_SPStMon_angelic Monad_SPStMon_demonic
-             (fun A => @contraSPSt S A)
-             (fun A m m' => m ≈ m') (fun A m m' => m ≈ m')
-             (fun A => @asSPStMon S A) (fun A => @asDSLPStMon S A)
-             (fun A x x' y y' Ex Ey => proj2 (contraSPSt_equiv x x' y y' Ex Ey))
-             (fun A a => asSPStMon_ret a) (fun A B m k => asSPStMon_bind m k)
-             (fun A a => asDSLPStMon_ret a) (fun A B n k => asDSLPStMon_bind n k)
-             MonadRelation_contraSPSt).
+    refine (MonadRelation_iff
+              (fun A (m : ASPSt S A) (n : DSLPSt S A) =>
+                 forall p r, aspRel m p r <-> dslpRel n p r) _
+              (fun A m n => iff_sym (contra_asp_dslp_unit m n)) _).
+    exact (MonadRelation_rel_eq_state (arr1 := ASPArr) (arr2 := DSLPArr) S unit).
   Qed.
 
   Theorem MonadRelation_contra_asp_dslp_two :
@@ -2227,73 +2643,6 @@ Section Flavours.
              MonadRelation_contra_asp_dslp_one).
   Qed.
 
-  (** The fixed input [unit] of a flavour's monad carries no information. *)
-  Lemma forall_unit_input {T : Type} (Q : unit * S -> T -> Prop) :
-    (forall s r, Q (tt, s) r) <-> (forall p r, Q p r).
-  Proof.
-    split; [ intros H [[] s] r; exact (H s r) | intros H s r; exact (H (tt, s) r) ].
-  Qed.
-
-
-  (** A DSP element and an ASLP element are contrapositive exactly when they
-      denote one relation. *)
-  Lemma contra_dsp_aslp_rel {A} (m : DSPSt S A) (n : ASLPSt S A) :
-    contraSPSt (asDSPStMon m) (asASLPStMon n)
-    <-> (forall s r, dspRel m (tt, s) r <-> aslpRel n (tt, s) r).
-  Proof.
-    split.
-    - intros H s r.
-      assert (HR : forall P : S -> Prop,
-                 ((exists s', P s' /\ dspRel m (tt, s') r)
-                  /\ (forall s', dspRel m (tt, s') r -> P s'))
-                 <-> ~ ((exists s', ~ P s' /\ aslpRel n (tt, s') r)
-                        \/ (forall s', aslpRel n (tt, s') r -> ~ P s'))).
-      { intro P. etransitivity; [ symmetry; exact (getDSPSt_rel m P r) |].
-        etransitivity; [ exact (H P r) |].
-        split; intros Hn Hx.
-        - exact (Hn (proj2 (getASLPSt_rel n (fun s' => ~ P s') r) Hx)).
-        - exact (Hn (proj1 (getASLPSt_rel n (fun s' => ~ P s') r) Hx)). }
-      split.
-      + intro Hd.
-        assert (Hne : exists s0, aslpRel n (tt, s0) r).
-        { apply NNPP. intro Hno.
-          refine (proj1 (HR (fun _ => True)) _ _).
-          - split; [ exists s; exact (conj I Hd) | intros; exact I ].
-          - right. intros s' Hs' _. exact (Hno (ex_intro _ s' Hs')). }
-        destruct Hne as [s0 Hs0].
-        apply NNPP. intro Hna.
-        destruct (proj2 (HR (fun s' => s' <> s))) as [_ Hall].
-        * intros [[s' [Hs' Hr']] | Hall'].
-          -- apply Hna. assert (Heq : s' = s) by (apply NNPP; exact Hs').
-             subst s'. exact Hr'.
-          -- apply Hna. assert (Heq : s0 = s) by (apply NNPP; exact (Hall' s0 Hs0)).
-             subst s0. exact Hs0.
-        * exact (Hall s Hd eq_refl).
-      + intro Ha.
-        assert (Hne : exists s0, dspRel m (tt, s0) r).
-        { destruct (proj2 (HR (fun _ => True))) as [[s0 [_ Hs0]] _].
-          - intros [[s' [Hf _]] | Hall]; [ exact (Hf I) | exact (Hall s Ha I) ].
-          - exists s0. exact Hs0. }
-        destruct Hne as [s0 Hs0].
-        apply NNPP. intro Hnd.
-        refine (proj1 (HR (fun s' => s' <> s)) _ _).
-        * split.
-          -- exists s0. split; [ intro Heq; subst s0; exact (Hnd Hs0) | exact Hs0 ].
-          -- intros s' Hr' Heq. subst s'. exact (Hnd Hr').
-        * left. exists s. split; [ intro Hx; exact (Hx eq_refl) | exact Ha ].
-    - intros H P r.
-      change (getDSPSt m P r <-> ~ getASLPSt n (fun s => ~ P s) r).
-      rewrite (getDSPSt_rel m P r), (getASLPSt_rel n (fun s => ~ P s) r). split.
-      + intros [[s [Hp Hr]] Hall] [[s' [Hn Hr']] | Hall'].
-        * exact (Hn (Hall s' (proj2 (H s' r) Hr'))).
-        * exact (Hall' s (proj1 (H s r) Hr) Hp).
-      + intro Hn. split.
-        * apply NNPP. intro Hex. apply Hn. right. intros s Hr Hp.
-          apply Hex. exists s. exact (conj Hp (proj2 (H s r) Hr)).
-        * intros s Hr. apply NNPP. intro Hp. apply Hn. left.
-          exists s. exact (conj Hp (proj1 (H s r) Hr)).
-  Qed.
-
   Theorem MonadRelation_contra_dsp_aslp_one :
     @MonadRelation (DSPSt S) (ASLPSt S) (Monad_DSPSt S) (Monad_ASLPSt S)
       (fun A m n => contraSPSt (asDSPStMon m) (asASLPStMon n)).
@@ -2301,8 +2650,7 @@ Section Flavours.
     refine (MonadRelation_iff
               (fun A (m : DSPSt S A) (n : ASLPSt S A) =>
                  forall p r, dspRel m p r <-> aslpRel n p r) _
-              (fun A m n => iff_sym (iff_trans (contra_dsp_aslp_rel m n)
-                 (forall_unit_input (fun p r => dspRel m p r <-> aslpRel n p r)))) _).
+              (fun A m n => iff_sym (contra_dsp_aslp_unit m n)) _).
     exact (MonadRelation_rel_eq_state (arr1 := DSPArr) (arr2 := ASLPArr) S unit).
   Qed.
 
@@ -2316,40 +2664,199 @@ Section Flavours.
              MonadRelation_contra_dsp_aslp_one).
   Qed.
 
+  (** The same four instances one transformer further, between the
+      flavours' state-and-exception monads: [stateArrT] over [optionArrT]
+      preserves "denote one relation" too
+      ([MonadRelation_rel_eq_state_option]).  The precondition is on the
+      start state and the result is in [option (A * S)]. *)
+  Theorem MonadRelation_contra_asp_dslp_exc_one :
+    @MonadRelation (ASPStExc S) (DSLPStExc S) (Monad_ASPStExc S) (Monad_DSLPStExc S)
+      (fun A m n => forall (P : S -> Prop) r,
+         getASPStExc m P r <-> ~ getDSLPStExc n (fun s => ~ P s) r).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (m : ASPStExc S A) (n : DSLPStExc S A) =>
+                 forall p o, aspRel m p o <-> dslpRel n p o) _
+              (fun A m n => iff_sym (contra_asp_dslp_unit m n)) _).
+    exact (MonadRelation_rel_eq_state_option (arr1 := ASPArr) (arr2 := DSLPArr) S unit).
+  Qed.
+
+  Theorem MonadRelation_contra_asp_dslp_exc_two :
+    @MonadRelation (ASPStExc S) (DSLPStExc S) (Monad_ASPStExc S) (Monad_DSLPStExc S)
+      (fun A m n => forall (P : S -> Prop) r,
+         getDSLPStExc n P r <-> ~ getASPStExc m (fun s => ~ P s) r).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (m : ASPStExc S A) (n : DSLPStExc S A) =>
+                 forall p o, aspRel m p o <-> dslpRel n p o) _
+              (fun A m n => iff_sym (contra_dslp_asp_unit m n)) _).
+    exact (MonadRelation_rel_eq_state_option (arr1 := ASPArr) (arr2 := DSLPArr) S unit).
+  Qed.
+
+  Theorem MonadRelation_contra_dsp_aslp_exc_one :
+    @MonadRelation (DSPStExc S) (ASLPStExc S) (Monad_DSPStExc S) (Monad_ASLPStExc S)
+      (fun A m n => forall (P : S -> Prop) r,
+         getDSPStExc m P r <-> ~ getASLPStExc n (fun s => ~ P s) r).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (m : DSPStExc S A) (n : ASLPStExc S A) =>
+                 forall p o, dspRel m p o <-> aslpRel n p o) _
+              (fun A m n => iff_sym (contra_dsp_aslp_unit m n)) _).
+    exact (MonadRelation_rel_eq_state_option (arr1 := DSPArr) (arr2 := ASLPArr) S unit).
+  Qed.
+
+  Theorem MonadRelation_contra_dsp_aslp_exc_two :
+    @MonadRelation (DSPStExc S) (ASLPStExc S) (Monad_DSPStExc S) (Monad_ASLPStExc S)
+      (fun A m n => forall (P : S -> Prop) r,
+         getASLPStExc n P r <-> ~ getDSPStExc m (fun s => ~ P s) r).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (m : DSPStExc S A) (n : ASLPStExc S A) =>
+                 forall p o, dspRel m p o <-> aslpRel n p o) _
+              (fun A m n => iff_sym (contra_aslp_dsp_unit m n)) _).
+    exact (MonadRelation_rel_eq_state_option (arr1 := DSPArr) (arr2 := ASLPArr) S unit).
+  Qed.
+
   (* --------------------------------------------------------------- *)
   (** *** Galois                                                      *)
   (* --------------------------------------------------------------- *)
 
+  (** An ASP element is left adjoint to a WP element exactly when, from
+      each start state, the WP element holds of the postconditions that
+      contain the results the ASP element relates to that state.  A DSLP
+      element is right adjoint to a WP element exactly when the WP element
+      holds of the postconditions that meet those results.  The result type
+      is arbitrary, so each statement serves with and without exceptions.
+      Neither needs excluded middle. *)
+  Lemma galois_asp_rel {Y} (m : ASPArr (unit * S) Y) (w : S -> (Y -> Prop) -> Prop) :
+    (forall (P : S -> Prop) (Q : Y -> Prop),
+        (forall y, getASPArr m (fun p => P (snd p)) y -> Q y) <-> (forall s, P s -> w s Q))
+    <-> (forall s Q, w s Q <-> (forall y, aspRel m (tt, s) y -> Q y)).
+  Proof.
+    assert (Hpt : forall s y, getASPArr m (fun p => snd p = s) y <-> aspRel m (tt, s) y).
+    { intros s y.
+      refine (getASPArr_ext_iff m (fun p => snd p = s) (fun x => x = (tt, s)) y _).
+      intros [[] s']. split; [ intro E; exact (f_equal (pair tt) E)
+                             | intro E; exact (f_equal snd E) ]. }
+    split.
+    - intros H s Q. split.
+      + intros Hw y Hr.
+        refine (proj2 (H (fun s' => s' = s) Q) _ y (proj2 (Hpt s y) Hr)).
+        intros s' E. subst s'. exact Hw.
+      + intro Hq. refine (proj1 (H (fun s' => s' = s) Q) _ s eq_refl).
+        intros y Hy. exact (Hq y (proj1 (Hpt s y) Hy)).
+    - intros H P Q. split.
+      + intros Hq s Hp. apply (proj2 (H s Q)). intros y Hr. apply Hq.
+        refine (proj2 (get_aspRel m (fun p => P (snd p)) y) _).
+        exists (tt, s). exact (conj Hp Hr).
+      + intros Hw y Hy.
+        destruct (proj1 (get_aspRel m (fun p => P (snd p)) y) Hy) as [[[] s] [Hp Hr]].
+        exact (proj1 (H s Q) (Hw s Hp) y Hr).
+  Qed.
+
+  Lemma galois_dslp_rel {Y} (w : S -> (Y -> Prop) -> Prop) (n : DSLPArr (unit * S) Y) :
+    (forall (Q : Y -> Prop) (P : S -> Prop),
+        (forall s, w s Q -> P s) <-> (forall y, Q y -> getDSLPArr n (fun p => P (snd p)) y))
+    <-> (forall s Q, w s Q <-> (exists y, dslpRel n (tt, s) y /\ Q y)).
+  Proof.
+    split.
+    - intros H s Q. split.
+      + revert s.
+        refine (proj2 (H Q (fun s => exists y, dslpRel n (tt, s) y /\ Q y)) _).
+        intros y Hq.
+        refine (proj2 (get_dslpRel n
+                         (fun p => exists y0, dslpRel n (tt, snd p) y0 /\ Q y0) y) _).
+        intros [[] s] Hr. exists y. exact (conj Hr Hq).
+      + intros [y [Hr Hq]].
+        exact (proj1 (get_dslpRel n (fun p => w (snd p) Q) y)
+                 (proj1 (H Q (fun s' => w s' Q)) (fun _ Hw => Hw) y Hq) (tt, s) Hr).
+    - intros H Q P. split.
+      + intros Hw y Hq.
+        refine (proj2 (get_dslpRel n (fun p => P (snd p)) y) _). intros [[] s] Hr.
+        apply Hw. apply (proj2 (H s Q)). exists y. exact (conj Hr Hq).
+      + intros Hn s Hw. destruct (proj1 (H s Q) Hw) as [y [Hr Hq]].
+        exact (proj1 (get_dslpRel n (fun p => P (snd p)) y) (Hn y Hq) (tt, s) Hr).
+  Qed.
+
+  (** So a Galois instance is a base relation between [Pred] and a WP
+      flavour ([GaloisPred]), lifted through the monad transformers on the
+      WP side, and read at the results the SP element denotes
+      ([Denoted]). *)
   Theorem MonadRelation_galois_asp_dwlp :
     @MonadRelation (ASPSt S) (DWLPSt S) (Monad_ASPSt S) (Monad_DWLPSt S)
       (fun A m w => GaloisSPWP (asSPStMon m) (toWSt w)).
   Proof.
-    exact (@MonadRelation_pullback (ASPSt S) (DWLPSt S) (Monad_ASPSt S) (Monad_DWLPSt S)
-             (SPStMon S) (WSt S) Monad_SPStMon_angelic (Monad__WSt S)
-             (fun A => @GaloisSPWP S A)
-             (fun A m m' => m ≈ m') (fun A => @eq1 (WSt S) (Eq1__WSt S) A)
-             (fun A => @asSPStMon S A) (fun A => @toWSt dwlp_health S A)
-             (fun A x x' y y' Ex Ey => proj2 (GaloisSPWP_equiv x x' y y' Ex Ey))
-             (fun A a => asSPStMon_ret a) (fun A B m k => asSPStMon_bind m k)
-             (fun A a => toWSt_ret dwlp_health S a)
-             (fun A B n k => toWSt_bind dwlp_health S n k)
-             MonadRelation_GaloisSPWP).
+    refine (MonadRelation_iff
+              (fun A (m : ASPSt S A) (w : DWLPSt S A) =>
+                 forall s, GaloisPredWP (fun r => aspRel m (tt, s) r)
+                             (toWPure (runStateT w s)))
+              _ (fun A m w => iff_sym (galois_asp_rel m
+                    (fun s Q => getWPure (toWPure (runStateT w s)) Q))) _).
+    exact (MonadRelation_rel_pred_state (arr := ASPArr) S tt _
+             (MonadRelation_stateT _ S (MonadRelation_GaloisPredWP_toWPure dwlp_health))
+             (fun A p p' w E H s => GaloisPredWP_ext _ _ _ (E s) (H s))).
   Qed.
 
   Theorem MonadRelation_galois_awp_dslp :
     @MonadRelation (AWPSt S) (DSLPSt S) (Monad_AWPSt S) (Monad_DSLPSt S)
       (fun A a n => GaloisWPSP (toWSt a) (asDSLPStMon n)).
   Proof.
-    exact (@MonadRelation_pullback (AWPSt S) (DSLPSt S) (Monad_AWPSt S) (Monad_DSLPSt S)
-             (WSt S) (SPStMon S) (Monad__WSt S) Monad_SPStMon_demonic
-             (fun A => @GaloisWPSP S A)
-             (fun A => @eq1 (WSt S) (Eq1__WSt S) A) (fun A m m' => m ≈ m')
-             (fun A => @toWSt awp_health S A) (fun A => @asDSLPStMon S A)
-             (fun A x x' y y' Ex Ey => proj2 (GaloisWPSP_equiv x x' y y' Ex Ey))
-             (fun A a => toWSt_ret awp_health S a)
-             (fun A B m k => toWSt_bind awp_health S m k)
-             (fun A a => asDSLPStMon_ret a) (fun A B n k => asDSLPStMon_bind n k)
-             MonadRelation_GaloisWPSP).
+    refine (MonadRelation_iff
+              (fun A (a : AWPSt S A) (n : DSLPSt S A) =>
+                 forall s, GaloisWPPred (toWPure (runStateT a s))
+                             (fun r => dslpRel n (tt, s) r))
+              _ (fun A a n => iff_sym (galois_dslp_rel
+                    (fun s Q => getWPure (toWPure (runStateT a s)) Q) n)) _).
+    exact (MonadRelation_flip _
+             (MonadRelation_rel_pred_state (arr := DSLPArr) S tt _
+                (MonadRelation_flip _
+                   (MonadRelation_stateT _ S
+                      (MonadRelation_GaloisWPPred_toWPure awp_health)))
+                (fun A p p' w E H s => GaloisWPPred_ext _ _ _ (E s) (H s)))).
+  Qed.
+
+  (** The same two instances one transformer further.  The WP side is
+      [stateT S (optionT DWLP)], or [stateT S (optionT AWP)], with
+      postconditions on [option (A * S)]. *)
+  Theorem MonadRelation_galois_asp_dwlp_exc :
+    @MonadRelation (ASPStExc S) (stateT S (optionT DWLP))
+      (Monad_ASPStExc S) (@Monad_stateT S _ (@Monad_optionT _ Monad_DWLP))
+      (fun A m w => forall (P : S -> Prop) (Q : option (A * S) -> Prop),
+         (forall r, getASPStExc m P r -> Q r)
+         <-> (forall s, P s -> toWPure (unOptionT (runStateT w s)) Q)).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (m : ASPStExc S A) (w : stateT S (optionT DWLP) A) =>
+                 forall s, GaloisPredWP (fun o => aspRel m (tt, s) o)
+                             (toWPure (unOptionT (runStateT w s))))
+              _ (fun A m w => iff_sym (galois_asp_rel m
+                    (fun s Q => getWPure (toWPure (unOptionT (runStateT w s))) Q))) _).
+    exact (MonadRelation_rel_pred_state_option (arr := ASPArr) S tt _
+             (MonadRelation_stateT _ S
+                (MonadRelation_optionT _ (MonadRelation_GaloisPredWP_toWPure dwlp_health)))
+             (fun A p p' w E H s => GaloisPredWP_ext _ _ _ (E s) (H s))).
+  Qed.
+
+  Theorem MonadRelation_galois_awp_dslp_exc :
+    @MonadRelation (stateT S (optionT AWP)) (DSLPStExc S)
+      (@Monad_stateT S _ (@Monad_optionT _ Monad_AWP)) (Monad_DSLPStExc S)
+      (fun A a n => forall (Q : option (A * S) -> Prop) (P : S -> Prop),
+         (forall s, toWPure (unOptionT (runStateT a s)) Q -> P s)
+         <-> (forall r, Q r -> getDSLPStExc n P r)).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (a : stateT S (optionT AWP) A) (n : DSLPStExc S A) =>
+                 forall s, GaloisWPPred (toWPure (unOptionT (runStateT a s)))
+                             (fun o => dslpRel n (tt, s) o))
+              _ (fun A a n => iff_sym (galois_dslp_rel
+                    (fun s Q => getWPure (toWPure (unOptionT (runStateT a s))) Q) n)) _).
+    exact (MonadRelation_flip _
+             (MonadRelation_rel_pred_state_option (arr := DSLPArr) S tt _
+                (MonadRelation_flip _
+                   (MonadRelation_stateT _ S
+                      (MonadRelation_optionT _
+                         (MonadRelation_GaloisWPPred_toWPure awp_health))))
+                (fun A p p' w E H s => GaloisWPPred_ext _ _ _ (E s) (H s)))).
   Qed.
 
   (* --------------------------------------------------------------- *)
@@ -2453,6 +2960,59 @@ Section Flavours.
     exact (GaloisWPSP_order _ _ _ _ G' G).
   Qed.
 End Flavours.
+
+(* ================================================================= *)
+(** ** Without state: the contrapositive and the Galois relations    *)
+(* ================================================================= *)
+
+(** Between the pure monads the same statements hold with no transformer:
+    the contrapositive by [ContraRelation] at input [unit]
+    ([MonadRelation_rel_eq]), and each Galois relation as its base relation
+    read at the results the SP element denotes ([MonadRelation_rel_pred]). *)
+
+Section PureEdges.
+
+  (** Classical. *)
+  Theorem MonadRelation_contra_asp_dslp_pure :
+    @MonadRelation ASP DSLP Monad_ASP Monad_DSLP
+      (fun A a n => Contrapositive (aspMono a) (dslpMono n)).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (a : ASP A) (n : DSLP A) => forall x y, aspRel a x y <-> dslpRel n x y)
+              _ (fun A a n => iff_sym (contra_asp_dslp_rel a n)) _).
+    exact (MonadRelation_rel_eq (arr1 := ASPArr) (arr2 := DSLPArr) unit).
+  Qed.
+
+  (** Classical. *)
+  Theorem MonadRelation_contra_dsp_aslp_pure :
+    @MonadRelation DSP ASLP Monad_DSP Monad_ASLP
+      (fun A d l => Contrapositive (dspMono d) (aslpMono l)).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (d : DSP A) (l : ASLP A) => forall x y, dspRel d x y <-> aslpRel l x y)
+              _ (fun A d l => iff_sym (contra_dsp_aslp_rel d l)) _).
+    exact (MonadRelation_rel_eq (arr1 := DSPArr) (arr2 := ASLPArr) unit).
+  Qed.
+
+  Theorem MonadRelation_galois_asp_dwlp_pure :
+    @MonadRelation ASP DWLP Monad_ASP Monad_DWLP
+      (fun A a w => GaloisPredWP (fun y => aspRel a tt y) (toWPure w)).
+  Proof.
+    exact (MonadRelation_rel_pred (arr := ASPArr) tt _
+             (MonadRelation_GaloisPredWP_toWPure dwlp_health)
+             (fun A p p' w E H => GaloisPredWP_ext p p' _ E H)).
+  Qed.
+
+  Theorem MonadRelation_galois_awp_dslp_pure :
+    @MonadRelation AWP DSLP Monad_AWP Monad_DSLP
+      (fun A w n => GaloisWPPred (toWPure w) (fun y => dslpRel n tt y)).
+  Proof.
+    exact (MonadRelation_flip _
+             (MonadRelation_rel_pred (arr := DSLPArr) tt _
+                (MonadRelation_flip _ (MonadRelation_GaloisWPPred_toWPure awp_health))
+                (fun A p p' w E H => GaloisWPPred_ext _ p p' E H))).
+  Qed.
+End PureEdges.
 
 (* ================================================================= *)
 (** ** Without state: the collapse, between the monads               *)
