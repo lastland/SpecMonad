@@ -39,6 +39,7 @@ Classes/ArrowMorphism.v
 Classes/RelArrowCoherence.v
 Classes/Galois.v
 Classes/OrderedMonad.v
+Classes/MonadRelation.v
 Taxonomy/BaseSpecMonads/PredMonad.v
 Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
@@ -81,6 +82,7 @@ Taxonomy/BaseSpecMonads/OldMonads/ASLPMonad.v
 Taxonomy/BaseSpecMonads/DivExcSP.v
 Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v
 Taxonomy/BaseSpecMonads/SpecificationMonads.v
+Taxonomy/BaseSpecMonads/MonadTaxonomy.v
 Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v
 Taxonomy/EffectObservations/Taxonomy_StDivExcNonDet_StExc.v
 Taxonomy/EffectObservations/WP/StDivNonDet_WSt.v

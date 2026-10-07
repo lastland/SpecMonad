@@ -158,6 +158,12 @@ Preserve subtype hypotheses; a relation/SP adjunction does not identify every
 monotone transformer with relational ASP. gamma_uni_not_monotone is an
 obstruction; subsequent experimental commentary is not another theorem.
 
+GaloisArr also hosts `MonoPT`, the MonotoneSPost carrier read with either
+index fixed (first: SP; second: WP), and the three taxonomy relations on it:
+`pt_le`, `Contrapositive`, and `GaloisPT`. `pt_under` / `pt_over` are the two
+triple readings of a transformer. Contrapositive facts that turn a negated
+statement back into a positive one are classical.
+
 Relational modules can import computation semantics, and WPArr imports a base
 specification module: distinguish ownership from the current import graph.
 Read constructors → equality/laws → chosen monad dictionaries/orders →

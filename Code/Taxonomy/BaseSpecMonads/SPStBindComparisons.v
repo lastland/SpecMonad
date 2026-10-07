@@ -34,7 +34,7 @@ Section ASPStMonotoneBind.
   Lemma bindASPSt_angelic {A B}
       (m : ASPSt S A) (k : A -> ASPSt S B) pre (r : B * S) :
     getASPSt (bindASPSt m k) pre r <->
-    proj1_sig (SPStMonotone.AngelicMonotone.bind
+    proj1_sig (SPStMonotone.AngelicMonotone.bindP
       (asSPStMon m) (fun a => asSPStMon (k a))) pre r.
   Proof.
     rewrite getASPSt_bind. cbn. reflexivity.
@@ -54,7 +54,7 @@ Section ASPStExcMonotoneBind.
   Lemma bindASPStExc_success_angelic {A B}
       (m : ASPStExc S A) (k : A -> ASPStExc S B) pre (r : B * S) :
     getASPStExc (bindASPStExc m k) pre (Some r) <->
-    proj1_sig (SPStMonotone.AngelicMonotone.bind
+    proj1_sig (SPStMonotone.AngelicMonotone.bindP
       (successASPStExc m) (fun a => successASPStExc (k a))) pre r.
   Proof.
     rewrite getASPStExc_bind. cbn.
@@ -117,7 +117,7 @@ Section DSLPStMonotoneBind.
   Lemma bindDSLPSt_demonic {A B}
       (m : DSLPSt S A) (k : A -> DSLPSt S B) pre (r : B * S) :
     getDSLPSt (bindDSLPSt m k) pre r <->
-    proj1_sig (SPStMonotone.DemonicMonotone.bind
+    proj1_sig (SPStMonotone.DemonicMonotone.bindP
       (asDSLPStMon m) (fun a => asDSLPStMon (k a))) pre r.
   Proof.
     rewrite bindDSLPSt_demonic_formula_spec.
@@ -152,7 +152,7 @@ Section RelationReadings.
   Lemma angelicRelSPSt_bind {A B}
       (R : S -> A * S -> Prop) (K : A -> S -> B * S -> Prop)
       pre (r : B * S) :
-    proj1_sig (SPStMonotone.AngelicMonotone.bind
+    proj1_sig (SPStMonotone.AngelicMonotone.bindP
       (angelicRelSPSt R) (fun a => angelicRelSPSt (K a))) pre r <->
     exists s, pre s /\ compositeStRel R K s r.
   Proof.
@@ -178,7 +178,7 @@ Section RelationReadings.
   Lemma demonicRelSPSt_bind {A B}
       (R : S -> A * S -> Prop) (K : A -> S -> B * S -> Prop)
       pre (r : B * S) :
-    proj1_sig (SPStMonotone.DemonicMonotone.bind
+    proj1_sig (SPStMonotone.DemonicMonotone.bindP
       (demonicRelSPSt R) (fun a => demonicRelSPSt (K a))) pre r <->
     forall s, compositeStRel R K s r -> pre s.
   Proof.
@@ -227,9 +227,9 @@ Section DSPStBind.
   Lemma bindDSPSt_SPStMonotone {A B}
       (m : DSPSt S A) (k : A -> DSPSt S B) pre (r : B * S) :
     getDSPSt (bind m k) pre r <->
-    proj1_sig (SPStMonotone.AngelicMonotone.bind
+    proj1_sig (SPStMonotone.AngelicMonotone.bindP
       (angelicDSPSt m) (fun a => angelicDSPSt (k a))) pre r /\
-    proj1_sig (SPStMonotone.DemonicMonotone.bind
+    proj1_sig (SPStMonotone.DemonicMonotone.bindP
       (demonicDSPSt m) (fun a => demonicDSPSt (k a))) pre r.
   Proof.
     rewrite bindDSPSt_formula_spec.
@@ -274,9 +274,9 @@ Section ASLPStBind.
   Lemma bindASLPSt_SPStMonotone {A B}
       (m : ASLPSt S A) (k : A -> ASLPSt S B) pre (r : B * S) :
     getASLPSt (bind m k) pre r <->
-    proj1_sig (SPStMonotone.AngelicMonotone.bind
+    proj1_sig (SPStMonotone.AngelicMonotone.bindP
       (angelicASLPSt m) (fun a => angelicASLPSt (k a))) pre r \/
-    proj1_sig (SPStMonotone.DemonicMonotone.bind
+    proj1_sig (SPStMonotone.DemonicMonotone.bindP
       (demonicASLPSt m) (fun a => demonicASLPSt (k a))) pre r.
   Proof.
     rewrite bindASLPSt_formula_spec.

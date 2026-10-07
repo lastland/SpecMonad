@@ -13,6 +13,8 @@ Source declarations determine exact types, selected dictionaries, and orders.
 - WPureMonad: monotone weakest-precondition transformers, exposed by getWPure,
   with reader/state/option stacks. WP_le and its generic lifts are reverse
   implication. Keep the corresponding WP triple argument/direction changes.
+  The file also carves AWP, DWLP, DWP, and AWLP out of WPure as submonads by
+  healthiness (`WPHealth`, `WPSub`), with state stacks and both orders.
 - RelPrePostMonad: validators into Assuming pre, whose propositions satisfy
   `q <-> (pre -> q)`, with Hoare-order monotonicity.
 
@@ -75,6 +77,23 @@ and use generic `Classes/ArrowMonad.v` operations and laws. Each exposes
 pure/state/state-option monads, runners, refinement orders, ordered-bind proofs,
 and monad-specific results. Qualify unary accessors such as `ASPMonad.getASP`
 against the binary `SPostArr.getASP` (and likewise for DSLP).
+
+`DSPMonad.v` and `ASLPMonad.v` close with the pure collapse. At input `unit`
+the DSP and ASP healthiness conditions coincide, and so do the ASLP and DSLP
+ones; `dsp_to_asp` / `asp_to_dsp` and `aslp_to_dslp` / `dslp_to_aslp` are the
+identity on transformers, mutually inverse, and preserve `ret`, `bind`, and the
+pointwise orders. Only ASP-to-DSP is constructive. The old carriers' collapse,
+which holds by construction, stays in OldMonads under the same map names.
+
+[MonadTaxonomy.v](MonadTaxonomy.v) places the SP and WP carriers inside
+`MonoPT` and states implication, contrapositive, and Galois connection as
+monadic relations ([Classes/MonadRelation.v](../../Classes/MonadRelation.v)):
+on WPure and its transformer stacks, on SPStMon with its angelic and demonic
+structures, and between the flavour monads at the state and state-option
+stacks. DSP and ASLP enter SP implications through one part, because bind does
+not preserve their pointwise orders. `GaloisSPWP` / `GaloisWPSP` are `Ladj` /
+`Radj` of SPPredicateTransformers; use the bridge lemmas, never the admitted
+`Radj_bind`. Name the angelic or demonic SPStMon structure explicitly.
 
 [SPostArrMonad.v](SPostArrMonad.v) is the unary observation bridge: named
 `Monad_ASPostArr` / `Monad_DSLPostArr` dictionaries, `runASP` / `runDSLP`, and

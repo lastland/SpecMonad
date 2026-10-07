@@ -76,6 +76,15 @@ monads under a specified preorder containing `eq1`, with monotone bind.
 Every lawful monad is ordered by its equivalence; stronger orders need proofs.
 These differ from [Common/Classes.v](../Common/Classes.v)'s pre/post API.
 
+[MonadRelation.v](MonadRelation.v) states DM4All's monadic relation for any two
+monads: a family of relations that holds at `ret` and is preserved by `bind`.
+The order of an ordered monad is one. A monadic relation lifts pointwise
+through `stateT`, `optionT`, and `readerT`. For two arrows with relational
+semantics, inclusion or equality of the denoted relations is one between the
+arrow-derived monads at the base, `stateArrT`, and `stateArrT`-over-`optionArrT`
+stacks. The reading is always the base arrow's: no transformed arrow gets a
+`RelArrow` instance. Pass every dictionary explicitly in this file.
+
 ## Boundaries and tests
 
 Start with `Arrow.v`, then `ArrowApplyFacts.v` and `ArrowMonad.v`, or the
