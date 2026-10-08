@@ -13,7 +13,10 @@
 
     [Arrows/SPostArr.v] owns the binary carrier, operations, recovered-relation
     facts and laws. This module re-exports that infrastructure and fixes the
-    input for unary specifications, runners and refinement orders. *)
+    input for unary specifications, runners and refinement orders.
+
+    The last part of the file defines the stateless monad directly, with no
+    arrow, as [DSLPSP], and shows that it is [DSLP]. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid Relation_Definitions.
 From Coq Require Import Classical_Prop.
@@ -497,3 +500,368 @@ Arguments retDSLPSt {S} {A}.
 Arguments bindDSLPSt {S} {A} {B}.
 Arguments retDSLPStExc {S} {A}.
 Arguments bindDSLPStExc {S} {A} {B}.
+
+(* ================================================================= *)
+(** * The directly defined monad [DSLPSP]                             *)
+(* ================================================================= *)
+
+(** The dual of [ASPSP] in [ASPMonad.v].  [DSLP] above comes from the arrow
+    [DSLPArr] at input [unit]; without state the same monad can be written
+    down directly on [SPPure A = Prop -> A -> Prop].  The healthy
+    transformers factor the precondition out as a disjunct ([MSingleton]),
+    which at a [Prop] precondition is the same as terminating and
+    conjunctive ([meet_iff_msingleton]).  [bindDSLPSP] hands the
+    postcondition of the prefix to the continuation as its precondition, for
+    EVERY intermediate value.
+
+    [DSLPSP] and [DSLP] are the same monad: [dslpsp_to_dslp] and
+    [dslp_to_dslpsp] are mutually inverse, preserve [ret] and [bind], and
+    carry the orders to each other. *)
+
+From Coq Require Import PropExtensionality Classical_Prop.
+From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicateTransformers.
+
+Section PureDSLPMonad.
+  Definition MeetPreserving {A} (w : SPPure A) : Prop :=
+    Terminating w /\ Conjunctive w.
+
+  Definition MSingleton {A} (w : SPPure A) : Prop :=
+    forall (p : Prop) (a : A), w p a <-> p \/ w False a.
+
+  (** Dually to [join_to_singleton]: at [SPPure] the precondition is a [Prop],
+      so [Terminating] alone already forces [MSingleton]; [Conjunctive] is not
+      needed here. *)
+  Lemma meet_to_msingleton {A} (w : SPPure A) :
+    MeetPreserving w -> MSingleton w.
+  Proof.
+    intros [HT _] p a. destruct (classic p) as [Hp | Hnp].
+    - assert (Heq : p = True)
+        by (apply propositional_extensionality;
+            split; [ intros _; exact I | intros _; exact Hp ]).
+      rewrite Heq. split; [ intros _; left; exact I | intros _; exact (HT a) ].
+    - assert (Heq : p = False)
+        by (apply propositional_extensionality; split; [ exact Hnp | intros [] ]).
+      rewrite Heq. split;
+        [ intro Hw; right; exact Hw | intros [[] | Hf]; exact Hf ].
+  Qed.
+
+  Lemma msingleton_to_meet {A} (w : SPPure A) :
+    MSingleton w -> MeetPreserving w.
+  Proof.
+    intro H. split.
+    - intro a. apply H. left. exact I.
+    - intros I i0 p a. split.
+      + intro Hw. destruct (proj1 (H (forall i, p i) a) Hw) as [Hall | Hf].
+        * intro i. apply H. left. exact (Hall i).
+        * intro i. apply H. right. exact Hf.
+      + intro Hall. apply H.
+        destruct (classic (w False a)) as [Hf | Hnf]; [ right; exact Hf |].
+        left. intro i. destruct (proj1 (H (p i) a) (Hall i)) as [Hpi | Hf];
+          [ exact Hpi | destruct (Hnf Hf) ].
+  Qed.
+
+  (** Dually to [strict_to_singleton]: [meet_to_msingleton] uses only its
+      [Terminating] half, so [Terminating] alone forces [MSingleton]. *)
+  Lemma terminating_to_msingleton {A} (w : SPPure A) :
+    Terminating w -> MSingleton w.
+  Proof.
+    intros HT p a. destruct (classic p) as [Hp | Hnp].
+    - assert (Heq : p = True)
+        by (apply propositional_extensionality;
+            split; [ intros _; exact I | intros _; exact Hp ]).
+      rewrite Heq. split; [ intros _; left; exact I | intros _; exact (HT a) ].
+    - assert (Heq : p = False)
+        by (apply propositional_extensionality; split; [ exact Hnp | intros [] ]).
+      rewrite Heq. split; [ intro H; right; exact H | intros [[] | H]; exact H ].
+  Qed.
+
+  (** [MSingleton] gives the OTHER connective too. *)
+  Lemma msingleton_to_disjunctive {A} (w : SPPure A) :
+    MSingleton w -> Disjunctive w.
+  Proof.
+    intros H I i0 p a. rewrite (H (exists i, p i) a). split.
+    - intros [[i Hi] | Hf].
+      + exists i. apply H. left. exact Hi.
+      + exists i0. apply H. right. exact Hf.
+    - intros [i Hi]. destruct (proj1 (H (p i) a) Hi) as [Hp | Hf];
+        [ left; exists i; exact Hp | right; exact Hf ].
+  Qed.
+
+  Theorem meet_iff_msingleton {A} (w : SPPure A) :
+    MeetPreserving w <-> MSingleton w.
+  Proof. split; [apply meet_to_msingleton | apply msingleton_to_meet]. Qed.
+
+  Theorem kenjidslp_iff_msingleton {A} (w : SPPure A) :
+    KenjiPureDSLP w <-> MSingleton w.
+  Proof.
+    split.
+    - intros [Hmono Hcod] p a. split.
+      + intro Hw. destruct (classic p) as [Hp | Hnp]; [left; exact Hp |].
+        right. exact (Hmono p False a Hnp Hw).
+      + intros [Hp | Hf];
+          [ exact (Hcod p a Hp) | exact (Hmono False p a (False_ind p) Hf) ].
+    - intro H. split.
+      + intros p q a Hpq Hw. apply H.
+        destruct (proj1 (H p a) Hw) as [Hp | Hf];
+          [ left; exact (Hpq Hp) | right; exact Hf ].
+      + intros p a Hp. apply H. left. exact Hp.
+  Qed.
+
+  Definition DSLPSP (A : Type) : Type := { w : SPPure A | MSingleton w }.
+
+  Definition getDSLPSP {A} (w : DSLPSP A) : SPPure A := proj1_sig w.
+
+  Lemma getMSP_singleton {A} (w : DSLPSP A) (p : Prop) (a : A) :
+    getDSLPSP w p a <-> (p \/ getDSLPSP w False a).
+  Proof. exact (proj2_sig w p a). Qed.
+
+  (** Directed forms, used instead of [rewrite] for the same performance reason
+      as [getASPSP_split] / [getASPSP_merge]. *)
+  Definition getMSP_split {A} (w : DSLPSP A) (p : Prop) (a : A)
+    : getDSLPSP w p a -> (p \/ getDSLPSP w False a) := proj1 (getMSP_singleton w p a).
+  Definition getMSP_merge {A} (w : DSLPSP A) (p : Prop) (a : A)
+    : (p \/ getDSLPSP w False a) -> getDSLPSP w p a := proj2 (getMSP_singleton w p a).
+
+  Lemma getMSP_mono {A} (w : DSLPSP A) (p q : Prop) (a : A) :
+    (p -> q) -> getDSLPSP w p a -> getDSLPSP w q a.
+  Proof.
+    intros Hpq H. apply getMSP_merge.
+    destruct (getMSP_split w p a H) as [Hp | Hf];
+      [left; exact (Hpq Hp) | right; exact Hf].
+  Qed.
+
+  #[program] Definition retDSLPSP {A} (v : A) : DSLPSP A :=
+    fun p a => a = v -> p.
+  Next Obligation.
+  Proof.
+    intros p a. split.
+    - intro H. destruct (classic p) as [Hp | Hnp]; [left; exact Hp |].
+      right. intro Heq. exact (Hnp (H Heq)).
+    - intros [Hp | Hn] Heq; [exact Hp | destruct (Hn Heq)].
+  Qed.
+
+  #[program] Definition bindDSLPSP {A B} (m : DSLPSP A) (k : A -> DSLPSP B)
+    : DSLPSP B :=
+    fun p b => forall a, (k a) (m p a) b.
+  Next Obligation.
+  Proof.
+    intros p b. split.
+    - (* [p] fails ==> nothing in the co-set of [m] can meet the co-set of [k] *)
+      intro H. destruct (classic p) as [Hp | Hnp]; [left; exact Hp |].
+      right. intro a. specialize (H a).
+      apply (proj2_sig (k a) (proj1_sig m False a) b).
+      destruct (proj1 (proj2_sig (k a) (proj1_sig m p a) b) H) as [Hmp | Hkf];
+        [| right; exact Hkf ].
+      left. destruct (proj1 (proj2_sig m p a) Hmp) as [Hp | Hmf];
+        [ destruct (Hnp Hp) | exact Hmf ].
+    - intros [Hp | H] a.
+      + apply (proj2_sig (k a) (proj1_sig m p a) b). left.
+        apply (proj2_sig m p a). left. exact Hp.
+      + specialize (H a).
+        apply (proj2_sig (k a) (proj1_sig m p a) b).
+        destruct (proj1 (proj2_sig (k a) (proj1_sig m False a) b) H) as [Hmf | Hkf];
+          [| right; exact Hkf ].
+        left. apply (proj2_sig m p a). right. exact Hmf.
+  Qed.
+
+  #[global] Instance Monad_DSLPSP : Monad DSLPSP :=
+    {| ret := fun _ => retDSLPSP ;
+      bind := fun _ _ => bindDSLPSP |}.
+
+  #[global] Instance Eq1_DSLPSP : Eq1 DSLPSP :=
+    fun A m n => forall p a, getDSLPSP m p a <-> getDSLPSP n p a.
+
+  #[global] Instance Eq1Equivalence_DSLPSP
+    : @Eq1Equivalence DSLPSP _ Eq1_DSLPSP.
+  Proof.
+    intro A. constructor.
+    - intros x p a. tauto.
+    - intros x y H p a. specialize (H p a). tauto.
+    - intros x y z H1 H2 p a. specialize (H1 p a). specialize (H2 p a). tauto.
+  Qed.
+
+  (** Meet preservation and congruence in the [Prop] argument, both derived
+      from [MSingleton] — the duals of [getASPSP]'s join and congruence facts. *)
+  Lemma getMSP_meet {A} (w : DSLPSP A) (I : Type) (p : I -> Prop) (a : A) :
+    getDSLPSP w (forall i, p i) a <-> forall i, getDSLPSP w (p i) a.
+  Proof.
+    split.
+    - intros H i. apply getMSP_merge.
+      destruct (getMSP_split w _ a H) as [Hall | Hf];
+        [ left; exact (Hall i) | right; exact Hf ].
+    - intro Hall. apply getMSP_merge.
+      destruct (classic (getDSLPSP w False a)) as [Hf | Hnf]; [ right; exact Hf |].
+      left. intro i. destruct (getMSP_split w _ a (Hall i)) as [Hpi | Hf];
+        [ exact Hpi | destruct (Hnf Hf) ].
+  Qed.
+
+  Lemma getMSP_cong {A} (w : DSLPSP A) (p q : Prop) (a : A) :
+    (p <-> q) -> (getDSLPSP w p a <-> getDSLPSP w q a).
+  Proof.
+    intro Hpq. split; intro H; apply getMSP_merge;
+      destruct (getMSP_split w _ a H) as [Hx | Hf].
+    - left. exact (proj1 Hpq Hx).
+    - right. exact Hf.
+    - left. exact (proj2 Hpq Hx).
+    - right. exact Hf.
+  Qed.
+
+  #[global] Instance MonadLawsE_DSLPSP
+    : @MonadLawsE DSLPSP Eq1_DSLPSP _.
+  Proof.
+    constructor.
+    - (* bind_ret_l: only [a = x] contributes; every other [a] gets a
+         vacuously-true precondition, on which any [MSingleton] fires *)
+      intros A B f x. unfold eq1, Eq1_DSLPSP. intros p b. split.
+      + intro H. specialize (H x).
+        apply (getMSP_mono (f x) (x = x -> p) p b); [| exact H].
+        intro Himp. exact (Himp eq_refl).
+      + intros H a. destruct (classic (a = x)) as [Heq | Hne].
+        * subst a. apply (getMSP_mono (f x) p (x = x -> p) b); [| exact H].
+          intros Hp _. exact Hp.
+        * apply (getMSP_mono (f a) True (a = x -> p) b).
+          -- intros _ Heq. destruct (Hne Heq).
+          -- apply getMSP_merge. left. exact I.
+    - (* bind_ret_r *)
+      intros A x. unfold eq1, Eq1_DSLPSP. intros p a. split.
+      + intro H. exact (H a eq_refl).
+      + intros H a0 Heq. subst a0. exact H.
+    - (* bind_bind: the precondition handed to [g b] is a MEET over [a], and
+         [g b] preserves meets — the exact dual of the [bindASPSP] argument *)
+      intros A B C x f g. unfold eq1, Eq1_DSLPSP. intros p c. split.
+      + intros H a b.
+        exact (proj1 (getMSP_meet (g b) A
+                        (fun a0 => getDSLPSP (f a0) (getDSLPSP x p a0) b) c) (H b) a).
+      + intros H b.
+        apply (getMSP_meet (g b) A (fun a => getDSLPSP (f a) (getDSLPSP x p a) b) c).
+        intro a. exact (H a b).
+    - (* Proper_bind *)
+      intros A B x y Hxy f g Hfg. unfold eq1, Eq1_DSLPSP in *. intros p b.
+      split; intros H a; specialize (H a).
+      + exact (proj1 (Hfg a _ b)
+                 (proj1 (getMSP_cong (f a) _ _ b (Hxy p a)) H)).
+      + exact (proj2 (getMSP_cong (f a) _ _ b (Hxy p a))
+                 (proj2 (Hfg a _ b) H)).
+  Qed.
+End PureDSLPMonad.
+
+(* ================================================================= *)
+(** ** Orders on the pure variant                                     *)
+(* ================================================================= *)
+
+Section PureDSLPOrders.
+  Definition ordDSLPSP {A} (m1 m2 : DSLPSP A) : Prop :=
+    forall p a, getDSLPSP m1 p a -> getDSLPSP m2 p a.
+  Definition ordDSLPSPAt {A} (pre : Prop) (m1 m2 : DSLPSP A) : Prop :=
+    forall a, getDSLPSP m1 pre a -> getDSLPSP m2 pre a.
+
+  (** Dual to [asp_bot_pure]: [MSingleton] makes every DSLP true at [True]. *)
+  Lemma dslp_top_pure {A} (w : DSLPSP A) (a : A) : getDSLPSP w True a.
+  Proof. exact (getMSP_merge w True a (or_introl I)). Qed.
+End PureDSLPOrders.
+
+(* ================================================================= *)
+(** ** [DSLPSP] is [DSLP]                                             *)
+(* ================================================================= *)
+
+#[program] Definition dslpsp_to_dslp {A} (w : DSLPSP A) : DSLP A :=
+  fun (P : unit -> Prop) (a : A) => getDSLPSP w (P tt) a.
+Next Obligation.
+  split; [| split ].
+  - intros P Q H a Hw. exact (getMSP_mono w (P tt) (Q tt) a (H tt) Hw).
+  - intros a. exact (getMSP_merge w True a (or_introl I)).
+  - intros I _ p a. exact (getMSP_meet w I (fun i => p i tt) a).
+Qed.
+
+(** The reading of [DSLP] at a proposition factors it out as a disjunct. *)
+Lemma getDSLP_msingleton {A} (m : DSLP A) p a :
+  getDSLP m p a <-> p \/ getDSLP m False a.
+Proof.
+  rewrite !getDSLP_rel. split.
+  - intro H. destruct (classic (dslpRel m tt a)) as [Hr | Hn];
+      [ left; exact (H Hr) | right; exact Hn ].
+  - intros [Hp | Hn] Hr; [ exact Hp | destruct (Hn Hr) ].
+Qed.
+
+Definition dslp_to_dslpsp {A} (m : DSLP A) : DSLPSP A :=
+  exist _ (getDSLP m) (getDSLP_msingleton m).
+
+Lemma get_dslpsp_to_dslp {A} (w : DSLPSP A) P a :
+  getDSLPArr (dslpsp_to_dslp w) P a <-> getDSLPSP w (P tt) a.
+Proof. reflexivity. Qed.
+
+Lemma get_dslp_to_dslpsp {A} (m : DSLP A) p a :
+  getDSLPSP (dslp_to_dslpsp m) p a <-> getDSLP m p a.
+Proof. reflexivity. Qed.
+
+(** The two maps are mutually inverse. *)
+
+Lemma dslpsp_to_dslp_to_dslpsp {A} (w : DSLPSP A) :
+  @eq1 DSLPSP Eq1_DSLPSP A (dslp_to_dslpsp (dslpsp_to_dslp w)) w.
+Proof. intros p a. reflexivity. Qed.
+
+Lemma dslp_to_dslpsp_to_dslp {A} (m : DSLP A) :
+  @eq1 DSLP Eq1_DSLP A (dslpsp_to_dslp (dslp_to_dslpsp m)) m.
+Proof.
+  intros P a. apply (getDSLPArr_ext_iff m (fun _ => P tt) P a).
+  intros []. reflexivity.
+Qed.
+
+(** Both preserve [ret] and [bind]. *)
+
+Theorem dslp_to_dslpsp_morphism :
+  @MonadMorphism DSLP DSLPSP Monad_DSLP Monad_DSLPSP Eq1_DSLP Eq1_DSLPSP
+    (fun A => @dslp_to_dslpsp A).
+Proof.
+  constructor.
+  - intros A x y H p a. exact (H (fun _ => p) a).
+  - intros A x p a. etransitivity; [ exact (getDSLP_ret x p a) |].
+    split; intros H E; apply H; symmetry; exact E.
+  - intros A B m k p b. etransitivity; [ exact (getDSLP_bind m k p b) |].
+    split; intros H a.
+    + exact (proj2 (getDSLP_rel (k a) _ b) (H a)).
+    + exact (proj1 (getDSLP_rel (k a) _ b) (H a)).
+Qed.
+
+Theorem dslpsp_to_dslp_morphism :
+  @MonadMorphism DSLPSP DSLP Monad_DSLPSP Monad_DSLP Eq1_DSLPSP Eq1_DSLP
+    (fun A => @dslpsp_to_dslp A).
+Proof.
+  constructor.
+  - intros A x y H P a. exact (H (P tt) a).
+  - intros A x. apply (proj2 (eq1_DSLP_get _ _)). intros p a.
+    etransitivity; [| symmetry; exact (getDSLP_ret x p a) ].
+    split; intros H E; apply H; symmetry; exact E.
+  - intros A B w k. apply (proj2 (eq1_DSLP_get _ _)). intros p b.
+    etransitivity;
+      [| symmetry;
+         exact (getDSLP_bind (dslpsp_to_dslp w) (fun a => dslpsp_to_dslp (k a)) p b) ].
+    split; intros H a.
+    + exact (proj1 (getDSLP_rel (dslpsp_to_dslp (k a)) (getDSLPSP w p a) b) (H a)).
+    + exact (proj2 (getDSLP_rel (dslpsp_to_dslp (k a)) (getDSLPSP w p a) b) (H a)).
+Qed.
+
+(** Both preserve and reflect the order. *)
+
+Lemma ordDSLPSP_dslpsp_to_dslp {A} (w w' : DSLPSP A) :
+  ordDSLPSP w w' <-> ordDSLP (dslpsp_to_dslp w) (dslpsp_to_dslp w').
+Proof.
+  split.
+  - intros H P a. exact (H (P tt) a).
+  - intros H p a. exact (H (fun _ => p) a).
+Qed.
+
+Lemma ordDSLP_dslp_to_dslpsp {A} (m m' : DSLP A) :
+  ordDSLP m m' <-> ordDSLPSP (dslp_to_dslpsp m) (dslp_to_dslpsp m').
+Proof. exact (ordDSLP_get m m'). Qed.
+
+(** So [DSLPSP] is a specification monad, by [DSLP]'s proof. *)
+
+Theorem OrderedMonad_DSLPSP :
+  @OrderedMonad DSLPSP Monad_DSLPSP Eq1_DSLPSP (@ordDSLPSP).
+Proof.
+  refine (OrderedMonad_iff _ (@ordDSLPSP) _
+            (OrderedMonad_pullback (fun A => @dslpsp_to_dslp A) (@ordDSLP)
+               dslpsp_to_dslp_morphism OrderedMonad_DSLP)).
+  intros A x y. symmetry. exact (ordDSLPSP_dslpsp_to_dslp x y).
+Qed.
