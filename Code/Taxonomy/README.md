@@ -837,7 +837,11 @@ DM θ le w    =  { m : M A | le (θ m) w }
 DMop θ le w  =  DM θ (flip le) w  =  { m : M A | le w (θ m) }
 ```
 
-with `ret`, `bind`, weakening and lift. A specification monad is still one
+with `ret`, `bind`, weakening and lift, and DM4All's laws of a Dijkstra monad
+(`DM_laws`, `DMop_laws`): the three monad laws and the three laws of
+weakening, up to equality of the underlying computations (`DM_eq`). They hold
+whenever the source monad is lawful, so for all twelve named monads
+(`Ddwp_laws`, ...). A specification monad is still one
 with its order flipped (`OrderedMonad_flip`), so `DMop` is the same
 construction at the flipped order, not a second one. The WP, ASP and DSLP
 morphisms of §5 have both at all three levels: the 18 `OrderedTarget`

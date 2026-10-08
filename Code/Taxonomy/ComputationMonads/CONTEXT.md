@@ -20,6 +20,10 @@ to it:
 - `divndNE` is the fragment of `divnd` with at least one outcome, with
   `retNE`, `bindNE`, `orNE`, `divergeNE`. It is the base monad everything
   else uses.
+- Both stacks are lawful by the generic transformer laws
+  (`MonadLawsE__stdivndNE`, `MonadLawsE__stdivexcndNE`, with their
+  `Eq1Equivalence__*`). The equality is Leibniz equality of outcome sets, so
+  the laws use functional and propositional extensionality.
 - `stdivndNE S` is `stateT S divndNE` and `stdivexcndNE S` is
   `stateT S (optionT divndNE)`, with `orSt`, `divergeSt`, `orStExc`,
   `divergeStExc`, `raiseStExc`, `pickStExc` and the outcome lemmas `outSt_*` /

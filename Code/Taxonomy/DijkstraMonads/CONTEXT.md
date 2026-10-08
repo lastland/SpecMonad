@@ -25,6 +25,16 @@ found by instance resolution from `θ` and `le`, so
 operations are the `DM` ones at the flipped order, through
 `OrderedTarget_flip`, which is `OrderedMonad_flip`; it is not an instance.
 
+The construction satisfies DM4All's laws of a Dijkstra monad. `DM_eq d d'`
+compares the underlying computations of `M` and ignores indices and proofs;
+`DijkstraLaws θ le` bundles that it is an equivalence respected by `bind`,
+the three monad laws, and the three laws of weakening. `DM_laws` proves it
+from an `Eq1Equivalence` and a `MonadLawsE` for the source monad, at the
+equality the morphism is stated with; `DMop_laws` is the same for `DMop`
+(`DijkstraLawsOp`). `Ddwp_laws`, `Ddwp_op_laws`, ... give them for the twelve
+named monads. Pass `θ` and `le` explicitly to `DM_laws`: left as holes they
+are resolved to the wrong morphism.
+
 ## The liftable morphisms
 
 There are 18 `OrderedTarget` instances, one per WP, ASP and DSLP morphism of

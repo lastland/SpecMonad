@@ -348,6 +348,14 @@ Print Assumptions InCorrectnessPrinciples.principle_of_denial_dwlp.
     identifications of triples with typings are closed. *)
 Print Assumptions DijkstraMonad.DM_bind_typing.
 Print Assumptions DijkstraMonad.DMop_bind.
+
+(** The Dijkstra monad laws are the source monad's: closed in general.  At
+    the computation monads of this development they inherit functional and
+    propositional extensionality from the laws of [SetM]. *)
+Print Assumptions DijkstraMonad.DM_laws.
+Print Assumptions DijkstraMonad.DMop_laws.
+Print Assumptions DijkstraMonad.Ddwp_laws.
+Print Assumptions DijkstraMonad.Dasp_op_laws.
 Print Assumptions DijkstraMonad.OrderedTarget_dwpStExc.
 Print Assumptions DijkstraMonad.OrderedTarget_awlpSt.
 Print Assumptions DijkstraMonad.OrderedTarget_aspStExc.
