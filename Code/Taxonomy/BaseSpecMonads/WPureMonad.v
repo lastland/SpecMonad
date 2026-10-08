@@ -19,8 +19,7 @@
     [DWP], [AWLP] out of [WPure] by healthiness, as submonads. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
-From ExtLib Require Import Monad MonadState MonadExc MonadReader
-  StateMonad OptionMonad ReaderMonad.
+From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import OrderedMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
@@ -116,6 +115,18 @@ Proof.
   - intros x y z H1 H2 k H. exact (H1 k (H2 k H)).
 Qed.
 
+(** [WPure] is a specification monad for its refinement order. *)
+#[global] Instance OrderedMonad_WPure : OrderedMonad WPure (@WP_le).
+Proof.
+  constructor.
+  - intro A. exact WP_le_PreOrder.
+  - intros A x y H k Hk. exact (proj2 (H k) Hk).
+  - intros A B m1 m2 Hm k1 k2 Hk q H.
+    apply (getWPure_mono m1 (fun a => getWPure (k2 a) q)).
+    + intros a Ha. exact (Hk a q Ha).
+    + exact (Hm _ H).
+Qed.
+
 (* ================================================================= *)
 (** ** [WSt S] = [stateT S WPure]                                    *)
 (* ================================================================= *)
@@ -192,46 +203,6 @@ Definition ordWStExc {S A} : relation (WStExc S A) :=
   le_stateT (le_optionT (@WP_le)) A.
 
 (* ================================================================= *)
-(** ** [WRd R] = [readerT R WPure]                                   *)
-(* ================================================================= *)
-
-(** A read-only environment is THREADED rather than absorbed: it stays a
-    [readerT] on the specification side, exactly as the state does.  ExtLib's
-    [readerT] needs no [WPure]-specific work -- [Eq1], the laws and the order
-    lift are all generic ([TransformerLaws.v]). *)
-
-Section WRd.
-
-  Variable R : Type.
-
-  Definition WRd := readerT R WPure.
-
-  #[local] Existing Instance Monad_readerT.
-
-  Definition retPr {A} (a : A) : WRd A := @ret (readerT _ _) _ _ a.
-
-  Definition bindPr {A B} (m : WRd A) (k : A -> WRd B) : WRd B :=
-    @bind (readerT _ _) _ _ _ m k.
-
-  #[global]
-    Instance Monad__WRd : Monad WRd :=
-    {| ret := fun _ => @retPr _ ; bind := fun _ _ => @bindPr _ _ |}.
-
-  Definition askPr : WRd R := @ask R (readerT R WPure) _.
-  Definition localPr {A} (f : R -> R) (m : WRd A) : WRd A :=
-    @local R (readerT R WPure) _ A f m.
-
-  #[global]
-    Instance MonadReader__WRd : MonadReader R WRd :=
-    {| ask := askPr ; local := fun _ => localPr |}.
-
-End WRd.
-
-(** Refinement on [WRd]: the generic [readerT] lift of [WP_le]. *)
-
-Definition ordWRd {R A} : relation (WRd R A) := le_readerT (@WP_le) A.
-
-(* ================================================================= *)
 (** ** Laws for the three stacks                                     *)
 (* ================================================================= *)
 
@@ -254,15 +225,6 @@ Section WStExcLaws.
     : @MonadLawsE (WStExc S) _ (Monad__WStExc S) :=
     MonadLawsE_stateT S (optionT WPure).
 End WStExcLaws.
-
-Section WRdLaws.
-  Variable R : Type.
-  Definition Eq1__WRd : Eq1 (WRd R) := Eq1_readerT R WPure.
-  Definition Eq1Equivalence__WRd
-    : @Eq1Equivalence (WRd R) _ Eq1__WRd := Eq1Equivalence_readerT R WPure.
-  Definition MonadLawsE__WRd
-    : @MonadLawsE (WRd R) _ (Monad__WRd R) := MonadLawsE_readerT R WPure.
-End WRdLaws.
 
 (* ================================================================= *)
 (** * The four WP specification monads: [AWP], [DWLP], [DWP], [AWLP]  *)
@@ -466,15 +428,22 @@ Section WPSub.
     WPSub_le w1 w2 <-> WP_le (toWPure w1) (toWPure w2).
   Proof. split; intro H; exact H. Qed.
 
-  Lemma OrderedMonad_WPSub : @OrderedMonad WPSub Monad_WPSub Eq1_WPSub (@WPSub_le).
+  Lemma toWPure_morphism :
+    @MonadMorphism WPSub WPure Monad_WPSub Monad_WPure Eq1_WPSub Eq1_WPure
+      (fun A => @toWPure A).
   Proof.
     constructor.
-    - intro A. constructor.
-      + intros x p H. exact H.
-      + intros x y z H1 H2 p H. exact (H1 p (H2 p H)).
-    - intros A x y H p Hp. exact (proj2 (H p) Hp).
-    - intros A B m1 m2 Hm k1 k2 Hk p H. cbn in *.
-      refine (getWPSub_mono m1 _ _ _ (Hm _ H)). intros a Ha. exact (Hk a p Ha).
+    - intros A x y H. exact H.
+    - intros A a. exact (toWPure_ret a).
+    - intros A B m k. exact (toWPure_bind m k).
+  Qed.
+
+  (** A submonad of [WPure] is a specification monad: its order is that of
+      [WPure] along the inclusion. *)
+  Lemma OrderedMonad_WPSub : @OrderedMonad WPSub Monad_WPSub Eq1_WPSub (@WPSub_le).
+  Proof.
+    exact (OrderedMonad_pullback (fun A => @toWPure A) (@WP_le)
+             toWPure_morphism OrderedMonad_WPure).
   Qed.
 
   (* --------------------------------------------------------------- *)
@@ -813,3 +782,29 @@ Definition ordAWLPStOp {S A} : relation (AWLPSt S A) := fun w1 w2 => ordAWLPSt w
   OrderedMonad_WPSubSt awlp_health S.
 #[global] Instance OrderedMonad_AWLPSt_op S : OrderedMonad (AWLPSt S) (@ordAWLPStOp S) :=
   OrderedMonad_flip (@ordAWLPSt S) (OrderedMonad_AWLPSt S).
+
+(* ================================================================= *)
+(** ** Readings for triples ([Classes/OrderedMonad.v])               *)
+(* ================================================================= *)
+
+(** A WP element is read backward, from a postcondition to the precondition
+    it needs.  Preconditions are on [unit], or on the start state;
+    postconditions on the result, on result and final state, or on the
+    outcome of a computation that may raise. *)
+
+#[global] Instance SpecReading_WPure (A : Type) :
+  SpecReading WPure A unit A := {|
+  spec_read := fun w : WPure A => Backward (fun Q (_ : unit) => getWPure w Q)
+|}.
+
+#[global] Instance SpecReading_WSt (S A : Type) :
+  SpecReading (WSt S) A S (A * S)%type := {|
+  spec_read := fun w : WSt S A =>
+    Backward (fun Q s => getWPure (runStateT w s) Q)
+|}.
+
+#[global] Instance SpecReading_WStExc (S A : Type) :
+  SpecReading (WStExc S) A S (option (A * S)) := {|
+  spec_read := fun w : WStExc S A =>
+    Backward (fun Q s => getWPure (unOptionT (runStateT w s)) Q)
+|}.
