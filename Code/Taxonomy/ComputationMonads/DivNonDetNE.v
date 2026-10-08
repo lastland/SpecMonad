@@ -336,6 +336,20 @@ Definition Eq1__stdivndNE (S : Type) : Eq1 (stdivndNE S) :=
 Definition Eq1__stdivexcndNE (S : Type) : Eq1 (stdivexcndNE S) :=
   @Eq1_stateT S (optionT divndNE) (@Eq1_optionT divndNE Eq1__divndNE).
 
+(** The two stacks are lawful: the generic transformer laws, at the base. *)
+Definition Eq1Equivalence__stdivndNE (S : Type)
+  : @Eq1Equivalence (stdivndNE S) (Monad__stdivndNE S) (Eq1__stdivndNE S) :=
+  Eq1Equivalence_stateT S divndNE.
+Definition MonadLawsE__stdivndNE (S : Type)
+  : @MonadLawsE (stdivndNE S) (Eq1__stdivndNE S) (Monad__stdivndNE S) :=
+  MonadLawsE_stateT S divndNE.
+Definition Eq1Equivalence__stdivexcndNE (S : Type)
+  : @Eq1Equivalence (stdivexcndNE S) (Monad__stdivexcndNE S) (Eq1__stdivexcndNE S) :=
+  Eq1Equivalence_stateT S (optionT divndNE).
+Definition MonadLawsE__stdivexcndNE (S : Type)
+  : @MonadLawsE (stdivexcndNE S) (Eq1__stdivexcndNE S) (Monad__stdivexcndNE S) :=
+  MonadLawsE_stateT S (optionT divndNE).
+
 #[global] Instance MonadState__stdivndNE (S : Type) : MonadState S (stdivndNE S) :=
   @MonadState_stateT S divndNE Monad__divndNE.
 #[global] Instance MonadState__stdivexcndNE (S : Type) : MonadState S (stdivexcndNE S) :=
