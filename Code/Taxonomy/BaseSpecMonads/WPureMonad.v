@@ -226,6 +226,22 @@ Section WStExcLaws.
     MonadLawsE_stateT S (optionT WPure).
 End WStExcLaws.
 
+(** [WSt] and [WStExc] are specification monads: their orders are the lifts
+    of [WP_le] through the transformers, so they run backward (a weaker
+    precondition is bigger), and the laws are the generic lifts of
+    [OrderedMonad_WPure]. *)
+
+Theorem OrderedMonad_WSt S :
+  @OrderedMonad (WSt S) (Monad__WSt S) (Eq1__WSt S) (fun A => @ordWSt S A).
+Proof. exact (OrderedMonad_stateT _ OrderedMonad_WPure). Qed.
+
+Theorem OrderedMonad_WStExc S :
+  @OrderedMonad (WStExc S) (Monad__WStExc S) (Eq1__WStExc S)
+    (fun A => @ordWStExc S A).
+Proof.
+  exact (OrderedMonad_stateT _ (OrderedMonad_optionT _ OrderedMonad_WPure)).
+Qed.
+
 (* ================================================================= *)
 (** * The four WP specification monads: [AWP], [DWLP], [DWP], [AWLP]  *)
 (* ================================================================= *)
