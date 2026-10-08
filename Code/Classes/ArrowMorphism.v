@@ -4,10 +4,14 @@
     pairing, choice, and higher-order application up to selected semantic
     equality, together with properness of the map. Inverse maps preserve
     these operations, and the existing option and state transformers lift
-    the morphisms.  All dictionaries are explicit. *)
+    the morphisms.  At each fixed input an arrow morphism is a monad morphism
+    between the monads of the two arrows.  All dictionaries are explicit. *)
 
 From Coq Require Import Morphisms RelationClasses.
+From ExtLib Require Import Monad.
+From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import ArrowMonad OrderedMonad.
 
 (** ** An ordinary record for all five preservation equations
 
@@ -233,6 +237,35 @@ Section LiftMorphism.
       apply (@comp_proper dst DA DE DL); [|reflexivity].
       apply (@ArrowApplyFacts.pure_ext dst DA DX DE DL DXL).
       intros [[f a] s]. reflexivity.
+  Qed.
+
+  (** At a fixed input [I], each arrow gives a monad ([ArrowMonad.v]), and
+      the morphism is a monad morphism between the two. *)
+  Theorem arrow_morphism_monad (I : Type)
+    (DXL : @ArrowApplyLaws dst DA DX DE) :
+    @MonadMorphism (src I) (dst I)
+      (@Monad_Arrow src SA SX I) (@Monad_Arrow dst DA DX I)
+      (@Eq1_Arrow src SE I) (@Eq1_Arrow dst DE I)
+      (fun A => map I A).
+  Proof.
+    constructor.
+    - intros A x y H.
+      exact (@morphism_proper _ _ _ _ _ _ _ _ _ _ _ M I A x y H).
+    - intros A a. exact (morphism_pure M (fun _ : I => a)).
+    - intros A B m k.
+      change (@arrow_eq dst DE I B
+                (map I B (@bind_arrow src SA SX I A B m k))
+                (@bind_arrow dst DA DX I A B (map I A m)
+                   (fun a => map I B (k a)))).
+      unfold bind_arrow, arr_fanout, arr_split, arr_second, arr_id.
+      rewrite !(morphism_comp M), !(morphism_first M), !(morphism_pure M),
+        (morphism_app M).
+      apply (@comp_proper dst DA DE DL); [ reflexivity |].
+      etransitivity; [ symmetry; apply (@comp_assoc dst DA DE DL) |].
+      etransitivity;
+        [ apply (@comp_proper dst DA DE DL);
+            [ apply (@pure_comp dst DA DE DL) | reflexivity ] |].
+      apply (@app_ext dst DA DX DE DXL). intros [a i]. split; reflexivity.
   Qed.
 End LiftMorphism.
 
