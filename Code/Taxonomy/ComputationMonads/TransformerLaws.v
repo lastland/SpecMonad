@@ -1,18 +1,16 @@
 (** * Generic [Eq1] and [MonadLawsE] for ExtLib's monad transformers
 
-    [optionT], [stateT] and [readerT], each proved once, parametrically in the
+    [optionT] and [stateT], each proved once, parametrically in the
     base monad: every section takes [Monad] / [Eq1] / [Eq1Equivalence] /
     [MonadLawsE] for [M] as a [Context] and produces the corresponding
     instances for the transformed monad.  Nothing here mentions a particular
     computation or specification monad.
 
-    Every stack in the development chains through these — [stdivitree] and the
-    other computation monads, [WPure]'s [WSt] / [WStExc], [PredMonad]'s
-    [ProgWPred], and the [*Rd] specification monads. *)
+    Every stack in the development chains through these — the computation
+    monads, [WPure]'s [WSt] / [WStExc], and [PredMonad]'s [ProgWPred]. *)
 
 From ITree Require Import Basics.Monad.
 From ExtLib Require Import StateMonad OptionMonad.
-From ExtLib Require Import ReaderMonad.
 
 (* ================================================================= *)
 (** ** Generic [Eq1] and [MonadLawsE] for ExtLib's [optionT]         *)
@@ -132,8 +130,7 @@ Section StateT.
 
   (** Two [stateT St M A] values are equivalent when, for every
       initial state [s], their underlying [M (A * St)] values are
-      [eq1]-equivalent.  For the full [stdivitree] stack this unfolds to
-      [forall s, eutt eq (... s) (... s)]. *)
+      [eq1]-equivalent. *)
   #[global]
   Instance Eq1_stateT : Eq1 (stateT St M) :=
     fun T x y => forall s, eq1 (runStateT x s) (runStateT y s).
@@ -181,58 +178,6 @@ Section StateT.
   Qed.
 
 End StateT.
-
-(* ================================================================= *)
-(** ** Generic [Eq1] and [MonadLawsE] for ExtLib's [readerT]         *)
-(* ================================================================= *)
-
-Section ReaderT.
-
-  Variable R : Type.
-  Variable M : Type -> Type.
-  Context {MonadM : Monad M}.
-  Context {Eq1M : Eq1 M}.
-  Context {Eq1EquivM : @Eq1Equivalence M MonadM Eq1M}.
-  Context {MLM : @MonadLawsE M Eq1M MonadM}.
-
-  #[local] Existing Instance Monad_readerT.
-
-  (** Two [readerT R M A] values are equivalent when, for every environment
-      [r], their underlying [M A] values are [eq1]-equivalent.  Simpler than
-      [Eq1_stateT]: the environment is threaded but never returned, so no
-      pairing has to be destructed in the law proofs. *)
-  #[global]
-  Instance Eq1_readerT : Eq1 (readerT R M) :=
-    fun T x y => forall r, eq1 (runReaderT x r) (runReaderT y r).
-
-  #[global]
-  Instance Eq1Equivalence_readerT
-    : @Eq1Equivalence (readerT R M) _ Eq1_readerT.
-  Proof.
-    constructor.
-    - repeat intro; unfold eq1, Eq1_readerT in *. reflexivity.
-    - repeat intro; unfold eq1, Eq1_readerT in *. symmetry. apply H.
-    - repeat intro; unfold eq1, Eq1_readerT in *.
-      etransitivity; [ apply H | apply H0 ].
-  Qed.
-
-  #[global]
-  Instance MonadLawsE_readerT
-    : @MonadLawsE (readerT R M) Eq1_readerT _.
-  Proof.
-    constructor.
-    - (* bind_ret_l *)
-      intros T U f x r. cbn. rewrite bind_ret_l. reflexivity.
-    - (* bind_ret_r *)
-      intros T x r. cbn. apply bind_ret_r.
-    - (* bind_bind *)
-      intros T U V x f g r. cbn. rewrite bind_bind. reflexivity.
-    - (* Proper_bind *)
-      repeat intro. cbn.
-      apply Proper_bind; [ apply H | repeat red; intros; apply H0 ].
-  Qed.
-
-End ReaderT.
 
 (* ================================================================= *)
 (** ** Ordered lifts, for [Classes/OrderedMonad.v]                   *)
@@ -290,25 +235,72 @@ Section OrderedStateT.
   Qed.
 End OrderedStateT.
 
-Section OrderedReaderT.
-  Context {R : Type} {M : Type -> Type} {MonadM : Monad M} {Eq1M : Eq1 M}.
-  Context (le : forall A, relation (M A)).
 
-  #[local] Existing Instance Monad_readerT.
+(* ================================================================= *)
+(** ** Monad-morphism lifts, for [Classes/OrderedMonad.v]            *)
+(* ================================================================= *)
 
-  Definition le_readerT : forall A, relation (readerT R M A) :=
-    fun A x y => forall r, le A (runReaderT x r) (runReaderT y r).
+(** Each transformer acts on monad morphisms: a morphism between two base
+    monads, applied under the transformer, is a morphism between the
+    transformed monads.  Theorems, not instances: they are recursive in the
+    base monad. *)
 
-  Theorem OrderedMonad_readerT :
-    OrderedMonad M le ->
-    @OrderedMonad (readerT R M) _ (@Eq1_readerT R M Eq1M) le_readerT.
+Section MorphismLifts.
+  Context {M W : Type -> Type} {MonadM : Monad M} {MonadW : Monad W}
+          {Eq1M : Eq1 M} {Eq1W : Eq1 W}
+          {EqW : @Eq1Equivalence W MonadW Eq1W}
+          {LawsW : @MonadLawsE W Eq1W MonadW}.
+
+  #[local] Existing Instance Monad_stateT.
+
+  Definition optionT_map (σ : forall A, M A -> W A)
+    : forall A, optionT M A -> optionT W A :=
+    fun A m => mkOptionT (σ (option A) (unOptionT m)).
+
+  Theorem MonadMorphism_optionT (σ : forall A, M A -> W A) :
+    @MonadMorphism M W MonadM MonadW Eq1M Eq1W σ ->
+    @MonadMorphism (optionT M) (optionT W)
+      (@Monad_optionT M MonadM) (@Monad_optionT W MonadW)
+      (@Eq1_optionT M Eq1M) (@Eq1_optionT W Eq1W) (optionT_map σ).
   Proof.
-    intros [Hpre Heq Hbind]. constructor.
-    - intro A. destruct (Hpre A) as [Hr Ht]. constructor.
-      + intros x r. apply Hr.
-      + intros x y z H1 H2 r. exact (Ht _ _ _ (H1 r) (H2 r)).
-    - intros A x y H r. exact (Heq _ _ _ (H r)).
-    - intros A B m1 m2 Hm k1 k2 Hk r. cbn.
-      apply Hbind; [ exact (Hm r) | intro a; exact (Hk a r) ].
+    intro Hσ. constructor.
+    - intros A x y Hxy. exact (mm_proper Hσ _ _ Hxy).
+    - intros A a. exact (mm_ret Hσ (Some a)).
+    - intros A B x k.
+      change (eq1
+                (σ (option B)
+                   (bind (unOptionT x)
+                      (fun o => match o with
+                                | None => ret None
+                                | Some a => unOptionT (k a)
+                                end)))
+                (bind (σ (option A) (unOptionT x))
+                   (fun o => match o with
+                             | None => ret None
+                             | Some a => σ (option B) (unOptionT (k a))
+                             end))).
+      etransitivity; [ apply (mm_bind Hσ) |].
+      apply Proper_bind; [ reflexivity |].
+      intros [a|]; [ reflexivity | exact (mm_ret Hσ None) ].
   Qed.
-End OrderedReaderT.
+
+  Definition stateT_map (St : Type) (σ : forall A, M A -> W A)
+    : forall A, stateT St M A -> stateT St W A :=
+    fun A m => mkStateT (fun s => σ (A * St)%type (runStateT m s)).
+
+  Theorem MonadMorphism_stateT (St : Type) (σ : forall A, M A -> W A) :
+    @MonadMorphism M W MonadM MonadW Eq1M Eq1W σ ->
+    @MonadMorphism (stateT St M) (stateT St W)
+      (@Monad_stateT St M MonadM) (@Monad_stateT St W MonadW)
+      (@Eq1_stateT St M Eq1M) (@Eq1_stateT St W Eq1W) (stateT_map St σ).
+  Proof.
+    intro Hσ. constructor.
+    - intros A x y Hxy s. exact (mm_proper Hσ _ _ (Hxy s)).
+    - intros A a s. exact (mm_ret Hσ (a, s)).
+    - intros A B x k s.
+      etransitivity;
+        [ exact (mm_bind Hσ (runStateT x s)
+                   (fun vs => let (v, s') := vs in runStateT (k v) s')) |].
+      apply Proper_bind; [ reflexivity | intros [v s']; reflexivity ].
+  Qed.
+End MorphismLifts.
