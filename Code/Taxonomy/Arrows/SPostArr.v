@@ -2536,3 +2536,132 @@ Proof.
   - left. exists x. split; [apply H; exact Hx | exact Hr].
   - right. intros x' Hr'. apply H. exact (Hall x' Hr').
 Qed.
+
+(** ** The four classes are distinct
+
+    One relation on [bool] separates them: its output [true] is reached from
+    both inputs, and its output [false] from none.  Its DSP reading is
+    neither top-preserving nor disjunctive, so it is the transformer of no
+    DSLP arrow and of no ASP arrow.  Dually, its ASLP reading is neither
+    strict nor conjunctive, so it is the transformer of no ASP arrow and of
+    no DSLP arrow.  Its DSLP reading is not disjunctive, so no ASP arrow has
+    it either.
+
+    The failures at top and at the empty precondition use the unreachable
+    output; the failures at joins and meets use the output with two
+    predecessors.  DSP still preserves nonempty meets and ASLP nonempty
+    joins: that is the healthiness of [DSPArr] and [ASLPArr]. *)
+
+Definition trueFromBoth : SPureArr bool bool := fun _ y => y = true.
+
+Theorem dspOf_not_terminating : ~ sp_terminating (dspOf trueFromBoth).
+Proof.
+  intro H. destruct (H false) as [[x [_ Hx]] _].
+  change (false = true) in Hx. discriminate Hx.
+Qed.
+
+Theorem dspOf_not_disjunctive : ~ sp_disjunctive (dspOf trueFromBoth).
+Proof.
+  intro H.
+  assert (Hj : dspOf trueFromBoth (fun x => exists i : bool, x = i) true).
+  { split.
+    - exists true. split; [ exists true; exact eq_refl | exact eq_refl ].
+    - intros x _. exists x. exact eq_refl. }
+  destruct (proj1 (H bool (inhabits true) (fun i x => x = i) true) Hj)
+    as [i [_ Hi]].
+  assert (Hn : negb i = i) by exact (Hi (negb i) eq_refl).
+  destruct i; discriminate Hn.
+Qed.
+
+Theorem aslpOf_not_strict : ~ sp_strict (aslpOf trueFromBoth).
+Proof.
+  intro H. apply (H false). right. intros x Hx.
+  change (false = true) in Hx. discriminate Hx.
+Qed.
+
+Theorem aslpOf_not_conjunctive : ~ sp_conjunctive (aslpOf trueFromBoth).
+Proof.
+  intro H.
+  assert (Hm : forall i : bool, aslpOf trueFromBoth (fun x => x = i) true).
+  { intro i. left. exists i. split; exact eq_refl. }
+  destruct (proj2 (H bool (inhabits true) (fun i x => x = i) true) Hm)
+    as [[x [Hx _]] | Hall].
+  - assert (Ht : x = true) by exact (Hx true).
+    assert (Hf : x = false) by exact (Hx false).
+    rewrite Ht in Hf. discriminate Hf.
+  - assert (Hf : true = false) by exact (Hall true eq_refl false).
+    discriminate Hf.
+Qed.
+
+Theorem dslpOf_not_disjunctive : ~ sp_disjunctive (dslpOf trueFromBoth).
+Proof.
+  intro H.
+  assert (Hj : dslpOf trueFromBoth (fun x => exists i : bool, x = i) true).
+  { intros x _. exists x. exact eq_refl. }
+  destruct (proj1 (H bool (inhabits true) (fun i x => x = i) true) Hj)
+    as [i Hi].
+  assert (Hn : negb i = i) by exact (Hi (negb i) eq_refl).
+  destruct i; discriminate Hn.
+Qed.
+
+(** Healthiness is a property of the transformer up to pointwise
+    equivalence. *)
+Lemma sp_disjunctive_iff {A B} (f g : SPArrT A B) :
+  (forall P b, f P b <-> g P b) -> sp_disjunctive f -> sp_disjunctive g.
+Proof.
+  intros E Hd I HI p b. split.
+  - intro Hg. destruct (proj1 (Hd I HI p b) (proj2 (E _ b) Hg)) as [i Hi].
+    exists i. exact (proj1 (E _ b) Hi).
+  - intros [i Hi]. apply (proj1 (E _ b)). apply (proj2 (Hd I HI p b)).
+    exists i. exact (proj2 (E _ b) Hi).
+Qed.
+
+Lemma sp_conjunctive_iff {A B} (f g : SPArrT A B) :
+  (forall P b, f P b <-> g P b) -> sp_conjunctive f -> sp_conjunctive g.
+Proof.
+  intros E Hc I HI p b. split.
+  - intros Hg i.
+    exact (proj1 (E _ b) (proj1 (Hc I HI p b) (proj2 (E _ b) Hg) i)).
+  - intro Hall. apply (proj1 (E _ b)). apply (proj2 (Hc I HI p b)).
+    intro i. exact (proj2 (E _ b) (Hall i)).
+Qed.
+
+Corollary no_ASPArr_for_dsp :
+  ~ exists w : ASPArr bool bool,
+      forall P y, getASPArr w P y <-> dspOf trueFromBoth P y.
+Proof.
+  intros [w E]. apply dspOf_not_disjunctive.
+  exact (sp_disjunctive_iff _ _ E (proj2 (proj2 (proj2_sig w)))).
+Qed.
+
+Corollary no_DSLPArr_for_dsp :
+  ~ exists w : DSLPArr bool bool,
+      forall P y, getDSLPArr w P y <-> dspOf trueFromBoth P y.
+Proof.
+  intros [w E]. apply dspOf_not_terminating.
+  intro b. exact (proj1 (E _ b) (proj1 (proj2 (proj2_sig w)) b)).
+Qed.
+
+Corollary no_ASPArr_for_aslp :
+  ~ exists w : ASPArr bool bool,
+      forall P y, getASPArr w P y <-> aslpOf trueFromBoth P y.
+Proof.
+  intros [w E]. apply aslpOf_not_strict.
+  intros b Hb. exact (proj1 (proj2 (proj2_sig w)) b (proj2 (E _ b) Hb)).
+Qed.
+
+Corollary no_DSLPArr_for_aslp :
+  ~ exists w : DSLPArr bool bool,
+      forall P y, getDSLPArr w P y <-> aslpOf trueFromBoth P y.
+Proof.
+  intros [w E]. apply aslpOf_not_conjunctive.
+  exact (sp_conjunctive_iff _ _ E (proj2 (proj2 (proj2_sig w)))).
+Qed.
+
+Corollary no_ASPArr_for_dslp :
+  ~ exists w : ASPArr bool bool,
+      forall P y, getASPArr w P y <-> dslpOf trueFromBoth P y.
+Proof.
+  intros [w E]. apply dslpOf_not_disjunctive.
+  exact (sp_disjunctive_iff _ _ E (proj2 (proj2 (proj2_sig w)))).
+Qed.
