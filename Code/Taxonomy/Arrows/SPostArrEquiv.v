@@ -14,6 +14,7 @@
 
 From Coq Require Import Morphisms.
 From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import RelArrowCoherence.
 From Incorrectness.Classes Require Export ArrowMorphism.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr OptionLoop SPostArr.
 
@@ -214,6 +215,106 @@ Proof.
   exact (inverse_morphism (@PropertySP.DSLP_rel) (@relDSLP)
     dslp_from_rel_proper (@dslp_from_to) (@dslp_to_from) dslp_to_rel_morphism
     ArrowLaws_Rel ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
+Qed.
+
+(** ** Any arrow with relational semantics
+
+    The semantic dictionaries of [Classes/RelArrowCoherence.v] say that
+    [rel_reading] preserves the five operations into [Rel], and
+    [rel_arrow_eq] that it is proper.  So it is a morphism, and so is any
+    map back from relations that it inverts on the right. *)
+
+Section RelReadingMorphism.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HC : @ArrowChoice arr HA} {HAA : @ArrowApply arr HA}
+    {HE : ArrowEq arr}
+    {HR : @RelArrow arr HA} {HRC : @RelArrowChoice arr HA HC HR}
+    {HRA : @RelArrowApply arr HA HAA HR} {HRE : @RelArrowEq arr HA HE HR}.
+
+  Theorem rel_reading_morphism :
+    ArrowMorphism HA HC HAA HE
+      Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel
+      (fun A B => @rel_reading arr HA HR A B).
+  Proof.
+    constructor.
+    - intros A B f g H.
+      exact (proj1 (@rel_arrow_eq arr HA HE HR HRE A B f g) H).
+    - intros A B h a b. exact (@rel_pure arr HA HR A B h a b).
+    - intros A B C f g a c. exact (@rel_comp arr HA HR A B C f g a c).
+    - intros A B C f [a c] [b d]. exact (@rel_first arr HA HR A B C f a c b d).
+    - intros A B C f x y. exact (@rel_left arr HA HC HR HRC A B C f x y).
+    - intros A B [f a] b.
+      etransitivity; [ exact (@rel_app arr HA HAA HR HRA A B f a b) |].
+      unfold Arrow_Rel; cbn.
+      split.
+      + intro H. exists (@rel_reading arr HA HR A B f, a).
+        split; [ reflexivity | exact H ].
+      + intros [y [Heq H]]. subst y. exact H.
+  Qed.
+
+  Theorem rel_section_morphism (back : forall A B, Rel A B -> arr A B) :
+    (forall A B (R : Rel A B),
+        Rel_eq (@rel_reading arr HA HR A B (back A B R)) R) ->
+    ArrowMorphism Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel
+      HA HC HAA HE back.
+  Proof.
+    intro Hsec.
+    refine (inverse_morphism (fun A B => @rel_reading arr HA HR A B) back _ _ _
+              rel_reading_morphism
+              ArrowLaws_Rel ArrowChoiceLaws_Rel ArrowApplyLaws_Rel).
+    - intros A B R T H.
+      apply (proj2 (@rel_arrow_eq arr HA HE HR HRE A B (back A B R) (back A B T))).
+      intros a b.
+      etransitivity; [ exact (Hsec A B R a b) |].
+      etransitivity; [ exact (H a b) |].
+      symmetry. exact (Hsec A B T a b).
+    - intros A B f.
+      apply (proj2 (@rel_arrow_eq arr HA HE HR HRE A B _ f)).
+      intros a b. exact (Hsec A B _ a b).
+    - intros A B R. exact (Hsec A B R).
+  Qed.
+End RelReadingMorphism.
+
+(** ** DSP and ASLP *)
+
+Theorem dsp_to_rel_morphism :
+  ArrowMorphism Arrow_DSPArr ArrowChoice_DSPArr ArrowApply_DSPArr ArrowEq_DSPArr
+    Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel (@dspRel).
+Proof.
+  exact (@rel_reading_morphism DSPArr Arrow_DSPArr ArrowChoice_DSPArr
+           ArrowApply_DSPArr ArrowEq_DSPArr RelArrow_DSPArr
+           RelArrowChoice_DSPArr RelArrowApply_DSPArr RelArrowEq_DSPArr).
+Qed.
+
+Theorem dsp_from_rel_morphism :
+  ArrowMorphism Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel
+    Arrow_DSPArr ArrowChoice_DSPArr ArrowApply_DSPArr ArrowEq_DSPArr
+    (@dspOfRelArr).
+Proof.
+  exact (@rel_section_morphism DSPArr Arrow_DSPArr ArrowChoice_DSPArr
+           ArrowApply_DSPArr ArrowEq_DSPArr RelArrow_DSPArr
+           RelArrowChoice_DSPArr RelArrowApply_DSPArr RelArrowEq_DSPArr
+           (@dspOfRelArr) (fun A B R x y => dspRel_ofRelArr R x y)).
+Qed.
+
+Theorem aslp_to_rel_morphism :
+  ArrowMorphism Arrow_ASLPArr ArrowChoice_ASLPArr ArrowApply_ASLPArr ArrowEq_ASLPArr
+    Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel (@aslpRel).
+Proof.
+  exact (@rel_reading_morphism ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr
+           ArrowApply_ASLPArr ArrowEq_ASLPArr RelArrow_ASLPArr
+           RelArrowChoice_ASLPArr RelArrowApply_ASLPArr RelArrowEq_ASLPArr).
+Qed.
+
+Theorem aslp_from_rel_morphism :
+  ArrowMorphism Arrow_Rel ArrowChoice_Rel ArrowApply_Rel ArrowEq_Rel
+    Arrow_ASLPArr ArrowChoice_ASLPArr ArrowApply_ASLPArr ArrowEq_ASLPArr
+    (@aslpOfRelArr).
+Proof.
+  exact (@rel_section_morphism ASLPArr Arrow_ASLPArr ArrowChoice_ASLPArr
+           ArrowApply_ASLPArr ArrowEq_ASLPArr RelArrow_ASLPArr
+           RelArrowChoice_ASLPArr RelArrowApply_ASLPArr RelArrowEq_ASLPArr
+           (@aslpOfRelArr) (fun A B R x y => aslpRel_ofRelArr R x y)).
 Qed.
 
 (** ** Public option and state-over-option equivalences
