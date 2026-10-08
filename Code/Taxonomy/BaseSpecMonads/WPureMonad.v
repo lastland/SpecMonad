@@ -798,29 +798,3 @@ Definition ordAWLPStOp {S A} : relation (AWLPSt S A) := fun w1 w2 => ordAWLPSt w
   OrderedMonad_WPSubSt awlp_health S.
 #[global] Instance OrderedMonad_AWLPSt_op S : OrderedMonad (AWLPSt S) (@ordAWLPStOp S) :=
   OrderedMonad_flip (@ordAWLPSt S) (OrderedMonad_AWLPSt S).
-
-(* ================================================================= *)
-(** ** Readings for triples ([Classes/OrderedMonad.v])               *)
-(* ================================================================= *)
-
-(** A WP element is read backward, from a postcondition to the precondition
-    it needs.  Preconditions are on [unit], or on the start state;
-    postconditions on the result, on result and final state, or on the
-    outcome of a computation that may raise. *)
-
-#[global] Instance SpecReading_WPure (A : Type) :
-  SpecReading WPure A unit A := {|
-  spec_read := fun w : WPure A => Backward (fun Q (_ : unit) => getWPure w Q)
-|}.
-
-#[global] Instance SpecReading_WSt (S A : Type) :
-  SpecReading (WSt S) A S (A * S)%type := {|
-  spec_read := fun w : WSt S A =>
-    Backward (fun Q s => getWPure (runStateT w s) Q)
-|}.
-
-#[global] Instance SpecReading_WStExc (S A : Type) :
-  SpecReading (WStExc S) A S (option (A * S)) := {|
-  spec_read := fun w : WStExc S A =>
-    Backward (fun Q s => getWPure (unOptionT (runStateT w s)) Q)
-|}.
