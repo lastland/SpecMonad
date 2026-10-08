@@ -16,7 +16,7 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   has no generic arrow instance.
   Conjunctive/disjunctive families are nonempty; strict/top preservation cover
   the empty cases where required.
-- WPArr is a reader-WP Kleisli arrow over the raw WPureT, with Leibniz equality
+- WPArr is the WP Kleisli arrow over the raw WPureT, with Leibniz equality
   and reverse pointwise order. RelPrePostArr validates Hoare specs;
   project_wp compares operations/laws but not every raw validator verdict.
 
@@ -46,6 +46,12 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   `relASP` / `relDSLP`, their round trips, and relational rewrite facts all
   live in this arrow layer. `arrow_eq` is pointwise transformer iff;
   `PureASPostArr_eq` / `PureDSLPostArr_eq` separately recover bundled equality.
+  The file ends with the separation of the four classes on one relation,
+  `trueFromBoth`: its DSP reading is neither top-preserving nor disjunctive,
+  its ASLP reading neither strict nor conjunctive, its DSLP reading not
+  disjunctive, so none of them is the transformer of an arrow of the other
+  kinds (`no_ASPArr_for_dsp`, `no_DSLPArr_for_dsp`, `no_ASPArr_for_aslp`,
+  `no_DSLPArr_for_aslp`, `no_ASPArr_for_dslp`).
 - The ASP singleton orientations remain distinct: canonical `aspRel` probes
   `fun x => x = a`, while `ASP_rel` probes `eq a` (`fun x => a = x`). Relate
   them by predicate equivalence, not definitional equality. The canonical and
@@ -70,6 +76,11 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   equality. Application preservation also converts the arrow stored in the
   input. The packaged morphisms are
   `asp_to_rel_morphism` / `asp_from_rel_morphism` and their DSLP counterparts.
+  `rel_reading_morphism` states the reading as a morphism into `Rel` for any
+  arrow with faithful relational semantics, and `rel_section_morphism` does
+  the same for a map back from relations that the reading inverts on the
+  right; `dsp_to_rel_morphism` / `dsp_from_rel_morphism` and the ASLP pair
+  instantiate them.
   The module aliases are `PropertySP := SPostArr` and `RelSP := RelSPostArr`.
   See the [README equivalence section](../README.md#equivalence-with-rel) for
   the public option/state-over-option maps and their morphism theorems.
@@ -113,9 +124,10 @@ carries no final state. On the property-only side, `ASPostArr S` /
 `DSLPostArr S` fix its input to `unit`; the relational counterpart is
 `progRelArr S`.
 
-[SPostArrMonad.v](../BaseSpecMonads/SPostArrMonad.v) exposes the named `Monad_ASPostArr` /
-`Monad_DSLPostArr` dictionaries and `runASP` / `runDSLP` for observations.
-They use the exact `Monad_Arrow` operations from
+The unary monads of [ASPMonad.v](../BaseSpecMonads/ASPMonad.v) and
+[DSLPMonad.v](../BaseSpecMonads/DSLPMonad.v) are these stacks, with
+`Monad_ASPStExc` / `Monad_DSLPStExc` and the runners `getASPStExc` /
+`getDSLPStExc`. They use the exact `Monad_Arrow` operations from
 [ArrowMonad.v](../../Classes/ArrowMonad.v), whose laws hold for any fixed input
 type under `ArrowLaws` and `ArrowApplyLaws`. Effects are stacked before fixing
 the input. The binary `asp_to_dslp` conversion and its relation-reading facts
@@ -170,8 +182,8 @@ Read constructors → equality/laws → chosen monad dictionaries/orders →
 [examples](Examples/CONTEXT.md) and [tests](Tests/CONTEXT.md).
 Start with the properties, then `SPostArr.v`, then the
 [checked clients](Examples/CONTEXT.md); read `SPostArrEquiv.v` for representation
-changes and [BaseSpecMonads/SPostArrMonad.v](../BaseSpecMonads/SPostArrMonad.v)
-for observation-facing use.
+changes and [BaseSpecMonads/ASPMonad.v](../BaseSpecMonads/ASPMonad.v) /
+[DSLPMonad.v](../BaseSpecMonads/DSLPMonad.v) for the unary monads.
 For other carriers, [Rel.v](Rel.v) defines relations,
 [PrePostArr.v](PrePostArr.v) pairs a precondition with an input-indexed
 post-relation, and [RelPrePostArr.v](RelPrePostArr.v) defines validators whose

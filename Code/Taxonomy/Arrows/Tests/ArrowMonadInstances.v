@@ -4,7 +4,7 @@
     lemmas check its compact relational formulas; [:= _] checks automatic
     resolution, and [..._reuses_arrow] verifies which dictionary it finds.
     No test helper is registered as an instance.  Non-unit inputs exercise
-    the reader-like use of [arr I]. *)
+    the threading of the input through [arr I]. *)
 
 From Coq Require Import Morphisms.
 From ITree Require Import Basics.Monad.
@@ -12,7 +12,7 @@ From Incorrectness.Classes Require Import Arrow ArrowMonad RelArrowCoherence.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
   Rel PrePostArr RelPrePostArr SPostArr.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostArrMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require ASPMonad DSLPMonad.
 
 Create HintDb sp_arrow_bind.
 #[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id
@@ -23,8 +23,7 @@ Create HintDb sp_arrow_bind.
 (* ================================================================= *)
 
 (** Typeclass resolution uses [Monad_Arrow]; these are named aliases.
-     The compact [retRel]/[bindRel] helpers stay in [Rel.v]: the
-     [OldSP] observations consume them. *)
+     The compact [retRel]/[bindRel] helpers are in [Rel.v]. *)
 
 Definition Monad_Rel (A : Type) : Monad (Rel A) :=
   @Monad_Arrow Rel Arrow_Rel ArrowApply_Rel A.
@@ -184,7 +183,7 @@ Qed.
 
 (** The relational specification monad [progRelArr S] specializes the
     input of [stateArrT S optionRel] to [unit]. Non-unit inputs
-    exercise the reader-like threading through [stateArrT S optionRel I]. *)
+    exercise the threading of the input through [stateArrT S optionRel I]. *)
 
 Definition Monad_progRelArr (S : Type) : Monad (progRelArr S) :=
   @Monad_Arrow (stateArrT S optionRel)
@@ -387,14 +386,14 @@ Definition rel_state_option_monad_laws (S : Type) :
           ArrowChoice_Rel
           ArrowApply_Rel)) bool) := _.
 
-(** The named monad dictionaries of [BaseSpecMonads/SPostArrMonad] alias
-    the canonical stacks. Explicit generic dictionaries pin the exact instance
-    at arbitrary state and avoid competing recursive option/state resolution
-    paths. *)
+(** The monad dictionaries of [BaseSpecMonads/ASPMonad] and [DSLPMonad] at
+    the state-over-option stacks are the generic arrow monads. Explicit
+    generic dictionaries pin the exact instance at arbitrary state and avoid
+    competing recursive option/state resolution paths. *)
 Definition spostarr_asp_monad_laws (S : Type) :
   @MonadLawsE (SPostArr.ASPostArr S)
     (@Eq1_Arrow _ (SPostArr.ArrowEq_stateOptASP S) unit)
-    (Monad_ASPostArr S) :=
+    (ASPMonad.Monad_ASPStExc S) :=
   @MonadLawsE_Arrow (stateArrT S SPostArr.optionASPArr)
     (SPostArr.Arrow_stateOptASP S) (SPostArr.ArrowApply_stateOptASP S)
     (SPostArr.ArrowEq_stateOptASP S) (SPostArr.ArrowLaws_stateOptASP S)
@@ -403,7 +402,7 @@ Definition spostarr_asp_monad_laws (S : Type) :
 Definition spostarr_dslp_monad_laws (S : Type) :
   @MonadLawsE (SPostArr.DSLPostArr S)
     (@Eq1_Arrow _ (SPostArr.ArrowEq_stateOptDSLP S) unit)
-    (Monad_DSLPostArr S) :=
+    (DSLPMonad.Monad_DSLPStExc S) :=
   @MonadLawsE_Arrow (stateArrT S SPostArr.optionDSLPArr)
     (SPostArr.Arrow_stateOptDSLP S) (SPostArr.ArrowApply_stateOptDSLP S)
     (SPostArr.ArrowEq_stateOptDSLP S) (SPostArr.ArrowLaws_stateOptDSLP S)
@@ -458,13 +457,6 @@ Module CanonicalSP.
     DSLPArr_eq (SPostArr.compDSLP (SPostArr.arrDSLP (fun a => (f, a))) SPostArr.appDSLP) f.
   Proof. exact (@app_law DSLPArr Arrow_DSLPArr ArrowApply_DSLPArr ArrowEq_DSLPArr ArrowApplyLaws_DSLPArr A B f). Qed.
 
-  Example asp_stack_monad_dictionary_identity S :
-    Monad_ASPStExc S = Monad_ASPostArr S.
-  Proof. reflexivity. Qed.
-  Example dslp_stack_monad_dictionary_identity S :
-    Monad_DSLPStExc S = Monad_DSLPostArr S.
-  Proof. reflexivity. Qed.
-
   Definition asp_pure_client {A B} (m : ASP A) (k : A -> PureASPostArr unit B) :
     PureASPostArr unit B := bindASP m k.
   Definition dslp_pure_client {A B} (m : DSLP A) (k : A -> PureDSLPostArr unit B) :
@@ -483,17 +475,38 @@ Module CanonicalSP.
   Definition dslp_mixed_bind {S A B} (m : DSLPStExc S A)
     (k : A -> DSLPostArr S B) : DSLPostArr S B := bindDSLPStExc m k.
   Example asp_mixed_bind_identity {S A B} (m : ASPStExc S A) (k : A -> ASPostArr S B) :
-    asp_mixed_bind m k = @bind _ (Monad_ASPostArr S) A B m k.
+    asp_mixed_bind m k = @bind _ (Monad_ASPStExc S) A B m k.
   Proof. reflexivity. Qed.
   Example dslp_mixed_bind_identity {S A B} (m : DSLPStExc S A) (k : A -> DSLPostArr S B) :
-    dslp_mixed_bind m k = @bind _ (Monad_DSLPostArr S) A B m k.
+    dslp_mixed_bind m k = @bind _ (Monad_DSLPStExc S) A B m k.
   Proof. reflexivity. Qed.
-  Example asp_runner_identity {S A} (m : ASPStExc S A) pre r :
-    runASP m pre r <-> getASPStExc m pre r.
-  Proof. reflexivity. Qed.
-  Example dslp_runner_identity {S A} (m : DSLPStExc S A) pre r :
-    runDSLP m pre r <-> getDSLPStExc m pre r.
-  Proof. reflexivity. Qed.
+
+  (** The canonical bind and runner, read through the compatibility
+      relation [ASP_rel]. *)
+  Lemma ASP_rel_bind {S A B} (m : ASPostArr S A) (k : A -> ASPostArr S B)
+      (s : S) r :
+    ASP_rel (@bind _ (Monad_ASPStExc S) A B m k) (tt, s) r <->
+    exists om, ASP_rel m (tt, s) om /\
+      match om with
+      | Some (a, t) => ASP_rel (k a) (tt, t) r
+      | None => r = None
+      end.
+  Proof.
+    exact (@relE_bind PureASPostArr Arrow_PureASPostArr ArrowApply_PureASPostArr
+      RelArrow_PureASPostArr RelArrowApply_PureASPostArr
+      ArrowChoice_PureASPostArr RelArrowChoice_PureASPostArr
+      S unit A B m k tt s r).
+  Qed.
+
+  Lemma getASPStExc_ASP_rel {S A} (w : ASPostArr S A) (pre : S -> Prop) r :
+    getASPStExc w pre r <-> exists s, pre s /\ ASP_rel w (tt, s) r.
+  Proof.
+    unfold getASPStExc. rewrite (ASP_normal_form w (fun us => pre (snd us)) r).
+    split.
+    - intros [us [Hus Hw]]. destruct us as [[] s]. exists s.
+      split; [exact Hus | exact Hw].
+    - intros [s [Hs Hw]]. exists (tt, s). split; [exact Hs | exact Hw].
+  Qed.
 
   (** Conversion still preserves semantics on canonical values, including
       state update followed by propagated failure. These are not just
@@ -503,9 +516,9 @@ Module CanonicalSP.
   Definition fail (a : nat) : ASPostArr nat nat :=
     SPostArr.relASP (fun _ r => r = None).
   Example mixed_update_failure r :
-    runASP (asp_mixed_bind update fail) (eq 3) r <-> r = None.
+    getASPStExc (asp_mixed_bind update fail) (eq 3) r <-> r = None.
   Proof.
-    rewrite asp_mixed_bind_identity, runASP_rel. split.
+    rewrite asp_mixed_bind_identity, getASPStExc_ASP_rel. split.
     - intros [s [_ H]]. rewrite ASP_rel_bind in H.
       destruct H as [om [Hm Hk]]. unfold update in Hm.
       rewrite (ASP_rel_relASP (fun p : unit * nat => fun r => r = Some (snd p, S (snd p)))) in Hm.

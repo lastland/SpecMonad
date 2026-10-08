@@ -2,7 +2,7 @@
 
 Parent: [Arrows context](../CONTEXT.md). Related:
 [concrete tests](../Tests/CONTEXT.md),
-[SP observations](../../EffectObservations/SP/CONTEXT.md).
+[Triples](../../Triples/CONTEXT.md).
 
 [SPostArrExamples.v](SPostArrExamples.v) exercises the public operations of
 [SPostArr.v](../SPostArr.v) and the operation-preserving conversions in
@@ -29,5 +29,5 @@ the stored arrow as well as the surrounding stack, using
 application examples exercise precomposition, postcomposition, and captured input.
 
 These are semantic clients of specification arrows. Computation-specific
-readings and worked program triples live with the SP observations; dictionary
+readings and worked program triples live in Triples; dictionary
 resolution checks live in the sibling tests directory.

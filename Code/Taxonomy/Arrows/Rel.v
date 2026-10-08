@@ -123,7 +123,7 @@ Instance ArrowLoop_Rel : ArrowLoop Rel := {
 
     Typeclass resolution derives the monad from the arrow via
     [Monad_Arrow]; the compact helpers below are the operational
-    reading used by the [OldSP] observations.  They agree with the
+    reading.  They agree with the
     generic operations under pointwise logical equivalence ([Eq1_Rel]);
     the agreement lemmas and named monad/law dictionaries are collected
     in [Tests/ArrowMonadInstances.v]. *)
@@ -190,10 +190,10 @@ Section ArrowSpec.
   Definition progRelArr (A : Type) : Type :=
     stateArrT S (optionArrT Rel) unit A.
 
-  (** For [stdivexcnd]: stateful computation with failure and
-      divergence.  Unfolds to [(unit * S) -> option (option (A * S)) -> Prop].
-      In the [stdivexcnd] reading, raw [None] is divergence,
-      [Some None] is an exception, and [Some (Some (a, s'))] is a return. *)
+  (** Stateful computation with failure and divergence.  Unfolds to
+      [(unit * S) -> option (option (A * S)) -> Prop]: raw [None] is
+      divergence, [Some None] is an exception, and [Some (Some (a, s'))] is
+      a return. *)
   Definition nditRelArr (A : Type) : Type :=
     stateArrT S (optionArrT (optionArrT Rel)) unit A.
 
@@ -207,13 +207,13 @@ Section MonadSpec.
 
   Variable S : Type.
 
-  (** For [stdivitree]/[stexcnd].  Chains: base [Rel unit] through [optionT]
+  (** One [optionT] layer.  Chains: base [Rel unit] through [optionT]
       and [stateT], inheriting [Monad], [Eq1], and [MonadLawsE] from
       the transformer instances in [ComputationMonads/TransformerLaws.v]. *)
   Definition progRelM (A : Type) : Type :=
     stateT S (optionT (Rel unit)) A.
 
-  (** For [stdivexcnd] (double [optionT] for exception + divergence). *)
+  (** Double [optionT], for exception and divergence. *)
   Definition nditRelM (A : Type) : Type :=
     stateT S (optionT (optionT (Rel unit))) A.
 

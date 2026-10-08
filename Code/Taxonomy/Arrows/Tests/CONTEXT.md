@@ -19,11 +19,12 @@ return/bind formulas with the exact derived operations. Resolution checks cover
 `Rel`, the property-only ASP/DSLP carriers, and the other specification arrows,
 including base/option/state/state-over-option layers with non-unit inputs.
 The relational coverage serves both `asp` and `dslp` readings of the same
-carrier; neither reading needs its own monad dictionary. The named stacks from
-[SPostArrMonad.v](../../BaseSpecMonads/SPostArrMonad.v) use explicit generic law
+carrier; neither reading needs its own monad dictionary. The state-over-option
+monad dictionaries of `ASPMonad.v` and `DSLPMonad.v` use explicit generic law
 witnesses. `CanonicalSP` in `ArrowMonadInstances.v` compares canonical and
-compatibility application/bind, checks dictionary and runner identity, and
-exercises a state update followed by propagated failure.
+compatibility application/bind, checks dictionary identity, and exercises a
+state update followed by propagated failure, read through the compatibility
+relation `ASP_rel`.
 
 [ArrowTransformerInstances.v](ArrowTransformerInstances.v) checks `optionRel`,
 relational state-over-option arrows, the monad-view `progRelM` / `nditRelM`
