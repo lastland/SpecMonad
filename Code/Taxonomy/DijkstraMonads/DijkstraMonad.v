@@ -8,7 +8,9 @@
     with [ret] indexed by [W]'s [ret], [bind] by [W]'s [bind], weakening
     along the order, and every computation typed by its own image.  This is
     the construction of Maillard et al., "Dijkstra Monads for All"
-    (ICFP 2019, https://doi.org/10.1145/3341708).
+    (ICFP 2019, https://doi.org/10.1145/3341708).  It satisfies their laws
+    of a Dijkstra monad, the three monad laws and the three laws of
+    weakening, whenever the source monad is lawful ([DM_laws]).
 
     A specification monad is still one with its order flipped
     ([OrderedMonad_flip]), so the same construction at the flipped order
@@ -155,6 +157,131 @@ Section DijkstraOfMorphismOp.
   Definition DMop_lift {A} (m : M A) : DMop θ le (θ A m) :=
     @DM_lift M W θ flipped Hθ HTop A m.
 End DijkstraOfMorphismOp.
+
+(** ** The laws
+
+    DM4All asks of a Dijkstra monad the three monad laws and three laws of
+    weakening: weakening along reflexivity is the identity, two weakenings
+    compose, and weakening commutes with [bind].  There the laws are
+    equations between computations whose indices are equal by the laws of
+    the specification monad, and the refinement proof lives in [SProp].
+
+    Here the laws of [W] hold up to [eq1], so the two sides of a law have
+    different indices, and a computation of [DM] is a computation of [M]
+    with a proof.  Two of them are EQUAL when the computations of [M] are,
+    whatever the indices and the proofs ([DM_eq]).  The two indices are then
+    the two sides of the same law of [W].
+
+    With that equality the six laws are those of [M]: the monad laws are
+    [M]'s own, and weakening does not change the computation.  So [DM] is a
+    Dijkstra monad as soon as the source monad is lawful for the equality
+    the morphism is stated with ([DM_laws]). *)
+
+Section DijkstraLaws.
+  Context {M W : Type -> Type}
+    (θ : forall A, M A -> W A) (le : forall A, relation (W A)).
+  Context {Hθ : IsMonadMorphism θ} {HT : OrderedTarget θ le}.
+
+  Definition DM_eq {A} {w w' : W A} (d : DM θ le w) (d' : DM θ le w') : Prop :=
+    @eq1 M (mor_eq1_src (θ := θ)) A (proj1_sig d) (proj1_sig d').
+
+  Record DijkstraLaws : Prop := {
+    (* [DM_eq] is an equivalence, and [bind] respects it *)
+    dm_eq_refl : forall A (w : W A) (d : DM θ le w), DM_eq d d ;
+    dm_eq_sym : forall A (w w' : W A) (d : DM θ le w) (d' : DM θ le w'),
+        DM_eq d d' -> DM_eq d' d ;
+    dm_eq_trans : forall A (w w' w'' : W A)
+        (d : DM θ le w) (d' : DM θ le w') (d'' : DM θ le w''),
+        DM_eq d d' -> DM_eq d' d'' -> DM_eq d d'' ;
+    dm_bind_proper : forall A B (w w' : W A) (wf wf' : A -> W B)
+        (d : DM θ le w) (d' : DM θ le w')
+        (f : forall a, DM θ le (wf a)) (f' : forall a, DM θ le (wf' a)),
+        DM_eq d d' -> (forall a, DM_eq (f a) (f' a)) ->
+        DM_eq (DM_bind θ le d f) (DM_bind θ le d' f') ;
+    (* the monad laws *)
+    dm_bind_ret_l : forall A B (a : A) (wf : A -> W B)
+        (f : forall a, DM θ le (wf a)),
+        DM_eq (DM_bind θ le (DM_ret θ le a) f) (f a) ;
+    dm_bind_ret_r : forall A (w : W A) (d : DM θ le w),
+        DM_eq (DM_bind θ le d (fun a => DM_ret θ le a)) d ;
+    dm_bind_bind : forall A B C (w : W A) (wf : A -> W B) (wg : B -> W C)
+        (d : DM θ le w) (f : forall a, DM θ le (wf a))
+        (g : forall b, DM θ le (wg b)),
+        DM_eq (DM_bind θ le (DM_bind θ le d f) g)
+              (DM_bind θ le d (fun a => DM_bind θ le (f a) g)) ;
+    (* the laws of weakening *)
+    dm_wkn_id : forall A (w : W A) (H : le A w w) (d : DM θ le w),
+        DM_eq (DM_wkn θ le H d) d ;
+    dm_wkn_wkn : forall A (w1 w2 w3 : W A)
+        (H12 : le A w1 w2) (H23 : le A w2 w3) (H13 : le A w1 w3)
+        (d : DM θ le w1),
+        DM_eq (DM_wkn θ le H23 (DM_wkn θ le H12 d)) (DM_wkn θ le H13 d) ;
+    dm_wkn_bind : forall A B (w w' : W A) (wf wf' : A -> W B)
+        (H : le A w w') (Hf : forall a, le B (wf a) (wf' a))
+        (H' : le B (@bind W (mor_monad_tgt (θ := θ)) A B w wf)
+                   (@bind W (mor_monad_tgt (θ := θ)) A B w' wf'))
+        (d : DM θ le w) (f : forall a, DM θ le (wf a)),
+        DM_eq (DM_wkn θ le H' (DM_bind θ le d f))
+              (DM_bind θ le (DM_wkn θ le H d)
+                 (fun a => DM_wkn θ le (Hf a) (f a)))
+  }.
+
+  Hypothesis EqM :
+    @Eq1Equivalence M (mor_monad_src (θ := θ)) (mor_eq1_src (θ := θ)).
+  Hypothesis LawsM :
+    @MonadLawsE M (mor_eq1_src (θ := θ)) (mor_monad_src (θ := θ)).
+
+  Theorem DM_laws : DijkstraLaws.
+  Proof.
+    destruct LawsM as [Lbrl Lbrr Lbb Lpb].
+    constructor.
+    - intros A w d. destruct (EqM A) as [Hr _ _]. exact (Hr (proj1_sig d)).
+    - intros A w w' d d' H. destruct (EqM A) as [_ Hs _]. exact (Hs _ _ H).
+    - intros A w w' w'' d d' d'' H1 H2. destruct (EqM A) as [_ _ Ht].
+      exact (Ht _ _ _ H1 H2).
+    - intros A B w w' wf wf' d d' f f' Hd Hf.
+      exact (Lpb A B (proj1_sig d) (proj1_sig d') Hd
+               (fun a => proj1_sig (f a)) (fun a => proj1_sig (f' a)) Hf).
+    - intros A B a wf f. exact (Lbrl A B (fun a => proj1_sig (f a)) a).
+    - intros A w d. exact (Lbrr A (proj1_sig d)).
+    - intros A B C w wf wg d f g.
+      exact (Lbb A B C (proj1_sig d) (fun a => proj1_sig (f a))
+               (fun b => proj1_sig (g b))).
+    - intros A w H d. destruct (EqM A) as [Hr _ _]. exact (Hr (proj1_sig d)).
+    - intros A w1 w2 w3 H12 H23 H13 d. destruct (EqM A) as [Hr _ _].
+      exact (Hr (proj1_sig d)).
+    - intros A B w w' wf wf' H Hf H' d f. destruct (EqM B) as [Hr _ _].
+      exact (Hr _).
+  Qed.
+
+  (** Lifting is compatible with the operations: a lifted [ret] is [DM_ret],
+      and a lifted [bind] is the [DM_bind] of the lifted parts. *)
+  Lemma DM_lift_ret {A} (a : A) :
+    DM_eq (DM_lift θ le (@ret M (mor_monad_src (θ := θ)) A a)) (DM_ret θ le a).
+  Proof. destruct (EqM A) as [Hr _ _]. exact (Hr _). Qed.
+
+  Lemma DM_lift_bind {A B} (m : M A) (k : A -> M B) :
+    DM_eq (DM_lift θ le (@bind M (mor_monad_src (θ := θ)) A B m k))
+          (DM_bind θ le (DM_lift θ le m) (fun a => DM_lift θ le (k a))).
+  Proof. destruct (EqM B) as [Hr _ _]. exact (Hr _). Qed.
+End DijkstraLaws.
+
+(** The same laws for [DMop]: it is [DM] at the flipped order. *)
+Definition DijkstraLawsOp {M W : Type -> Type} (θ : forall A, M A -> W A)
+  (le : forall A, relation (W A))
+  {Hθ : IsMonadMorphism θ} {HT : OrderedTarget θ le} : Prop :=
+  @DijkstraLaws M W θ (fun A x y => le A y x) Hθ (OrderedTarget_flip θ le HT).
+
+Theorem DMop_laws {M W : Type -> Type} (θ : forall A, M A -> W A)
+  (le : forall A, relation (W A))
+  {Hθ : IsMonadMorphism θ} {HT : OrderedTarget θ le} :
+  @Eq1Equivalence M (mor_monad_src (θ := θ)) (mor_eq1_src (θ := θ)) ->
+  @MonadLawsE M (mor_eq1_src (θ := θ)) (mor_monad_src (θ := θ)) ->
+  DijkstraLawsOp θ le.
+Proof.
+  intros EqM LawsM.
+  exact (@DM_laws M W θ _ Hθ (OrderedTarget_flip θ le HT) EqM LawsM).
+Qed.
 
 (* ================================================================= *)
 (** * The liftable morphisms                                          *)
@@ -313,6 +440,39 @@ Section Named.
   Definition Ddslp_op (w : DSLPStExc S A) : Type :=
     DMop (@dslpStExc S) (@ordDSLPStExc S) w.
 End Named.
+
+(** All twelve satisfy the laws: the computation monad is lawful. *)
+Section NamedLaws.
+  Variable S : Type.
+  Local Notation EqM := (Eq1Equivalence__stdivexcndNE S).
+  Local Notation LawsM := (MonadLawsE__stdivexcndNE S).
+
+  Theorem Ddwp_laws : DijkstraLaws (@dwpStExc S) (@ordWStExc S).
+  Proof. exact (DM_laws (@dwpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Ddwp_op_laws : DijkstraLawsOp (@dwpStExc S) (@ordWStExc S).
+  Proof. exact (DMop_laws (@dwpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Ddwlp_laws : DijkstraLaws (@dwlpStExc S) (@ordWStExc S).
+  Proof. exact (DM_laws (@dwlpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Ddwlp_op_laws : DijkstraLawsOp (@dwlpStExc S) (@ordWStExc S).
+  Proof. exact (DMop_laws (@dwlpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Dawp_laws : DijkstraLaws (@awpStExc S) (@ordWStExc S).
+  Proof. exact (DM_laws (@awpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Dawp_op_laws : DijkstraLawsOp (@awpStExc S) (@ordWStExc S).
+  Proof. exact (DMop_laws (@awpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Dawlp_laws : DijkstraLaws (@awlpStExc S) (@ordWStExc S).
+  Proof. exact (DM_laws (@awlpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+  Theorem Dawlp_op_laws : DijkstraLawsOp (@awlpStExc S) (@ordWStExc S).
+  Proof. exact (DMop_laws (@awlpStExc S) (@ordWStExc S) EqM LawsM). Qed.
+
+  Theorem Dasp_laws : DijkstraLaws (@aspStExc S) (@ordASPStExc S).
+  Proof. exact (DM_laws (@aspStExc S) (@ordASPStExc S) EqM LawsM). Qed.
+  Theorem Dasp_op_laws : DijkstraLawsOp (@aspStExc S) (@ordASPStExc S).
+  Proof. exact (DMop_laws (@aspStExc S) (@ordASPStExc S) EqM LawsM). Qed.
+  Theorem Ddslp_laws : DijkstraLaws (@dslpStExc S) (@ordDSLPStExc S).
+  Proof. exact (DM_laws (@dslpStExc S) (@ordDSLPStExc S) EqM LawsM). Qed.
+  Theorem Ddslp_op_laws : DijkstraLawsOp (@dslpStExc S) (@ordDSLPStExc S).
+  Proof. exact (DMop_laws (@dslpStExc S) (@ordDSLPStExc S) EqM LawsM). Qed.
+End NamedLaws.
 
 (** A typing through a lifted WP morphism is a family of typings through the
     base morphism, one per start state. *)
