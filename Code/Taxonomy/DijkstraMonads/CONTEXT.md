@@ -1,104 +1,93 @@
 # Dijkstra monads context
 
-Parent: [Taxonomy](../CONTEXT.md). Read [computation outcomes](../ComputationMonads/CONTEXT.md),
-[base specifications and orders](../BaseSpecMonads/CONTEXT.md), and the selected
-[WP](../EffectObservations/WP/CONTEXT.md) or [SP](../EffectObservations/SP/CONTEXT.md)
-observation first. Coverage follows the three modules in [_CoqProject](../../_CoqProject).
+Parent: [Taxonomy](../CONTEXT.md). Read [OrderedMonad.v](../../Classes/OrderedMonad.v)
+for `MonadMorphism`, `IsMonadMorphism`, `OrderedMonad`, and `triple`, and the
+[Triples context](../Triples/CONTEXT.md) for the morphisms, first.
 
-These clients index computations by observations in a selected specification
-order, following Kenji Maillard et al., [*Dijkstra Monads for All*](https://doi.org/10.1145/3341708)
-(ICFP 2019; DM4all). A carrier, its indexed operations, carrier equations,
-and a complete indexed law package are distinct contracts. The declarations
-below do not establish every indexed law package or certify assumption-freedom.
+[DijkstraMonad.v](DijkstraMonad.v) has the construction, its instances, and
+what is and is not a typing; [DijkstraExamples.v](DijkstraExamples.v) has
+typed programs. They follow Kenji Maillard et al.,
+[*Dijkstra Monads for All*](https://doi.org/10.1145/3341708) (ICFP 2019).
 
-## WP clients
+## The construction
 
-[Dijkstra_StDivExcNonDet_WStExc.v](Dijkstra_StDivExcNonDet_WStExc.v) uses the four
-`obsDWP` / `obsDWLP` / `obsAWP` / `obsAWLP` observations of `stdivexcnd` into
-`WStExc`. Its `ordWStExc` is reverse implication, lifted from `WP_le`:
+For a map `θ : M ~> W` and an order `le` on `W`:
 
-- `D w := { m : stdivexcnd S A | ordWStExc (obs m) w }`.
-- `Dop w` swaps the order arguments: `ordWStExc w (obs m)`.
-- `Ddwp`, `Ddwlp`, `Dawp`, `Dawlp` select the four observations; their `_op`
-  aliases select `Dop` at the same observations.
+- `DM θ le w := { m : M A | le (θ m) w }`.
+- `DMop θ le w := DM θ (flip le) w`, that is `{ m : M A | le w (θ m) }`.
 
-The generic construction supplies return, bind, weakening, and lift in both
-directions. `orD` supplies a choice rule under a monotone specification
-combinator and its observation equation; `Ddwp_or` / `Ddwlp_or` / `Dawp_or` /
-`Dawlp_or` instantiate it. Do not infer dual choice rules from the dual aliases.
-`D_eq` compares projected computations by `eq1`; `D_bind_ret_l`, `D_bind_ret_r`,
-and `D_bind_bind` prove carrier equations, not equality of indexed packages.
+The two types need nothing else. The operations `DM_ret`, `DM_bind`, `DM_wkn`,
+`DM_lift` need `θ` to be a monad morphism (`IsMonadMorphism θ`) and its target
+to be ordered for the monad and equality of that morphism
+(`OrderedTarget θ le`: an `Eq1Equivalence` and an `OrderedMonad`). Both are
+found by instance resolution from `θ` and `le`, so
+`DM_ret (@dwpSt S) (@ordWSt S) a` needs no further argument. The `DMop`
+operations are the `DM` ones at the flipped order, through
+`OrderedTarget_flip`, which is `OrderedMonad_flip`; it is not an instance.
 
-`ofTripleSub` / `toTripleSub` bridge `SubsetOf` triples exactly with `D` at
-`pp2wp_subset`; `ofTripleSup` / `toTripleSup` bridge `SupersetOf` triples with
-`Dop` at `pp2wp_superset`. Keep these argument directions despite the reverse
-order. Later clients include liberal divergence typings and compositional examples.
+## The liftable morphisms
 
-## SP clients and generic construction
+There are 18 `OrderedTarget` instances, one per WP, ASP and DSLP morphism of
+[Triples/MonadMorphisms.v](../Triples/MonadMorphisms.v): six readings at the
+base, with state, and with state and exceptions. Each names the natural order
+of the target:
 
-Imports in both SP files explicitly choose **earlier `OldMonads/` carriers**,
-not the canonical arrow-derived modules with the same names.
+| Readings | Order |
+|---|---|
+| `dwp`, `dwlp`, `awp`, `awlp` | `WP_le`, `ordWSt`, `ordWStExc` (reverse implication, lifted) |
+| `asp`, `dslp` | `ordASP…`, `ordDSLP…`: pointwise order of the transformers |
 
-- [Dijkstra_StDivExcNonDet_SPStExc.v](Dijkstra_StDivExcNonDet_SPStExc.v) uses
-  `stdivexcnd` and its terminating-slice SP observations. Retained outcomes
-  have type `option (A * S)`: exceptions remain, outer divergence does not.
-  Its `DM` / `DMop` use a selected preorder, inclusion of `eq1` in that order,
-  and return/bind observation equations. Indexed sequencing additionally
-  requires specification bind monotonicity in both arguments. ASP/DSLP
-  instantiate the operations; the file also supplies their choice rules.
-- [Dijkstra_StDivNonDet_SPSt.v](Dijkstra_StDivNonDet_SPSt.v) owns the generic
-  `EffObs` interface bundling return/bind preservation up to specification
-  `eq1`. Despite the filename, its `DM` / `DMop` construction is generic in
-  computation and specification monads, using `OrderedMonad` and `EffObs`
-  (with specification `Eq1Equivalence`). Both directions have return, bind,
-  weakening, and lift. `EffObs_ASP` / `EffObs_DSLP` instantiate it with earlier
-  `StASP` / `StDSLP` and `TermSliceObs` of `stdivnd`: observations retain only
-  terminating result/state pairs `A * S`, omitting divergence.
+The DSP and ASLP morphisms have none. DSP and ASLP are not specification
+monads for their natural order, since `bind` is not monotone in its first
+argument (`not_OrderedMonad_DSPSt`, `not_OrderedMonad_ASLPSt`), and a
+predicate-transformer monad gets a Dijkstra monad from its own order only.
+`wpSt_typing_pointwise` and `wpStExc_typing_pointwise` say a typing through a
+lifted WP morphism is a family of base typings, one per start state.
 
-In both constructions `DM` requires `obs m <= w`, while `DMop` requires
-`w <= obs m`, for the selected order. Qualify repeated names by source module.
+## Triples are typings
 
-## Selected-order bind obstructions
+Stated for any morphism into the target, so for every reading into it:
 
-In the exception-capable SP file, `ordDSPStExc_bind_not_mono` and
-`ordASLPStExc_bind_not_mono` refute existing-bind first-argument monotonicity
-under the global pointwise orders, using actual nat-state programs.
-`no_monotone_dsp_bind` / `no_monotone_aslp_bind` also cover alternative binds,
-but with these exact hypotheses:
+- WP, all three levels: `triple θ m Under pre post` iff
+  `le (θ m) (wpUnder… pre post)`, a typing in `DM`; `triple θ m Over pre post`
+  iff `le (wpOver… pre post) (θ m)`, a typing in `DMop`. Keep these argument
+  directions: the WP orders are reverse implication.
+- ASP `Over`: a typing in `DM` at `aspOver P Q`, the arrow of the relation
+  `fun x y => P x -> Q y`.
+- DSLP `Under`: a typing in `DMop` at `dslpUnder P Q`, the arrow of
+  `fun x y => Q y -> P x`.
 
-- The candidate has type
-  `forall A B, DSPStExc nat A -> (A -> DSPStExc nat B) -> DSPStExc nat B`,
-  or the corresponding `ASLPStExc` type, using the earlier carriers.
-- For every `x : stdivexcnd nat A` and `f : A -> stdivexcnd nat B`, it satisfies
-  `eq1 (obs (x >>= f)) (bnd A B (obs x) (fun a => obs (f a)))`.
+`le_aspOver` and `le_dslpUnder` are index-generic; the three levels are the
+same statement at three pairs of indices. With state and exceptions the
+twelve monads are named `Ddwp`, `Ddwlp`, `Dawp`, `Dawlp`, `Dasp`, `Ddslp`,
+and the same with `_op`.
 
-Under that observation-preservation hypothesis, the candidate cannot be
-monotone in its first argument for the selected pointwise order with a fixed
-continuation. These theorems do not require candidate monad laws and do not
-exclude every alternative order. `Ddsp` / `Ddsp_op` and `Daslp` / `Daslp_op`
-still define indexed carriers; explicit base return, weakening, and lift
-operations remain available. See [base order distinctions](../BaseSpecMonads/CONTEXT.md#orders-and-comparisons)
-for relation-inclusion orders and separate Boolean-state counterexamples.
+## What is not a typing
 
-## Global triple bridges and their limits
+- `le_relASP` / `relDSLP_le`: a typing in `DMop` for ASP, and in `DM` for
+  DSLP, is an inclusion of the relation the index denotes into the relation
+  of the computation.
+- `aspUnder P Q` and `dslpOver P Q` are the indices one would like for ASP
+  `Under` and DSLP `Over`. A typing there says every start point in `P`
+  reaches every result in `Q` (`le_aspUnder`; for DSLP at the complements,
+  `dslpOver_le`). It gives the triple when `P` (for DSLP, its complement) is
+  inhabited; the DSLP direction uses excluded middle.
+- `no_asp_under_index` and `no_dslp_over_index`, with state `nat`: no index
+  has the triple as its typings. The three computations `reach0From0`,
+  `reach0From1`, `reachNothing` are built by `progOf`, which gives a
+  computation a prescribed relation and lets it diverge as well.
+- `triple_under_aspPure`: at unit input the ASP `Under` triple is a typing at
+  `aspUnder`, for a precondition that holds.
 
-Both SP modules give exact bridges, with no extra precondition side condition:
-`ofTripleASPOver` / `toTripleASPOver` connect ASP/`Over` with `Dasp` at
-`pp2asp_over`; `ofTripleDSLPUnder` / `toTripleDSLPUnder` connect DSLP/`Under`
-with `Ddslp_op` at `pp2dslp_under`. Postconditions range over each module's
-retained outcomes, not the raw divergence tokens.
+## DijkstraExamples.v
 
-ASP/`Under` is different. In each module, `Dasp_op_under_iff` says global
-membership at `pp2asp_under` requires **every** pre-state to reach **every**
-post-outcome, whereas the triple asks for **some** pre-state per post-outcome.
-The exception-capable file's `toTripleASPUnder` requires an inhabited
-precondition; do not turn it into an unconditional equivalence.
+One typed program per WP Dijkstra monad (`progA_Ddwp`, `progRet_Ddwp_op`,
+...), `progA_Dasp`, `progEx_Ddslp_op`; `ret_Ddwp` and `put_get_Dawp` use the
+operations. For ASP `Under`: `progA_Dasp_op` is a typing, and
+`progloom_harder_not_Dasp_op` a triple that is not one. For DSLP `Over`:
+`progA_Ddslp`, and `progloom_harder_dslp_over` with
+`progloom_harder_not_Ddslp`. `oneOrTwo_Dasp_op` is the stateless case.
 
-Each `no_asp_under_index` fixes nat state, unit result, precondition `True`,
-and singleton postcondition at `(tt, 0)` (wrapped in `Some` for the
-exception-capable slice). No index in that earlier ASP carrier represents
-this triple for all programs via its selected global `DMop` order.
-Separately, `ordASPStExcAt_bind_not_mono` / `ordASPStAt_bind_not_mono` refute
-continuation-argument bind monotonicity for the fixed-precondition `At` orders.
-These counterexamples concern specific carriers, observations, and orders;
-they are not a claim that no Dijkstra monad exists under every order.
+## Not here
+
+Choice rules are not part of these modules.
