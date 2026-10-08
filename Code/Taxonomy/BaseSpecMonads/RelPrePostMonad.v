@@ -175,3 +175,38 @@ Module RPPMFacts.
   Qed.
 
 End RPPMFacts.
+
+(* ================================================================= *)
+(** * Refinement order: [RelPrePost] is a specification monad        *)
+(* ================================================================= *)
+
+(** Reverse implication on validator verdicts: a validator that accepts
+    less is higher. *)
+
+From Coq Require Import RelationClasses.
+From Incorrectness.Classes Require Import OrderedMonad.
+
+Definition MR_le {A} (r1 r2 : RPPM.RelPrePost A) : Prop :=
+  forall p post, RPPM.ab (RPPM.runRPP r2 p post)
+              -> RPPM.ab (RPPM.runRPP r1 p post).
+
+#[global] Instance MR_le_PreOrder {A} : PreOrder (@MR_le A).
+Proof.
+  constructor; unfold MR_le.
+  - intros x p post H. exact H.
+  - intros x y z H1 H2 p post H. exact (H1 p post (H2 p post H)).
+Qed.
+
+#[global] Instance OrderedMonad_RelPrePost
+  : OrderedMonad RPPM.RelPrePost (@MR_le).
+Proof.
+  constructor.
+  - intro A. exact MR_le_PreOrder.
+  - intros A x y H p post Hy. exact (proj2 (H p post) Hy).
+  - intros A B m1 m2 Hm f1 f2 Hf p post H.
+    apply (RPPM.runRPP_mono m1 p p
+             (fun a => RPPM.runRPP (f1 a) p post)
+             (fun a => RPPM.runRPP (f2 a) p post) (fun h => h)).
+    + intros a Ha. exact (Hf a p post Ha).
+    + exact (Hm p _ H).
+Qed.

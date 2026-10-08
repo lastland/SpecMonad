@@ -173,6 +173,34 @@ Module SPMFacts.
 
 End SPMFacts.
 
+(* ================================================================= *)
+(** * Refinement order: [SPost] is a specification monad             *)
+(* ================================================================= *)
+
+(** Pointwise implication in the precondition and the result. *)
+
+From Coq Require Import RelationClasses.
+From Incorrectness.Classes Require Import OrderedMonad.
+
+Definition SP_le {A} (m1 m2 : SPM.SPost A) : Prop :=
+  forall p a, SPM.app m1 p a -> SPM.app m2 p a.
+
+#[global] Instance SP_le_PreOrder {A} : PreOrder (@SP_le A).
+Proof.
+  constructor; unfold SP_le.
+  - intros x p a H. exact H.
+  - intros x y z H1 H2 p a H. exact (H2 p a (H1 p a H)).
+Qed.
+
+#[global] Instance OrderedMonad_SPost : OrderedMonad SPM.SPost (@SP_le).
+Proof.
+  constructor.
+  - intro A. exact SP_le_PreOrder.
+  - intros A x y H p a. apply H.
+  - intros A B m1 m2 Hm k1 k2 Hk p b [a H]. exists a.
+    apply (Hk a). exact (SPM.app_mono (k1 a) _ _ b (Hm p a) H).
+Qed.
+
 (* Initial attempts based on SPost and Kenji's work *)
 
 Section KenjiPureSP.

@@ -95,6 +95,35 @@ Module PredMFacts.
 End PredMFacts.
 
 (* ================================================================= *)
+(** * Refinement order: [Pred] is a specification monad              *)
+(* ================================================================= *)
+
+(** Pointwise implication, DM4all's order on [PredOM]: a predicate with more
+    results is bigger. *)
+
+From Coq Require Import RelationClasses.
+From Incorrectness.Classes Require Import OrderedMonad.
+
+Definition Pred_le {A} (m1 m2 : PredM.Pred A) : Prop :=
+  forall a, m1 a -> m2 a.
+
+#[global] Instance Pred_le_PreOrder {A} : PreOrder (@Pred_le A).
+Proof.
+  constructor; unfold Pred_le.
+  - intros x a H. exact H.
+  - intros x y z H1 H2 a H. exact (H2 a (H1 a H)).
+Qed.
+
+#[global] Instance OrderedMonad_Pred : OrderedMonad PredM.Pred (@Pred_le).
+Proof.
+  constructor.
+  - intro A. exact Pred_le_PreOrder.
+  - intros A x y H a. apply H.
+  - intros A B m1 m2 Hm k1 k2 Hk b [a [Ha Hb]].
+    exists a. split; [ exact (Hm a Ha) | exact (Hk a b Hb) ].
+Qed.
+
+(* ================================================================= *)
 (** * The transformer stack: [PredStExc = stateT S (optionT Pred)]                     *)
 (* ================================================================= *)
 
@@ -191,6 +220,17 @@ End PredStExc.
     converse direction to [ordWStExc], which lifts [WP_le]. *)
 Definition ordPredStExc {S A} (m1 m2 : PredStExc S A) : Prop :=
   forall s r, unOptionT (runStateT m1 s) r -> unOptionT (runStateT m2 s) r.
+
+(** [ordPredStExc] is the lift of [Pred_le] through the two transformers,
+    so [PredStExc] is a specification monad by the generic lifts. *)
+Theorem OrderedMonad_PredStExc S :
+  @OrderedMonad (PredStExc S) (Monad__PredStExc S) (Eq1__PredStExc S)
+    (fun A => @ordPredStExc S A).
+Proof.
+  refine (OrderedMonad_iff (le_stateT (le_optionT (@Pred_le))) _ _
+            (OrderedMonad_stateT _ (OrderedMonad_optionT _ OrderedMonad_Pred))).
+  intros A x y. split; intro H; exact H.
+Qed.
 
 
 Module PredSt.

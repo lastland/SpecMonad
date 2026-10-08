@@ -124,3 +124,38 @@ Module PPMFacts.
   Qed.
 
 End PPMFacts.
+
+(* ================================================================= *)
+(** * Refinement order: [PrePost] is a specification monad           *)
+(* ================================================================= *)
+
+(** DM4all's Hoare order: strengthen the precondition, weaken the
+    postcondition. *)
+
+From Coq Require Import RelationClasses.
+From Incorrectness.Classes Require Import OrderedMonad.
+
+Definition PP_le {A} (m1 m2 : PPM.PrePost A) : Prop :=
+  (PPM.pre m2 -> PPM.pre m1) /\ (forall a, PPM.post m1 a -> PPM.post m2 a).
+
+#[global] Instance PP_le_PreOrder {A} : PreOrder (@PP_le A).
+Proof.
+  constructor; unfold PP_le.
+  - intro x. split; intros; assumption.
+  - intros x y z [H1p H1q] [H2p H2q]. split.
+    + intro h. exact (H1p (H2p h)).
+    + intros a h. exact (H2q a (H1q a h)).
+Qed.
+
+#[global] Instance OrderedMonad_PrePost : OrderedMonad PPM.PrePost (@PP_le).
+Proof.
+  constructor.
+  - intro A. exact PP_le_PreOrder.
+  - intros A x y [Hp Hq].
+    split; [ exact (proj2 Hp) | intro a; exact (proj1 (Hq a)) ].
+  - intros A B m1 m2 [Hmp Hmq] k1 k2 Hk. split.
+    + intros [H1 H2]. split; [ exact (Hmp H1) |].
+      intros a Ha. exact (proj1 (Hk a) (H2 a (Hmq a Ha))).
+    + intros b [a [Ha Hb]].
+      exists a. split; [ exact (Hmq a Ha) | exact (proj2 (Hk a) b Hb) ].
+Qed.
