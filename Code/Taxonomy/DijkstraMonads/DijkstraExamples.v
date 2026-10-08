@@ -29,7 +29,7 @@ From Incorrectness.Taxonomy.ComputationMonads Require Import
 From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad.
-From Incorrectness.Taxonomy.Triples Require Import MonadMorphisms Examples.
+From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms Examples.
 From Incorrectness.Taxonomy.DijkstraMonads Require Import DijkstraMonad.
 
 (* ================================================================= *)

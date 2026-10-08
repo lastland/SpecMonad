@@ -47,10 +47,9 @@ From Incorrectness.Classes Require Import Arrow ArrowMonad OrderedMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import
   TransformerLaws DivNonDetNE.
 From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SpecificationMonads.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.Triples Require Import MonadMorphisms.
+From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)
 (** * The construction                                                *)

@@ -15,10 +15,10 @@ See [domain-document rules](docs/agents/domain.md) for maintenance and ADR use.
   specifications, their properties, orders, and adjunctions. The generic
   `TransformerLaws.v` serves both despite its computation-directory location.
   Consult imports: directory ownership does not establish semantic independence.
-- EffectObservations connects computations to specifications; its parent
-  compares readings and triples. DijkstraMonads uses observations and selected
-  specification orders to index computations. OldSP retains some built earlier
-  results.
+- Triples defines monad morphisms out of the non-empty base `divndNE` and its
+  transformer stacks, lifts their triples, and proves the taxonomy diagram at
+  the state level and with exceptions. DijkstraMonads gives each of those
+  morphisms its Dijkstra monad and identifies triples with typings.
 - Tests check instances/laws, Examples check semantic clients, and Checks
   reports selected theorem assumptions. The map does not certify axiom-freedom.
 
@@ -46,19 +46,16 @@ and the opt-in assumption audit.
 | [Arrows](Code/Taxonomy/Arrows/CONTEXT.md) | Binary carriers and equivalences |
 | [Arrow examples](Code/Taxonomy/Arrows/Examples/CONTEXT.md) | Semantic clients |
 | [Arrow tests](Code/Taxonomy/Arrows/Tests/CONTEXT.md) | Concrete instances |
-| [EffectObservations](Code/Taxonomy/EffectObservations/CONTEXT.md) | Reading/triple comparisons |
-| [SP observations](Code/Taxonomy/EffectObservations/SP/CONTEXT.md) | SP readings and judgments |
-| [WP observations](Code/Taxonomy/EffectObservations/WP/CONTEXT.md) | Four WP readings |
-| [DijkstraMonads](Code/Taxonomy/DijkstraMonads/CONTEXT.md) | Indexed computations, triple bridges, and order obstructions |
-| [OldSP](Code/Taxonomy/OldSP/CONTEXT.md) | Earlier presentation, partly built |
+| [DijkstraMonads](Code/Taxonomy/DijkstraMonads/CONTEXT.md) | Dijkstra monad of a monad morphism; triples as typings |
+| [Triples](Code/Taxonomy/Triples/CONTEXT.md) | Lifted monad morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
 
 ## Reading by task and other areas
 
-For effects, read computation → observation → comparison contexts. For a
+For effects, read computation → Triples contexts. For a
 representation change, read carrier → equivalence → examples/tests. For a
 generic law, read Classes → transformer → generic/concrete tests. For a
 judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
-typings, read carrier/order → observation → DijkstraMonads.
+typings, read carrier/order → Triples → DijkstraMonads.
 
 `Taxonomy/deprecated/`, `Backup/`, and `ITreeExamples/` are outside the normal
 manifest. Consult them deliberately; copied ITree provenance is in its README.

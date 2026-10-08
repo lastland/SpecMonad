@@ -16,17 +16,10 @@ The selected reports cover:
   and the option/state core, choice, and application law packages. The helpers
   take congruence or fixed-arrow application equations explicitly; the monad
   derives congruence from application coherence.
-- The 13 stateful [computation-owned raw outcome laws](../Taxonomy/ComputationMonads/CONTEXT.md#raw-outcome-law-interface):
-  five single-option return/bind and primitive laws in
-  [StExcNonDet.v](../Taxonomy/ComputationMonads/StExcNonDet.v), `outcomes_diverge`
-  in [StDivNonDet.v](../Taxonomy/ComputationMonads/StDivNonDet.v), and seven
-  double-option return/bind and primitive laws in
-  [StDivExcNonDet.v](../Taxonomy/ComputationMonads/StDivExcNonDet.v).
-- The four double-option WP return laws `obsDWP_ret`, `obsDWLP_ret`,
-  `obsAWP_ret`, and `obsAWLP_ret` in
-  [StDivExcNonDet_WStExc.v](../Taxonomy/EffectObservations/WP/StDivExcNonDet_WStExc.v).
-  Their `Check` commands use `bool` state and `0 : nat`, exercising the
-  independent state/result types supported by `WPureMonad.retP S a`.
+- The outcome laws of
+  [DivNonDetNE.v](../Taxonomy/ComputationMonads/DivNonDetNE.v): bind on
+  `divnd`, absorption of divergence, blocking of the empty prefix, and bind
+  on the two stacks.
 - Shared structural equations in
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v), concrete property-only
   SP law packages in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v), and the existing
@@ -40,41 +33,42 @@ The selected reports cover:
   identity, and state update followed by propagated failure. DSP/ASLP law
   packages retain classical relation recovery.
 - `rel_state_option_bind` in
-  [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) and `asp_to_dslp_bind`
-  in [SPostArrMonad.v](../Taxonomy/BaseSpecMonads/SPostArrMonad.v).
+  [RelArrowCoherence.v](../Classes/RelArrowCoherence.v).
 - Canonical ASP/DSLP fixed-input, state, option, and state-option relation
   readings in [SPostArr.v](../Taxonomy/Arrows/SPostArr.v). These wrappers
   specialize `rel_bind`, `relS_bind`, `relO_*`, and `relE_*` from
   [RelArrowCoherence.v](../Classes/RelArrowCoherence.v) through the existing
   `RelArrow` / `RelArrowChoice` / `RelArrowApply` dictionaries.
-- ASP/DSLP bind laws and examples for state, exceptions, and nondeterminism
-  in [StExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StExcNonDet_SPostArr.v),
-  and state, divergence, and nondeterminism in
-  [StDivNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivNonDet_SPostArr.v).
-- Representative deterministic ITree and double-option bind laws from
-  [StDivITree_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivITree_SPostArr.v)
-  and [StDivExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivExcNonDet_SPostArr.v).
-- DSP/ASLP ordered-bind counterexamples, non-monotonicity theorems, and
-  arbitrary-bind impossibility theorems for Boolean state in
-  [SPBindOrderCounterexample.v](../Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v).
+- DSP and ASLP under their pointwise orders, in
+  [DSPMonad.v](../Taxonomy/BaseSpecMonads/DSPMonad.v) and
+  [ASLPMonad.v](../Taxonomy/BaseSpecMonads/ASLPMonad.v): failure of the ordered
+  monad laws with state and with exceptions, arbitrary-bind impossibility for
+  Boolean state, and the ordered monads without state.
+- The identification of the four directly defined stateless monads (`ASPSP`,
+  `DSLPSP`, `DSPSP`, `ASLPSP`) with the arrow-derived ones: both morphism
+  theorems and the ordered-monad instance of each.
 
-The audit also reports the four pure and double-option DSP/ASLP bind
-monotonicity theorems, the generic option-order lift, and the double-option
-specification monad laws. For the stateless full-outcome model, it reports
-the five raw laws and computation monad laws in `DivExcNonDet.v`, both
-observations' return/bind laws, and their mixed-outcome examples in
-`DivExcNonDet_SPDivExc.v`. These retain explicit divergence and exceptions.
+- The triples development: monad morphisms and their transformer lifts,
+  `arrow_morphism_monad`, the base arrow morphisms, the morphisms of
+  [Triples/MonadMorphisms.v](../Taxonomy/Triples/MonadMorphisms.v) at three levels
+  with both proofs of each SP morphism, the edges of
+  [Triples/Diagram.v](../Taxonomy/Triples/Diagram.v) with state and with
+  exceptions, the examples of [Triples/Examples.v](../Taxonomy/Triples/Examples.v),
+  the rules of [Triples/InCorrectnessPrinciples.v](../Taxonomy/Triples/InCorrectnessPrinciples.v),
+  and the construction, instances and triple identifications of
+  [DijkstraMonad.v](../Taxonomy/DijkstraMonads/DijkstraMonad.v).
+- The separation of the four healthiness classes in
+  [SPostArr.v](../Taxonomy/Arrows/SPostArr.v).
+
+The audit also reports the second adjunction between `PrePost` and `WPure`
+and the generic option-order lift.
 
 ## Semantic regressions versus audit commands
 
-The [raw semantic regressions](../Taxonomy/ComputationMonads/CONTEXT.md#semantic-regressions)
-live beside the computation laws: empty prefixes block, exceptions and
-divergence survive empty continuations, and `pickP` at `Empty_set` blocks.
-The double-option arrow examples `raiseP_obs_retained` and `spinP_obs_invisible`
-in [StDivExcNonDet_SPostArr.v](../Taxonomy/EffectObservations/SP/StDivExcNonDet_SPostArr.v)
-check which outcomes the terminating slice retains. These are proofs in the
-normal build, not new audit commands. The audit's WP `Check` commands only
-instantiate existing theorem types.
+The semantic regressions `empty_prefix_blocks` and `diverge_survives_empty`
+live beside the computation laws in
+[DivNonDetNE.v](../Taxonomy/ComputationMonads/DivNonDetNE.v). They are proofs
+in the normal build; the audit also reports the first.
 
 [SPostArrInfrastructure.v](../Taxonomy/Arrows/Tests/SPostArrInfrastructure.v)
 checks core, choice, and application laws for all four property-only flavours

@@ -120,7 +120,7 @@ From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPStBindComparisons.
 From Incorrectness.Taxonomy.BaseSpecMonads Require
-  PredMonad SPPredicateTransformers SpecificationMonads.
+  PredMonad SPPredicateTransformers.
 
 Import SPPredicateTransformers.SPStMonotone.
 
@@ -1037,7 +1037,7 @@ Section WPMonad.
     refine (OrderedMonad_iff (fun A (x y : WSt S A) => ordWSt y x) _
               (fun A x y => iff_sym (impliesWSt_ordWSt x y)) _).
     exact (@OrderedMonad_flip (WSt S) _ _ (Eq1Equivalence__WSt S) _
-             (SpecificationMonads.OrderedMonad_WSt S)).
+             (OrderedMonad_WSt S)).
   Qed.
 
   (** It is the [stateT] lift of implication in [WPure]. *)

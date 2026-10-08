@@ -1,8 +1,8 @@
 # Dijkstra monads context
 
 Parent: [Taxonomy](../CONTEXT.md). Read [OrderedMonad.v](../../Classes/OrderedMonad.v)
-for `MonadMorphism`, `IsMonadMorphism`, `OrderedMonad`, and `triple`, and the
-[Triples context](../Triples/CONTEXT.md) for the morphisms, first.
+for `MonadMorphism`, `IsMonadMorphism` and `OrderedMonad`, and the
+[Triples context](../Triples/CONTEXT.md) for `triple` and the morphisms, first.
 
 [DijkstraMonad.v](DijkstraMonad.v) has the construction, its instances, and
 what is and is not a typing; [DijkstraExamples.v](DijkstraExamples.v) has

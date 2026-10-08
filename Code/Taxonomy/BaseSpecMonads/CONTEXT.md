@@ -5,59 +5,40 @@ Source declarations determine exact types, selected dictionaries, and orders.
 
 ## Shared unary specifications
 
-- PredMonad: unary PredM.Pred and state/option predicate stacks.
+Every monad file owns its refinement order and the proof that the monad is a
+specification monad under it (`OrderedMonad_*`); there is no separate summary
+file. The table under "Orders and comparisons" lists the verdicts.
+
+- PredMonad: unary PredM.Pred and state/option predicate stacks, with
+  `Pred_le` / `ordPredStExc` and `OrderedMonad_Pred` / `OrderedMonad_PredStExc`.
 - PrePostMonad: PPM.PrePost pairs propositional pre with a result predicate;
   bind checks continuations universally and collects results existentially.
+  `PP_le` and `OrderedMonad_PrePost` are at the end of the file.
 - SPostMonad: SPM.SPost bundles monotone transformers into Over pre,
   propositions implying that precondition. It is not a binary SP arrow.
+  `SP_le` and `OrderedMonad_SPost` follow the monad laws.
 - WPureMonad: monotone weakest-precondition transformers, exposed by getWPure,
-  with reader/state/option stacks. WP_le and its generic lifts are reverse
-  implication. Keep the corresponding WP triple argument/direction changes.
+  with state/option stacks. WP_le and its generic lifts are reverse
+  implication. `OrderedMonad_WPure`, `OrderedMonad_WSt` and
+  `OrderedMonad_WStExc` are here, and the four flavours AWP, DWLP,
+  DWP, AWLP are ordered as its submonads: `OrderedMonad_WPSub` is
+  `OrderedMonad_pullback` along `toWPure`. Keep the corresponding WP triple argument/direction changes.
   The file also carves AWP, DWLP, DWP, and AWLP out of WPure as submonads by
   healthiness (`WPHealth`, `WPSub`), with state stacks and both orders.
 - RelPrePostMonad: validators into Assuming pre, whose propositions satisfy
-  `q <-> (pre -> q)`, with Hoare-order monotonicity.
+  `q <-> (pre -> q)`, with Hoare-order monotonicity. `MR_le` and
+  `OrderedMonad_RelPrePost` are at the end of the file.
 
-## Earlier SP monads
+## Raw SP carriers
 
 SPPredicateTransformers defines raw SPPure, shared-precondition SPSt, and
-option-indexed SPStExc. Their earlier well-formed monads live in OldMonads,
-not the new top-level modules with the same names. Import/qualify deliberately.
+option-indexed SPStExc, their healthiness predicates, and the skew-monadic
+structures on monotone stateful transformers. They are not the carriers of
+the four SP monads below, which come from the arrows.
 
-- [`DSPDivExc` / `ASLPDivExc`](DivExcSP.v) stack two `optionT` layers over
-  pure `DSPSP` / `ASLPSP`. Their runners take `Prop` preconditions and
-  `option (option A)` outcomes; the full-outcome observation assigns separate
-  indices to successful return, exception, and divergence. `bindDSP_mono` /
-  `bindASLP_mono` prove pure bind monotonicity in both arguments;
-  `bindDSPDivExc_mono` / `bindASLPDivExc_mono` lift it through both layers.
 - [`WPureT` / `WPure`](WPureMonad.v) distinguish the raw WP transformer
   from its monotone subset. `WSt` and `WStExc` stack state and optional
   exceptions over `WPure`; `getWPure` exposes application.
-- [`NewGaloisConnections.v`](NewGaloisConnections.v) supplies `Over`/`Under`
-  targets and generic triple characterizations. Its `StSP` and `PureSP`
-  modules adapt these to state-only and pure outcomes.
-
-Old ASP uses SingletonProg (strict/disjunctive); DSLP uses MSingletonProg
-(top-preserving/conjunctive). Old DSP is strict/conjunctive; ASLP is
-top-preserving/disjunctive. Nonempty indexed families are intentional.
-DSP/ASLP state binds recover relations before composing; do not replace them
-with ordinary forward transformer composition. Pure DSPSP/ASLPSP collapse to
-ASP/DSLP via property equivalences; reader lifts preserve this per environment.
-StASP/StDSLP/StDSP/StASLP supply state-only variants.
-
-## Earlier-carrier recovery proof ownership
-
-[OldMonads/DSPMonad.v](OldMonads/DSPMonad.v) and [OldMonads/ASLPMonad.v](OldMonads/ASLPMonad.v) each share local,
-outcome-generic recovery and congruence proofs between their option-outcome and
-`StDSP` / `StASLP` presentations. Callers use the specialized `dsp_recov` /
-`aslp_recov` and `dsp_cong` / `aslp_cong` lemmas; the generic helpers are
-implementation details.
-
-`dsp_comp_recov_option` and `aslp_comp_recov_option` eliminate recovery from
-option-outcome relational composition. They reuse `comp_cong` and recovery;
-observation proofs lift the resulting equivalence with specialized congruence
-and combine it with `bindDSPProg_dsp` / `bindASLPProg_aslp`. Pair-outcome clients
-use `StDSP.comp_cong` and their specialized recovery lemmas directly.
 
 ## Four-flavour public API
 
@@ -82,8 +63,20 @@ against the binary `SPostArr.getASP` (and likewise for DSLP).
 the DSP and ASP healthiness conditions coincide, and so do the ASLP and DSLP
 ones; `dsp_to_asp` / `asp_to_dsp` and `aslp_to_dslp` / `dslp_to_aslp` are the
 identity on transformers, mutually inverse, and preserve `ret`, `bind`, and the
-pointwise orders. Only ASP-to-DSP is constructive. The old carriers' collapse,
-which holds by construction, stays in OldMonads under the same map names.
+pointwise orders. Only ASP-to-DSP is constructive. `OrderedMonad_DSP` and
+`OrderedMonad_ASLP` pull the orders of ASP and DSLP back along these maps, so
+without state DSP and ASLP are specification monads.
+
+Each of the four files ends with the stateless monad defined directly on
+`SPPure A = Prop -> A -> Prop`: `ASPSP` (`Singleton`), `DSLPSP`
+(`MSingleton`), and `DSPSP` / `ASLPSP`, which are those two under the
+strict-conjunctive / terminating-disjunctive presentation with the monad
+structure transported. Their operations carry the suffix `SP`
+(`retASPSP`, `bindASPSP`, `getASPSP`), because `retASP`, `bindASP`, `getASP`
+belong to the arrow-derived monad. `aspsp_to_asp` / `asp_to_aspsp` and the
+three analogous pairs show that each direct monad is the arrow-derived one:
+mutually inverse monad morphisms that preserve and reflect the order. There
+is no direct definition with state or with exceptions.
 
 [MonadTaxonomy.v](MonadTaxonomy.v) places the SP and WP carriers inside
 `MonoPT` and states implication, contrapositive, and Galois connection as
@@ -102,12 +95,13 @@ base relation between `PredM.Pred` and `WPure` (`GaloisPredWP`,
 the denoted results on the SP side (`MonadRelation_rel_pred` and its two stack
 versions). The Galois instances use no axiom.
 
-[SPostArrMonad.v](SPostArrMonad.v) is the unary observation bridge: named
-`Monad_ASPostArr` / `Monad_DSLPostArr` dictionaries, `runASP` / `runDSLP`, and
-unit-input return/bind conversion results. Its binary `asp_to_dslp` conversion
-and relation-reading facts live in `SPostArr.v`. The canonical `ASPStExc` /
-`DSLPStExc` monads are definitionally the compatibility `ASPostArr` /
-`DSLPostArr` stacks, including their named monad dictionaries and runners.
+The canonical `ASPStExc` / `DSLPStExc` monads are definitionally the
+compatibility `ASPostArr` / `DSLPostArr` stacks of `SPostArr.v`, which also
+has the binary `asp_to_dslp` conversion and its relation-reading facts. That
+an ASP element and the DSLP element denoting the same relation correspond
+under `ret` and `bind` is `MonadRelation_contra_asp_dslp_exc_one` / `_two` in
+`MonadTaxonomy.v` (and its state and stateless versions); there is no
+separate bridge file.
 
 [SPure.v](SPure.v) owns only unary relational monads, return/bind facts, and
 orders. [Rel.v](../Arrows/Rel.v) owns the binary relation carrier, stacks, and
@@ -117,25 +111,37 @@ Generic normalization (`rel_bind`, `relS_bind`, `relO_*`, `relE_*`) lives in
 `RelArrow` / `RelArrowChoice` / `RelArrowApply` contracts. `SPostArr.v` specializes
 these facts for its canonical relation-reading wrappers.
 
-- [`SPBindOrderCounterexample.v`](SPBindOrderCounterexample.v) refutes ordered
-  bind for `StDSP.DSPSt` / `StASLP.ASLPSt` under their global pointwise orders.
-  Monad laws and monotonicity in a fixed transformer's precondition still hold.
-  Its `dsp_arbitrary_bind_impossible` and `aslp_arbitrary_bind_impossible`
-  strengthen this result for Boolean state: any candidate Boolean-to-unit bind
-  with the current return and pointwise order cannot satisfy both left identity
-  and first-argument monotonicity. The contradiction uses well-formedness of
-  the candidate's output, independently of the existing bind.
+- [DSPMonad.v](DSPMonad.v) and [ASLPMonad.v](ASLPMonad.v) refute the ordered
+  monad laws for `DSPSt` / `ASLPSt` and `DSPStExc` / `ASLPStExc` under their
+  pointwise orders (`not_OrderedMonad_*`). Monad laws still hold.
+  `dsp_arbitrary_bind_impossible` and `aslp_arbitrary_bind_impossible`
+  strengthen this for Boolean state: no candidate Boolean-to-unit bind
+  satisfies both left identity for the monad's return and first-argument
+  monotonicity. The contradiction uses only that the candidate's output is in
+  the carrier, independently of the existing bind.
 
 ## Orders and comparisons
 
 ASP's transformer order follows relation inclusion; DSLP reverses it. Their
-pointwise orders carry OrderedMonad. DSP/ASLP carry OrderedMonad for recovered
-relation inclusion, not their own pointwise reading orders; boolean-state
-counterexamples refute that stronger requirement. Orders at a fixed precondition
-are distinct from global ones. SPBindOrderCounterexample retains the old
-state-only no-go results; SpecificationMonads classifies the old carriers.
+pointwise orders carry OrderedMonad. DSP and ASLP carry no OrderedMonad with
+state: their pointwise orders fail it (`not_OrderedMonad_DSPSt`,
+`not_OrderedMonad_ASLPSt`, and the `StExc` pair), and a predicate-transformer
+monad is ordered by its own order or not at all. Without state they are
+ordered, as ASP and DSLP.
 
-BaseGaloisConnections/NewGaloisConnections relate unary presentations;
-in-monad SP targets preserve their nonemptiness/precondition side conditions.
+| monad | order | ordered? | proved in |
+|---|---|---|---|
+| `PredM.Pred`, `PredStExc S` | `Pred_le`, `ordPredStExc` | yes | `PredMonad.v` |
+| `PPM.PrePost` | `PP_le` | yes | `PrePostMonad.v` |
+| `SPM.SPost` | `SP_le` | yes | `SPostMonad.v` |
+| `RPPM.RelPrePost` | `MR_le` | yes | `RelPrePostMonad.v` |
+| `WPure`, `WSt S`, `WStExc S` | `WP_le`, `ordWSt`, `ordWStExc` | yes | `WPureMonad.v` |
+| `ASP`, `ASPSt S`, `ASPStExc S`, `ASPSP` | pointwise | yes | `ASPMonad.v` |
+| `DSLP`, `DSLPSt S`, `DSLPStExc S`, `DSLPSP` | pointwise | yes | `DSLPMonad.v` |
+| `DSP`, `DSPSP` / `ASLP`, `ASLPSP` | pointwise | yes | `DSPMonad.v` / `ASLPMonad.v` |
+| `DSPSt S`, `DSPStExc S` / `ASLPSt S`, `ASLPStExc S` | pointwise | no | `DSPMonad.v` / `ASLPMonad.v` |
+
+BaseGaloisConnections relates the unary DM4All presentations through their
+orders, including both adjunctions between `PrePost` and `WPure`.
 SPStBindComparisons studies skew-monadic/functor structure and bind comparisons.
 Read the chosen carrier, operations, equality, and order before observations.

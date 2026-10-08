@@ -25,7 +25,9 @@ core laws. The dynamic-pure fact `app_constant_unit` uses application coherence.
 [ArrowMonad.v](ArrowMonad.v) defines operations and laws at every fixed input
 `I`, with explicit `Eq1_Arrow HE I`. `bind_arrow_unit` remains a corollary.
 
-[ArrowMorphism.v](ArrowMorphism.v) packages proper operation-preserving maps.
+[ArrowMorphism.v](ArrowMorphism.v) packages proper operation-preserving maps;
+`arrow_morphism_monad` turns one into a monad morphism between the
+arrow-derived monads at any fixed input.
 [RelArrowCoherence.v](RelArrowCoherence.v) derives application equations and
 bind semantics from faithful relational presentations; it does not add
 well-formedness fields to concrete carriers. Loop has its own laws; neither
@@ -74,12 +76,25 @@ transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 preorders, and the adjunction. [OrderedMonad.v](OrderedMonad.v) concerns unary
 monads under a specified preorder containing `eq1`, with monotone bind.
 Every lawful monad is ordered by its equivalence; stronger orders need proofs.
+An ordered monad stays one with its order flipped (`OrderedMonad_flip`). Its
+order pulled back along a monad morphism orders the source
+(`OrderedMonad_pullback`); a submonad, the elements satisfying a predicate
+closed under `ret` and `bind`, is the case of the inclusion
+(`SubMonad`, `OrderedMonad_SubMonad`).
 These differ from [Common/Classes.v](../Common/Classes.v)'s pre/post API.
+
+The same file defines monad morphisms. `MonadMorphism` is a record of
+properness and `ret` / `bind` preservation over explicit dictionaries;
+`MonadMorphism_of_laws` builds one for the finest source equality.
+`IsMonadMorphism θ` bundles a map with the structures it is a morphism for,
+so that the morphism is found from the map alone. The general triple over
+such a map is not here: it is in
+[Taxonomy/Triples/Triple.v](../Taxonomy/Triples/Triple.v).
 
 [MonadRelation.v](MonadRelation.v) states DM4All's monadic relation for any two
 monads: a family of relations that holds at `ret` and is preserved by `bind`.
 The order of an ordered monad is one. A monadic relation lifts pointwise
-through `stateT`, `optionT`, and `readerT`. For two arrows with relational
+through `stateT` and `optionT`. For two arrows with relational
 semantics, inclusion or equality of the denoted relations is one between the
 arrow-derived monads at the base, `stateArrT`, and `stateArrT`-over-`optionArrT`
 stacks. The reading is always the base arrow's: no transformed arrow gets a

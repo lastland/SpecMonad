@@ -15,7 +15,8 @@ Makefile for build/audit targets. Source declarations override older prose.
 - [Identity](Identity/CONTEXT.md), [Reader](Reader/CONTEXT.md),
   [ST](ST/CONTEXT.md), and [STEx](STEx/CONTEXT.md) study individual effects.
 - [Taxonomy](Taxonomy/CONTEXT.md) separates computation outcomes, base
-  specifications, concrete binary arrows, observations, and comparisons.
+  specifications, concrete binary arrows, monad morphisms with their triples,
+  and Dijkstra monads.
 - [Checks](Checks/CONTEXT.md) reports selected assumptions separately from
   normal tests/examples through `make check` in the maintained [Makefile](Makefile).
   Reporting is not a proof of axiom-freedom; context documents are not an
@@ -28,5 +29,4 @@ carrier's equality and order: similar names can reverse implication.
 Unary monads differ from binary arrows at a fixed input. Well-formedness,
 monad laws, monotonicity in a precondition, and ordered bind are separate.
 Some exploratory proofs end in `Abort`; build membership does not turn them
-into results. `OldSP` is partly built; `deprecated/`, `Backup/`, and
-`ITreeExamples/` are excluded. Follow parent/local contexts and source links.
+into results. `deprecated/`, `Backup/`, and `ITreeExamples/` are excluded. Follow parent/local contexts and source links.

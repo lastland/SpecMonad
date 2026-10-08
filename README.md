@@ -28,27 +28,25 @@ some attempts end with `Abort` or remain commented out.
 Run `make check` from `Code/` for the opt-in reports of selected theorem
 assumptions. This target is separate from the normal build and does not check
 assumptions against an allowlist. See the
-[build and audit details](Code/Taxonomy/README.md#11-build-status).
+[build and audit details](Code/Taxonomy/README.md#10-build-status).
 
 ## The current status
 
 The Taxonomy specification carriers are independent of concrete computation
-monads. **Observations connect computations to specifications**, choosing how
-to interpret their outcomes. In particular, an option outcome can represent
-an exception or divergence; the observation determines which.
+monads. **Monad morphisms connect computations to specifications**, choosing
+how to interpret their outcomes.
 
 What is formalised:
 
-- **Four stateful computation models**, combining exceptions, nondeterminism,
-  and divergence, plus the state-free `divnd` / `divexcnd` and reader-indexed
-  `rddivnd`.
+- **One base computation monad and its transformer stacks**: non-empty
+  nondeterminism with divergence (`divndNE`), under `stateT S` and under
+  `stateT S` over `optionT` for exceptions.
 
 - **Four strongest-postcondition (SP) specification monads** — angelic (ASP),
   demonic liberal (DSLP), demonic (DSP), and angelic liberal (ASLP). The public
   monads fix the input of canonical healthy arrows and reuse the generic
   arrow-derived return, bind, and monad laws. Pure, state, and state/option
-  stacks are provided. Earlier shared-precondition carriers, including reader
-  variants, remain in `BaseSpecMonads/OldMonads/`.
+  stacks are provided.
 
 - **Canonical property-only SP arrows**, with shared relational law proofs.
   `PureASPostArr` / `PureDSLPostArr` are compatibility aliases for the public
@@ -61,8 +59,8 @@ What is formalised:
   [`SPostArr.v`](Code/Taxonomy/Arrows/SPostArr.v) and the checked
   [examples](Code/Taxonomy/Arrows/Examples/SPostArrExamples.v).
 
-- **Weakest-precondition (WP) specifications**, `WPure` and its reader, state,
-  and state/option stacks. `WPure` bundles postcondition monotonicity, which the
+- **Weakest-precondition (WP) specifications**, `WPure` and its state and
+  state/option stacks. `WPure` bundles postcondition monotonicity, which the
   adjunction and congruence proofs use. The binary `WPArr` instead uses the raw
   `WPureT` carrier.
 
@@ -72,27 +70,34 @@ What is formalised:
   `BaseGaloisConnections.v`. Their laws use pointwise logical equivalence
   rather than equality of bundled values.
 
-- **Effect observations and triples**, with return/bind preservation proved for
-  the base SP observations, arrow-derived ASP/DSLP observations, and the WP
-  observations of `stdivexcnd` and `stdivndNE`. The other WP modules provide
-  readings and examples, but do not prove local return/bind preservation laws.
+- **Monad morphisms and one general triple.** Eight readings (four WP, four
+  SP) are defined once at the base as monad morphisms and lifted through the
+  monad and arrow transformers to state and to state with exceptions.
+  `triple θ m k P Q` is defined for any monad morphism `θ`; its sixteen
+  instances are the correctness and incorrectness triples, and the triple of
+  a lifted morphism is the base triple re-indexed. See
+  [`Triples/MonadMorphisms.v`](Code/Taxonomy/Triples/MonadMorphisms.v).
 
-- **Dijkstra typings**, with return/bind, weakening, and lift clients for the
-  four WP observations of `stdivexcnd` and the earlier ASP/DSLP SP observations
-  of `stdivexcnd` and `stdivnd`. Triple bridges and counterexamples delimit
-  sequencing and indexing under the selected orders. See the
-  [Dijkstra context](Code/Taxonomy/DijkstraMonads/CONTEXT.md).
+- **The taxonomy of triples**: the 26 edges of Verscht and Kaminski's diagram
+  (implications, contrapositives, and the two Galois connections between WP
+  and SP), with state and with state and exceptions, in
+  [`Triples/Diagram.v`](Code/Taxonomy/Triples/Diagram.v). A separate
+  development relates the specification monads themselves
+  (`BaseSpecMonads/MonadTaxonomy.v`).
 
-- **The taxonomy**: how the observations relate to one another — inclusions,
-  contrapositive dualities, and the implications between the triples built on
-  them. The WP/SP comparison theorems identify specific triple directions over
-  the same terminating relation. The withdrawal example separately contrasts
-  angelic WP coverage of every input with ASP reachability from some input.
+- **Examples**: one verified program for each of the sixteen triple kinds,
+  and a withdrawal example contrasting angelic WP coverage of every input
+  with ASP reachability from some input.
 
 - **Incorrectness principles** from Peter W. O'Hearn's
   [*Incorrectness Logic*](https://doi.org/10.1145/3371078) (POPL 2020), proved
-  over the ASP triples in
-  [`InCorrectnessPrinciples.v`](Code/Taxonomy/InCorrectnessPrinciples.v).
+  over the ASP triples, with demonic liberal WP variants, in
+  [`Triples/InCorrectnessPrinciples.v`](Code/Taxonomy/Triples/InCorrectnessPrinciples.v).
+
+- **Dijkstra monads**: the Dijkstra monad of any monad morphism into an
+  ordered monad, at every lifted morphism, with triples identified with
+  typings where that is exact. See the
+  [Dijkstra context](Code/Taxonomy/DijkstraMonads/CONTEXT.md).
 
 ## Question
 
@@ -106,9 +111,12 @@ What is formalised:
 
 - Stateful DSP and ASLP sequencing recovers and composes relations before
   reading them again. DSP probes at top and a co-singleton (all states except
-  one); ASLP probes at bottom and a singleton. Their state-only binds do not
-  preserve the chosen global pointwise orders, despite satisfying the monad laws. See
-  [the ordered-bind counterexamples](Code/Taxonomy/BaseSpecMonads/SPBindOrderCounterexample.v).
+  one); ASLP probes at bottom and a singleton. With state their binds do not
+  preserve the pointwise orders, despite satisfying the monad laws, and no
+  other bind does. See `not_OrderedMonad_DSPSt` and
+  `dsp_arbitrary_bind_impossible` in
+  [DSPMonad.v](Code/Taxonomy/BaseSpecMonads/DSPMonad.v), and their duals in
+  [ASLPMonad.v](Code/Taxonomy/BaseSpecMonads/ASLPMonad.v).
 
 - ASP under-approximation with the chosen **in-monad target** uses an order at
   one precondition and requires that precondition to be inhabited. Comparisons
