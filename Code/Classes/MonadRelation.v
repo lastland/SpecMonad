@@ -16,8 +16,8 @@
     built.
 
     A monad relation lifts through each monad transformer
-    ([MonadRelation_stateT], [MonadRelation_optionT],
-    [MonadRelation_readerT]), pointwise, as an order does
+    ([MonadRelation_stateT], [MonadRelation_optionT]), pointwise, as an
+    order does
     ([ComputationMonads/TransformerLaws.v]).
 
     For two arrows with relational semantics ([RelArrowCoherence.v]),
@@ -31,7 +31,7 @@
     statements for equality of the relations denoted. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
-From ExtLib Require Import Monad StateMonad OptionMonad ReaderMonad.
+From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import OrderedMonad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT
@@ -150,18 +150,6 @@ Section Transformers.
     - intros A B m n k k' Hm Hk. cbn.
       apply Hbind; [ exact Hm |].
       intros [a|]; [ exact (Hk a) | apply Hret ].
-  Qed.
-
-  Theorem MonadRelation_readerT (E : Type) :
-    @MonadRelation M N MonadM MonadN R ->
-    @MonadRelation (readerT E M) (readerT E N)
-      (@Monad_readerT E M MonadM) (@Monad_readerT E N MonadN)
-      (fun A m n => forall e, R A (runReaderT m e) (runReaderT n e)).
-  Proof.
-    intros [Hret Hbind]. constructor.
-    - intros A a e. cbn. apply Hret.
-    - intros A B m n k k' Hm Hk e. cbn.
-      apply Hbind; [ exact (Hm e) | intro a; exact (Hk a e) ].
   Qed.
 End Transformers.
 
