@@ -1,6 +1,7 @@
 (** * The DM4all adjunctions, between the five specification monads
 
-    The orders are DM4all's:
+    The orders are DM4all's, each defined in its monad's file with the proof
+    that it makes the monad a specification monad:
 
       [Pred_le]  pointwise implication
       [PP_le]    strengthen the precondition, weaken the postcondition
@@ -8,71 +9,24 @@
       [WP_le]    reverse implication: a weaker precondition demand is lower
       [MR_le]    reverse implication on validator verdicts
 
-    The five adjunctions below use those orders (schematically):
+    The six adjunctions below use those orders (schematically):
 
       [pred_pp_adjunction]      [pred2pp post <= pp     <->  post <= pp2pred pp]
       [wp_pp_under_adjunction]  [pp <= wp2pp_under w    <->  pp2wp_under pp <= w]
+      [wp_pp_over_adjunction]   [wp2pp_over w <= pp     <->  w <= pp2wp_over pp]
       [wp_mr_adjunction]        [w <= mr2wp r           <->  wp2mr w <= r]
       [sp_pp_adjunction]        [sp2pp sp <= pp         <->  sp <= pp2sp pp]
       [sp_mr_adjunction]        [sp2mr sp <= mr         <->  sp <= mr2sp mr]
 
-    [NewGaloisConnections.v] supplies the second WP/PrePost adjunction:
-      [wp_pp_over_adjunction]   [wp2pp_over w <= pp     <->  w <= pp2wp_over pp]. *)
+    [wp_pp_over_adjunction] is the only classical one. *)
 
-From Coq Require Import RelationClasses.
+From Coq Require Import RelationClasses Classical_Prop.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad.
 
 Import PredM SPM RPPM.
 (* [PPM] is deliberately NOT imported: it binds [pre] and [post], which
    would capture the binders of the SP embeddings below. Use [PPM.pre] etc. *)
-
-(* ================================================================= *)
-(** ** The refinement orders                                         *)
-(* ================================================================= *)
-
-Definition Pred_le {A} (m1 m2 : PredM.Pred A) : Prop :=
-  forall a, m1 a -> m2 a.
-
-Definition PP_le {A} (m1 m2 : PPM.PrePost A) : Prop :=
-  (PPM.pre m2 -> PPM.pre m1) /\ (forall a, PPM.post m1 a -> PPM.post m2 a).
-
-Definition SP_le {A} (m1 m2 : SPM.SPost A) : Prop :=
-  forall p a, SPM.app m1 p a -> SPM.app m2 p a.
-
-Definition MR_le {A} (r1 r2 : RPPM.RelPrePost A) : Prop :=
-  forall p post, RPPM.ab (RPPM.runRPP r2 p post)
-              -> RPPM.ab (RPPM.runRPP r1 p post).
-
-#[global] Instance Pred_le_PreOrder {A} : PreOrder (@Pred_le A).
-Proof.
-  constructor; unfold Pred_le.
-  - intros x a H. exact H.
-  - intros x y z H1 H2 a H. exact (H2 a (H1 a H)).
-Qed.
-
-#[global] Instance PP_le_PreOrder {A} : PreOrder (@PP_le A).
-Proof.
-  constructor; unfold PP_le.
-  - intro x. split; intros; assumption.
-  - intros x y z [H1p H1q] [H2p H2q]. split.
-    + intro h. exact (H1p (H2p h)).
-    + intros a h. exact (H2q a (H1q a h)).
-Qed.
-
-#[global] Instance SP_le_PreOrder {A} : PreOrder (@SP_le A).
-Proof.
-  constructor; unfold SP_le.
-  - intros x p a H. exact H.
-  - intros x y z H1 H2 p a H. exact (H2 p a (H1 p a H)).
-Qed.
-
-#[global] Instance MR_le_PreOrder {A} : PreOrder (@MR_le A).
-Proof.
-  constructor; unfold MR_le.
-  - intros x p post H. exact H.
-  - intros x y z H1 H2 p post H. exact (H1 p post (H2 p post H)).
-Qed.
 
 (* ================================================================= *)
 (** ** 1.  [Pred] -| [PrePost]                                       *)
@@ -124,6 +78,39 @@ Proof.
   - intro H. split.
     + intro Hw. exact (proj1 (H (fun _ => True) Hw)).
     + intros x Hx p Hw. exact (proj2 (H p Hw) x Hx).
+Qed.
+
+(** The second adjunction between the same two monads, with [MonoWP] on the
+    left.  [wp2pp_over w] demands that [w] accept every postcondition, and
+    collects the results of the postconditions [w] rejects;
+    [pp2wp_over pp] holds of a postcondition when covering [pp]'s
+    postcondition entails [pp]'s precondition. *)
+
+Definition wp2pp_over {A} (w : WPure A) : PPM.PrePost A :=
+  ( forall p, getWPure w p
+    , fun x => exists p, ~ (getWPure w p) /\ p x ).
+
+#[program] Definition pp2wp_over {A} (pp : PPM.PrePost A) : WPure A :=
+  fun post => (forall x, post x -> PPM.post pp x) -> PPM.pre pp.
+Next Obligation.
+  intros k1 k2 Hk H Hsub. apply H. intros x Hx. exact (Hsub x (Hk x Hx)).
+Qed.
+
+Theorem wp_pp_over_adjunction {A} (pp : PPM.PrePost A) (w : WPure A) :
+  PP_le (wp2pp_over w) pp <-> WP_le w (pp2wp_over pp).
+Proof.
+  unfold PP_le, WP_le, wp2pp_over, pp2wp_over, PPM.pre, PPM.post,
+    getWPure, getWPure; cbn.
+  split.
+  - intros [H1 H2] q Hq.
+    destruct (classic (proj1_sig w q)) as [Hy | Hn]; [ exact Hy |].
+    exact (H1 (Hq (fun a Ha => H2 a (ex_intro _ q (conj Hn Ha)))) q).
+  - intro H. split.
+    + intros Hpre q. exact (H q (fun _ => Hpre)).
+    + intros a [q [Hnq Hqa]].
+      assert (Hn : ~ ((forall x, q x -> PPM.post pp x) -> PPM.pre pp))
+        by (intro Hc; exact (Hnq (H q Hc))).
+      exact (proj1 (imply_to_and _ _ Hn) a Hqa).
 Qed.
 
 (* ================================================================= *)
