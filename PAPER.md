@@ -1,6 +1,6 @@
 # Paper-to-code index
 
-This file maps the claims of the paper (`paper/idm/idm.tex`) to the Rocq
+This file maps the claims of the submitted paper to the Rocq
 development in [Code/](Code/). It follows the paper's section order.
 
 ## Building and checking
@@ -200,8 +200,7 @@ end of this file maps them to the current ones.
 - **Section 4.3** has no code.
 - **Bullet 5, "weaker".** The paper says the under-approximate order on
   *asp* (and the over-approximate order on *dslp*) "correspond to strictly
-  weaker specifications than the corresponding triples" and flags the word
-  for checking. In the code, a typing at the natural index
+  weaker specifications than the corresponding triples". In the code, a typing at the natural index
   (`DijkstraMonad.le_aspUnder`) asks every start state in the precondition
   to reach every result in the postcondition; it implies the triple when
   the precondition is inhabited (`DijkstraMonad.aspUnder_typing_triple`),

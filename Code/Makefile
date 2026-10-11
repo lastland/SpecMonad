@@ -13,7 +13,7 @@
 #   make layers              check that imports respect scripts/layers.txt
 #                             (python3; runs as its own CI step)
 #   make GOAL...             any other goal passes through to Makefile.coq
-#                             (file targets like Classes/Arrow.vo, install, ...)
+#                             (file targets like Lib/Arrow/Arrow.vo, install, ...)
 #
 # Parallel builds (make -jN) and multiple build goals use a single sub-make
 # through the jobserver. If clean is also requested, it completes before the

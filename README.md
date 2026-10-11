@@ -23,8 +23,9 @@ The packages and their version constraints are listed in the
 The committed `Code/Makefile` regenerates the gitignored `Makefile.coq`
 from `_CoqProject` on every invocation, so no manual generation step is
 needed. Build membership
-does not certify that every exploratory statement in a file has been proved:
-some attempts end with `Abort` or remain commented out.
+does not by itself certify every statement: the one unfinished proof and the
+paper claims that are not formalized are listed in
+[PAPER.md](PAPER.md#gaps-and-differences-from-the-paper).
 
 Run `make check` from `Code/` for the opt-in reports of selected theorem
 assumptions. This target is separate from the normal build and does not check

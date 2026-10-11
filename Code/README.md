@@ -51,8 +51,14 @@ flowchart RL
   WP[WP] -->|4| Lib[Lib]
 ```
 
-Edges implied by others are omitted; a label counts the imports along that
-edge (`python3 scripts/depgraph.py --mermaid` regenerates this). Each
+Edges implied by others are omitted; a label counts the direct imports
+between the two directories (`python3 scripts/depgraph.py --mermaid`
+regenerates this). Two edges deserve a word: `GaloisConnections/GaloisArr.v`
+reuses the monotone carrier `MonotoneSPost` of
+`Taxonomy/TransformerTaxonomy.v`, and `Tests/ArrowMonadInstances.v`
+instantiates the arrow-level specification types of `GaloisConnections/`
+(Tests also imports SP, Relational and Lib directly). `Checks/` is outside
+the build and the graph. Each
 directory imports only from the ones it reaches
 ([scripts/layers.txt](scripts/layers.txt)); `make layers` and CI check it.
 `python3 scripts/depgraph.py` writes `depgraph.html`, an interactive

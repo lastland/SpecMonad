@@ -52,3 +52,4 @@ Makefile.coq
 Makefile.coq.conf
 *.pdf
 .claude/settings.local.json
+__pycache__/
