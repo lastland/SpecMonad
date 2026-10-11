@@ -53,5 +53,5 @@ Triples/MonadMorphisms.v
 Triples/Diagram.v
 Triples/Examples.v
 Triples/InCorrectnessPrinciples.v
-Taxonomy/DijkstraMonads/DijkstraMonad.v
-Taxonomy/DijkstraMonads/DijkstraExamples.v
+Dijkstra/DijkstraMonad.v
+Dijkstra/DijkstraExamples.v

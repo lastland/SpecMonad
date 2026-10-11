@@ -33,7 +33,7 @@ From Incorrectness.WP Require Import
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad.
 From Incorrectness.Triples Require Import Triple MonadMorphisms Examples.
-From Incorrectness.Taxonomy.DijkstraMonads Require Import DijkstraMonad.
+From Incorrectness.Dijkstra Require Import DijkstraMonad.
 
 (* ================================================================= *)
 (** * WP: the eight Dijkstra monads                                   *)
