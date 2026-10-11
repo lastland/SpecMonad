@@ -122,7 +122,7 @@ From Incorrectness.Lib.Monad Require Import
   MonadRelation.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
-From Incorrectness.SP Require Import SPostArr.
+From Incorrectness.SP Require Import SPostArr DSPASLPArr.
 From Incorrectness.Taxonomy Require Import TransformerTaxonomy.
 From Incorrectness.WP Require Import
   WPure WPVariants.

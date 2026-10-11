@@ -64,7 +64,7 @@ From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Computation Require Import DivNonDetNE.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
-From Incorrectness.SP Require Import SPostArr.
+From Incorrectness.SP Require Import SPostArr DSPASLPArr.
 From Incorrectness.Taxonomy Require Import TransformerTaxonomy.
 From Incorrectness.WP Require Import
   WPure.

@@ -10,7 +10,7 @@ SPEC.py defines (paths relative to Code/):
         ("WP/WPure.v", HEADER1, [(1, 244)]),          # 1-based, inclusive
         ("WP/WPVariants.v", HEADER2, [(245, None)]),
     ]
-    # Which parts each importer needs; importers not listed get every part.
+    # Which parts each importer needs; importers not listed get USES["*"].
     USES = {"Taxonomy/MonadTaxonomy.v": ["WP/WPure.v", "WP/WPVariants.v"],
             "*": ["WP/WPure.v"]}
     # Qualified references to rewrite, per file: (old text, new text).

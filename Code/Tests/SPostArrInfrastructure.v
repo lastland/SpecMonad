@@ -12,7 +12,7 @@
 
 From Incorrectness.Lib.Arrow Require
   Import Arrow ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
-From Incorrectness.SP Require Import SPostArr.
+From Incorrectness.SP Require Import SPostArr DSPASLPArr.
 
 (** ** Canonical law packages resolve through the fundamental interface *)
 

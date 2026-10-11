@@ -12,7 +12,7 @@ file that prints each statement (`Set Printing All`) and its `About` facts
 database of a file requiring the whole build.
 `compare` matches declarations by (kind, module path, name) -- the file they
 live in may change -- and compares their statements after replacing every
-file qualifier (`Incorrectness.A.File.`, `File.`, ...) by `@`, so a lemma
+file qualifier (`Incorrectness.A.File.`, `File.`, `Alias.`) by `§`, so a lemma
 moved to another file still compares equal while any change to its statement
 does not.
 """
@@ -102,7 +102,12 @@ def snapshot(out):
     libs, files = project()
     decls, instances = statements(libs, declarations(files))
     logicals = sorted({d["logical"] for d in decls}, key=len, reverse=True)
-    Path(out).write_text(json.dumps({"logicals": logicals, "decls": decls, "instances": instances}, indent=0))
+    # `Module P := File.` makes Coq print `P.x` for a name of File; such
+    # aliases are file qualifiers too.
+    aliases = sorted({m.group(1) for f in files for m in re.finditer(
+        r"^\s*Module\s+(\w+)\s*:=\s*[\w.]+\s*\.", (CODE / f).read_text(), re.M)})
+    Path(out).write_text(json.dumps({"logicals": logicals + aliases, "decls": decls,
+                                     "instances": instances}, indent=0))
     print(f"{len(decls)} declarations from {len(files)} files -> {out}")
 
 
@@ -113,7 +118,13 @@ def normalizer(logicals):
     suffixes = {".".join(lg.split(".")[i:]) for lg in logicals for i in range(len(lg.split(".")))}
     pat = re.compile(r"(?<![\w.'])(?:" + "|".join(
         re.escape(x) for x in sorted(suffixes, key=len, reverse=True)) + r")\.")
-    return lambda s: pat.sub("@", s)
+    def norm(s):
+        # Repeat: `File.Alias.x` needs two passes.  Collapse the markers.
+        prev = None
+        while prev != s:
+            prev, s = s, pat.sub("§", s)
+        return re.sub("§+", "§", s)
+    return norm
 
 
 def hints(lines, norm):
@@ -153,12 +164,17 @@ def compare(old_path, new_path):
         for (k, st), c in sorted(diff.items()):
             print(f"{label}: {c}x {k[0]} {'.'.join(x for x in k[1:] if x)} : {st[:200]}")
     oi, ni = hints(old["instances"], norm), hints(new["instances"], norm)
-    same_set = Counter(oi) == Counter(ni)
-    print(f"instance database: {'same' if same_set else 'DIFFERENT'} ({len(ni)} hints)")
+    co, cn = Counter(oi), Counter(ni)
+    same_set = set(co) == set(cn)
+    copies = Counter((co[h], cn[h]) for h in co if h in cn and co[h] != cn[h])
+    print(f"instance database: {'same' if same_set else 'DIFFERENT'} ({len(cn)} distinct hints)")
+    for (a, b), c in sorted(copies.items()):
+        # A module alias (`Module P := File.`) registers File's instances again.
+        print(f"  warning: {c} hints registered {a}x before, {b}x now")
     if not same_set:
-        for x in sorted((Counter(oi) - Counter(ni)).elements()):
+        for x in sorted(set(co) - set(cn)):
             print("  instance only in old:", x[:200])
-        for x in sorted((Counter(ni) - Counter(oi)).elements()):
+        for x in sorted(set(cn) - set(co)):
             print("  instance only in new:", x[:200])
     ok = not lost and not gained and same_set
     print("OK: same declarations, statements and instances" if ok else "DIFFERENT")

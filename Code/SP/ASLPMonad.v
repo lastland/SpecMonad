@@ -17,7 +17,7 @@ From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Arrow Require Import ArrowMonad RelArrowCoherence.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
-From Incorrectness.SP Require Export SPostArr.
+From Incorrectness.SP Require Export SPostArr DSPASLPArr.
 From Incorrectness.SP Require Import DSLPMonad.
 
 Definition ASLP (A : Type) : Type := ASLPArr unit A.

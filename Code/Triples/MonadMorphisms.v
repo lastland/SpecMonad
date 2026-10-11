@@ -55,7 +55,7 @@ From Incorrectness.Computation Require Import
 From Incorrectness.Relational Require Import
   Rel RelSPostArr.
 From Incorrectness.SP Require Import
-  SPostArr SPostArrEquiv.
+  SPostArr DSPASLPArr SPostArrEquiv.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import

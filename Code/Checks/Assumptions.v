@@ -2,7 +2,7 @@
 From Incorrectness.Lib.Arrow Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.SP Require Import
-  SPostArr.
+  SPostArr DSPASLPArr.
 From Incorrectness.Relational Require Import
   RelSPostArr.
 From Incorrectness.SP Require Import
@@ -152,12 +152,12 @@ Print Assumptions SPostArr.ArrowApplyLaws_ASPArr.
 Print Assumptions SPostArr.ArrowLaws_DSLPArr.
 Print Assumptions SPostArr.ArrowChoiceLaws_DSLPArr.
 Print Assumptions SPostArr.ArrowApplyLaws_DSLPArr.
-Print Assumptions SPostArr.ArrowLaws_DSPArr.
-Print Assumptions SPostArr.ArrowChoiceLaws_DSPArr.
-Print Assumptions SPostArr.ArrowApplyLaws_DSPArr.
-Print Assumptions SPostArr.ArrowLaws_ASLPArr.
-Print Assumptions SPostArr.ArrowChoiceLaws_ASLPArr.
-Print Assumptions SPostArr.ArrowApplyLaws_ASLPArr.
+Print Assumptions DSPASLPArr.ArrowLaws_DSPArr.
+Print Assumptions DSPASLPArr.ArrowChoiceLaws_DSPArr.
+Print Assumptions DSPASLPArr.ArrowApplyLaws_DSPArr.
+Print Assumptions DSPASLPArr.ArrowLaws_ASLPArr.
+Print Assumptions DSPASLPArr.ArrowChoiceLaws_ASLPArr.
+Print Assumptions DSPASLPArr.ArrowApplyLaws_ASLPArr.
 
 (** Canonical relation readings specialize the generic normalization facts
     through existing RelArrow/RelArrowChoice/RelArrowApply dictionaries.
@@ -325,11 +325,11 @@ Print Assumptions Examples.progRet_aslp_over.
 Print Assumptions Examples.example_incorrect.
 
 (** The four healthiness classes are distinct: closed. *)
-Print Assumptions SPostArr.no_ASPArr_for_dsp.
-Print Assumptions SPostArr.no_DSLPArr_for_dsp.
-Print Assumptions SPostArr.no_ASPArr_for_aslp.
-Print Assumptions SPostArr.no_DSLPArr_for_aslp.
-Print Assumptions SPostArr.no_ASPArr_for_dslp.
+Print Assumptions DSPASLPArr.no_ASPArr_for_dsp.
+Print Assumptions DSPASLPArr.no_DSLPArr_for_dsp.
+Print Assumptions DSPASLPArr.no_ASPArr_for_aslp.
+Print Assumptions DSPASLPArr.no_DSLPArr_for_aslp.
+Print Assumptions DSPASLPArr.no_ASPArr_for_dslp.
 
 (** The diagram with exceptions: the same pattern as at the state level.
     WP implications and Galois edges closed, the rest excluded middle. *)

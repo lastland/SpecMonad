@@ -15,7 +15,7 @@ From Incorrectness.Relational Require Import
 From Incorrectness.GaloisConnections Require Import
   PrePostArr RelPrePostArr.
 From Incorrectness.SP Require Import
-  SPostArr.
+  SPostArr DSPASLPArr.
 From Incorrectness.SP Require ASPMonad DSLPMonad.
 
 Create HintDb sp_arrow_bind.

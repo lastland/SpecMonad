@@ -33,6 +33,7 @@ Relational/Rel.v
 Relational/RelSPostArr.v
 SP/PredicateTransformerProperties.v
 SP/SPostArr.v
+SP/DSPASLPArr.v
 Relational/OptionLoop.v
 SP/SPostArrEquiv.v
 Tests/SPostArrExamples.v
