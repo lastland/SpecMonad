@@ -520,7 +520,7 @@ Arguments bindDSLPStExc {S} {A} {B}.
     carry the orders to each other. *)
 
 From Coq Require Import PropExtensionality Classical_Prop.
-From Incorrectness.SP Require Import SPostMonad SPPredicateTransformers.
+From Incorrectness.SP Require Import SPostMonad RawSP.
 
 Section PureDSLPMonad.
   Definition MeetPreserving {A} (w : SPPure A) : Prop :=

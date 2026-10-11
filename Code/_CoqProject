@@ -26,7 +26,8 @@ SP/SPostMonad.v
 WP/WPure.v
 WP/WPVariants.v
 GaloisConnections/RelPrePostMonad.v
-SP/SPPredicateTransformers.v
+SP/RawSP.v
+Taxonomy/MonotoneSPSt.v
 Relational/Rel.v
 Relational/RelSPostArr.v
 SP/PredicateTransformerProperties.v

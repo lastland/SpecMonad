@@ -27,7 +27,7 @@
     Each is a RELATION BETWEEN MONADS ([Classes/MonadRelation.v]): it holds
     at [ret] and is preserved by [bind].  [SPStMon S] has two structures,
     angelic and demonic, each a monad only up to an inequation
-    ([SPPredicateTransformers.v]); the contrapositive exchanges them, and
+    ([MonotoneSPSt.v]); the contrapositive exchanges them, and
     each Galois relation pairs one of them with [WSt S].
 
     Every flavour maps into its broad monad ([toWSt]; [asSPStMon] &c.), and
@@ -132,9 +132,11 @@ From Incorrectness.Taxonomy Require Import SPStBindComparisons.
 From Incorrectness.Relational Require
   PredMonad.
 From Incorrectness.SP Require
-  SPPredicateTransformers.
+  RawSP.
+From Incorrectness.Taxonomy Require
+  MonotoneSPSt.
 
-Import SPPredicateTransformers.SPStMonotone.
+Import MonotoneSPSt.SPStMonotone.
 
 Local Notation Monad_SPStMon_angelic := (@AngelicMonotone.Monad__AngelicSPStMon _).
 Local Notation Monad_SPStMon_demonic := (@DemonicMonotone.Monad__DemonicSPStMon _).
@@ -424,7 +426,7 @@ Section Broad.
 
   (** *** [SPStMon S A], at the first index *)
 
-  Import SPPredicateTransformers.SPStMonotone.
+  Import MonotoneSPSt.SPStMonotone.
 
   #[program] Definition spstPT (m : SPStMon S A) : MonoPT S (A * S) :=
     fun P r => proj1_sig m P r.
@@ -1248,7 +1250,7 @@ Section SPMonad.
 
   (** *** Implication *)
 
-  (** The pointwise order [ordSPStMon] of [SPPredicateTransformers.v]. *)
+  (** The pointwise order [ordSPStMon] of [MonotoneSPSt.v]. *)
   Definition impliesSPSt {A} (m n : SPStMon S A) : Prop :=
     forall (P : S -> Prop) r, proj1_sig m P r -> proj1_sig n P r.
 
@@ -1613,7 +1615,7 @@ Section GaloisMonads.
   Qed.
 
   (** [GaloisSPWP] and [GaloisWPSP] are the adjointness relations [Ladj] and
-      [Radj] of [SPPredicateTransformers.v]. *)
+      [Radj] of [MonotoneSPSt.v]. *)
   Lemma Ladj_GaloisSPWP {A} (m : SPStMon S A) (w : WSt S A) :
     AngelicMonotone.Ladj m w <-> GaloisSPWP m w.
   Proof. split; intro H; exact H. Qed.

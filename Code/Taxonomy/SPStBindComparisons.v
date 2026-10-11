@@ -3,7 +3,9 @@
 From ExtLib Require Import Monad.
 From Incorrectness.Lib.Arrow Require Import RelArrowCoherence.
 From Incorrectness.SP Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad SPPredicateTransformers.
+  ASPMonad DSLPMonad DSPMonad ASLPMonad RawSP.
+From Incorrectness.Taxonomy Require Import
+  MonotoneSPSt.
 
 Local Obligation Tactic := idtac.
 
@@ -19,7 +21,7 @@ Section ASPStMonotoneBind.
   Qed.
 
   Definition bindASPSt_angelic_formula {A B}
-      (m : ASPSt S A) (k : A -> ASPSt S B) : @SPPredicateTransformers.SPSt S B :=
+      (m : ASPSt S A) (k : A -> ASPSt S B) : @RawSP.SPSt S B :=
     fun pre r =>
       exists a s',
         getASPSt m pre (a, s') /\
@@ -87,7 +89,7 @@ Section DSLPStMonotoneBind.
   Qed.
 
   Definition bindDSLPSt_demonic_formula {A B}
-      (m : DSLPSt S A) (k : A -> DSLPSt S B) : @SPPredicateTransformers.SPSt S B :=
+      (m : DSLPSt S A) (k : A -> DSLPSt S B) : @RawSP.SPSt S B :=
     fun pre r =>
       forall a s',
         (forall prei, getDSLPSt (k a) prei r -> prei s') ->
@@ -208,7 +210,7 @@ Section DSPStBind.
     exists a s', dspRel m (tt, s) (a, s') /\ dspRel (k a) (tt, s') r.
 
   Definition bindDSPSt_formula {A B}
-      (m : DSPSt S A) (k : A -> DSPSt S B) : @SPPredicateTransformers.SPSt S B :=
+      (m : DSPSt S A) (k : A -> DSPSt S B) : @RawSP.SPSt S B :=
     fun pre r =>
       (exists s, pre s /\ bindDSPSt_relation m k s r) /\
       (forall s, bindDSPSt_relation m k s r -> pre s).
@@ -255,7 +257,7 @@ Section ASLPStBind.
     exists a s', aslpRel m (tt, s) (a, s') /\ aslpRel (k a) (tt, s') r.
 
   Definition bindASLPSt_formula {A B}
-      (m : ASLPSt S A) (k : A -> ASLPSt S B) : @SPPredicateTransformers.SPSt S B :=
+      (m : ASLPSt S A) (k : A -> ASLPSt S B) : @RawSP.SPSt S B :=
     fun pre r =>
       (exists s, pre s /\ bindASLPSt_relation m k s r) \/
       (forall s, bindASLPSt_relation m k s r -> pre s).

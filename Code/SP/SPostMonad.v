@@ -21,10 +21,10 @@
 
     Wrapped in [SPM] to distinguish this unary presentation from the binary
     arrows in [Arrows/SPostArr.v] and [Arrows/RelSPostArr.v].
-    [SPPredicateTransformers.v] defines the unrestricted [SPPure] carrier. *)
+    [RawSP.v] defines the unrestricted [SPPure] carrier. *)
 
 From ITree Require Import Basics.Monad.
-From Incorrectness.SP Require Import SPPredicateTransformers.
+From Incorrectness.SP Require Import RawSP.
 
 Module SPM.
 

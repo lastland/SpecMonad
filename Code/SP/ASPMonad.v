@@ -526,7 +526,7 @@ Arguments bindASPStExc {S} {A} {B}.
     each other. *)
 
 From Coq Require Import PropExtensionality Classical_Prop.
-From Incorrectness.SP Require Import SPostMonad SPPredicateTransformers.
+From Incorrectness.SP Require Import SPostMonad RawSP.
 
 Section PureASPMonad.
   Definition JoinPreserving {A} (w : SPPure A) : Prop :=

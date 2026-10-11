@@ -496,7 +496,7 @@ Qed.
     carry the orders to each other. *)
 
 From Coq Require Import PropExtensionality.
-From Incorrectness.SP Require Import SPPredicateTransformers.
+From Incorrectness.SP Require Import RawSP.
 
 Section PureASLPMonad.
 

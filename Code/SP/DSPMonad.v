@@ -484,7 +484,7 @@ Qed.
     each other. *)
 
 From Coq Require Import PropExtensionality.
-From Incorrectness.SP Require Import SPPredicateTransformers.
+From Incorrectness.SP Require Import RawSP.
 
 Section PureDSPMonad.
 
