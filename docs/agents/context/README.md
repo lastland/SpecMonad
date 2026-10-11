@@ -13,6 +13,8 @@ The directories under `Code/` follow the paper and form layers
 
 - Lib supplies generic arrows, transformers, morphisms, arrow monads, ordered
   monads and monadic relations; it names no specification carrier.
+- `Verification/` groups everything that involves the computation monad:
+  Computation, Triples and DijkstraMonads.
 - Computation owns effect outcomes (`divndNE` and its stacks). Relational owns
   relations, their four SP readings and `Pred`: proof infrastructure that SP
   builds on.
@@ -41,13 +43,13 @@ and the opt-in audits.
 | [Lib](Lib.md) | background | Generic arrow and monad contracts |
 | [OptionArrowT](Lib/Arrow/OptionArrowT.md) | — | Option-arrow operations and laws |
 | [StateArrowT](Lib/Arrow/StateArrowT.md) | — | State-arrow operations and laws |
-| [Computation](Computation.md) | §1, §5 | Outcomes and effect stacks |
 | [Relational](Relational.md) | — | Relations, SP readings, `Pred` |
 | [WP](WP.md) | §2, §3.6 | WP monads and variants |
 | [SP](SP.md) | §3.1-3.5 | SP arrows and monads |
 | [PTMonadTaxonomy](PTMonadTaxonomy.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
-| [Triples](Triples.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
-| [DijkstraMonads](DijkstraMonads.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
+| [Verification/Computation](Verification/Computation.md) | §1, §5 | Outcomes and effect stacks |
+| [Verification/Triples](Verification/Triples.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
+| [Verification/DijkstraMonads](Verification/DijkstraMonads.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
 | [GaloisConnections](GaloisConnections.md) | §7 | DM4All monads and adjunctions |
 | [Tests](Tests.md) | — | Generic regression, concrete instances, semantic clients |
 | [Checks](Checks.md) | — | Assumption reporting, paper claims |

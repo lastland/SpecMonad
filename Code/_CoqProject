@@ -1,7 +1,7 @@
 -Q . Incorrectness
 
 Lib/Monad/TransformerLaws.v
-Computation/DivNonDetNE.v
+Verification/Computation/DivNonDetNE.v
 Lib/Arrow/Arrow.v
 Lib/Arrow/ArrowApplyFacts.v
 Lib/Arrow/ArrowMonad.v
@@ -54,10 +54,10 @@ GaloisConnections/BaseGaloisConnections.v
 PTMonadTaxonomy/SPStBindComparisons.v
 PTMonadTaxonomy/MonadTaxonomy.v
 PTMonadTaxonomy/Carriers.v
-Triples/Triple.v
-Triples/MonadMorphisms.v
-Triples/TripleTaxonomy.v
-Triples/Examples.v
-Triples/InCorrectnessPrinciples.v
-DijkstraMonads/DijkstraMonad.v
-DijkstraMonads/DijkstraExamples.v
+Verification/Triples/Triple.v
+Verification/Triples/MonadMorphisms.v
+Verification/Triples/TripleTaxonomy.v
+Verification/Triples/Examples.v
+Verification/Triples/InCorrectnessPrinciples.v
+Verification/DijkstraMonads/DijkstraMonad.v
+Verification/DijkstraMonads/DijkstraExamples.v

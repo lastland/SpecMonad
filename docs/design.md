@@ -14,10 +14,10 @@ The organising principle is a dependency boundary:
 
 `WP/`, `SP/` and `Relational/` use specification types, generic
 infrastructure (`Lib/`) and library definitions. The computation side is one
-base monad, `divndNE`, and its transformer stacks (`Computation/`); the
+base monad, `divndNE`, and its transformer stacks (`Verification/Computation/`); the
 morphisms out of it, their triples, the triple diagram, the examples and the
-rewriting rules live in `Triples/`, and the Dijkstra monads of those
-morphisms in `DijkstraMonads/`.
+rewriting rules live in `Verification/Triples/`, and the Dijkstra monads of those
+morphisms in `Verification/DijkstraMonads/`.
 
 Start with the computation monads (§2), then choose a specification
 presentation (§3–4 and §8) and the morphisms into it (§5). The
@@ -48,7 +48,7 @@ built in three steps:
 | `divnd A` | `optionT SetM A`, i.e. `option A -> Prop` | a set of outcomes, `None` being divergence |
 | `divndNE A` | `{ m : divnd A \| nonEmptyOutcomes m }` | the base monad: at least one outcome |
 
-`divndNE` is the base of everything in `Triples/`. The other two computation
+`divndNE` is the base of everything in `Verification/Triples/`. The other two computation
 monads are monad transformers applied to it, so they are non-empty by
 construction:
 
@@ -60,7 +60,7 @@ construction:
 
 Besides the three monads the file has the choice, divergence, raise and pick
 operations of the stacks, and the outcome lemmas `outSt_*` / `outStExc_*`.
-`Triples/MonadMorphisms.v` imports it.
+`Verification/Triples/MonadMorphisms.v` imports it.
 `TransformerLaws.v` proves the `optionT` / `stateT` laws for any
 base monad, and lifts orders (`OrderedMonad_stateT`, ...) and monad morphisms
 (`MonadMorphism_stateT`, ...) through them.
@@ -176,7 +176,7 @@ with exceptions the monads are the arrow stacks.
 
 The elements that a pair of a pre- and a postcondition determines are the
 indices of §9: `aspOver`, `dslpUnder`, `aspUnder`, `dslpOver` in
-`DijkstraMonads/DijkstraMonad.v`.
+`Verification/DijkstraMonads/DijkstraMonad.v`.
 
 ## 4. The WP specification monads
 
@@ -207,7 +207,7 @@ through the subset type.
 
 The adjunction and `Proper_bind` proofs use the bundled monotonicity. Each WP
 morphism therefore supplies a monotonicity proof when constructing a `WPure`
-value (`demonic_mono`, `angelic_mono` in `Triples/MonadMorphisms.v`).
+value (`demonic_mono`, `angelic_mono` in `Verification/Triples/MonadMorphisms.v`).
 
 All three WP orders live in `WP/WPure.v`. Each stack order is a generic
 lift of **reverse implication** from `WP_le`; the formulas below omit runners:
@@ -222,7 +222,7 @@ The lifts preserve argument order: a transformer that yields pointwise weaker
 preconditions is lower in the refinement order. The DM4all adjunctions and
 the identification of WP triples with Dijkstra typings use these reverse
 orders: an `Under` triple is `θ m ⊑ wpUnder pre post` and an `Over` triple
-`wpOver pre post ⊑ θ m` (`DijkstraMonads/DijkstraMonad.v`).
+`wpOver pre post ⊑ θ m` (`Verification/DijkstraMonads/DijkstraMonad.v`).
 
 **`GaloisConnections/WPArr.v` uses the raw carrier `WPureT`**, not `WPure`. Its `ArrowEq`
 is Leibniz equality. Some laws hold by conversion; laws involving products and
@@ -233,7 +233,7 @@ sums also use functional extensionality. This equality contract differs from
 
 [`Lib/Monad/OrderedMonad.v`](../Code/Lib/Monad/OrderedMonad.v) defines a monad morphism
 (`MonadMorphism`: properness, and preservation of `ret` and `bind` up to the
-target's equality). `Triples/Triple.v` defines the triple, once (binders
+target's equality). `Verification/Triples/Triple.v` defines the triple, once (binders
 abbreviated here):
 
 ```coq
@@ -267,7 +267,7 @@ one and an SP `Under` triple the incorrectness-like one.
 A statement that mentions `triple θ` depends on the assumptions of `θ`'s
 instance, that is, of its target monad and of its return/bind laws.
 
-### The eight readings, lifted — `Triples/MonadMorphisms.v`
+### The eight readings, lifted — `Verification/Triples/MonadMorphisms.v`
 
 Each reading is defined once, over the non-empty base `divndNE`, and lifted.
 They are monad morphisms and are not called observations: an effect
@@ -300,9 +300,9 @@ arrow transformers' law packages. The same statements are also proved through
 the relations denoted (`aspSt_morphism_rel`, and so on), and the
 `IsMonadMorphism` instances use those: triples through the ASP and DSLP
 morphisms are closed, and those through DSP and ASLP use excluded middle. See
-the [Triples context](agents/context/Triples.md).
+the [Triples context](agents/context/Verification/Triples.md).
 
-## 6. The triple diagram — `Triples/TripleTaxonomy.v`
+## 6. The triple diagram — `Verification/Triples/TripleTaxonomy.v`
 
 Figure 5 of Lena Verscht and Benjamin Lucien Kaminski's
 [*A Taxonomy of Hoare-Like Logics: Towards a Holistic View using Predicate
@@ -443,7 +443,7 @@ operations, normal forms, recovered relations, laws, binary stacks, and
 arrow-level conversions. No monad file and nothing in `Relational/RelMonads.v`
 is a dependency of these implementations. The SP dependency direction is
 `Lib/` and `Relational/` → `SPostArr` → `DSPASLPArr` → the monad files →
-`PTMonadTaxonomy/` → `Triples/`.
+`PTMonadTaxonomy/` → `Verification/Triples/`.
 
 `Rel.v` separately owns the relation carrier, stacks, and congruence;
 `RelSPostArr.v` owns their four SP readings and supporting facts.
@@ -785,7 +785,7 @@ not convert `Rel_eq` into equality of relation values.
 
 ## 9. Examples, rewriting rules, Dijkstra monads
 
-**Examples.** `Triples/Examples.v` defines `progA`, `progB`, `progRet`,
+**Examples.** `Verification/Triples/Examples.v` defines `progA`, `progB`, `progRet`,
 `progEx`, `example_state` (Example 3.1 of Peter W. O'Hearn's
 [*Incorrectness Logic*](https://doi.org/10.1145/3371078), POPL 2020),
 `progloom` and `progloom_harder` over `stateT S (optionT divndNE)`, and
@@ -794,7 +794,7 @@ contrast angelic *coverage* (`awpStExc` `Under`: from every start state some
 run raises) with bug *presence* (`aspStExc` `Under`: the raise is reached from
 some start state), over the same program and postcondition.
 
-**Rewriting rules.** `Triples/InCorrectnessPrinciples.v` states O'Hearn's
+**Rewriting rules.** `Verification/Triples/InCorrectnessPrinciples.v` states O'Hearn's
 rules over the `aspSt` triples of a computation with state: the two symmetry
 rules, the two rules of consequence, and the principles of agreement and
 denial. The correctness-side rules also have a variant for the demonic
@@ -803,7 +803,7 @@ liberal WP triples `dwlpSt`
 `principle_of_agreement_dwlp`, `principle_of_denial_dwlp`), each obtained from
 its ASP counterpart through the Galois edge of the diagram.
 
-**Dijkstra monads.** `DijkstraMonads/DijkstraMonad.v` gives, for any monad
+**Dijkstra monads.** `Verification/DijkstraMonads/DijkstraMonad.v` gives, for any monad
 morphism `θ : M ~> W` into a specification monad `(W, le)`,
 
 ```text
@@ -843,12 +843,12 @@ inclusions of relations, so they are closed under intersection, and these
 triples are not. Without state there is one start point and the ASP `Under`
 triple is a typing (`triple_under_aspPure`, for a precondition that holds).
 
-`DijkstraMonads/DijkstraExamples.v` types one program in each of the eight WP
+`Verification/DijkstraMonads/DijkstraExamples.v` types one program in each of the eight WP
 Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a
 stateless program at ASP `Under`. See the
-[Dijkstra context](agents/context/DijkstraMonads.md).
+[Dijkstra context](agents/context/Verification/DijkstraMonads.md).
 
 ## 10. Build status
 
@@ -914,4 +914,4 @@ class), not `MonadLaws`.
 next to the arrows of `SP/SPostArr.v`, and `WP/WPVariants.v` has a third copy
 of the four homomorphism properties for unary WP transformers. `SPostMonad.v`,
 the SP monad files, `SPStBindComparisons.v` and `MonotoneSPSt.v` use the raw
-ones; nothing in `Triples/` or `DijkstraMonads/` does.
+ones; nothing in `Verification/Triples/` or `Verification/DijkstraMonads/` does.

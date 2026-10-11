@@ -78,12 +78,12 @@ What is formalised:
   `triple θ m k P Q` is defined for any monad morphism `θ`; its sixteen
   instances are the correctness and incorrectness triples, and the triple of
   a lifted morphism is the base triple re-indexed. See
-  [`Triples/MonadMorphisms.v`](Code/Triples/MonadMorphisms.v).
+  [`Verification/Triples/MonadMorphisms.v`](Code/Verification/Triples/MonadMorphisms.v).
 
 - **The taxonomy of triples**: the 26 edges of Verscht and Kaminski's diagram
   (implications, contrapositives, and the two Galois connections between WP
   and SP), with state and with state and exceptions, in
-  [`Triples/TripleTaxonomy.v`](Code/Triples/TripleTaxonomy.v). A separate
+  [`Verification/Triples/TripleTaxonomy.v`](Code/Verification/Triples/TripleTaxonomy.v). A separate
   development relates the specification monads themselves
   (`PTMonadTaxonomy/MonadTaxonomy.v`).
 
@@ -94,12 +94,12 @@ What is formalised:
 - **Incorrectness principles** from Peter W. O'Hearn's
   [*Incorrectness Logic*](https://doi.org/10.1145/3371078) (POPL 2020), proved
   over the ASP triples, with demonic liberal WP variants, in
-  [`Triples/InCorrectnessPrinciples.v`](Code/Triples/InCorrectnessPrinciples.v).
+  [`Verification/Triples/InCorrectnessPrinciples.v`](Code/Verification/Triples/InCorrectnessPrinciples.v).
 
 - **Dijkstra monads**: the Dijkstra monad of any monad morphism into an
   ordered monad, at every lifted morphism, with triples identified with
   typings where that is exact. See the
-  [Dijkstra context](docs/agents/context/DijkstraMonads.md).
+  [Dijkstra context](docs/agents/context/Verification/DijkstraMonads.md).
 
 ## Question
 

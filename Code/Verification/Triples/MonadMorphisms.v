@@ -50,7 +50,7 @@ From Incorrectness.Lib.Monad Require Import
   OrderedMonad.
 From Incorrectness.Lib.Monad Require Import
   TransformerLaws.
-From Incorrectness.Computation Require Import
+From Incorrectness.Verification.Computation Require Import
   DivNonDetNE.
 From Incorrectness.Relational Require Import
   Rel RelSPostArr.
@@ -61,7 +61,7 @@ From Incorrectness.WP Require Import
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Relational Require PredMonad RelMonads.
-From Incorrectness.Triples Require Import Triple.
+From Incorrectness.Verification.Triples Require Import Triple.
 
 Local Notation Pred := PredMonad.PredM.Pred.
 Local Notation Monad_Pred := PredMonad.PredM.Monad_Pred.

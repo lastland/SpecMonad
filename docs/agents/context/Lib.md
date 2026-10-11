@@ -88,7 +88,7 @@ properness and `ret` / `bind` preservation over explicit dictionaries;
 `IsMonadMorphism θ` bundles a map with the structures it is a morphism for,
 so that the morphism is found from the map alone. The general triple over
 such a map is not here: it is in
-[Triples/Triple.v](../../../Code/Triples/Triple.v).
+[Verification/Triples/Triple.v](../../../Code/Verification/Triples/Triple.v).
 
 [MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v) states DM4All's monadic relation for any two
 monads: a family of relations that holds at `ret` and is preserved by `bind`.

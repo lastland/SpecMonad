@@ -3,12 +3,12 @@
 # to the layer whose path is the longest prefix of its own.  Checked by
 # `python3 scripts/depgraph.py --check-layers`.
 Lib:
-Computation:        Lib
-Relational:         Lib
-WP:                 Lib
-SP:                 Lib Relational
-PTMonadTaxonomy:    Lib Relational WP SP
-Triples:            Lib Computation Relational WP SP PTMonadTaxonomy
-DijkstraMonads:     Lib Computation Relational WP SP PTMonadTaxonomy Triples
-GaloisConnections:  Lib Relational WP SP PTMonadTaxonomy
-Tests:              Lib Computation Relational WP SP PTMonadTaxonomy Triples DijkstraMonads GaloisConnections
+Relational:                  Lib
+WP:                          Lib
+SP:                          Lib Relational
+PTMonadTaxonomy:             Lib Relational WP SP
+Verification/Computation:    Lib
+Verification/Triples:        Lib Verification/Computation Relational WP SP PTMonadTaxonomy
+Verification/DijkstraMonads: Lib Verification/Computation Relational WP SP PTMonadTaxonomy Verification/Triples
+GaloisConnections:           Lib Relational WP SP PTMonadTaxonomy
+Tests:                       Lib Verification/Computation Relational WP SP PTMonadTaxonomy Verification/Triples Verification/DijkstraMonads GaloisConnections

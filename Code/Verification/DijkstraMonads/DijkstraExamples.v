@@ -1,11 +1,11 @@
 (** * Programs typed in the Dijkstra monads
 
-    The programs are those of [Triples/Examples.v], with state and
+    The programs are those of [Verification/Triples/Examples.v], with state and
     exceptions.
 
     - One typed program for each of the eight WP Dijkstra monads, for ASP
       [Over] and for DSLP [Under].  Each is the triple proved in
-      [Triples/Examples.v], read as a typing.
+      [Verification/Triples/Examples.v], read as a typing.
 
     - ASP [Under] and DSLP [Over], where triple and typing differ.  A typing
       at [aspUnder] says every start state in the precondition reaches every
@@ -24,7 +24,7 @@ From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Computation Require Import
+From Incorrectness.Verification.Computation Require Import
   DivNonDetNE.
 From Incorrectness.Relational Require Import Rel.
 From Incorrectness.SP Require Import SPostArr.
@@ -32,8 +32,8 @@ From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad.
-From Incorrectness.Triples Require Import Triple MonadMorphisms Examples.
-From Incorrectness.DijkstraMonads Require Import DijkstraMonad.
+From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms Examples.
+From Incorrectness.Verification.DijkstraMonads Require Import DijkstraMonad.
 
 (* ================================================================= *)
 (** * WP: the eight Dijkstra monads                                   *)
@@ -138,7 +138,7 @@ Definition progA_Dasp_op :
   exist _ progA progA_asp_under_typing.
 
 (** A triple that is not a typing.  [progloom_harder_asp_under]
-    ([Triples/Examples.v]) is the triple: the raise is reached from some
+    ([Verification/Triples/Examples.v]) is the triple: the raise is reached from some
     positive balance.  It is not reached from every positive balance. *)
 Theorem progloom_harder_not_Dasp_op :
   ~ ordASPStExc

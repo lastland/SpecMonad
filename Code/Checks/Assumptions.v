@@ -15,7 +15,7 @@ From Incorrectness.SP Require
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections.
-From Incorrectness.Computation Require Import DivNonDetNE.
+From Incorrectness.Verification.Computation Require Import DivNonDetNE.
 
 (** Shared algebraic helpers take their congruence/application premises
     explicitly. Generic monad laws derive pure congruence constructively;
@@ -195,9 +195,9 @@ Print Assumptions RelArrowCoherence.relS_bind.
 From Incorrectness.Lib.Monad Require OrderedMonad.
 From Incorrectness.Lib.Arrow Require ArrowMorphism.
 From Incorrectness.Lib.Monad Require TransformerLaws.
-From Incorrectness.Triples Require
+From Incorrectness.Verification.Triples Require
   MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
-From Incorrectness.DijkstraMonads Require DijkstraMonad DijkstraExamples.
+From Incorrectness.Verification.DijkstraMonads Require DijkstraMonad DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.
 Print Assumptions OrderedMonad.MonadMorphism_ext.
 Print Assumptions OrderedMonad.MonadMorphism_of_laws.

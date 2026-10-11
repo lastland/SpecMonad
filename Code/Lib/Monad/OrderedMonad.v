@@ -12,7 +12,7 @@
 
     The second half of the file has the other ingredient of an effect
     observation, a monad morphism ([MonadMorphism]).  The triple of a
-    computation through one is in [Triples/Triple.v].
+    computation through one is in [Verification/Triples/Triple.v].
 
     Lifts through [optionT] / [stateT] are in
     [Lib/Monad/TransformerLaws.v]. *)

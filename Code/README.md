@@ -20,37 +20,43 @@ make layers     # check that imports respect the directory layers
 propositional extensionality and, where stated, excluded middle
 (`Classical_Prop.classic`).
 
-## Layout, in paper order
+## Layout
 
 | Directory | Paper | Contents |
 |---|---|---|
-| [Lib/](Lib/) | background | arrows with application and choice, the option/state arrow transformers, arrow morphisms, the monad of an arrow at a fixed input; ordered monads, monad morphisms, monadic relations, monad-transformer laws |
-| [Computation/](Computation/) | §1, §5 | `divndNE`, nondeterminism and nontermination, with state and with state and exceptions |
-| [Relational/](Relational/) | infrastructure; `Pred` (§7) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
-| [WP/](WP/) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
-| [SP/](SP/) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
-| [PTMonadTaxonomy/](PTMonadTaxonomy/) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
-| [Triples/](Triples/) | §5 | monad morphisms out of `divndNE`, the general triple, the triple diagram, examples |
-| [DijkstraMonads/](DijkstraMonads/) | §6 | Dijkstra monads of the morphisms; which triples are typings |
-| [GaloisConnections/](GaloisConnections/) | §7 | the DM4All specification monads and their adjunctions |
-| [Tests/](Tests/) | — | regression and instance checks |
-| [Checks/](Checks/) | — | opt-in audits: assumptions and the paper claims |
+| [Lib/](Lib) | background | arrows with application and choice, the option/state arrow transformers, arrow morphisms, the monad of an arrow at a fixed input; ordered monads, monad morphisms, monadic relations, monad-transformer laws |
+| [Relational/](Relational) | infrastructure; `Pred` (§7) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
+| [WP/](WP) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
+| [SP/](SP) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
+| [PTMonadTaxonomy/](PTMonadTaxonomy) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
+| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad: the three directories below |
+| ↳ [Computation/](Verification/Computation) | §1, §5 | `divndNE`, nondeterminism and nontermination, with state and with state and exceptions |
+| ↳ [Triples/](Verification/Triples) | §5 | monad morphisms out of `divndNE`, the general triple, the triple diagram, examples |
+| ↳ [DijkstraMonads/](Verification/DijkstraMonads) | §6 | Dijkstra monads of the morphisms; which triples are typings |
+| [GaloisConnections/](GaloisConnections) | §7 | the DM4All specification monads and their adjunctions |
+| [Tests/](Tests) | — | regression and instance checks |
+| [Checks/](Checks) | — | opt-in audits: assumptions and the paper claims |
 
 Each directory has a reading guide in
 [docs/agents/context/](../docs/agents/context/README.md) (`SP/` → `SP.md`).
 
 ```mermaid
 flowchart RL
-  Computation[Computation] -->|1| Lib[Lib]
-  DijkstraMonads[DijkstraMonads] -->|5| Triples[Triples]
+  subgraph Verification[Verification/]
+    Verification_Computation[Computation]
+    Verification_DijkstraMonads[DijkstraMonads]
+    Verification_Triples[Triples]
+  end
   GaloisConnections[GaloisConnections] -->|1| PTMonadTaxonomy[PTMonadTaxonomy]
   PTMonadTaxonomy[PTMonadTaxonomy] -->|21| SP[SP]
   PTMonadTaxonomy[PTMonadTaxonomy] -->|5| WP[WP]
   Relational[Relational] -->|16| Lib[Lib]
   SP[SP] -->|11| Relational[Relational]
   Tests[Tests] -->|2| GaloisConnections[GaloisConnections]
-  Triples[Triples] -->|4| Computation[Computation]
-  Triples[Triples] -->|3| PTMonadTaxonomy[PTMonadTaxonomy]
+  Verification_Computation -->|1| Lib[Lib]
+  Verification_DijkstraMonads -->|5| Verification_Triples
+  Verification_Triples -->|3| PTMonadTaxonomy[PTMonadTaxonomy]
+  Verification_Triples -->|4| Verification_Computation
   WP[WP] -->|4| Lib[Lib]
 ```
 
@@ -80,10 +86,10 @@ file-level graph with a directory-only view.
    [WP/WPVariants.v](WP/WPVariants.v).
 5. §4: [PTMonadTaxonomy/TransformerRelations.v](PTMonadTaxonomy/TransformerRelations.v), then
    `Section Flavours` of [PTMonadTaxonomy/MonadTaxonomy.v](PTMonadTaxonomy/MonadTaxonomy.v).
-6. §5: [Triples/MonadMorphisms.v](Triples/MonadMorphisms.v),
-   [Triples/TripleTaxonomy.v](Triples/TripleTaxonomy.v), [Triples/Examples.v](Triples/Examples.v).
-7. §6: [DijkstraMonads/DijkstraMonad.v](DijkstraMonads/DijkstraMonad.v),
-   [DijkstraMonads/DijkstraExamples.v](DijkstraMonads/DijkstraExamples.v).
+6. §5: [Verification/Triples/MonadMorphisms.v](Verification/Triples/MonadMorphisms.v),
+   [Verification/Triples/TripleTaxonomy.v](Verification/Triples/TripleTaxonomy.v), [Verification/Triples/Examples.v](Verification/Triples/Examples.v).
+7. §6: [Verification/DijkstraMonads/DijkstraMonad.v](Verification/DijkstraMonads/DijkstraMonad.v),
+   [Verification/DijkstraMonads/DijkstraExamples.v](Verification/DijkstraMonads/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
 The [design notes](../docs/design.md) tell the longer story;

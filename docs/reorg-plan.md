@@ -208,7 +208,9 @@ Departures from the plan:
   its name (Figure 1; cited by the paper). The directory was then renamed
   again, `MonadRelations/` -> `PTMonadTaxonomy/`, to match Section 4's title
   without clashing with the paper title or with `Lib/Monad/MonadRelation.v`.
-  `Dijkstra/` was renamed `DijkstraMonads/` likewise. The plan above uses
+  `Dijkstra/` was renamed `DijkstraMonads/` likewise. `Computation/`, `Triples/` and
+  `DijkstraMonads/` were then grouped under `Verification/`, and the context
+  guides moved to `docs/agents/context/`. The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

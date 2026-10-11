@@ -62,7 +62,7 @@ From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
-From Incorrectness.Computation Require Import DivNonDetNE.
+From Incorrectness.Verification.Computation Require Import DivNonDetNE.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr DSPASLPArr.
 From Incorrectness.PTMonadTaxonomy Require Import TransformerRelations.
@@ -72,7 +72,7 @@ From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.PTMonadTaxonomy Require Import
   Carriers MonadTaxonomy.
-From Incorrectness.Triples Require Import Triple MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)
 (** * The four WP readings of one base computation                   *)

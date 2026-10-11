@@ -18,7 +18,7 @@ From Incorrectness.Lib.Arrow.StateArrowT Require
   Core ArrowApplyLaws.
 From Incorrectness.Lib.Arrow.OptionArrowT Require
   ArrowApplyLaws.
-From Incorrectness.Computation Require
+From Incorrectness.Verification.Computation Require
   DivNonDetNE.
 From Incorrectness.Relational Require
   PredMonad OptionLoop.
@@ -29,9 +29,9 @@ From Incorrectness.SP Require
   SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
-From Incorrectness.Triples Require
+From Incorrectness.Verification.Triples Require
   Triple MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
-From Incorrectness.DijkstraMonads Require
+From Incorrectness.Verification.DijkstraMonads Require
   DijkstraMonad DijkstraExamples.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections GaloisArr.

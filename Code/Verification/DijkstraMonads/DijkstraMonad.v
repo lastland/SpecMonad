@@ -20,7 +20,7 @@
 
     The construction asks for the morphism and for the order, and for
     nothing else.  The WP, ASP and DSLP morphisms of
-    [Triples/MonadMorphisms.v] are lifts of a base morphism through the
+    [Verification/Triples/MonadMorphisms.v] are lifts of a base morphism through the
     monad and arrow transformers, and the natural orders of their targets
     are lifts of the base orders.  So each of them has its Dijkstra monads
     at the base, with state, and with state and exceptions: the
@@ -49,7 +49,7 @@ From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Monad Require Import
   TransformerLaws.
-From Incorrectness.Computation Require Import
+From Incorrectness.Verification.Computation Require Import
   DivNonDetNE.
 From Incorrectness.Relational Require Import Rel.
 From Incorrectness.SP Require Import SPostArr.
@@ -57,7 +57,7 @@ From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Triples Require Import Triple MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)
 (** * The construction                                                *)

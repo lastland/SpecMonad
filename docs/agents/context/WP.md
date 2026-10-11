@@ -2,7 +2,7 @@
 
 Parent: [Code](Code.md). Paper: Section 2 (WP monads) and Section 3.6
 (the four WP monads). Consumers: [PTMonadTaxonomy](PTMonadTaxonomy.md),
-[Triples](Triples.md), [DijkstraMonads](DijkstraMonads.md),
+[Triples](Verification/Triples.md), [DijkstraMonads](Verification/DijkstraMonads.md),
 [Galois connections](GaloisConnections.md).
 
 - [WPure.v](../../../Code/WP/WPure.v): `WPureT` is the raw WP transformer and `WPure` its
@@ -24,6 +24,6 @@ Parent: [Code](Code.md). Paper: Section 2 (WP monads) and Section 3.6
 | AWLP | terminating, disjunctive | some outcome does, or one diverges |
 
 Only [PTMonadTaxonomy](PTMonadTaxonomy.md) imports `WPVariants.v`. The monad
-morphisms of [Triples](Triples.md) land in `WPure` itself; no
+morphisms of [Triples](Verification/Triples.md) land in `WPure` itself; no
 lemma places their image in a variant. Keep WP triple argument and direction
 changes in mind: the orders are reverse implication.

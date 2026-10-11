@@ -16,13 +16,15 @@ the layers listed in [scripts/layers.txt](../../../Code/scripts/layers.txt), che
 - [Lib](Lib.md): generic arrow laws, transformers, morphisms,
   fixed-input monads, ordered monads, monadic relations, transformer laws.
   No specification carrier.
-- [Computation](Computation.md): `divndNE` and its two stacks.
 - [Relational](Relational.md): relations, their SP readings, `Pred`;
   proof infrastructure below SP.
 - [WP](WP.md) and [SP](SP.md): the specification monads
   (paper §2-3).
 - [PTMonadTaxonomy](PTMonadTaxonomy.md): the relations of the taxonomy (§4).
-- [Triples](Triples.md) and [DijkstraMonads](DijkstraMonads.md):
+- `Verification/`: everything that involves the computation monad.
+  [Computation](Verification/Computation.md) holds `divndNE` and its two
+  stacks; [Triples](Verification/Triples.md) and
+  [DijkstraMonads](Verification/DijkstraMonads.md):
   monad morphisms, triples, Dijkstra monads (§5-6).
 - [GaloisConnections](GaloisConnections.md): DM4All monads and
   their adjunctions (§7).

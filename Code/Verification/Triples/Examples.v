@@ -33,12 +33,12 @@ From Coq Require Import Lia PeanoNat.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Computation Require Import DivNonDetNE.
+From Incorrectness.Verification.Computation Require Import DivNonDetNE.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Triples Require Import Triple MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms.
 
 Import MonadNotation.
 Open Scope monad_scope.

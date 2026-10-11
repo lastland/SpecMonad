@@ -190,10 +190,21 @@ def mermaid(nodes) -> str:
                 seen.add(y)
                 reach(y, seen)
         return seen
+    nid = lambda g: g.replace("/", "_")
     lines = ["flowchart RL"]
+    # A layer `Parent/Child` is drawn as `Child` inside a `Parent` subgraph.
+    parents = {}
+    for g in sorted({n["group"] for n in nodes}):
+        if "/" in g:
+            parents.setdefault(g.rsplit("/", 1)[0], []).append(g)
+    for parent, children in sorted(parents.items()):
+        lines.append(f"  subgraph {nid(parent)}[{parent}/]")
+        lines += [f"    {nid(c)}[{c.rsplit('/', 1)[1]}]" for c in children]
+        lines.append("  end")
+    label = lambda g: nid(g) if "/" in g else f"{nid(g)}[{g}]"
     for (a, b), c in sorted(count.items()):
         if not any(o != b and b in reach(o, set()) for o in succ[a]):
-            lines.append(f"  {a.replace('/', '_')}[{a}] -->|{c}| {b.replace('/', '_')}[{b}]")
+            lines.append(f"  {label(a)} -->|{c}| {label(b)}")
     return "\n".join(lines)
 
 
