@@ -128,7 +128,7 @@ From Incorrectness.WP Require Import
   WPureMonad.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPStBindComparisons.
+From Incorrectness.Taxonomy Require Import SPStBindComparisons.
 From Incorrectness.Relational Require
   PredMonad.
 From Incorrectness.SP Require

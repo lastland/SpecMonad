@@ -70,7 +70,7 @@ From Incorrectness.WP Require Import
   WPureMonad.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+From Incorrectness.Taxonomy Require Import
   MonadTaxonomy.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
 
