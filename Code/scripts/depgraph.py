@@ -6,6 +6,10 @@ files are shown (Coq stdlib, ITree, ExtLib, ... are omitted).
 
 Usage (from Code/):
     python3 scripts/depgraph.py [-o depgraph.html] [--coqdep coqdep]
+    python3 scripts/depgraph.py --check-layers   # exit 1 on a layering violation
+
+If scripts/layers.txt exists, files are grouped by its layers and every import
+is checked against them (see that file for the format).
 
 Then open the generated file in a browser.  Click a node to inspect it; the
 side panel lists direct and transitive dependencies / dependents.
@@ -91,12 +95,52 @@ def file_stats(path: Path) -> dict:
     }
 
 
+def read_layers(path: Path):
+    """Parse `Layer: Allowed Other` lines; a file belongs to the layer whose
+    directory is the longest prefix of its path."""
+    layers = {}
+    for line in path.read_text().splitlines():
+        line = line.split("#", 1)[0].strip()
+        if line:
+            name, _, allowed = line.partition(":")
+            layers[name.strip()] = allowed.split()
+    return layers
+
+
+def layer_of(f: str, layers) -> str | None:
+    best = None
+    for name in layers:
+        if (f == name or f.startswith(name.rstrip("/") + "/")) and (best is None or len(name) > len(best)):
+            best = name
+    return best
+
+
+def layer_violations(nodes, layers) -> list[str]:
+    out = []
+    for n in nodes:
+        a = layer_of(n["id"], layers)
+        if a is None:
+            out.append(f"{n['id']}: in no layer")
+            continue
+        for d in n["deps"]:
+            b = layer_of(d, layers)
+            if b != a and b not in layers[a]:
+                out.append(f"{n['id']} ({a}) imports {d} ({b})")
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("-o", "--output", default="depgraph.html",
                     help="output HTML path, relative to Code/ (default: depgraph.html)")
     ap.add_argument("--coqdep", default="coqdep", help="coqdep executable")
+    ap.add_argument("--layers", default="scripts/layers.txt",
+                    help="layer file, relative to Code/ (default: scripts/layers.txt)")
+    ap.add_argument("--check-layers", action="store_true",
+                    help="only check the layers; exit 1 on a violation")
     args = ap.parse_args()
+    layers_path = CODE / args.layers
+    layers = read_layers(layers_path) if layers_path.exists() else None
 
     files = project_files()
     deps = run_coqdep(args.coqdep)
@@ -106,12 +150,25 @@ def main() -> None:
         p = CODE / f
         nodes.append({
             "id": f,
-            "group": f.split("/")[0] if "/" in f else "(root)",
+            "group": (layer_of(f, layers) if layers else None)
+                     or (f.split("/")[0] if "/" in f else "(root)"),
             "deps": [d for d in deps.get(f, []) if d in known],
             "stats": file_stats(p) if p.exists() else None,
         })
 
-    html = TEMPLATE.replace("/*__DATA__*/null", json.dumps(nodes))
+    if layers is not None:
+        bad = layer_violations(nodes, layers)
+        for v in bad:
+            print("layer violation:", v, file=sys.stderr)
+        if args.check_layers:
+            print(f"{len(bad)} layer violations in {len(nodes)} files")
+            sys.exit(1 if bad else 0)
+    elif args.check_layers:
+        sys.exit(f"no layer file at {layers_path}")
+
+    order = list(layers) if layers else []
+    html = (TEMPLATE.replace("/*__DATA__*/null", json.dumps(nodes))
+                    .replace("/*__ORDER__*/[]", json.dumps(order)))
     out = (CODE / args.output).resolve()
     out.write_text(html)
     n_edges = sum(len(n["deps"]) for n in nodes)
@@ -193,6 +250,7 @@ li.trans::before { content: "○ "; }
       <label><input id="focus" type="checkbox"> Show only selection's cone</label>
     </div>
     <div class="row">
+      <label><input id="dirView" type="checkbox"> Directories only</label>
       <label><input id="sizeByLines" type="checkbox" checked> Size by lines</label>
       <label><input id="markAdmits" type="checkbox" checked> Mark admits/axioms</label>
     </div>
@@ -204,6 +262,7 @@ li.trans::before { content: "○ "; }
 </div>
 <script>
 const DATA = /*__DATA__*/null;
+const ORDER = /*__ORDER__*/[];
 const PALETTE = ["#2563eb","#059669","#d97706","#db2777","#7c3aed","#0891b2","#65a30d","#dc2626","#9333ea","#0d9488","#ca8a04","#4f46e5"];
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
 
@@ -229,7 +288,8 @@ for (const n of DATA) for (const d of n.deps)
 // Cycle detection (should be impossible with coqdep, but cheap to check).
 const cyclic = DATA.filter(n => fwdClosure.get(n.id).has(n.id)).map(n => n.id);
 
-const groups = [...new Set(DATA.map(n => n.group))].sort();
+const groups = [...new Set(DATA.map(n => n.group))].sort((a, b) =>
+  ((ORDER.indexOf(a) + 1 || 1e9) - (ORDER.indexOf(b) + 1 || 1e9)) || a.localeCompare(b));
 const color = Object.fromEntries(groups.map((g, i) => [g, PALETTE[i % PALETTE.length]]));
 const hidden = new Set();
 
@@ -245,6 +305,30 @@ const elements = [
 ];
 const maxLines = Math.max(...DATA.map(n => n.stats ? n.stats.lines : 1));
 
+// Directory view: one node per group, one edge per pair of groups labelled
+// with the number of imports; an edge on a directory cycle is marked.
+const groupOf = new Map(DATA.map(n => [n.id, n.group]));
+const dirCount = new Map();
+for (const n of DATA) for (const d of n.deps) {
+  const a = n.group, b = groupOf.get(d);
+  if (a !== b) dirCount.set(a + "⇒" + b, (dirCount.get(a + "⇒" + b) || 0) + 1);
+}
+const dirAdj = new Map();
+for (const k of dirCount.keys()) { const [a, b] = k.split("⇒"); (dirAdj.get(a) || dirAdj.set(a, []).get(a)).push(b); }
+const dirClosure = new Map([...new Set(DATA.map(n => n.group))].map(g => [g, closure(g, dirAdj)]));
+for (const g of new Set(DATA.map(n => n.group))) {
+  const files = DATA.filter(n => n.group === g);
+  elements.push({ classes: "dirnode offmode", data: { id: "dir:" + g, label: `${g} (${files.length})`, group: g,
+    color: null, lines: files.reduce((a, n) => a + (n.stats ? n.stats.lines : 0), 0), bad: 0 } });
+}
+for (const [k, c] of dirCount) {
+  const [a, b] = k.split("⇒");
+  elements.push({ classes: "diredge offmode" + (dirClosure.get(b).has(a) ? " cyc" : ""),
+    data: { id: "dir:" + k, source: "dir:" + a, target: "dir:" + b, label: String(c) } });
+}
+
+const dirMaxLines = Math.max(...elements.filter(e => e.classes && e.classes.includes("dirnode")).map(e => e.data.lines), 1);
+for (const e of elements) if (e.classes && e.classes.includes("dirnode")) e.data.color = color[e.data.group];
 const cy = cytoscape({
   container: document.getElementById("cy"),
   elements, wheelSensitivity: 0.2, minZoom: 0.05, maxZoom: 4,
@@ -269,6 +353,13 @@ const cy = cytoscape({
     { selector: "edge.dep", style: { "line-color": css("--dep"), "target-arrow-color": css("--dep"), "width": 2, "opacity": 1, "z-index": 5 } },
     { selector: "edge.rdep", style: { "line-color": css("--rdep"), "target-arrow-color": css("--rdep"), "width": 2, "opacity": 1, "z-index": 5 } },
     { selector: ".hidden", style: { "display": "none" } },
+    { selector: ".offmode", style: { "display": "none" } },
+    { selector: "node.dirnode", style: { "shape": "round-rectangle", "width": e => 40 + 50 * Math.sqrt(e.data("lines") / dirMaxLines),
+      "height": 26, "font-size": 12, "text-valign": "center", "text-margin-y": 0, "font-weight": "bold",
+      "background-opacity": 0.85 } },
+    { selector: "edge.diredge", style: { "label": "data(label)", "font-size": 10, "width": e => 1 + Math.log2(+e.data("label")),
+      "text-background-color": css("--bg"), "text-background-opacity": 0.9, "color": css("--fg") } },
+    { selector: "edge.diredge.cyc", style: { "line-color": css("--warn"), "target-arrow-color": css("--warn"), "line-style": "dashed" } },
   ],
 });
 
@@ -281,7 +372,7 @@ function runLayout() {
     ? { name: "cose", animate: false, nodeRepulsion: 9000, idealEdgeLength: 80, padding: 30 }
     : { name: "dagre", rankDir: v, nodeSep: 18, rankSep: 70, edgeSep: 6, padding: 30, animate: false };
   eles.layout(opts).run();
-  eles.fit(undefined, 30);
+  cy.fit(eles, 30);
 }
 
 function applyToggles() {
@@ -353,9 +444,10 @@ function select(id, center) {
 }
 
 // ---- UI wiring -------------------------------------------------------------
-cy.on("tap", "node", e => select(e.target.id(), false));
+cy.on("tap", "node", e => { if (!e.target.hasClass("dirnode")) select(e.target.id(), false); });
 cy.on("tap", e => { if (e.target === cy) select(null); });
 cy.on("dbltap", "node", e => {
+  if (e.target.hasClass("dirnode")) return;
   document.getElementById("focus").checked = true;
   select(e.target.id(), false); applyVisibility(); runLayout();
 });
@@ -380,22 +472,38 @@ search.addEventListener("keydown", e => {
 });
 
 document.getElementById("layout").onchange = runLayout;
-document.getElementById("fit").onclick = () => cy.elements(":visible").fit(undefined, 30);
+document.getElementById("fit").onclick = () => cy.fit(cy.elements(":visible"), 30);
 document.getElementById("clear").onclick = () => { document.getElementById("focus").checked = false; select(null); applyVisibility(); runLayout(); };
 document.getElementById("reduce").onchange = () => { applyToggles(); runLayout(); };
 document.getElementById("focus").onchange = () => { applyVisibility(); runLayout(); };
 document.getElementById("sizeByLines").onchange = applyToggles;
 document.getElementById("markAdmits").onchange = applyToggles;
+document.getElementById("dirView").onchange = e => {
+  const on = e.target.checked;
+  select(null);
+  cy.batch(() => {
+    cy.elements(".dirnode, .diredge").toggleClass("offmode", !on);
+    cy.elements().not(".dirnode, .diredge").toggleClass("offmode", on);
+  });
+  runLayout();
+};
 
 const nEdges = DATA.reduce((a, n) => a + n.deps.length, 0);
 const roots = DATA.filter(n => !rev.get(n.id).length).length;
 const leaves = DATA.filter(n => !n.deps.length).length;
 document.getElementById("summary").innerHTML =
   `${DATA.length} files · ${nEdges} edges (${redundant.size} transitively redundant) · ${leaves} with no project deps · ${roots} unused by others` +
+  `<br>${groups.length} directories · ${dirCount.size} directory edges` +
+  ([...dirCount.keys()].some(k => { const [a, b] = k.split("⇒"); return dirClosure.get(b).has(a); })
+    ? ' · <span class="cycle">directory cycle (dashed red in directory view)</span>' : " · no directory cycle") +
   (cyclic.length ? `<br><span class="cycle">Cycle through: ${cyclic.map(esc).join(", ")}</span>` : "");
 
 applyToggles();
 runLayout();
+if (location.hash === "#dirs" || new URLSearchParams(location.search).has("dirs")) {
+  document.getElementById("dirView").checked = true;
+  document.getElementById("dirView").dispatchEvent(new Event("change"));
+}
 </script>
 </body>
 </html>
