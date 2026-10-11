@@ -122,7 +122,7 @@ file per monad fixes the arrow's input to `unit`:
 | `DSPMonad.v` | `DSP` | `DSPSt S` | `DSPStExc S` |
 | `ASLPMonad.v` | `ASLP` | `ASLPSt S` | `ASLPStExc S` |
 
-Each monad takes `ret`, `bind` and its laws from `Classes/ArrowMonad.v`, and
+Each monad takes `ret`, `bind` and its laws from `Lib/Arrow/ArrowMonad.v`, and
 comes with a runner on state preconditions (`getASPSt`, `getDSPStExc`, …), a
 constructor from a relation (`aspOfRelSt`, `dspOfRelStExc`, …) and the
 pointwise order on readings (`ordASP`, `ordASPSt`, `ordASPStExc`, …). An
@@ -259,7 +259,7 @@ sums also use functional extensionality. This equality contract differs from
 
 ## 5. Monad morphisms and triples
 
-[`Classes/OrderedMonad.v`](../Classes/OrderedMonad.v) defines a monad morphism
+[`Lib/Monad/OrderedMonad.v`](../Lib/Monad/OrderedMonad.v) defines a monad morphism
 (`MonadMorphism`: properness, and preservation of `ret` and `bind` up to the
 target's equality). `Triples/Triple.v` defines the triple, once (binders
 abbreviated here):
@@ -318,7 +318,7 @@ are not. A map is named by its reading and its level: `dwpPure`, `dwpSt`,
 - **SP.** A base arrow morphism out of `Rel` (`Arrows/SPostArrEquiv.v`) is
   lifted by the arrow transformers and applied to the relation between start
   states and terminating outcomes; `arrow_morphism_monad`
-  (`Classes/ArrowMorphism.v`) makes it a monad morphism. The triple at every
+  (`Lib/Arrow/ArrowMorphism.v`) makes it a monad morphism. The triple at every
   level is one judgement on the base arrow, re-indexed (`triple_aspSt`, and so
   on). An SP triple at the state level is not a family of base triples, and
   at unit input the four SP readings are two.
@@ -328,7 +328,7 @@ arrow transformers' law packages. The same statements are also proved through
 the relations denoted (`aspSt_morphism_rel`, and so on), and the
 `IsMonadMorphism` instances use those: triples through the ASP and DSLP
 morphisms are closed, and those through DSP and ASLP use excluded middle. See
-the [Triples context](Triples/CONTEXT.md).
+the [Triples context](../Triples/CONTEXT.md).
 
 ## 6. The triple diagram — `Triples/Diagram.v`
 
@@ -550,7 +550,7 @@ lawful state-over-option arrow
 lawful monad on stateArrT S (optionArrT arr) I
 ```
 
-`Classes/Tests/ArrowMonadRegression.v` checks generic law resolution and a
+`Tests/ArrowMonadRegression.v` checks generic law resolution and a
 counterexample: a lawful arrow whose application satisfies the old fixed-arrow
 law but violates monad right identity. The stronger application contract
 rejects it.
@@ -589,7 +589,7 @@ update followed by propagated failure.
 
 ### Relational SP readings
 
-[`Arrows/RelSPostArr.v`](Arrows/RelSPostArr.v) computes four SP readings of the
+[`Arrows/RelSPostArr.v`](../Relational/RelSPostArr.v) computes four SP readings of the
 existing `Rel A B := A -> B -> Prop` carrier. **An arrow value is a relation**,
 not a pair of a relation and a transformer or a new wrapper:
 
@@ -611,7 +611,7 @@ precondition `eq true`, ASP holds at `tt`, but DSLP fails because `false` is
 also a predecessor.
 
 All four readings use `Arrow_Rel`, `ArrowChoice_Rel`, `ArrowApply_Rel`, and their
-existing laws in [`Rel.v`](Arrows/Rel.v). The selected equality remains
+existing laws in [`Rel.v`](../Relational/Rel.v). The selected equality remains
 `Rel_eq`, namely `forall a b, R a b <-> R' a b`. The same `optionRel` and
 `progRelArr` stacks serve all four readings; choosing a reading changes the
 predicate transformer, not the relation, its operations, or its law packages.
@@ -634,7 +634,7 @@ its §3.2.4 gives the conjunction/disjunction identities.
 `TerminatingArr`, `ConjunctiveArr`, and `DisjunctiveArr` for
 `(A -> Prop) -> B -> Prop`, following Ralph-Johan Back and Joakim von Wright,
 *Refinement Calculus: A Systematic Introduction* (1997 draft, §16.1; published
-1998). The [terminology source note](Arrows/PROPERTY_TERMINOLOGY.md#sources-and-verification-limits)
+1998). The [terminology source note](../SP/PROPERTY_TERMINOLOGY.md#sources-and-verification-limits)
 identifies the version consulted. Conjunctivity and disjunctivity preserve
 arbitrary **nonempty** families. Strictness supplies empty-join preservation;
 termination supplies empty-meet preservation. Here, termination means **top
@@ -701,7 +701,7 @@ definitionally equal; the proofs use predicate-iff bridges. The canonical and
 compatibility DSLP recovered relations are definitionally identical.
 All four canonical SP carriers instantiate the shared `RelArrow`,
 `RelArrowChoice`, `RelArrowApply`, and `RelArrowEq` contracts in
-`Classes/RelArrowCoherence.v`. Those contracts supply their complete
+`Lib/Arrow/RelArrowCoherence.v`. Those contracts supply their complete
 core/choice/application law packages under pointwise transformer iff.
 The ASP/DSLP normal forms and base law packages are constructive; exact bundled
 equality remains available separately with extensionality. The separate
@@ -725,7 +725,7 @@ their sequencing.
 
 ### Equivalence with `Rel`
 
-[`SPostArrEquiv.v`](Arrows/SPostArrEquiv.v) relates property-only ASP and DSLP
+[`SPostArrEquiv.v`](../SP/SPostArrEquiv.v) relates property-only ASP and DSLP
 directly to `Rel`, using the existing maps in `SPostArr.v`:
 
 | Property-only carrier | Map to `Rel` | Map from `Rel` | Packaged morphisms (to / from) |
@@ -753,7 +753,7 @@ the application itself. `SPostArrEquiv.v` uses the module aliases
 `PropertySP := SPostArr` and `RelSP := RelSPostArr`.
 
 The public option and state-over-option maps reuse the generic lifts in
-`Classes/ArrowMorphism.v`:
+`Lib/Arrow/ArrowMorphism.v`:
 
 | Layer and reading | Map to the `Rel` stack | Map from the `Rel` stack |
 |---|---|---|
@@ -777,7 +777,7 @@ and `state_arrow_morphism` directly.
 Inverse and lift proofs use the existing core/choice/application laws under
 the selected equality dictionaries. Inverse application uses `app_ext`; state
 lifting uses the law-derived `pure_ext`. See the
-[Classes contract](../Classes/CONTEXT.md#contracts)
+[Classes contract](../Lib/CONTEXT.md#contracts)
 for each generic theorem's law requirements. The direct-Rel equivalences do
 not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.
 
@@ -874,7 +874,7 @@ Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a
 stateless program at ASP `Under`. See the
-[Dijkstra context](DijkstraMonads/CONTEXT.md).
+[Dijkstra context](../Dijkstra/CONTEXT.md).
 
 ## 10. Build status
 

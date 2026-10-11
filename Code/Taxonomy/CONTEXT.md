@@ -5,23 +5,23 @@ Source declarations and [_CoqProject](../_CoqProject) override older names.
 
 ## Ownership
 
-- [ComputationMonads](ComputationMonads/CONTEXT.md) owns effects and outcomes.
+- [ComputationMonads](../Computation/CONTEXT.md) owns effects and outcomes.
   Its TransformerLaws is generic and also serves specification stacks.
-- [Arrows](Arrows/CONTEXT.md) owns binary specification interfaces, concrete
+- [Arrows](../SP/CONTEXT-arrows.md) owns binary specification interfaces, concrete
   laws, and ASP/DSLP equivalences with plain `Rel`. `SPostArr.v` implements all
   four property-only SP arrows, their binary stacks, and conversions without
   importing BaseSpecMonads. `Rel.v` owns relations; `RelSPostArr.v` owns their
   SP readings. Generic relational normalization belongs to Classes.
-- [BaseSpecMonads](BaseSpecMonads/CONTEXT.md) owns unary specifications,
+- [BaseSpecMonads](../SP/CONTEXT.md) owns unary specifications,
   their properties, orders, and adjunctions. The four public flavour monads
   consume `SPostArr.v`, and `SPure.v` supplies unary relational monads and
   orders.
-- [Triples](Triples/CONTEXT.md) defines monad morphisms out of `divndNE` and
+- [Triples](../Triples/CONTEXT.md) defines monad morphisms out of `divndNE` and
   its `stateT` / `optionT` stacks, lifts their triples, and proves the
   taxonomy diagram with state and with state and exceptions. It also holds
   the examples and O'Hearn's rewriting rules. The maps are not called
   observations: the DSP and ASLP targets are not specification monads.
-- [DijkstraMonads](DijkstraMonads/CONTEXT.md) gives the Dijkstra monad of any
+- [DijkstraMonads](../Dijkstra/CONTEXT.md) gives the Dijkstra monad of any
   monad morphism into an ordered monad, instantiates it at every morphism of
   Triples, and identifies triples with typings where that is exact.
 - Tests, examples, and assumption audits are distinct.

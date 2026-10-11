@@ -1,6 +1,6 @@
 # Base specification monads context
 
-Parent: [Taxonomy](../CONTEXT.md). Related: [arrows](../Arrows/CONTEXT.md).
+Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Related: [arrows](CONTEXT-arrows.md).
 Source declarations determine exact types, selected dictionaries, and orders.
 
 ## Shared unary specifications
@@ -36,13 +36,13 @@ option-indexed SPStExc, their healthiness predicates, and the skew-monadic
 structures on monotone stateful transformers. They are not the carriers of
 the four SP monads below, which come from the arrows.
 
-- [`WPureT` / `WPure`](WPureMonad.v) distinguish the raw WP transformer
+- [`WPureT` / `WPure`](../WP/WPure.v) distinguish the raw WP transformer
   from its monotone subset. `WSt` and `WStExc` stack state and optional
   exceptions over `WPure`; `getWPure` exposes application.
 
 ## Four-flavour public API
 
-The four public monads consume [Arrows/SPostArr.v](../Arrows/SPostArr.v), which
+The four public monads consume [Arrows/SPostArr.v](SPostArr.v), which
 implements `ASPArr`, `DSLPArr`, `DSPArr`, and `ASLPArr`, their operations,
 recovered relations, laws, binary stacks, and conversions. `SPostArr.v` does
 not depend on this directory, including `SPure.v`. Its ASP/DSLP normal forms
@@ -54,7 +54,7 @@ dictionary definitions add neither a second carrier nor instance registrations.
 ## Arrow-derived monad consumers
 
 `ASPMonad.v`, `DSLPMonad.v`, `DSPMonad.v`, and `ASLPMonad.v` fix input `unit`
-and use generic `Classes/ArrowMonad.v` operations and laws. Each exposes
+and use generic `Lib/Arrow/ArrowMonad.v` operations and laws. Each exposes
 pure/state/state-option monads, runners, refinement orders, ordered-bind proofs,
 and monad-specific results. Qualify unary accessors such as `ASPMonad.getASP`
 against the binary `SPostArr.getASP` (and likewise for DSLP).
@@ -78,9 +78,9 @@ three analogous pairs show that each direct monad is the arrow-derived one:
 mutually inverse monad morphisms that preserve and reflect the order. There
 is no direct definition with state or with exceptions.
 
-[MonadTaxonomy.v](MonadTaxonomy.v) places the SP and WP carriers inside
+[MonadTaxonomy.v](../Taxonomy/MonadTaxonomy.v) places the SP and WP carriers inside
 `MonoPT` and states implication, contrapositive, and Galois connection as
-monadic relations ([Classes/MonadRelation.v](../../Classes/MonadRelation.v)):
+monadic relations ([Lib/Monad/MonadRelation.v](../Lib/Monad/MonadRelation.v)):
 on WPure and its transformer stacks, on SPStMon with its angelic and demonic
 structures, and between the flavour monads at the pure, state, and state-option
 stacks. DSP and ASLP enter SP implications through one part, because bind does
@@ -103,11 +103,11 @@ under `ret` and `bind` is `MonadRelation_contra_asp_dslp_exc_one` / `_two` in
 `MonadTaxonomy.v` (and its state and stateless versions); there is no
 separate bridge file.
 
-[SPure.v](SPure.v) owns only unary relational monads, return/bind facts, and
-orders. [Rel.v](../Arrows/Rel.v) owns the binary relation carrier, stacks, and
-congruence; [RelSPostArr.v](../Arrows/RelSPostArr.v) owns the four SP readings.
+[SPure.v](../Relational/RelMonads.v) owns only unary relational monads, return/bind facts, and
+orders. [Rel.v](../Relational/Rel.v) owns the binary relation carrier, stacks, and
+congruence; [RelSPostArr.v](../Relational/RelSPostArr.v) owns the four SP readings.
 Generic normalization (`rel_bind`, `relS_bind`, `relO_*`, `relE_*`) lives in
-[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v) and uses the existing
+[RelArrowCoherence.v](../Lib/Arrow/RelArrowCoherence.v) and uses the existing
 `RelArrow` / `RelArrowChoice` / `RelArrowApply` contracts. `SPostArr.v` specializes
 these facts for its canonical relation-reading wrappers.
 

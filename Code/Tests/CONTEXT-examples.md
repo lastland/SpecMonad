@@ -1,14 +1,14 @@
 # Checked SP arrow clients
 
-Parent: [Arrows context](../CONTEXT.md). Related:
-[concrete tests](../Tests/CONTEXT.md),
-[Triples](../../Triples/CONTEXT.md).
+Parent: [Arrows context](../SP/CONTEXT-arrows.md). Related:
+[concrete tests](CONTEXT-arrows.md),
+[Triples](../Triples/CONTEXT.md).
 
 [SPostArrExamples.v](SPostArrExamples.v) exercises the public operations of
-[SPostArr.v](../SPostArr.v) and the operation-preserving conversions in
-[SPostArrEquiv.v](../SPostArrEquiv.v), using the generic option/state arrows.
+[SPostArr.v](../SP/SPostArr.v) and the operation-preserving conversions in
+[SPostArrEquiv.v](../SP/SPostArrEquiv.v), using the generic option/state arrows.
 The base conversions are `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP`.
-`ASP_rel` and `DSLP_rel` both recover a `Rel` value. [RelSPostArr.v](../RelSPostArr.v)
+`ASP_rel` and `DSLP_rel` both recover a `Rel` value. [RelSPostArr.v](../Relational/RelSPostArr.v)
 computes its `asp` and `dslp` readings without storing a transformer alongside
 the relation.
 

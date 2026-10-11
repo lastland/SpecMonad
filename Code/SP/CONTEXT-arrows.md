@@ -1,7 +1,7 @@
 # Specification arrows context
 
-Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
-[base specifications](../BaseSpecMonads/CONTEXT.md), and [README](../README.md).
+Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Related: [Classes](../Lib/CONTEXT.md),
+[base specifications](CONTEXT.md), and [README](../Taxonomy/README.md).
 
 ## Carriers
 
@@ -56,7 +56,7 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   `fun x => x = a`, while `ASP_rel` probes `eq a` (`fun x => a = x`). Relate
   them by predicate equivalence, not definitional equality. The canonical and
   compatibility DSLP recovered relations are definitionally identical.
-- [RelSPostArr.v](RelSPostArr.v) computes four readings of the existing
+- [RelSPostArr.v](../Relational/RelSPostArr.v) computes four readings of the existing
   `Rel A B := A -> B -> Prop` carrier: `asp R P b := exists a, P a /\ R a b`
   and `dslp R P b := forall a, R a b -> P a`, with `dspOf` / `aslpOf` their
   conjunction/disjunction. `aspOf` / `dslpOf` are aliases of `asp` / `dslp`.
@@ -82,14 +82,14 @@ Parent: [Taxonomy](../CONTEXT.md). Related: [Classes](../../Classes/CONTEXT.md),
   right; `dsp_to_rel_morphism` / `dsp_from_rel_morphism` and the ASLP pair
   instantiate them.
   The module aliases are `PropertySP := SPostArr` and `RelSP := RelSPostArr`.
-  See the [README equivalence section](../README.md#equivalence-with-rel) for
+  See the [README equivalence section](../Taxonomy/README.md#equivalence-with-rel) for
   the public option/state-over-option maps and their morphism theorems.
 
 ## Laws, stacks, and monads
 
 All four canonical SP carriers provide `ArrowLaws`, `ArrowChoiceLaws`,
 and `ArrowApplyLaws` by instantiating the shared semantic packages in
-[RelArrowCoherence.v](../../Classes/RelArrowCoherence.v).
+[RelArrowCoherence.v](../Lib/Arrow/RelArrowCoherence.v).
 `RelArrow`, `RelArrowChoice`, and `RelArrowApply` describe operation preservation;
 `RelArrowEq` connects the chosen equality to pointwise relation equivalence.
 The ASP/DSLP compatibility interface exposes `ASP_rel` / `DSLP_rel`, with
@@ -99,36 +99,36 @@ semantically equivalent arrows stored in inputs.
 Relational-only helpers remain independent of equality reflection.
 
 The relational presentation reuses `Arrow_Rel`, `ArrowChoice_Rel`,
-`ArrowApply_Rel`, and their laws from [Rel.v](Rel.v). Its selected equality is
+`ArrowApply_Rel`, and their laws from [Rel.v](../Relational/Rel.v). Its selected equality is
 `Rel_eq` (pointwise relation iff), not Leibniz equality. The existing
 `optionRel` and `progRelArr` stacks serve all four SP readings; `RelSPostArr.v`
 adds no carrier, arrow instance, or stack law package.
 
-[ArrowMorphism.v](../../Classes/ArrowMorphism.v) lifts the direct-Rel morphisms
+[ArrowMorphism.v](../Lib/Arrow/ArrowMorphism.v) lifts the direct-Rel morphisms
 through option and state. The existing record takes explicit source and
 destination `ArrowEq` dictionaries, requires `morphism_proper`, and states
 its five preservation fields under the destination `arrow_eq`. Inverse and
 lift proofs use the existing selected core/choice/application laws, not
 Leibniz law dictionaries or relational equality reflection. See the
-[Classes contract](../../Classes/CONTEXT.md#contracts) for
+[Classes contract](../Lib/CONTEXT.md#contracts) for
 the precise law requirements. All public base and lifted round trips retain
 the selected semantic equalities.
 
 `RelArrowCoherence.v` also owns `rel_bind`, `relS_bind`, `relO_*`, and `relE_*`
 for base, state, option, and state-over-option normalization. These use the
 existing `RelArrow` / `RelArrowChoice` / `RelArrowApply` contracts, without
-arrow-law premises or equality reflection. [OptionArrowT.v](../../Classes/OptionArrowT.v) and
-[StateArrowT.v](../../Classes/StateArrowT.v) lift the full contract generically.
+arrow-law premises or equality reflection. [OptionArrowT.v](../Lib/Arrow/OptionArrowT.v) and
+[StateArrowT.v](../Lib/Arrow/StateArrowT.v) lift the full contract generically.
 The state-over-option stack maps `A * S` to `option (B * S)`; propagated `None`
 carries no final state. On the property-only side, `ASPostArr S` /
 `DSLPostArr S` fix its input to `unit`; the relational counterpart is
 `progRelArr S`.
 
-The unary monads of [ASPMonad.v](../BaseSpecMonads/ASPMonad.v) and
-[DSLPMonad.v](../BaseSpecMonads/DSLPMonad.v) are these stacks, with
+The unary monads of [ASPMonad.v](ASPMonad.v) and
+[DSLPMonad.v](DSLPMonad.v) are these stacks, with
 `Monad_ASPStExc` / `Monad_DSLPStExc` and the runners `getASPStExc` /
 `getDSLPStExc`. They use the exact `Monad_Arrow` operations from
-[ArrowMonad.v](../../Classes/ArrowMonad.v), whose laws hold for any fixed input
+[ArrowMonad.v](../Lib/Arrow/ArrowMonad.v), whose laws hold for any fixed input
 type under `ArrowLaws` and `ArrowApplyLaws`. Effects are stacked before fixing
 the input. The binary `asp_to_dslp` conversion and its relation-reading facts
 belong to `SPostArr.v`; the bridge proves its unit-input return/bind preservation.
@@ -138,13 +138,13 @@ each property-only/`Rel` equivalence instead preserves its reading.
 `ASPostArr` / `DSLPostArr` are definitionally the public `ASPStExc` /
 `DSLPStExc` stacks. Compatibility dictionaries are plain definitions over
 the canonical instances, avoiding competing registrations for equal aliases.
-[Tests/SPostArrInfrastructure.v](Tests/SPostArrInfrastructure.v) checks all four
+[Tests/SPostArrInfrastructure.v](../Tests/SPostArrInfrastructure.v) checks all four
 flavours' law packages, the DSP composition distinction, and non-unit
 state-over-option bind without importing BaseSpecMonads. `CanonicalSP` in
 `Tests/ArrowMonadInstances.v` checks cross-API application/bind, dictionary and
 runner identity, and propagated failure.
 
-[OptionLoop.v](OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
+[OptionLoop.v](../Relational/OptionLoop.v), `optionRel_no_left_tightening`, rules out lawful
 `ArrowLoop` for the existing `optionRel` operations and pointwise equivalence
 when feedback ranges over all types, including `Empty_set`. Empty feedback hides
 the difference between an empty prefix and one returning `None`, while option
@@ -179,15 +179,15 @@ statement back into a positive one are classical.
 Relational modules can import computation semantics, and WPArr imports a base
 specification module: distinguish ownership from the current import graph.
 Read constructors → equality/laws → chosen monad dictionaries/orders →
-[examples](Examples/CONTEXT.md) and [tests](Tests/CONTEXT.md).
+[examples](../Tests/CONTEXT-examples.md) and [tests](../Tests/CONTEXT-arrows.md).
 Start with the properties, then `SPostArr.v`, then the
-[checked clients](Examples/CONTEXT.md); read `SPostArrEquiv.v` for representation
-changes and [BaseSpecMonads/ASPMonad.v](../BaseSpecMonads/ASPMonad.v) /
-[DSLPMonad.v](../BaseSpecMonads/DSLPMonad.v) for the unary monads.
-For other carriers, [Rel.v](Rel.v) defines relations,
-[PrePostArr.v](PrePostArr.v) pairs a precondition with an input-indexed
-post-relation, and [RelPrePostArr.v](RelPrePostArr.v) defines validators whose
+[checked clients](../Tests/CONTEXT-examples.md); read `SPostArrEquiv.v` for representation
+changes and [BaseSpecMonads/ASPMonad.v](ASPMonad.v) /
+[DSLPMonad.v](DSLPMonad.v) for the unary monads.
+For other carriers, [Rel.v](../Relational/Rel.v) defines relations,
+[PrePostArr.v](../GaloisConnections/PrePostArr.v) pairs a precondition with an input-indexed
+post-relation, and [RelPrePostArr.v](../GaloisConnections/RelPrePostArr.v) defines validators whose
 arrow equality compares `project_wp` behavior.
-[WPArr.v](WPArr.v) uses raw `WPureT`, not the monotone `WPure` subset.
-[GaloisArr.v](GaloisArr.v) is the entrypoint for their refinement orders,
+[WPArr.v](../GaloisConnections/WPArr.v) uses raw `WPureT`, not the monotone `WPure` subset.
+[GaloisArr.v](../GaloisConnections/GaloisArr.v) is the entrypoint for their refinement orders,
 restricted adjunctions, and binary-arrow counterexamples.

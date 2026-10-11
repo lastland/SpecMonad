@@ -1,6 +1,6 @@
 # StateArrowT context
 
-Parent: [Classes](../CONTEXT.md). Public re-export: [StateArrowT.v](../StateArrowT.v).
+Parent: [Classes](../../CONTEXT.md). Public re-export: [StateArrowT.v](../StateArrowT.v).
 
 [Core.v](Core.v) defines `stateArrT S arr A B := arr (A * S) (B * S)`.
 Pure preserves state; composition delegates to base composition. First moves
@@ -19,5 +19,5 @@ No loop lifting is supplied.
 
 Over option the carrier becomes `arr (A * S) (option (B * S))`: failure has
 no final state. Transformer order matters. Read Core, law modules, then
-[concrete tests](../../Taxonomy/Arrows/Tests/CONTEXT.md). Generic proofs are
+[concrete tests](../../../Tests/CONTEXT-arrows.md). Generic proofs are
 algebraic, not inspections of a concrete relation or SP carrier.

@@ -1,7 +1,7 @@
 # Computation monads context
 
-Parent: [Taxonomy](../CONTEXT.md). Consumers: [Triples](../Triples/CONTEXT.md)
-and [DijkstraMonads](../DijkstraMonads/CONTEXT.md).
+Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Consumers: [Triples](../Triples/CONTEXT.md)
+and [DijkstraMonads](../Dijkstra/CONTEXT.md).
 
 These modules own computations and outcome relations, not specification
 well-formedness or readings. TransformerLaws is generic ExtLib infrastructure
@@ -34,9 +34,9 @@ to it:
 
 - The two stacks are ExtLib's `stateT` and `optionT` applied to `divndNE`;
   no stack is defined by hand.
-- [TransformerLaws.v](TransformerLaws.v) proves `Eq1`-generic option and state
+- [TransformerLaws.v](../Lib/Monad/TransformerLaws.v) proves `Eq1`-generic option and state
   transformer laws from base `MonadLawsE` assumptions. It names
-  no concrete computation monad, so [base specifications](../BaseSpecMonads/CONTEXT.md)
+  no concrete computation monad, so [base specifications](../SP/CONTEXT.md)
   can import it without depending on a concrete computation.
   Its `ord_optionT` and `bind_optionT_mono` separately lift an explicit
   reflexive order and simultaneous bind monotonicity through `optionT`.
@@ -59,5 +59,5 @@ to it:
 
 Read `DivNonDetNE.v` top to bottom: `SetM`, `divnd`, `divndNE`, the two
 stacks. Read `TransformerLaws.v` when following a law instance or a lifted
-morphism through a stack; use the [README](../README.md#2-computation-monads)
+morphism through a stack; use the [README](../Taxonomy/README.md#2-computation-monads)
 for the table of levels.

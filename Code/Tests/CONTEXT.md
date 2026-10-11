@@ -1,14 +1,14 @@
 # Classes tests
 
-Parent: [Classes context](../CONTEXT.md). Shared proof conventions:
-[root CLAUDE.md](../../../CLAUDE.md).
+Parent: [Classes context](../Lib/CONTEXT.md). Shared proof conventions:
+[root CLAUDE.md](../../CLAUDE.md).
 
 ## Scope
 
 [ArrowMonadRegression.v](ArrowMonadRegression.v) protects the generic
 arrow-derived monad and its application-law contract. It imports
-[Arrow.v](../Arrow.v), [ArrowApplyFacts.v](../ArrowApplyFacts.v),
-[ArrowMonad.v](../ArrowMonad.v), ITree's monad laws,
+[Arrow.v](../Lib/Arrow/Arrow.v), [ArrowApplyFacts.v](../Lib/Arrow/ArrowApplyFacts.v),
+[ArrowMonad.v](../Lib/Arrow/ArrowMonad.v), ITree's monad laws,
 and Coq equality infrastructure, without importing Taxonomy carriers.
 
 ## What the regression establishes
@@ -33,10 +33,10 @@ and Coq equality infrastructure, without importing Taxonomy carriers.
 
 Read the application fields in `Arrow.v`, then `WrongIndex`, then
 `GenericResolution`. The regression is listed in
-[_CoqProject](../../_CoqProject), so it belongs to the normal build.
+[_CoqProject](../_CoqProject), so it belongs to the normal build.
 
-[Taxonomy tests](../../Taxonomy/Arrows/Tests/CONTEXT.md) serve a different scope:
-[ArrowMonadInstances.v](../../Taxonomy/Arrows/Tests/ArrowMonadInstances.v) and
-[ArrowTransformerInstances.v](../../Taxonomy/Arrows/Tests/ArrowTransformerInstances.v)
+[Taxonomy tests](CONTEXT-arrows.md) serve a different scope:
+[ArrowMonadInstances.v](ArrowMonadInstances.v) and
+[ArrowTransformerInstances.v](ArrowTransformerInstances.v)
 check concrete carriers, dictionary reuse, and option/state stacks.
-[Checks](../../Checks/CONTEXT.md) is the separate opt-in assumption audit.
+[Checks](../Checks/CONTEXT.md) is the separate opt-in assumption audit.

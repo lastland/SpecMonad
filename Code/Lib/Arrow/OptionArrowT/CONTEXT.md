@@ -1,6 +1,6 @@
 # OptionArrowT context
 
-Parent: [Classes](../CONTEXT.md). Public re-export: [OptionArrowT.v](../OptionArrowT.v).
+Parent: [Classes](../../CONTEXT.md). Public re-export: [OptionArrowT.v](../OptionArrowT.v).
 
 [Core.v](Core.v) defines `optionArrT arr A B := arr A (option B)`.
 Pure injects `Some`; composition uses `to_sum`, base left, and `collapse`:
@@ -21,5 +21,5 @@ application equations while constructing the transformed application laws.
 There is no generic loop lift. `None`'s exception/divergence interpretation
 belongs to a computation or observation, not this transformer.
 
-Read Core → relevant law module → [concrete tests](../../Taxonomy/Arrows/Tests/CONTEXT.md).
+Read Core → relevant law module → [concrete tests](../../../Tests/CONTEXT-arrows.md).
 For state over option, continue to [StateArrowT](../StateArrowT/CONTEXT.md).

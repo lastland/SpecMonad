@@ -32,7 +32,7 @@ normal symbol searches.
 
 Concrete arrow instantiation checks live in `Taxonomy/Arrows/Tests/`.
 
-All generic arrow-transformer law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type. Relational SP arrows reuse `Rel` and its existing laws and stacks; `RelSPostArr.v` computes the `asp` / `dslp` readings. The property-only equivalences use `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP` directly. Their round trips and morphisms use the selected pointwise equalities through `ArrowMorphism`, not Leibniz law dictionaries or relational equality reflection. The local exact source substitution in loop-obstruction transport is separate; see the [Arrows context](Code/Taxonomy/Arrows/CONTEXT.md).
+All generic arrow-transformer law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type. Relational SP arrows reuse `Rel` and its existing laws and stacks; `RelSPostArr.v` computes the `asp` / `dslp` readings. The property-only equivalences use `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP` directly. Their round trips and morphisms use the selected pointwise equalities through `ArrowMorphism`, not Leibniz law dictionaries or relational equality reflection. The local exact source substitution in loop-obstruction transport is separate; see the [Arrows context](Code/SP/CONTEXT-arrows.md).
 
 ## Agent skills
 
@@ -58,7 +58,7 @@ and stacks. Qualify shared names, especially binary and unary accessors.
 Multi-context: the root map links to contexts for active Coq directories.
 See [docs/agents/domain.md](docs/agents/domain.md).
 
-`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Classes/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
+`ComputationMonads/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Lib/Arrow/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.
 
 
 ## CI

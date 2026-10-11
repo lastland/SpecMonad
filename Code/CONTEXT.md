@@ -9,7 +9,7 @@ Makefile for build/audit targets. Source declarations override older prose.
 
 ## Ownership
 
-- [Classes](Classes/CONTEXT.md) supplies generic arrow laws, transformers,
+- [Classes](Lib/CONTEXT.md) supplies generic arrow laws, transformers,
   morphisms, and fixed-input monads without concrete Taxonomy carriers.
 - [Taxonomy](Taxonomy/CONTEXT.md) separates computation outcomes, base
   specifications, concrete binary arrows, monad morphisms with their triples,

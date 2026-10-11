@@ -29,19 +29,19 @@ and the opt-in assumption audit.
 | Context | Role |
 |---|---|
 | [Code](Code/CONTEXT.md) | Namespace, build boundaries, shared distinctions |
-| [Classes](Code/Classes/CONTEXT.md) | Generic arrow contracts |
-| [OptionArrowT](Code/Classes/OptionArrowT/CONTEXT.md) | Option-arrow operations and laws |
-| [StateArrowT](Code/Classes/StateArrowT/CONTEXT.md) | State-arrow operations and laws |
-| [Classes tests](Code/Classes/Tests/CONTEXT.md) | Generic monad regression |
+| [Classes](Code/Lib/CONTEXT.md) | Generic arrow contracts |
+| [OptionArrowT](Code/Lib/Arrow/OptionArrowT/CONTEXT.md) | Option-arrow operations and laws |
+| [StateArrowT](Code/Lib/Arrow/StateArrowT/CONTEXT.md) | State-arrow operations and laws |
+| [Classes tests](Code/Tests/CONTEXT.md) | Generic monad regression |
 | [Checks](Code/Checks/CONTEXT.md) | Opt-in assumption reporting |
 | [Taxonomy](Code/Taxonomy/CONTEXT.md) | Computation/specification taxonomy |
-| [ComputationMonads](Code/Taxonomy/ComputationMonads/CONTEXT.md) | Outcomes and effect stacks |
-| [BaseSpecMonads](Code/Taxonomy/BaseSpecMonads/CONTEXT.md) | Unary specifications and orders |
-| [Arrows](Code/Taxonomy/Arrows/CONTEXT.md) | Binary carriers and equivalences |
-| [Arrow examples](Code/Taxonomy/Arrows/Examples/CONTEXT.md) | Semantic clients |
-| [Arrow tests](Code/Taxonomy/Arrows/Tests/CONTEXT.md) | Concrete instances |
-| [DijkstraMonads](Code/Taxonomy/DijkstraMonads/CONTEXT.md) | Dijkstra monad of a monad morphism; triples as typings |
-| [Triples](Code/Taxonomy/Triples/CONTEXT.md) | Lifted monad morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
+| [ComputationMonads](Code/Computation/CONTEXT.md) | Outcomes and effect stacks |
+| [BaseSpecMonads](Code/SP/CONTEXT.md) | Unary specifications and orders |
+| [Arrows](Code/SP/CONTEXT-arrows.md) | Binary carriers and equivalences |
+| [Arrow examples](Code/Tests/CONTEXT-examples.md) | Semantic clients |
+| [Arrow tests](Code/Tests/CONTEXT-arrows.md) | Concrete instances |
+| [DijkstraMonads](Code/Dijkstra/CONTEXT.md) | Dijkstra monad of a monad morphism; triples as typings |
+| [Triples](Code/Triples/CONTEXT.md) | Lifted monad morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
 
 ## Reading by task and other areas
 
@@ -53,7 +53,7 @@ typings, read carrier/order → Triples → DijkstraMonads.
 
 `Backup/` (with the former `Taxonomy/deprecated/`) and `ITreeExamples/` are outside the normal
 manifest. Consult them deliberately; copied ITree provenance is in its README.
-[Meeting notes](docs/meeting-notes/) and paper notes are research discussion, not adopted ADRs.
+[Meeting notes](docs/meeting-notes) and paper notes are research discussion, not adopted ADRs.
 `fstar/` is separate; local `Papers/` availability is checkout-specific.
 See [CI](.github/workflows/SpecMonad.yml), [tracker](docs/agents/issue-tracker.md),
 and [labels](docs/agents/triage-labels.md) for supporting workflows.

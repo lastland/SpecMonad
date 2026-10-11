@@ -5,7 +5,7 @@ Research date: 2026-09-10. Subject:
 
 ## Adopted name and terminology
 
-**`Code/Taxonomy/Arrows/PredicateTransformerProperties.v`** names the file's role:
+**`Code/SP/PredicateTransformerProperties.v`** names the file's role:
 it defines predicate-transformer healthiness conditions and proves consequences
 and specializations.
 The agreed layout places all SP properties under `Taxonomy/Arrows/` and the
@@ -85,7 +85,7 @@ forward: `A` indexes initial states and `B` indexes results. The same preservati
 algebra applies, with an interpretation determined by this orientation.[^bw]
 
 For a relation `R : A -> B -> Prop` (the existing `Rel A B` carrier),
-[`RelSPostArr.v`](RelSPostArr.v) computes two readings. Neither reading adds a
+[`RelSPostArr.v`](../Relational/RelSPostArr.v) computes two readings. Neither reading adds a
 carrier or stores a transformer:
 
 ```text

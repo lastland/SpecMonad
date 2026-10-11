@@ -54,10 +54,10 @@ What is formalised:
   have lawful option/state stacks,
   full application coherence, and operation-preserving equivalences to the
   existing `Rel` carrier under the selected pointwise equalities.
-  [`RelSPostArr.v`](Code/Taxonomy/Arrows/RelSPostArr.v)
+  [`RelSPostArr.v`](Code/Relational/RelSPostArr.v)
   computes the two readings of a relation, reusing `Rel`'s laws and stacks. See
-  [`SPostArr.v`](Code/Taxonomy/Arrows/SPostArr.v) and the checked
-  [examples](Code/Taxonomy/Arrows/Examples/SPostArrExamples.v).
+  [`SPostArr.v`](Code/SP/SPostArr.v) and the checked
+  [examples](Code/Tests/SPostArrExamples.v).
 
 - **Weakest-precondition (WP) specifications**, `WPure` and its state and
   state/option stacks. `WPure` bundles postcondition monotonicity, which the
@@ -76,12 +76,12 @@ What is formalised:
   `triple θ m k P Q` is defined for any monad morphism `θ`; its sixteen
   instances are the correctness and incorrectness triples, and the triple of
   a lifted morphism is the base triple re-indexed. See
-  [`Triples/MonadMorphisms.v`](Code/Taxonomy/Triples/MonadMorphisms.v).
+  [`Triples/MonadMorphisms.v`](Code/Triples/MonadMorphisms.v).
 
 - **The taxonomy of triples**: the 26 edges of Verscht and Kaminski's diagram
   (implications, contrapositives, and the two Galois connections between WP
   and SP), with state and with state and exceptions, in
-  [`Triples/Diagram.v`](Code/Taxonomy/Triples/Diagram.v). A separate
+  [`Triples/Diagram.v`](Code/Triples/Diagram.v). A separate
   development relates the specification monads themselves
   (`BaseSpecMonads/MonadTaxonomy.v`).
 
@@ -92,12 +92,12 @@ What is formalised:
 - **Incorrectness principles** from Peter W. O'Hearn's
   [*Incorrectness Logic*](https://doi.org/10.1145/3371078) (POPL 2020), proved
   over the ASP triples, with demonic liberal WP variants, in
-  [`Triples/InCorrectnessPrinciples.v`](Code/Taxonomy/Triples/InCorrectnessPrinciples.v).
+  [`Triples/InCorrectnessPrinciples.v`](Code/Triples/InCorrectnessPrinciples.v).
 
 - **Dijkstra monads**: the Dijkstra monad of any monad morphism into an
   ordered monad, at every lifted morphism, with triples identified with
   typings where that is exact. See the
-  [Dijkstra context](Code/Taxonomy/DijkstraMonads/CONTEXT.md).
+  [Dijkstra context](Code/Dijkstra/CONTEXT.md).
 
 ## Question
 
@@ -115,8 +115,8 @@ What is formalised:
   preserve the pointwise orders, despite satisfying the monad laws, and no
   other bind does. See `not_OrderedMonad_DSPSt` and
   `dsp_arbitrary_bind_impossible` in
-  [DSPMonad.v](Code/Taxonomy/BaseSpecMonads/DSPMonad.v), and their duals in
-  [ASLPMonad.v](Code/Taxonomy/BaseSpecMonads/ASLPMonad.v).
+  [DSPMonad.v](Code/SP/DSPMonad.v), and their duals in
+  [ASLPMonad.v](Code/SP/ASLPMonad.v).
 
 - ASP under-approximation with the chosen **in-monad target** uses an order at
   one precondition and requires that precondition to be inhabited. Comparisons
