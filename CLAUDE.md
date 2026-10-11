@@ -25,7 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Architecture
 
-Read [CONTEXT-MAP.md](CONTEXT-MAP.md), then the parent and local contexts
+Read the [context map](docs/agents/context/README.md), then the contexts
 relevant to the task. These describe the current source contracts and build
 boundaries. `Backup/` (including `Backup/Taxonomy-deprecated/`) is excluded from `_CoqProject`; omit it from
 normal symbol searches.
@@ -41,7 +41,7 @@ claimed result.
 
 Concrete arrow instantiation checks live in `Code/Tests/`.
 
-All generic arrow-transformer law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type. Relational SP arrows reuse `Rel` and its existing laws and stacks; `RelSPostArr.v` computes the `asp` / `dslp` readings. The property-only equivalences use `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP` directly. Their round trips and morphisms use the selected pointwise equalities through `ArrowMorphism`, not Leibniz law dictionaries or relational equality reflection. The local exact source substitution in loop-obstruction transport is separate; see the [SP context](Code/SP/CONTEXT.md).
+All generic arrow-transformer law proofs are purely algebraic — they derive from base arrow laws without inspecting the concrete arrow type. Relational SP arrows reuse `Rel` and its existing laws and stacks; `RelSPostArr.v` computes the `asp` / `dslp` readings. The property-only equivalences use `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP` directly. Their round trips and morphisms use the selected pointwise equalities through `ArrowMorphism`, not Leibniz law dictionaries or relational equality reflection. The local exact source substitution in loop-obstruction transport is separate; see the [SP context](docs/agents/context/SP.md).
 
 ## Agent skills
 
@@ -65,7 +65,8 @@ consume them; the arrow files must not depend on the monad files.
 [docs/design.md](docs/design.md) for healthiness conditions, equivalences, and
 stacks. Qualify shared names, especially binary and unary accessors.
 
-Multi-context: the root map links to contexts for active Coq directories.
+Multi-context: [docs/agents/context/](docs/agents/context/README.md) holds one context per
+active Coq directory, mirroring `Code/` (`Code/SP/` -> `context/SP.md`).
 See [docs/agents/domain.md](docs/agents/domain.md).
 
 `Lib/Monad/TransformerLaws.v` provides generic monad-transformer laws. Each SP arrow presentation proves its core arrow laws and derives its base application coherence from `Lib/Arrow/RelArrowCoherence.v`; the generic arrow transformers lift the full law contract.

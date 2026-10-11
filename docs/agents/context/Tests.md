@@ -1,16 +1,16 @@
 # Tests context
 
-Parent: [Code](../CONTEXT.md). Shared proof conventions:
-[root CLAUDE.md](../../CLAUDE.md). Everything here is in the normal build and
-is a leaf of the dependency graph; [Checks](../Checks/CONTEXT.md) is the
+Parent: [Code](Code.md). Shared proof conventions:
+[root CLAUDE.md](../../../CLAUDE.md). Everything here is in the normal build and
+is a leaf of the dependency graph; [Checks](Checks.md) is the
 separate opt-in assumption audit.
 
 ## Generic arrow-derived monad regression
 
-[ArrowMonadRegression.v](ArrowMonadRegression.v) protects the generic
+[ArrowMonadRegression.v](../../../Code/Tests/ArrowMonadRegression.v) protects the generic
 arrow-derived monad and its application-law contract. It imports
-[Arrow.v](../Lib/Arrow/Arrow.v), [ArrowApplyFacts.v](../Lib/Arrow/ArrowApplyFacts.v),
-[ArrowMonad.v](../Lib/Arrow/ArrowMonad.v), ITree's monad laws,
+[Arrow.v](../../../Code/Lib/Arrow/Arrow.v), [ArrowApplyFacts.v](../../../Code/Lib/Arrow/ArrowApplyFacts.v),
+[ArrowMonad.v](../../../Code/Lib/Arrow/ArrowMonad.v), ITree's monad laws,
 and Coq equality infrastructure, without importing any specification carrier.
 
 ### What the regression establishes
@@ -35,27 +35,27 @@ and Coq equality infrastructure, without importing any specification carrier.
 
 Read the application fields in `Arrow.v`, then `WrongIndex`, then
 `GenericResolution`. The regression is listed in
-[_CoqProject](../_CoqProject), so it belongs to the normal build.
+[_CoqProject](../../../Code/_CoqProject), so it belongs to the normal build.
 
 The concrete instance checks below serve a different scope:
-[ArrowMonadInstances.v](ArrowMonadInstances.v) and
-[ArrowTransformerInstances.v](ArrowTransformerInstances.v)
+[ArrowMonadInstances.v](../../../Code/Tests/ArrowMonadInstances.v) and
+[ArrowTransformerInstances.v](../../../Code/Tests/ArrowTransformerInstances.v)
 check concrete carriers, dictionary reuse, and option/state stacks.
-[Checks](../Checks/CONTEXT.md) is the separate opt-in assumption audit.
+[Checks](Checks.md) is the separate opt-in assumption audit.
 
 ## Concrete arrow instance checks
 
-Start with [SPostArrInfrastructure.v](SPostArrInfrastructure.v) for the
+Start with [SPostArrInfrastructure.v](../../../Code/Tests/SPostArrInfrastructure.v) for the
 standalone property-only arrow checks. It imports none of the SP monad files and
 checks `ArrowLaws`, `ArrowChoiceLaws`, and `ArrowApplyLaws` for all four flavours
-implemented in [SPostArr.v](../SP/SPostArr.v) and [DSPASLPArr.v](../SP/DSPASLPArr.v). Its semantic regressions distinguish
+implemented in [SPostArr.v](../../../Code/SP/SPostArr.v) and [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v). Its semantic regressions distinguish
 DSP composition from raw forward transformer composition and exercise binary
 state-over-option bind at a non-unit input, retaining that input, threading
 the intermediate state, and propagating `None` without a final state.
 
-[ArrowMonadInstances.v](ArrowMonadInstances.v) checks named `Monad`,
+[ArrowMonadInstances.v](../../../Code/Tests/ArrowMonadInstances.v) checks named `Monad`,
 `Eq1Equivalence`, and `MonadLawsE` dictionaries that specialize
-[ArrowMonad.v](../Lib/Arrow/ArrowMonad.v). Agreement lemmas compare compact
+[ArrowMonad.v](../../../Code/Lib/Arrow/ArrowMonad.v). Agreement lemmas compare compact
 return/bind formulas with the exact derived operations. Resolution checks cover
 `Rel`, the property-only ASP/DSLP carriers, and the other specification arrows,
 including base/option/state/state-over-option layers with non-unit inputs.
@@ -67,11 +67,11 @@ compatibility application/bind, checks dictionary identity, and exercises a
 state update followed by propagated failure, read through the compatibility
 relation `ASP_rel`.
 
-[ArrowTransformerInstances.v](ArrowTransformerInstances.v) checks `optionRel`,
+[ArrowTransformerInstances.v](../../../Code/Tests/ArrowTransformerInstances.v) checks `optionRel`,
 relational state-over-option arrows, the monad-view `progRelM` / `nditRelM`
 stacks, and double-option application laws. Both SP readings reuse the existing
 `Rel` operations and generic stack laws. The file depends on the generic arrow
-transformers and [TransformerLaws.v](../Lib/Monad/TransformerLaws.v).
+transformers and [TransformerLaws.v](../../../Code/Lib/Monad/TransformerLaws.v).
 
 Its `PropertyEquality` module checks that property-only equality is
 definitionally pointwise transformer iff, resolves all three base law packages,
@@ -82,17 +82,17 @@ Plain definitions register no helper instances: `:= _` checks automatic
 resolution; explicit generic applications check specialization.
 
 The generic contract is tested in
-[ArrowMonadRegression.v](ArrowMonadRegression.v), including
+[ArrowMonadRegression.v](../../../Code/Tests/ArrowMonadRegression.v), including
 an application satisfying the fixed-arrow law but breaking monad right identity.
 This directory checks that concrete specification instances use that contract.
 
 ## Checked SP arrow clients
 
-[SPostArrExamples.v](SPostArrExamples.v) exercises the public operations of
-[SPostArr.v](../SP/SPostArr.v) and the operation-preserving conversions in
-[SPostArrEquiv.v](../SP/SPostArrEquiv.v), using the generic option/state arrows.
+[SPostArrExamples.v](../../../Code/Tests/SPostArrExamples.v) exercises the public operations of
+[SPostArr.v](../../../Code/SP/SPostArr.v) and the operation-preserving conversions in
+[SPostArrEquiv.v](../../../Code/SP/SPostArrEquiv.v), using the generic option/state arrows.
 The base conversions are `ASP_rel` / `relASP` and `DSLP_rel` / `relDSLP`.
-`ASP_rel` and `DSLP_rel` both recover a `Rel` value. [RelSPostArr.v](../Relational/RelSPostArr.v)
+`ASP_rel` and `DSLP_rel` both recover a `Rel` value. [RelSPostArr.v](../../../Code/Relational/RelSPostArr.v)
 computes its `asp` and `dslp` readings without storing a transformer alongside
 the relation.
 

@@ -1,15 +1,15 @@
 # Global context map
 
-Read the [README](README.md) for project goals, [CLAUDE.md](CLAUDE.md) for
-development conventions, [PAPER.md](PAPER.md) for the paper-to-code index,
-and the [design notes](docs/design.md) for semantics. Start with [Code](Code/CONTEXT.md), then the parent and local
+Read the [README](../../../README.md) for project goals, [CLAUDE.md](../../../CLAUDE.md) for
+development conventions, [PAPER.md](../../../PAPER.md) for the paper-to-code index,
+and the [design notes](../../design.md) for semantics. Start with [Code](Code.md), then the parent and local
 contexts for the task. Source declarations determine exact contracts.
-See [domain-document rules](docs/agents/domain.md) for maintenance and ADR use.
+See [domain-document rules](../domain.md) for maintenance and ADR use.
 
 ## Architectural relationships
 
 The directories under `Code/` follow the paper and form layers
-([layers.txt](Code/scripts/layers.txt), checked by `make layers` and CI):
+([layers.txt](../../../Code/scripts/layers.txt), checked by `make layers` and CI):
 
 - Lib supplies generic arrows, transformers, morphisms, arrow monads, ordered
   monads and monadic relations; it names no specification carrier.
@@ -32,25 +32,25 @@ The directories under `Code/` follow the paper and form layers
 
 ## Active source contexts
 
-Coverage follows [the manifest](Code/_CoqProject), its parent directories,
+Coverage follows [the manifest](../../../Code/_CoqProject), its parent directories,
 and the opt-in audits.
 
 | Context | Paper | Role |
 |---|---|---|
-| [Code](Code/CONTEXT.md) | — | Namespace, build boundaries, shared distinctions |
-| [Lib](Code/Lib/CONTEXT.md) | background | Generic arrow and monad contracts |
-| [OptionArrowT](Code/Lib/Arrow/OptionArrowT/CONTEXT.md) | — | Option-arrow operations and laws |
-| [StateArrowT](Code/Lib/Arrow/StateArrowT/CONTEXT.md) | — | State-arrow operations and laws |
-| [Computation](Code/Computation/CONTEXT.md) | §1, §5 | Outcomes and effect stacks |
-| [Relational](Code/Relational/CONTEXT.md) | — | Relations, SP readings, `Pred` |
-| [WP](Code/WP/CONTEXT.md) | §2, §3.6 | WP monads and variants |
-| [SP](Code/SP/CONTEXT.md) | §3.1-3.5 | SP arrows and monads |
-| [PTMonadTaxonomy](Code/PTMonadTaxonomy/CONTEXT.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
-| [Triples](Code/Triples/CONTEXT.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
-| [DijkstraMonads](Code/DijkstraMonads/CONTEXT.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
-| [GaloisConnections](Code/GaloisConnections/CONTEXT.md) | §7 | DM4All monads and adjunctions |
-| [Tests](Code/Tests/CONTEXT.md) | — | Generic regression, concrete instances, semantic clients |
-| [Checks](Code/Checks/CONTEXT.md) | — | Assumption reporting, paper claims |
+| [Code](Code.md) | — | Namespace, build boundaries, shared distinctions |
+| [Lib](Lib.md) | background | Generic arrow and monad contracts |
+| [OptionArrowT](Lib/Arrow/OptionArrowT.md) | — | Option-arrow operations and laws |
+| [StateArrowT](Lib/Arrow/StateArrowT.md) | — | State-arrow operations and laws |
+| [Computation](Computation.md) | §1, §5 | Outcomes and effect stacks |
+| [Relational](Relational.md) | — | Relations, SP readings, `Pred` |
+| [WP](WP.md) | §2, §3.6 | WP monads and variants |
+| [SP](SP.md) | §3.1-3.5 | SP arrows and monads |
+| [PTMonadTaxonomy](PTMonadTaxonomy.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
+| [Triples](Triples.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
+| [DijkstraMonads](DijkstraMonads.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
+| [GaloisConnections](GaloisConnections.md) | §7 | DM4All monads and adjunctions |
+| [Tests](Tests.md) | — | Generic regression, concrete instances, semantic clients |
+| [Checks](Checks.md) | — | Assumption reporting, paper claims |
 
 ## Reading by task and other areas
 
@@ -59,16 +59,16 @@ representation change, read carrier → equivalence → examples/tests. For a
 generic law, read Lib → transformer → generic/concrete tests. For a
 judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
 typings, read carrier/order → Triples → DijkstraMonads. For a paper claim, start
-from [PAPER.md](PAPER.md).
+from [PAPER.md](../../../PAPER.md).
 
 `Backup/` (with the former `Taxonomy/deprecated/`) and `ITreeExamples/` are outside the normal
 manifest. Consult them deliberately; copied ITree provenance is in its README.
-[Meeting notes](docs/meeting-notes) and paper notes are research discussion, not adopted ADRs.
+[Meeting notes](../../meeting-notes) and paper notes are research discussion, not adopted ADRs.
 `fstar/` is separate; local `Papers/` availability is checkout-specific.
-See [CI](.github/workflows/SpecMonad.yml), [tracker](docs/agents/issue-tracker.md),
-and [labels](docs/agents/triage-labels.md) for supporting workflows.
+See [CI](../../../.github/workflows/SpecMonad.yml), [tracker](../issue-tracker.md),
+and [labels](../triage-labels.md) for supporting workflows.
 Generated output, local agent configuration, and separate worktrees are outside
 this map. Update context coverage when the manifest changes.
 
 The opt-in audits run through `make check` in the maintained
-[Code/Makefile](Code/Makefile); generated Makefiles are not entry points.
+[Code/Makefile](../../../Code/Makefile); generated Makefiles are not entry points.

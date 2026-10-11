@@ -2,10 +2,13 @@
 
 ## Layout and reading order
 
-This repository uses a multi-context layout.
+This repository uses a multi-context layout. The contexts live in
+[context/](context/README.md), one per active Coq directory, mirroring
+`Code/`: the context of `Code/SP/` is `context/SP.md`, that of
+`Code/Lib/Arrow/StateArrowT/` is `context/Lib/Arrow/StateArrowT.md`.
 
-1. Read the root [CONTEXT-MAP.md](../../CONTEXT-MAP.md).
-2. Read [Code/CONTEXT.md](../../Code/CONTEXT.md), then the parent and local
+1. Read the [context map](context/README.md).
+2. Read [the Code context](context/Code.md), then the parent and local
    contexts relevant to the task.
 3. Follow cross-context links when a change spans areas.
 4. Read relevant decisions in root `docs/adr/` or a context's own `docs/adr/`,
@@ -27,7 +30,8 @@ they come from.
 ## Maintenance
 
 Update affected contexts and the global map when directory roles, terminology,
-or architectural relationships change. Coverage follows `Code/_CoqProject`,
+or architectural relationships change; a new directory under `Code/` gets a
+context file at the mirrored path. Coverage follows `Code/_CoqProject`,
 including parent directories. Link to detailed documentation rather than
 duplicating it, and describe the current checkout rather than another branch.
 

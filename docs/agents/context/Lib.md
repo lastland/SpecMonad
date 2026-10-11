@@ -1,10 +1,10 @@
 # Lib context
 
-Parent: [Code](../CONTEXT.md). Conventions: [CLAUDE.md](../../CLAUDE.md).
+Parent: [Code](Code.md). Conventions: [CLAUDE.md](../../../CLAUDE.md).
 
 ## Contracts
 
-[Arrow.v](Arrow/Arrow.v) defines pure, sequential composition (first argument runs
+[Arrow.v](../../../Code/Lib/Arrow/Arrow.v) defines pure, sequential composition (first argument runs
 first), and `first`; `second`, split, and fanout are derived. `ArrowEq` selects
 an equivalence, not necessarily Leibniz equality. `ArrowLaws` includes product
 naturality and proper composition/first. Choice has sum laws and proper left.
@@ -19,21 +19,21 @@ from application coherence.
 equality and equality of its argument matter. Main compatibility corollaries
 `app_pair`, `app_post`, and the curried `app_*_at` forms remain available.
 The option and state transformers lift this full contract algebraically.
-[ArrowApplyFacts.v](Arrow/ArrowApplyFacts.v) derives extensional reasoning;
+[ArrowApplyFacts.v](../../../Code/Lib/Arrow/ArrowApplyFacts.v) derives extensional reasoning;
 its `app_constant` needs only the fixed-arrow application equation alongside
 core laws. The dynamic-pure fact `app_constant_unit` uses application coherence.
-[ArrowMonad.v](Arrow/ArrowMonad.v) defines operations and laws at every fixed input
+[ArrowMonad.v](../../../Code/Lib/Arrow/ArrowMonad.v) defines operations and laws at every fixed input
 `I`, with explicit `Eq1_Arrow HE I`. `bind_arrow_unit` remains a corollary.
 
-[ArrowMorphism.v](Arrow/ArrowMorphism.v) packages proper operation-preserving maps;
+[ArrowMorphism.v](../../../Code/Lib/Arrow/ArrowMorphism.v) packages proper operation-preserving maps;
 `arrow_morphism_monad` turns one into a monad morphism between the
 arrow-derived monads at any fixed input.
-[RelArrowCoherence.v](Arrow/RelArrowCoherence.v) derives application equations and
+[RelArrowCoherence.v](../../../Code/Lib/Arrow/RelArrowCoherence.v) derives application equations and
 bind semantics from faithful relational presentations; it does not add
 well-formedness fields to concrete carriers. Loop has its own laws; neither
 transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 
-- [ArrowMorphism.v](Arrow/ArrowMorphism.v) uses an ordinary `ArrowMorphism` record
+- [ArrowMorphism.v](../../../Code/Lib/Arrow/ArrowMorphism.v) uses an ordinary `ArrowMorphism` record
   with explicit operation and equality dictionaries:
   `ArrowMorphism SA SC SX SE DA DC DX DE map`. `SE` and `DE` select the source
   and destination `ArrowEq`. `morphism_proper` maps source-equivalent arrows
@@ -53,7 +53,7 @@ transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
 
   `ArrowEq_leibniz` remains an ordinary definition for independent consumers;
   direct-Rel equivalences do not use it.
-- [RelArrowCoherence.v](Arrow/RelArrowCoherence.v) separates relational operation
+- [RelArrowCoherence.v](../../../Code/Lib/Arrow/RelArrowCoherence.v) separates relational operation
   contracts (`RelArrow`, `RelArrowChoice`, `RelArrowApply`) from `RelArrowEq`,
   which identifies the chosen `arrow_eq` with pointwise relation equivalence.
   The shared `rel_arrow_laws`, `rel_arrow_choice_laws`, and
@@ -61,7 +61,7 @@ transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
   `Proper` fields and `app_ext`. Core laws need neither choice nor application;
   choice laws need no application. Property-only SP arrows instantiate these
   contracts with recovered relations. The relational carrier reuses its
-  existing laws in [Rel.v](../Relational/Rel.v).
+  existing laws in [Rel.v](../../../Code/Relational/Rel.v).
   Relational-only `rel_<equation>_iff` lemmas and state-over-option formulas,
   including `rel_state_option_bind_fields`, do not require faithfulness.
   The exact-equality `rel_<equation>_fields` helpers and `RelArrowPresentation`
@@ -72,8 +72,8 @@ transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
   morphisms do not use them. Transformer laws remain in the generic
   option/state modules.
 
-[Galois.v](Galois.v) relates two ordered binary carriers via alpha/gamma,
-preorders, and the adjunction. [OrderedMonad.v](Monad/OrderedMonad.v) concerns unary
+[Galois.v](../../../Code/Lib/Galois.v) relates two ordered binary carriers via alpha/gamma,
+preorders, and the adjunction. [OrderedMonad.v](../../../Code/Lib/Monad/OrderedMonad.v) concerns unary
 monads under a specified preorder containing `eq1`, with monotone bind.
 Every lawful monad is ordered by its equivalence; stronger orders need proofs.
 An ordered monad stays one with its order flipped (`OrderedMonad_flip`). Its
@@ -88,9 +88,9 @@ properness and `ret` / `bind` preservation over explicit dictionaries;
 `IsMonadMorphism θ` bundles a map with the structures it is a morphism for,
 so that the morphism is found from the map alone. The general triple over
 such a map is not here: it is in
-[Triples/Triple.v](../Triples/Triple.v).
+[Triples/Triple.v](../../../Code/Triples/Triple.v).
 
-[MonadRelation.v](Monad/MonadRelation.v) states DM4All's monadic relation for any two
+[MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v) states DM4All's monadic relation for any two
 monads: a family of relations that holds at `ret` and is preserved by `bind`.
 The order of an ordered monad is one. A monadic relation lifts pointwise
 through `stateT` and `optionT`. For two arrows with relational
@@ -99,7 +99,7 @@ arrow-derived monads at the base, `stateArrT`, and `stateArrT`-over-`optionArrT`
 stacks. The reading is always the base arrow's: no transformed arrow gets a
 `RelArrow` instance. Pass every dictionary explicitly in this file.
 
-[TransformerLaws.v](Monad/TransformerLaws.v) proves `Eq1`-generic option and
+[TransformerLaws.v](../../../Code/Lib/Monad/TransformerLaws.v) proves `Eq1`-generic option and
 state transformer laws from base `MonadLawsE` assumptions. It names no
 concrete computation monad, so specification monads import it without
 depending on a computation. Its `ord_optionT` and `bind_optionT_mono`
@@ -112,11 +112,11 @@ between monads; `MonadMorphism_optionT` / `_stateT` lift its morphism laws.
 Start with `Arrow.v`, then `ArrowApplyFacts.v` and `ArrowMonad.v`, or the
 transformer context relevant to the task. The concrete relational carrier is
 `Rel A B := A -> B -> Prop` in
-[Rel.v](../Relational/Rel.v), not a definition in `Arrow.v`.
+[Rel.v](../../../Code/Relational/Rel.v), not a definition in `Arrow.v`.
 
-Read [option](Arrow/OptionArrowT/CONTEXT.md) or [state](Arrow/StateArrowT/CONTEXT.md)
+Read [option](Lib/Arrow/OptionArrowT.md) or [state](Lib/Arrow/StateArrowT.md)
 contexts after the base contract. Keep explicit dictionaries in recursive
-transformer stacks. [Generic tests](../Tests/CONTEXT.md) check arrow monads;
-[concrete tests](../Tests/CONTEXT.md#concrete-arrow-instance-checks) check carrier instances.
+transformer stacks. [Generic tests](Tests.md) check arrow monads;
+[concrete tests](Tests.md#concrete-arrow-instance-checks) check carrier instances.
 Lib imports no specification carrier. The relational carrier
 belongs to Relational/; use its defining module for exact names.

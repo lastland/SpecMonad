@@ -1,11 +1,11 @@
 # Dijkstra monads context
 
-Parent: [Code](../CONTEXT.md). Paper: Section 6. Read [OrderedMonad.v](../Lib/Monad/OrderedMonad.v)
+Parent: [Code](Code.md). Paper: Section 6. Read [OrderedMonad.v](../../../Code/Lib/Monad/OrderedMonad.v)
 for `MonadMorphism`, `IsMonadMorphism` and `OrderedMonad`, and the
-[Triples context](../Triples/CONTEXT.md) for `triple` and the morphisms, first.
+[Triples context](Triples.md) for `triple` and the morphisms, first.
 
-[DijkstraMonad.v](DijkstraMonad.v) has the construction, its instances, and
-what is and is not a typing; [DijkstraExamples.v](DijkstraExamples.v) has
+[DijkstraMonad.v](../../../Code/DijkstraMonads/DijkstraMonad.v) has the construction, its instances, and
+what is and is not a typing; [DijkstraExamples.v](../../../Code/DijkstraMonads/DijkstraExamples.v) has
 typed programs. They follow Kenji Maillard et al.,
 [*Dijkstra Monads for All*](https://doi.org/10.1145/3341708) (ICFP 2019).
 
@@ -38,7 +38,7 @@ are resolved to the wrong morphism.
 ## The liftable morphisms
 
 There are 18 `OrderedTarget` instances, one per WP, ASP and DSLP morphism of
-[Triples/MonadMorphisms.v](../Triples/MonadMorphisms.v): six readings at the
+[Triples/MonadMorphisms.v](../../../Code/Triples/MonadMorphisms.v): six readings at the
 base, with state, and with state and exceptions. Each names the natural order
 of the target:
 

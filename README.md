@@ -6,7 +6,7 @@ monads support correctness and incorrectness reasoning about programs.
 The development in [`Code/`](Code/README.md) is organized by the sections of
 the paper; [PAPER.md](PAPER.md) maps each claim to its Rocq name. The
 [design notes](docs/design.md) explain the semantics, representations, and
-naming conventions. Use the [context map](CONTEXT-MAP.md) to navigate the rest
+naming conventions. Use the [context map](docs/agents/context/README.md) to navigate the rest
 of the repository. The [build manifest](Code/_CoqProject) lists the normal
 build's sources; other files include historical and unfinished experiments.
 
@@ -99,7 +99,7 @@ What is formalised:
 - **Dijkstra monads**: the Dijkstra monad of any monad morphism into an
   ordered monad, at every lifted morphism, with triples identified with
   typings where that is exact. See the
-  [Dijkstra context](Code/DijkstraMonads/CONTEXT.md).
+  [Dijkstra context](docs/agents/context/DijkstraMonads.md).
 
 ## Question
 

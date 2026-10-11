@@ -1,7 +1,7 @@
 # Paper-to-code index
 
 This file maps the claims of the submitted paper to the Rocq
-development in [Code/](Code/). It follows the paper's section order.
+development in [Code/](Code). It follows the paper's section order.
 
 ## Building and checking
 
@@ -70,7 +70,7 @@ end of this file maps them to the current ones.
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | An arrow with application, input type fixed, is a lawful monad (Lindley et al.) | `ArrowMonad.MonadLawsE_Arrow` | [Lib/Arrow/ArrowMonad.v](Code/Lib/Arrow/ArrowMonad.v) | proved |
-| State arrow transformer `stateArrT`; it and the option transformer preserve the laws | `StateArrowT.Core.stateArrT`, `StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT`, `OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT/), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT/) | proved |
+| State arrow transformer `stateArrT`; it and the option transformer preserve the laws | `StateArrowT.Core.stateArrT`, `StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT`, `OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT) | proved |
 | `SPostArr_ang` / `SPostArr_dem`: lawful angelic and demonic arrows | `SPostArr.ASPArr`, `SPostArr.ArrowApplyLaws_ASPArr`, `SPostArr.DSLPArr`, `SPostArr.ArrowApplyLaws_DSLPArr` | [SP/SPostArr.v](Code/SP/SPostArr.v) | partial: the lawful arrows are the Section 3.4 carriers (monotone + strict + disjunctive, monotone + terminating + conjunctive); the arrow restricted only by monotonicity and the codomain condition is not formalized, see [Gaps](#gaps-and-differences-from-the-paper) |
 | "results in a lawful monad that is exactly `SPost_ang`" (resp. `SPost_dem`) | `ASPMonad.ASP`, `ASPMonad.ASPSP`, `ASPMonad.kenji_iff_singleton`, `ASPMonad.aspsp_to_asp_morphism`, `ASPMonad.asp_to_aspsp_morphism`, `DSLPMonad.dslpsp_to_dslp_morphism`, `DSLPMonad.dslp_to_dslpsp_morphism` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: isomorphic, not equal; goes through the direct monads `ASPMonad.ASPSP` / `DSLPMonad.DSLPSP` on `P -> A -> P`, not through `SPostMonad.SPM.SPost` |
 
@@ -270,16 +270,16 @@ Hoare triples over-approximate.
 | Paper path | Current path |
 |---|---|
 | `BaseSpecMonads/SPostMonad.v` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) (`SPost`) and [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) (the stateful counterexample) |
-| `Classes/Arrow.v`, `Classes/ArrowMonad.v`, `Classes/ArrowMorphism.v` | [Lib/Arrow/](Code/Lib/Arrow/) |
-| `Classes/StateArrowT/*`, `Classes/OptionArrowT/*` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT/), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT/) |
-| `Classes/MonadRelation.v`, `Classes/OrderedMonad.v` | [Lib/Monad/](Code/Lib/Monad/) |
+| `Classes/Arrow.v`, `Classes/ArrowMonad.v`, `Classes/ArrowMorphism.v` | [Lib/Arrow/](Code/Lib/Arrow) |
+| `Classes/StateArrowT/*`, `Classes/OptionArrowT/*` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT) |
+| `Classes/MonadRelation.v`, `Classes/OrderedMonad.v` | [Lib/Monad/](Code/Lib/Monad) |
 | `Taxonomy/ComputationMonads/TransformerLaws.v` | [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v) |
-| `Taxonomy/Arrows/PredicateTransformerProperties.v`, `Taxonomy/Arrows/SPostArrEquiv.v` | [SP/](Code/SP/) |
+| `Taxonomy/Arrows/PredicateTransformerProperties.v`, `Taxonomy/Arrows/SPostArrEquiv.v` | [SP/](Code/SP) |
 | `Taxonomy/Arrows/SPostArr.v` | [SP/SPostArr.v](Code/SP/SPostArr.v) (ASP, DSLP) and [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) (DSP, ASLP) |
-| `{ASP,DSLP,DSP,ASLP}Monad.v` | [SP/](Code/SP/) |
+| `{ASP,DSLP,DSP,ASLP}Monad.v` | [SP/](Code/SP) |
 | `Taxonomy/BaseSpecMonads/MonadTaxonomy.v` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) (Figure 1 edges, `Section Flavours`) and [PTMonadTaxonomy/Carriers.v](Code/PTMonadTaxonomy/Carriers.v) |
 | `Taxonomy/BaseSpecMonads/WPureMonad.v` | [WP/WPure.v](Code/WP/WPure.v) and [WP/WPVariants.v](Code/WP/WPVariants.v) |
-| `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | [Triples/](Code/Triples/) |
-| `Taxonomy/DijkstraMonads/*` | [DijkstraMonads/](Code/DijkstraMonads/) |
+| `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | [Triples/](Code/Triples) |
+| `Taxonomy/DijkstraMonads/*` | [DijkstraMonads/](Code/DijkstraMonads) |
 | `Taxonomy/BaseSpecMonads/BaseGaloisConnections.v` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) |
 | `Taxonomy/BaseSpecMonads/NewGaloisConnections.v` | does not exist; see Section 7 |

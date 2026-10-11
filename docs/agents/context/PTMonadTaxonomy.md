@@ -1,46 +1,46 @@
 # PTMonadTaxonomy context
 
-Parent: [Code](../CONTEXT.md). Paper: Section 4 (taxonomy of predicate
-transformer monads, Figure 1). Builds on [WP](../WP/CONTEXT.md),
-[SP](../SP/CONTEXT.md), [Relational](../Relational/CONTEXT.md) and
-[MonadRelation.v](../Lib/Monad/MonadRelation.v); used by
-[Triples](../Triples/CONTEXT.md). The [design notes](../../docs/design.md)
+Parent: [Code](Code.md). Paper: Section 4 (taxonomy of predicate
+transformer monads, Figure 1). Builds on [WP](WP.md),
+[SP](SP.md), [Relational](Relational.md) and
+[MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v); used by
+[Triples](Triples.md). The [design notes](../../design.md)
 give the longer story.
 
 The directory is named after Section 4's title, "Taxonomy of Predicate
 Transformer Monads" (PT = predicate transformer). "Taxonomy" names two things
-in the code: this directory, whose [MonadTaxonomy.v](MonadTaxonomy.v) has the
-edges of Figure 1, and [Triples/TripleTaxonomy.v](../Triples/TripleTaxonomy.v),
+in the code: this directory, whose [MonadTaxonomy.v](../../../Code/PTMonadTaxonomy/MonadTaxonomy.v) has the
+edges of Figure 1, and [Triples/TripleTaxonomy.v](../../../Code/Triples/TripleTaxonomy.v),
 Verscht and Kaminski's taxonomy of triples (Section 4.1) for monadic
 programs. The relations themselves are monadic relations in the sense of
-[Lib/Monad/MonadRelation.v](../Lib/Monad/MonadRelation.v).
+[Lib/Monad/MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v).
 
 ## Files in reading order
 
-- [TransformerRelations.v](TransformerRelations.v) (§4.1): the monotone
+- [TransformerRelations.v](../../../Code/PTMonadTaxonomy/TransformerRelations.v) (§4.1): the monotone
   carrier `MonotoneSPost` read with either index fixed, as `MonoPT` (first
   index: SP; second: WP), and the three relations of Verscht and Kaminski's
   taxonomy on bare transformers: `pt_le` (implication), `Contrapositive`, and
   `GaloisPT`. `pt_under` / `pt_over` are the two triple readings of a
   transformer. Contrapositive facts that turn a negated statement back into a
   positive one are classical.
-- [MonotoneSPSt.v](MonotoneSPSt.v): monotone stateful SP transformers
+- [MonotoneSPSt.v](../../../Code/PTMonadTaxonomy/MonotoneSPSt.v): monotone stateful SP transformers
   `SPStMon` with an angelic and a demonic monad structure, each lawful only up
   to an inequation (`lunitStrictlyLax`: monotone sps alone are not a lawful
   monad, paper Introduction and §3.2). `Ladj` / `Radj` relate them to `WSt`,
   with representability by `PredSt`. `Radj_bind` is `Admitted` and unused:
   use the bridge lemmas instead.
-- [SPStBindComparisons.v](SPStBindComparisons.v): the state bind of each SP
+- [SPStBindComparisons.v](../../../Code/PTMonadTaxonomy/SPStBindComparisons.v): the state bind of each SP
   monad read as a monotone stateful transformer and compared with the
   `SPStMon` structures. Not in the paper.
-- [Carriers.v](Carriers.v): the carriers of the SP and WP
+- [Carriers.v](../../../Code/PTMonadTaxonomy/Carriers.v): the carriers of the SP and WP
   monads inside `MonoPT` — the second index one state at a time, the first
   along `S ~ unit * S` — the four refinements, the broad monads, the WP and SP
   variants inside them, the pure level, duals under `Contrapositive`, and
   adjoints.
-- [MonadTaxonomy.v](MonadTaxonomy.v) (§4.2, §4.4): implication,
+- [MonadTaxonomy.v](../../../Code/PTMonadTaxonomy/MonadTaxonomy.v) (§4.2, §4.4): implication,
   contrapositive and Galois connection as monadic relations
-  ([MonadRelation.v](../Lib/Monad/MonadRelation.v)) on `WPure` and its
+  ([MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v)) on `WPure` and its
   transformer stacks, on `SPStMon` with its angelic and demonic structures,
   and between the variant monads at the pure, state and state-option levels.
   `Section Flavours` has the edges of Figure 1

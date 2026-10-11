@@ -24,17 +24,20 @@ propositional extensionality and, where stated, excluded middle
 
 | Directory | Paper | Contents |
 |---|---|---|
-| [Lib/](Lib/CONTEXT.md) | background | arrows with application and choice, the option/state arrow transformers, arrow morphisms, the monad of an arrow at a fixed input; ordered monads, monad morphisms, monadic relations, monad-transformer laws |
-| [Computation/](Computation/CONTEXT.md) | §1, §5 | `divndNE`, nondeterminism and nontermination, with state and with state and exceptions |
-| [Relational/](Relational/CONTEXT.md) | infrastructure; `Pred` (§7) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
-| [WP/](WP/CONTEXT.md) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
-| [SP/](SP/CONTEXT.md) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
-| [PTMonadTaxonomy/](PTMonadTaxonomy/CONTEXT.md) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
-| [Triples/](Triples/CONTEXT.md) | §5 | monad morphisms out of `divndNE`, the general triple, the triple diagram, examples |
-| [DijkstraMonads/](DijkstraMonads/CONTEXT.md) | §6 | Dijkstra monads of the morphisms; which triples are typings |
-| [GaloisConnections/](GaloisConnections/CONTEXT.md) | §7 | the DM4All specification monads and their adjunctions |
-| [Tests/](Tests/CONTEXT.md) | — | regression and instance checks |
-| [Checks/](Checks/CONTEXT.md) | — | opt-in audits: assumptions and the paper claims |
+| [Lib/](Lib/) | background | arrows with application and choice, the option/state arrow transformers, arrow morphisms, the monad of an arrow at a fixed input; ordered monads, monad morphisms, monadic relations, monad-transformer laws |
+| [Computation/](Computation/) | §1, §5 | `divndNE`, nondeterminism and nontermination, with state and with state and exceptions |
+| [Relational/](Relational/) | infrastructure; `Pred` (§7) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
+| [WP/](WP/) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
+| [SP/](SP/) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
+| [PTMonadTaxonomy/](PTMonadTaxonomy/) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
+| [Triples/](Triples/) | §5 | monad morphisms out of `divndNE`, the general triple, the triple diagram, examples |
+| [DijkstraMonads/](DijkstraMonads/) | §6 | Dijkstra monads of the morphisms; which triples are typings |
+| [GaloisConnections/](GaloisConnections/) | §7 | the DM4All specification monads and their adjunctions |
+| [Tests/](Tests/) | — | regression and instance checks |
+| [Checks/](Checks/) | — | opt-in audits: assumptions and the paper claims |
+
+Each directory has a reading guide in
+[docs/agents/context/](../docs/agents/context/README.md) (`SP/` → `SP.md`).
 
 ```mermaid
 flowchart RL

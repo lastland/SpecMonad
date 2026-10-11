@@ -1,16 +1,16 @@
 # Computation context
 
-Parent: [Code](../CONTEXT.md). Paper: the computation monad of nondeterminism
-and nontermination (Introduction, Section 5). Consumers: [Triples](../Triples/CONTEXT.md)
-and [DijkstraMonads](../DijkstraMonads/CONTEXT.md).
+Parent: [Code](Code.md). Paper: the computation monad of nondeterminism
+and nontermination (Introduction, Section 5). Consumers: [Triples](Triples.md)
+and [DijkstraMonads](DijkstraMonads.md).
 
 These modules own computations and outcome relations, not specification
 well-formedness or readings. The generic transformer laws they rely on are in
-[Lib/Monad/TransformerLaws.v](../Lib/Monad/TransformerLaws.v), which names no
+[Lib/Monad/TransformerLaws.v](../../../Code/Lib/Monad/TransformerLaws.v), which names no
 computation monad and also serves the specification stacks. Avoid
 duplicating library laws or computation-owned raw outcome laws in clients.
 
-[DivNonDetNE.v](DivNonDetNE.v) is the one file of computation monads. It
+[DivNonDetNE.v](../../../Code/Computation/DivNonDetNE.v) is the one file of computation monads. It
 builds the base monad in three steps and then applies two transformer stacks
 to it:
 
@@ -37,7 +37,7 @@ to it:
 - The two stacks are ExtLib's `stateT` and `optionT` applied to `divndNE`;
   no stack is defined by hand.
 - The transformer laws come from
-  [Lib/Monad/TransformerLaws.v](../Lib/Monad/TransformerLaws.v).
+  [Lib/Monad/TransformerLaws.v](../../../Code/Lib/Monad/TransformerLaws.v).
 
 ## Semantic traps
 
@@ -48,12 +48,12 @@ to it:
   does not erase a preceding exception or divergence.
 - State-over-option failure has no final state in its outcome.
 - `empty_prefix_blocks` and `diverge_survives_empty` in
-  [DivNonDetNE.v](DivNonDetNE.v) check the blocking and absorbing points on
+  [DivNonDetNE.v](../../../Code/Computation/DivNonDetNE.v) check the blocking and absorbing points on
   `divnd`.
 
 ## Reading order
 
 Read `DivNonDetNE.v` top to bottom: `SetM`, `divnd`, `divndNE`, the two
 stacks. Read `TransformerLaws.v` when following a law instance or a lifted
-morphism through a stack; use the [design notes](../../docs/design.md#2-computation-monads)
+morphism through a stack; use the [design notes](../../design.md#2-computation-monads)
 for the table of levels.

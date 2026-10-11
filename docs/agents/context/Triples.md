@@ -1,11 +1,11 @@
 # Triples context
 
-Parent: [Code](../CONTEXT.md). Paper: Section 5. Read [OrderedMonad.v](../Lib/Monad/OrderedMonad.v)
+Parent: [Code](Code.md). Paper: Section 5. Read [OrderedMonad.v](../../../Code/Lib/Monad/OrderedMonad.v)
 for `MonadMorphism` and `IsMonadMorphism` first, then
-[TransformerLaws.v](../Lib/Monad/TransformerLaws.v) and
-[ArrowMorphism.v](../Lib/Arrow/ArrowMorphism.v) for the lifts.
+[TransformerLaws.v](../../../Code/Lib/Monad/TransformerLaws.v) and
+[ArrowMorphism.v](../../../Code/Lib/Arrow/ArrowMorphism.v) for the lifts.
 
-[Triple.v](Triple.v) is the general triple. `approxKind` is `Under | Over`;
+[Triple.v](../../../Code/Triples/Triple.v) is the general triple. `approxKind` is `Under | Over`;
 `SpecReading W A X Y` reads an element of `W A` as a forward (SP) or backward
 (WP) transformer between predicates on `X` and on `Y`; `spec_holds w k P Q` is
 the judgement on an element; `triple θ m k P Q` is `spec_holds (θ _ m) k P Q`
@@ -16,7 +16,7 @@ the monad files themselves do not mention triples.
 
 Everything here is a monad morphism out of the non-empty base `divndNE` or
 one of its two transformer stacks, all three defined in
-[DivNonDetNE.v](../Computation/DivNonDetNE.v). The maps are monad morphisms and nothing
+[DivNonDetNE.v](../../../Code/Computation/DivNonDetNE.v). The maps are monad morphisms and nothing
 more: the DSP and ASLP targets are not specification monads.
 
 | Level | Computation | WP target | SP targets |
@@ -95,5 +95,5 @@ the `dwlpSt` `Under` triples, each derived from its ASP counterpart through
 - `Under` puts the transformer's value in the conclusion for both directions:
   a WP `Under` triple is `pre ⊆ wp post`, an SP `Under` triple is
   `post ⊆ sp pre`.
-- [Checks/Assumptions.v](../Checks/Assumptions.v) reports the assumptions
+- [Checks/Assumptions.v](../../../Code/Checks/Assumptions.v) reports the assumptions
   of the morphisms, the lifting theorems, the diagram, and the examples.

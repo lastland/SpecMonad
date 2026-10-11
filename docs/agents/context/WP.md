@@ -1,17 +1,17 @@
 # WP context
 
-Parent: [Code](../CONTEXT.md). Paper: Section 2 (WP monads) and Section 3.6
-(the four WP monads). Consumers: [PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md),
-[Triples](../Triples/CONTEXT.md), [DijkstraMonads](../DijkstraMonads/CONTEXT.md),
-[Galois connections](../GaloisConnections/CONTEXT.md).
+Parent: [Code](Code.md). Paper: Section 2 (WP monads) and Section 3.6
+(the four WP monads). Consumers: [PTMonadTaxonomy](PTMonadTaxonomy.md),
+[Triples](Triples.md), [DijkstraMonads](DijkstraMonads.md),
+[Galois connections](GaloisConnections.md).
 
-- [WPure.v](WPure.v): `WPureT` is the raw WP transformer and `WPure` its
+- [WPure.v](../../../Code/WP/WPure.v): `WPureT` is the raw WP transformer and `WPure` its
   monotone subset, exposed by `getWPure`; `WSt S` and `WStExc S` stack state
   and optional exceptions over it by the ExtLib transformers. `WP_le` and its
   generic lifts `ordWSt` / `ordWStExc` are reverse implication;
   `OrderedMonad_WPure`, `OrderedMonad_WSt`, `OrderedMonad_WStExc` make them
   specification monads.
-- [WPVariants.v](WPVariants.v): AWP, DWLP, DWP, AWLP carved out of `WPure`
+- [WPVariants.v](../../../Code/WP/WPVariants.v): AWP, DWLP, DWP, AWLP carved out of `WPure`
   by healthiness (`WPHealth`, `WPSub`), with state stacks and both orders.
   Each is a submonad of `WPure`; `OrderedMonad_WPSub` is
   `OrderedMonad_pullback` along `toWPure`.
@@ -23,7 +23,7 @@ Parent: [Code](../CONTEXT.md). Paper: Section 2 (WP monads) and Section 3.6
 | DWP | strict, conjunctive | every outcome does, and none diverges |
 | AWLP | terminating, disjunctive | some outcome does, or one diverges |
 
-Only [PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md) imports `WPVariants.v`. The monad
-morphisms of [Triples](../Triples/CONTEXT.md) land in `WPure` itself; no
+Only [PTMonadTaxonomy](PTMonadTaxonomy.md) imports `WPVariants.v`. The monad
+morphisms of [Triples](Triples.md) land in `WPure` itself; no
 lemma places their image in a variant. Keep WP triple argument and direction
 changes in mind: the orders are reverse implication.

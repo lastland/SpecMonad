@@ -21,7 +21,7 @@ morphisms in `DijkstraMonads/`.
 
 Start with the computation monads (§2), then choose a specification
 presentation (§3–4 and §8) and the morphisms into it (§5). The
-[context map](../CONTEXT-MAP.md) provides shorter directory guides. Formulas
+[context map](agents/context/README.md) provides shorter directory guides. Formulas
 below describe carriers and readings; unless shown as complete declarations,
 they are schematic rather than standalone Coq commands.
 
@@ -300,7 +300,7 @@ arrow transformers' law packages. The same statements are also proved through
 the relations denoted (`aspSt_morphism_rel`, and so on), and the
 `IsMonadMorphism` instances use those: triples through the ASP and DSLP
 morphisms are closed, and those through DSP and ASLP use excluded middle. See
-the [Triples context](../Code/Triples/CONTEXT.md).
+the [Triples context](agents/context/Triples.md).
 
 ## 6. The triple diagram — `Triples/TripleTaxonomy.v`
 
@@ -751,7 +751,7 @@ and `state_arrow_morphism` directly.
 Inverse and lift proofs use the existing core/choice/application laws under
 the selected equality dictionaries. Inverse application uses `app_ext`; state
 lifting uses the law-derived `pure_ext`. See the
-[Lib contract](../Code/Lib/CONTEXT.md#contracts)
+[Lib contract](agents/context/Lib.md#contracts)
 for each generic theorem's law requirements. The direct-Rel equivalences do
 not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.
 
@@ -759,7 +759,7 @@ not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.
 `ArrowChoiceLaws_*_leibniz` helpers remain independent APIs, not prerequisites
 for these equivalences. `PureASPostArr_eq` / `PureDSLPostArr_eq` also remain
 available to recover equality of bundled property-only arrows where needed.
-Consult the [assumption audit](../Code/Checks/CONTEXT.md) for selected theorem
+Consult the [assumption audit](agents/context/Checks.md) for selected theorem
 dependencies.
 
 Checked clients live in `Tests/SPostArrExamples.v`; monad and
@@ -848,7 +848,7 @@ Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a
 stateless program at ASP `Under`. See the
-[Dijkstra context](../Code/DijkstraMonads/CONTEXT.md).
+[Dijkstra context](agents/context/DijkstraMonads.md).
 
 ## 10. Build status
 
@@ -867,7 +867,7 @@ Run `make check` from `Code/` for assumption reports. The separate
 of `DivNonDetNE.v`, the arrow law packages, ordered-bind counterexamples, the
 separation of the four healthiness classes, and the triples development of
 §5, §6 and §9 (morphisms, lifts, both diagrams, examples, rewriting rules,
-Dijkstra monads). See the [Checks context](../Code/Checks/CONTEXT.md) for audit
+Dijkstra monads). See the [Checks context](agents/context/Checks.md) for audit
 scope and execution details.
 
 The maintained [Code/Makefile](../Code/Makefile) provides this opt-in target;
