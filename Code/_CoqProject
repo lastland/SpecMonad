@@ -48,10 +48,10 @@ Taxonomy/Arrows/Tests/SPostArrInfrastructure.v
 Taxonomy/BaseSpecMonads/BaseGaloisConnections.v
 Taxonomy/SPStBindComparisons.v
 Taxonomy/MonadTaxonomy.v
-Taxonomy/Triples/Triple.v
-Taxonomy/Triples/MonadMorphisms.v
-Taxonomy/Triples/Diagram.v
-Taxonomy/Triples/Examples.v
-Taxonomy/Triples/InCorrectnessPrinciples.v
+Triples/Triple.v
+Triples/MonadMorphisms.v
+Triples/Diagram.v
+Triples/Examples.v
+Triples/InCorrectnessPrinciples.v
 Taxonomy/DijkstraMonads/DijkstraMonad.v
 Taxonomy/DijkstraMonads/DijkstraExamples.v

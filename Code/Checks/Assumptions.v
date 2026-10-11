@@ -193,7 +193,7 @@ Print Assumptions RelArrowCoherence.relS_bind.
 From Incorrectness.Lib.Monad Require OrderedMonad.
 From Incorrectness.Lib.Arrow Require ArrowMorphism.
 From Incorrectness.Lib.Monad Require TransformerLaws.
-From Incorrectness.Taxonomy.Triples Require MonadMorphisms Diagram Examples
+From Incorrectness.Triples Require MonadMorphisms Diagram Examples
   InCorrectnessPrinciples.
 From Incorrectness.Taxonomy.DijkstraMonads Require DijkstraMonad DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.

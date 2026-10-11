@@ -61,7 +61,7 @@ From Incorrectness.WP Require Import
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Relational Require PredMonad RelMonads.
-From Incorrectness.Taxonomy.Triples Require Import Triple.
+From Incorrectness.Triples Require Import Triple.
 
 Local Notation Pred := PredMonad.PredM.Pred.
 Local Notation Monad_Pred := PredMonad.PredM.Monad_Pred.

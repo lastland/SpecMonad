@@ -57,7 +57,7 @@ From Incorrectness.WP Require Import
   WPureMonad.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
+From Incorrectness.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)
 (** * The construction                                                *)

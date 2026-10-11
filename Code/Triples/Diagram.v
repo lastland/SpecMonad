@@ -72,7 +72,7 @@ From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy Require Import
   MonadTaxonomy.
-From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
+From Incorrectness.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)
 (** * The four WP readings of one base computation                   *)
