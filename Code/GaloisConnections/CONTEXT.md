@@ -23,7 +23,7 @@ specification monads).
 
 Not formalized: the paper's claim that these connections survive monad and
 arrow transformers. The nearest result is the monadic-relation lifting of
-`GaloisPredWP` in [MonadRelations/MonadTaxonomy.v](../MonadRelations/MonadTaxonomy.v).
+`GaloisPredWP` in [PTMonadTaxonomy/MonadTaxonomy.v](../PTMonadTaxonomy/MonadTaxonomy.v).
 
 ## Binary arrows (beyond the paper)
 
@@ -36,7 +36,7 @@ arrow transformers. The nearest result is the monadic-relation lifting of
   compares operations/laws but not every raw validator verdict.
 - [GaloisArr.v](GaloisArr.v) refines the raw carriers as `MonotoneWP`,
   `WFRelPrePost` and `MonotoneSPost` (the last defined in
-  [MonadRelations/TransformerRelations.v](../MonadRelations/TransformerRelations.v)) and
+  [PTMonadTaxonomy/TransformerRelations.v](../PTMonadTaxonomy/TransformerRelations.v)) and
   proves `Galois_Rel_PrePost`, `Galois_Rel_SPost`, `Galois_WP_PrePost`,
   `Galois_RPP_WP`. Preserve subtype hypotheses: a relation/SP adjunction does
   not identify every monotone transformer with relational ASP.

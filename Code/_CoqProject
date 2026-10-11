@@ -28,7 +28,7 @@ WP/WPure.v
 WP/WPVariants.v
 GaloisConnections/RelPrePostMonad.v
 SP/RawSP.v
-MonadRelations/MonotoneSPSt.v
+PTMonadTaxonomy/MonotoneSPSt.v
 Relational/Rel.v
 Relational/RelSPostArr.v
 SP/PredicateTransformerProperties.v
@@ -40,7 +40,7 @@ Tests/SPostArrExamples.v
 GaloisConnections/PrePostArr.v
 GaloisConnections/WPArr.v
 GaloisConnections/RelPrePostArr.v
-MonadRelations/TransformerRelations.v
+PTMonadTaxonomy/TransformerRelations.v
 GaloisConnections/GaloisArr.v
 Relational/RelMonads.v
 SP/ASPMonad.v
@@ -51,9 +51,9 @@ Tests/ArrowMonadInstances.v
 Tests/ArrowTransformerInstances.v
 Tests/SPostArrInfrastructure.v
 GaloisConnections/BaseGaloisConnections.v
-MonadRelations/SPStBindComparisons.v
-MonadRelations/MonadTaxonomy.v
-MonadRelations/Carriers.v
+PTMonadTaxonomy/SPStBindComparisons.v
+PTMonadTaxonomy/MonadTaxonomy.v
+PTMonadTaxonomy/Carriers.v
 Triples/Triple.v
 Triples/MonadMorphisms.v
 Triples/TripleTaxonomy.v

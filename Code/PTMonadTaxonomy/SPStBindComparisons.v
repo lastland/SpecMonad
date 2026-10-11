@@ -4,7 +4,7 @@ From ExtLib Require Import Monad.
 From Incorrectness.Lib.Arrow Require Import RelArrowCoherence.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad RawSP.
-From Incorrectness.MonadRelations Require Import
+From Incorrectness.PTMonadTaxonomy Require Import
   MonotoneSPSt.
 
 Local Obligation Tactic := idtac.

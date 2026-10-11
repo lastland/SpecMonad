@@ -1,7 +1,7 @@
 # WP context
 
 Parent: [Code](../CONTEXT.md). Paper: Section 2 (WP monads) and Section 3.6
-(the four WP monads). Consumers: [MonadRelations](../MonadRelations/CONTEXT.md),
+(the four WP monads). Consumers: [PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md),
 [Triples](../Triples/CONTEXT.md), [Dijkstra](../Dijkstra/CONTEXT.md),
 [Galois connections](../GaloisConnections/CONTEXT.md).
 
@@ -23,7 +23,7 @@ Parent: [Code](../CONTEXT.md). Paper: Section 2 (WP monads) and Section 3.6
 | DWP | strict, conjunctive | every outcome does, and none diverges |
 | AWLP | terminating, disjunctive | some outcome does, or one diverges |
 
-Only [MonadRelations](../MonadRelations/CONTEXT.md) imports `WPVariants.v`. The monad
+Only [PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md) imports `WPVariants.v`. The monad
 morphisms of [Triples](../Triples/CONTEXT.md) land in `WPure` itself; no
 lemma places their image in a variant. Keep WP triple argument and direction
 changes in mind: the orders are reverse implication.

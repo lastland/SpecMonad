@@ -1,4 +1,4 @@
-# MonadRelations context
+# PTMonadTaxonomy context
 
 Parent: [Code](../CONTEXT.md). Paper: Section 4 (taxonomy of predicate
 transformer monads, Figure 1). Builds on [WP](../WP/CONTEXT.md),
@@ -7,11 +7,13 @@ transformer monads, Figure 1). Builds on [WP](../WP/CONTEXT.md),
 [Triples](../Triples/CONTEXT.md). The [design notes](../../docs/design.md)
 give the longer story.
 
-The directory is named for what Section 4 does: it relates the monads by
-implication, contrapositive and Galois connection. "Taxonomy" is kept for the
-two diagrams: [MonadTaxonomy.v](MonadTaxonomy.v) (Figure 1, between the
-monads) and [Triples/TripleTaxonomy.v](../Triples/TripleTaxonomy.v)
-(Verscht and Kaminski's diagram of triples, for monadic programs).
+The directory is named after Section 4's title, "Taxonomy of Predicate
+Transformer Monads" (PT = predicate transformer). "Taxonomy" names two things
+in the code: this directory, whose [MonadTaxonomy.v](MonadTaxonomy.v) has the
+edges of Figure 1, and [Triples/TripleTaxonomy.v](../Triples/TripleTaxonomy.v),
+Verscht and Kaminski's taxonomy of triples (Section 4.1) for monadic
+programs. The relations themselves are monadic relations in the sense of
+[Lib/Monad/MonadRelation.v](../Lib/Monad/MonadRelation.v).
 
 ## Files in reading order
 

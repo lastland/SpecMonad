@@ -85,7 +85,7 @@ What is formalised:
   and SP), with state and with state and exceptions, in
   [`Triples/TripleTaxonomy.v`](Code/Triples/TripleTaxonomy.v). A separate
   development relates the specification monads themselves
-  (`MonadRelations/MonadTaxonomy.v`).
+  (`PTMonadTaxonomy/MonadTaxonomy.v`).
 
 - **Examples**: one verified program for each of the sixteen triple kinds,
   and a withdrawal example contrasting angelic WP coverage of every input

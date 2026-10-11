@@ -36,14 +36,14 @@
     These connections are not stated in the paper, whose Section 7 works
     with unary specification monads ([BaseGaloisConnections.v]).  The
     monotone carrier [MonotoneSPost] and its order are defined in
-    [MonadRelations/TransformerRelations.v], which reads it as [MonoPT]. *)
+    [PTMonadTaxonomy/TransformerRelations.v], which reads it as [MonoPT]. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions Classical_Prop.
 
 From Incorrectness.Lib Require Import Galois.
 From Incorrectness.Relational Require Import RelSPostArr Rel.
 From Incorrectness.GaloisConnections Require Import PrePostArr WPArr RelPrePostArr.
-From Incorrectness.MonadRelations Require Import TransformerRelations.
+From Incorrectness.PTMonadTaxonomy Require Import TransformerRelations.
 
 From Incorrectness.SP Require Import SPostArr.
 

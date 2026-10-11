@@ -37,7 +37,7 @@ end of this file maps them to the current ones.
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| Intro: "monotone *sps* alone do *not* form a lawful monad" | `MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax` | [MonadRelations/MonotoneSPSt.v](Code/MonadRelations/MonotoneSPSt.v) | proved, for monotone stateful transformers over an inhabited state type (take `S = unit` for the base case): left unit holds only as an inequation |
+| Intro: "monotone *sps* alone do *not* form a lawful monad" | `MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v) | proved, for monotone stateful transformers over an inhabited state type (take `S = unit` for the base case): left unit holds only as an inequation |
 | Intro: the state monad transformer applied to the base *sp* monad has the shape `S -> P -> (A * S -> P)` | none (a statement about types) | | not formalized |
 | Bullet 1: four lawful *sp* monads from arrows with application, extended by arrow transformers; four *wp* monads, all submonads of one | see Sections 3.2 to 3.6 | | proved |
 | Bullet 2: taxonomy of the eight monads; preserved by monad and arrow transformers (state, exceptions) | see Section 4 | | partial: generic for monad transformers; for arrow transformers at the stacks used (base, `stateArrT`, `stateArrT` over `optionArrT`); Section 4.3 not formalized |
@@ -52,7 +52,7 @@ end of this file maps them to the current ones.
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | `WPure A = (A -> P) -> P`, monotone, with the continuation `ret` / `bind`; monad laws | `WPure.WPure`, `WPure.MonadLawsE_WPure` | [WP/WPure.v](Code/WP/WPure.v) | proved |
-| Pointwise order, `bind` monotone (an ordered monad) | `WPure.OrderedMonad_WPure`, `MonadTaxonomy.impliesWPure` | [WP/WPure.v](Code/WP/WPure.v), [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved; `WP_le` is DM4All's reverse implication (`OrderedMonad_flip` gives the other direction); the paper's forward order is `impliesWPure` |
+| Pointwise order, `bind` monotone (an ordered monad) | `WPure.OrderedMonad_WPure`, `MonadTaxonomy.impliesWPure` | [WP/WPure.v](Code/WP/WPure.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved; `WP_le` is DM4All's reverse implication (`OrderedMonad_flip` gives the other direction); the paper's forward order is `impliesWPure` |
 | `WSt` by the state monad transformer, monotone, ordered; with exceptions | `WPure.OrderedMonad_WSt`, `WPure.OrderedMonad_WStExc` | [WP/WPure.v](Code/WP/WPure.v) | proved |
 
 ## Section 3: SP monads
@@ -113,16 +113,16 @@ end of this file maps them to the current ones.
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| 4.1: implication, contrapositive, Galois connection on bare transformers | `TransformerRelations.pt_le`, `TransformerRelations.Contrapositive`, `TransformerRelations.GaloisPT` | [MonadRelations/TransformerRelations.v](Code/MonadRelations/TransformerRelations.v) | proved |
+| 4.1: implication, contrapositive, Galois connection on bare transformers | `TransformerRelations.pt_le`, `TransformerRelations.Contrapositive`, `TransformerRelations.GaloisPT` | [PTMonadTaxonomy/TransformerRelations.v](Code/PTMonadTaxonomy/TransformerRelations.v) | proved |
 | 4.2: monadic relation (DM4All); an ordered monad's order is one | `MonadRelation.MonadRelation`, `MonadRelation.MonadRelation_OrderedMonad` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v) | proved |
-| Fig. 1b implication edges DWP→DWLP, DWP→AWP, AWP→AWLP, DWLP→AWLP | `MonadTaxonomy.MonadRelation_dwp_implies_dwlp`, `MonadTaxonomy.MonadRelation_dwp_implies_awp`, `MonadTaxonomy.MonadRelation_awp_implies_awlp`, `MonadTaxonomy.MonadRelation_dwlp_implies_awlp` | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved (each also with its converse) |
-| Fig. 1b implication edges DSP→ASP, DSP→DSLP, ASP→ASLP, DSLP→ASLP, through `aspOf` / `dslpOf` (the asterisks), each entailing `≤` of the elements | `MonadTaxonomy.MonadRelation_dsp_implies_asp`, `MonadTaxonomy.MonadRelation_dsp_implies_dslp`, `MonadTaxonomy.MonadRelation_asp_implies_aslp`, `MonadTaxonomy.MonadRelation_dslp_implies_aslp`, `MonadTaxonomy.dsp_implies_asp_part`, `MonadTaxonomy.asp_implies_aslp_part` | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved |
-| Fig. 1 contrapositive edges DWLP–AWP, AWLP–DWP, ASP–DSLP, ASLP–DSP | `MonadTaxonomy.MonadRelation_contra_awp_dwlp_one`, `MonadTaxonomy.MonadRelation_contra_dwp_awlp_one`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_one`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_one` | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved (each with a `_two` direction) |
-| Fig. 1 Galois edges ASP → DWLP, AWP → DSLP | `MonadTaxonomy.MonadRelation_galois_asp_dwlp`, `MonadTaxonomy.MonadRelation_galois_awp_dslp` | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved |
-| Fig. 1a: without state DSP coincides with ASP, ASLP with DSLP | `MonadTaxonomy.MonadRelation_dsp_asp_pure`, `MonadTaxonomy.MonadRelation_aslp_dslp_pure` | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved |
+| Fig. 1b implication edges DWP→DWLP, DWP→AWP, AWP→AWLP, DWLP→AWLP | `MonadTaxonomy.MonadRelation_dwp_implies_dwlp`, `MonadTaxonomy.MonadRelation_dwp_implies_awp`, `MonadTaxonomy.MonadRelation_awp_implies_awlp`, `MonadTaxonomy.MonadRelation_dwlp_implies_awlp` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved (each also with its converse) |
+| Fig. 1b implication edges DSP→ASP, DSP→DSLP, ASP→ASLP, DSLP→ASLP, through `aspOf` / `dslpOf` (the asterisks), each entailing `≤` of the elements | `MonadTaxonomy.MonadRelation_dsp_implies_asp`, `MonadTaxonomy.MonadRelation_dsp_implies_dslp`, `MonadTaxonomy.MonadRelation_asp_implies_aslp`, `MonadTaxonomy.MonadRelation_dslp_implies_aslp`, `MonadTaxonomy.dsp_implies_asp_part`, `MonadTaxonomy.asp_implies_aslp_part` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| Fig. 1 contrapositive edges DWLP–AWP, AWLP–DWP, ASP–DSLP, ASLP–DSP | `MonadTaxonomy.MonadRelation_contra_awp_dwlp_one`, `MonadTaxonomy.MonadRelation_contra_dwp_awlp_one`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_one`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_one` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved (each with a `_two` direction) |
+| Fig. 1 Galois edges ASP → DWLP, AWP → DSLP | `MonadTaxonomy.MonadRelation_galois_asp_dwlp`, `MonadTaxonomy.MonadRelation_galois_awp_dslp` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| Fig. 1a: without state DSP coincides with ASP, ASLP with DSLP | `MonadTaxonomy.MonadRelation_dsp_asp_pure`, `MonadTaxonomy.MonadRelation_aslp_dslp_pure` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
 | 4.3 Category-theoretic insights | none | | not formalized (the section is empty in the paper) |
-| 4.4 Effect-modularity: monadic relations lift through `stateT` / `optionT` | `MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT`, `MonadTaxonomy.MonadRelation_impliesWPure`, `MonadTaxonomy.MonadRelation_implies_WPSubStExc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | proved |
-| 4.4: SP edges at any arrow-transformer stack; Galois edges from one `Pred` / `WPure` relation; instances without state and with exceptions | `MonadRelation.MonadRelation_rel_incl_state_option`, `MonadTaxonomy.MonadRelation_GaloisPredWP`, `MonadTaxonomy.MonadRelation_dsp_implies_asp_exc`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_pure`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_one`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | partial: generic for monad transformers; for arrow transformers proved at the base, `stateArrT`, and `stateArrT` over `optionArrT` stacks, not for an arbitrary arrow transformer |
+| 4.4 Effect-modularity: monadic relations lift through `stateT` / `optionT` | `MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT`, `MonadTaxonomy.MonadRelation_impliesWPure`, `MonadTaxonomy.MonadRelation_implies_WPSubStExc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| 4.4: SP edges at any arrow-transformer stack; Galois edges from one `Pred` / `WPure` relation; instances without state and with exceptions | `MonadRelation.MonadRelation_rel_incl_state_option`, `MonadTaxonomy.MonadRelation_GaloisPredWP`, `MonadTaxonomy.MonadRelation_dsp_implies_asp_exc`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_pure`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_one`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | partial: generic for monad transformers; for arrow transformers proved at the base, `stateArrT`, and `stateArrT` over `optionArrT` stacks, not for an arbitrary arrow transformer |
 
 ## Section 5: Triples
 
@@ -164,7 +164,7 @@ Hoare triples over-approximate.
 | DM4All's Galois connections between `Pred`, `PrePost`, `SPost`, `WPure` | `PredMonad.OrderedMonad_Pred`, `BaseGaloisConnections.pred_pp_adjunction`, `BaseGaloisConnections.wp_pp_under_adjunction`, `BaseGaloisConnections.sp_pp_adjunction` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v), [Relational/PredMonad.v](Code/Relational/PredMonad.v) | proved |
 | Second WP / PrePost connection (paper: `NewGaloisConnections.v`) | `BaseGaloisConnections.wp_pp_over_adjunction` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) | proved (classical) |
 | `Pred` ≅ `SPost` extends to *asp* and *dslp* | nearest: `SPostArrEquiv.asp_to_rel_morphism`, `SPostArrEquiv.dslp_to_rel_morphism`, `SPostArr.asp_to_dslp`, `GaloisArr.Galois_Rel_SPost` | [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v), [SP/SPostArr.v](Code/SP/SPostArr.v), [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v) | not formalized |
-| Galois connections hold after any monad or arrow transformer | nearest: `MonadTaxonomy.MonadRelation_GaloisPredWP` (Section 4) | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) | not formalized |
+| Galois connections hold after any monad or arrow transformer | nearest: `MonadTaxonomy.MonadRelation_GaloisPredWP` (Section 4) | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | not formalized |
 
 ## Gaps and differences from the paper
 
@@ -233,7 +233,7 @@ Hoare triples over-approximate.
   input would make the Section 3.3 stateful monad lawful, so the Section 3.2
   claim can hold at most at input `unit`.
 - **Admitted.** `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_bind` in
-  [MonadRelations/MonotoneSPSt.v](Code/MonadRelations/MonotoneSPSt.v) is `Admitted`.
+  [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v) is `Admitted`.
   Nothing uses it; the Galois edges are proved another way. It is the only
   `Admitted`, `admit` or `Abort` in the files of `_CoqProject` (an `admit`
   at line 552 of that file is inside a comment).
@@ -259,7 +259,7 @@ Hoare triples over-approximate.
   Galois connections between binary specification arrows (relations,
   pre/post pairs, monotone SP and WP transformers, relational pre/post
   validators), e.g. `GaloisArr.Galois_RPP_WP`.
-- [MonadRelations/SPStBindComparisons.v](Code/MonadRelations/SPStBindComparisons.v):
+- [PTMonadTaxonomy/SPStBindComparisons.v](Code/PTMonadTaxonomy/SPStBindComparisons.v):
   the stateful SP `bind`s compared with the angelic and demonic `bind`s of
   monotone stateful transformers (`SPStBindComparisons.bindASPSt_angelic`).
 - The four SP healthiness classes are pairwise distinct
@@ -277,7 +277,7 @@ Hoare triples over-approximate.
 | `Taxonomy/Arrows/PredicateTransformerProperties.v`, `Taxonomy/Arrows/SPostArrEquiv.v` | [SP/](Code/SP/) |
 | `Taxonomy/Arrows/SPostArr.v` | [SP/SPostArr.v](Code/SP/SPostArr.v) (ASP, DSLP) and [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) (DSP, ASLP) |
 | `{ASP,DSLP,DSP,ASLP}Monad.v` | [SP/](Code/SP/) |
-| `Taxonomy/BaseSpecMonads/MonadTaxonomy.v` | [MonadRelations/MonadTaxonomy.v](Code/MonadRelations/MonadTaxonomy.v) (Figure 1 edges, `Section Flavours`) and [MonadRelations/Carriers.v](Code/MonadRelations/Carriers.v) |
+| `Taxonomy/BaseSpecMonads/MonadTaxonomy.v` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) (Figure 1 edges, `Section Flavours`) and [PTMonadTaxonomy/Carriers.v](Code/PTMonadTaxonomy/Carriers.v) |
 | `Taxonomy/BaseSpecMonads/WPureMonad.v` | [WP/WPure.v](Code/WP/WPure.v) and [WP/WPVariants.v](Code/WP/WPVariants.v) |
 | `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | [Triples/](Code/Triples/) |
 | `Taxonomy/DijkstraMonads/*` | [Dijkstra/](Code/Dijkstra/) |

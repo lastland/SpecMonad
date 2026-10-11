@@ -1,7 +1,7 @@
 # Relational context
 
 Parent: [Code](../CONTEXT.md). Consumers: [SP](../SP/CONTEXT.md),
-[MonadRelations](../MonadRelations/CONTEXT.md), [Triples](../Triples/CONTEXT.md),
+[PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md), [Triples](../Triples/CONTEXT.md),
 [Galois connections](../GaloisConnections/CONTEXT.md).
 
 Proof infrastructure with no paper section of its own. The SP arrows prove

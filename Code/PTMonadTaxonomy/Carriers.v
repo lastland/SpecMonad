@@ -23,17 +23,17 @@ From Incorrectness.Lib.Monad Require Import
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr DSPASLPArr.
-From Incorrectness.MonadRelations Require Import TransformerRelations.
+From Incorrectness.PTMonadTaxonomy Require Import TransformerRelations.
 From Incorrectness.WP Require Import
   WPure WPVariants.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.MonadRelations Require Import SPStBindComparisons.
+From Incorrectness.PTMonadTaxonomy Require Import SPStBindComparisons.
 From Incorrectness.Relational Require
   PredMonad.
 From Incorrectness.SP Require
   RawSP.
-From Incorrectness.MonadRelations Require
+From Incorrectness.PTMonadTaxonomy Require
   MonotoneSPSt.
 
 Import MonotoneSPSt.SPStMonotone.

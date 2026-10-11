@@ -33,11 +33,11 @@ base = sys.argv[1]
 # Split files are checked by `split.py --check`, not here.
 SPECS = [runpy.run_path(str(f)) for f in sorted((Path(__file__).parent / "specs").glob("*.py"))]
 # Renames made after the splits (section 4 directory named by content).
-LATER = {"Code/Taxonomy/TransformerTaxonomy.v": "Code/MonadRelations/TransformerRelations.v",
-         "Code/Taxonomy/TaxonomyCarriers.v": "Code/MonadRelations/Carriers.v",
-         "Code/Taxonomy/MonotoneSPSt.v": "Code/MonadRelations/MonotoneSPSt.v",
-         "Code/Taxonomy/MonadTaxonomy.v": "Code/MonadRelations/MonadTaxonomy.v",
-         "Code/Taxonomy/SPStBindComparisons.v": "Code/MonadRelations/SPStBindComparisons.v",
+LATER = {"Code/Taxonomy/TransformerTaxonomy.v": "Code/PTMonadTaxonomy/TransformerRelations.v",
+         "Code/Taxonomy/TaxonomyCarriers.v": "Code/PTMonadTaxonomy/Carriers.v",
+         "Code/Taxonomy/MonotoneSPSt.v": "Code/PTMonadTaxonomy/MonotoneSPSt.v",
+         "Code/Taxonomy/MonadTaxonomy.v": "Code/PTMonadTaxonomy/MonadTaxonomy.v",
+         "Code/Taxonomy/SPStBindComparisons.v": "Code/PTMonadTaxonomy/SPStBindComparisons.v",
          "Code/Triples/Diagram.v": "Code/Triples/TripleTaxonomy.v"}
 LATER_QUALIFIERS = [("TransformerTaxonomy", "TransformerRelations"),
                     ("TaxonomyCarriers", "Carriers"), ("Diagram", "TripleTaxonomy")]

@@ -65,12 +65,12 @@ From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Computation Require Import DivNonDetNE.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr DSPASLPArr.
-From Incorrectness.MonadRelations Require Import TransformerRelations.
+From Incorrectness.PTMonadTaxonomy Require Import TransformerRelations.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.MonadRelations Require Import
+From Incorrectness.PTMonadTaxonomy Require Import
   Carriers MonadTaxonomy.
 From Incorrectness.Triples Require Import Triple MonadMorphisms.
 

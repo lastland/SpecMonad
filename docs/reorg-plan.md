@@ -205,8 +205,10 @@ Departures from the plan:
   section 4.1's taxonomy of triples, and for Figure 1): `TransformerTaxonomy.v`
   -> `TransformerRelations.v`, `TaxonomyCarriers.v` -> `Carriers.v`, and
   `Triples/Diagram.v` -> `Triples/TripleTaxonomy.v`. `MonadTaxonomy.v` keeps
-  its name (Figure 1; cited by the paper). The plan above uses the earlier
-  names.
+  its name (Figure 1; cited by the paper). The directory was then renamed
+  again, `MonadRelations/` -> `PTMonadTaxonomy/`, to match Section 4's title
+  without clashing with the paper title or with `Lib/Monad/MonadRelation.v`.
+  The plan above uses the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)
   instead of per-directory READMEs; `Code/README.md` is the entry point and
