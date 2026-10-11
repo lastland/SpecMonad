@@ -7,11 +7,11 @@ From Incorrectness.Relational Require Import
   RelSPostArr.
 From Incorrectness.SP Require Import
   SPostArrEquiv.
-From Incorrectness.Taxonomy.Arrows Require Import
+From Incorrectness.GaloisConnections Require Import
   GaloisArr.
 From Incorrectness.SP Require
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require
+From Incorrectness.GaloisConnections Require
   BaseGaloisConnections.
 From Incorrectness.Computation Require Import DivNonDetNE.
 

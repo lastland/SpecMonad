@@ -21,10 +21,10 @@ Lib/Galois.v
 Lib/Monad/OrderedMonad.v
 Lib/Monad/MonadRelation.v
 Relational/PredMonad.v
-Taxonomy/BaseSpecMonads/PrePostMonad.v
+GaloisConnections/PrePostMonad.v
 SP/SPostMonad.v
 WP/WPureMonad.v
-Taxonomy/BaseSpecMonads/RelPrePostMonad.v
+GaloisConnections/RelPrePostMonad.v
 SP/SPPredicateTransformers.v
 Relational/Rel.v
 Relational/RelSPostArr.v
@@ -33,10 +33,10 @@ SP/SPostArr.v
 Relational/OptionLoop.v
 SP/SPostArrEquiv.v
 Taxonomy/Arrows/Examples/SPostArrExamples.v
-Taxonomy/Arrows/PrePostArr.v
-Taxonomy/Arrows/WPArr.v
-Taxonomy/Arrows/RelPrePostArr.v
-Taxonomy/Arrows/GaloisArr.v
+GaloisConnections/PrePostArr.v
+GaloisConnections/WPArr.v
+GaloisConnections/RelPrePostArr.v
+GaloisConnections/GaloisArr.v
 Relational/RelMonads.v
 SP/ASPMonad.v
 SP/DSLPMonad.v
@@ -45,7 +45,7 @@ SP/ASLPMonad.v
 Taxonomy/Arrows/Tests/ArrowMonadInstances.v
 Taxonomy/Arrows/Tests/ArrowTransformerInstances.v
 Taxonomy/Arrows/Tests/SPostArrInfrastructure.v
-Taxonomy/BaseSpecMonads/BaseGaloisConnections.v
+GaloisConnections/BaseGaloisConnections.v
 Taxonomy/SPStBindComparisons.v
 Taxonomy/MonadTaxonomy.v
 Triples/Triple.v

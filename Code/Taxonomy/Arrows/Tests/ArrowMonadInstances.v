@@ -12,7 +12,7 @@ From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad RelArrowCoherence.
 From Incorrectness.Lib.Arrow Require Import OptionArrowT StateArrowT.
 From Incorrectness.Relational Require Import
   Rel.
-From Incorrectness.Taxonomy.Arrows Require Import
+From Incorrectness.GaloisConnections Require Import
   PrePostArr RelPrePostArr.
 From Incorrectness.SP Require Import
   SPostArr.

@@ -65,7 +65,7 @@ From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Computation Require Import DivNonDetNE.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr.
-From Incorrectness.Taxonomy.Arrows Require Import GaloisArr.
+From Incorrectness.GaloisConnections Require Import GaloisArr.
 From Incorrectness.WP Require Import
   WPureMonad.
 From Incorrectness.SP Require Import
