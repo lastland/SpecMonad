@@ -32,7 +32,7 @@ SP/PredicateTransformerProperties.v
 SP/SPostArr.v
 Relational/OptionLoop.v
 SP/SPostArrEquiv.v
-Taxonomy/Arrows/Examples/SPostArrExamples.v
+Tests/SPostArrExamples.v
 GaloisConnections/PrePostArr.v
 GaloisConnections/WPArr.v
 GaloisConnections/RelPrePostArr.v
@@ -42,9 +42,9 @@ SP/ASPMonad.v
 SP/DSLPMonad.v
 SP/DSPMonad.v
 SP/ASLPMonad.v
-Taxonomy/Arrows/Tests/ArrowMonadInstances.v
-Taxonomy/Arrows/Tests/ArrowTransformerInstances.v
-Taxonomy/Arrows/Tests/SPostArrInfrastructure.v
+Tests/ArrowMonadInstances.v
+Tests/ArrowTransformerInstances.v
+Tests/SPostArrInfrastructure.v
 GaloisConnections/BaseGaloisConnections.v
 Taxonomy/SPStBindComparisons.v
 Taxonomy/MonadTaxonomy.v

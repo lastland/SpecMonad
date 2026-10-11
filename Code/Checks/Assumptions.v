@@ -141,7 +141,7 @@ Print Assumptions TransformerLaws.bind_optionT_mono.
     ASP/DSLP normal forms and base laws are constructive; DSP/ASLP recovery
     retains excluded middle. Cross-API clients check the selected dictionaries
     without reflecting pointwise equivalence into bundled equality. *)
-From Incorrectness.Taxonomy.Arrows.Tests Require Import ArrowMonadInstances.
+From Incorrectness.Tests Require Import ArrowMonadInstances.
 Print Assumptions SPostArr.ASP_normal_form.
 Print Assumptions SPostArr.DSLP_normal_form.
 Print Assumptions SPostArr.ArrowLaws_ASPArr.
