@@ -123,8 +123,10 @@ From Incorrectness.Lib.Monad Require Import
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArr GaloisArr.
+From Incorrectness.WP Require Import
+  WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPStBindComparisons.
 From Incorrectness.Relational Require
   PredMonad.

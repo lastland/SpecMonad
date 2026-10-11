@@ -28,8 +28,10 @@ From Incorrectness.Computation Require Import
   DivNonDetNE.
 From Incorrectness.Relational Require Import Rel.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.WP Require Import
+  WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  WPureMonad ASPMonad DSLPMonad.
+  ASPMonad DSLPMonad.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms Examples.
 From Incorrectness.Taxonomy.DijkstraMonads Require Import DijkstraMonad.
 

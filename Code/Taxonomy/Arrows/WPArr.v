@@ -19,7 +19,7 @@
 
 From Coq Require Import RelationClasses.
 From Incorrectness.Lib.Arrow Require Import Arrow.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
+From Incorrectness.WP Require Import WPureMonad.
 
 (* ================================================================= *)
 (** ** Type definition and refinement order                           *)

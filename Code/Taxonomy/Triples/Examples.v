@@ -34,8 +34,10 @@ From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Computation Require Import DivNonDetNE.
+From Incorrectness.WP Require Import
+  WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
 
 Import MonadNotation.

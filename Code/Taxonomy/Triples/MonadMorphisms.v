@@ -56,8 +56,10 @@ From Incorrectness.Relational Require Import
   Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Import
   SPostArr SPostArrEquiv.
+From Incorrectness.WP Require Import
+  WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Relational Require PredMonad RelMonads.
 From Incorrectness.Taxonomy.Triples Require Import Triple.
 

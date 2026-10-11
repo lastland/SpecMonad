@@ -65,8 +65,10 @@ From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Computation Require Import DivNonDetNE.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArr GaloisArr.
+From Incorrectness.WP Require Import
+  WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad MonadTaxonomy.
+  ASPMonad DSLPMonad DSPMonad ASLPMonad MonadTaxonomy.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)

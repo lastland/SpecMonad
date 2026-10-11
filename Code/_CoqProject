@@ -23,7 +23,7 @@ Lib/Monad/MonadRelation.v
 Relational/PredMonad.v
 Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
-Taxonomy/BaseSpecMonads/WPureMonad.v
+WP/WPureMonad.v
 Taxonomy/BaseSpecMonads/RelPrePostMonad.v
 Taxonomy/BaseSpecMonads/SPPredicateTransformers.v
 Relational/Rel.v
