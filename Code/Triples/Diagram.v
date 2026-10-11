@@ -71,7 +71,7 @@ From Incorrectness.WP Require Import
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy Require Import
-  MonadTaxonomy.
+  TaxonomyCarriers MonadTaxonomy.
 From Incorrectness.Triples Require Import Triple MonadMorphisms.
 
 (* ================================================================= *)

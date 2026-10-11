@@ -53,6 +53,7 @@ Tests/SPostArrInfrastructure.v
 GaloisConnections/BaseGaloisConnections.v
 Taxonomy/SPStBindComparisons.v
 Taxonomy/MonadTaxonomy.v
+Taxonomy/TaxonomyCarriers.v
 Triples/Triple.v
 Triples/MonadMorphisms.v
 Triples/Diagram.v

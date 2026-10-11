@@ -148,8 +148,11 @@ def compare(old_path, new_path):
     norm = normalizer(sorted(set(old["logicals"]) | set(new["logicals"]), key=len, reverse=True))
     key = lambda d: (d["kind"], d["mod"], d["name"])
     val = lambda d: norm(d.get("statement", "") + " || " + d.get("about", ""))
-    o = Counter((key(d), val(d)) for d in old["decls"])
-    n = Counter((key(d), val(d)) for d in new["decls"])
+    # Notations and modules are compared by presence: a split may duplicate a
+    # Local Notation into both halves without adding anything.
+    count = lambda ds: Counter({k: (1 if k[0][0] in OTHER else c) for k, c in
+                                Counter((key(d), val(d)) for d in ds).items()})
+    o, n = count(old["decls"]), count(new["decls"])
     lost, gained = o - n, n - o
     # Report moves for names declared once on each side.
     once = lambda ds: {k: f for k, f in ((key(d), d["file"]) for d in ds)
