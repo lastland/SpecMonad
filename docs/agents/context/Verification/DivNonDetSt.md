@@ -26,7 +26,7 @@ Parent: [Verification](../Verification.md). The state setting:
   `dwlp_under_galois_asp_over`, `awp_over_galois_dslp_under`. No edge has a
   side condition: non-emptiness is part of `divndNE`.
 - [InCorrectnessPrinciples.v](../../../../Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v): O'Hearn's
-  rewriting rules over the `aspSt` triples (`Under` is the incorrectness
+  rewriting rules over the `aspSt` triples, instances of the generic ones, (`Under` is the incorrectness
   triple, `Over` the correctness one): symmetry, consequence, agreement and
   denial, with `_dwlp` variants derived through
   `dwlp_under_galois_asp_over`.

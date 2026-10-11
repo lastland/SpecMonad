@@ -386,6 +386,39 @@ Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule_dwlp.
 Print Assumptions InCorrectnessPrinciples.principle_of_agreement_dwlp.
 Print Assumptions InCorrectnessPrinciples.principle_of_denial_dwlp.
 
+(** The same rules for any relation, without state, and with state and
+    exceptions; the triple-level Galois edge without state. *)
+From Incorrectness.Verification.Generic Require InCorrectnessPrinciples.
+From Incorrectness.Verification.DivNonDet Require InCorrectnessPrinciples TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetStExc Require InCorrectnessPrinciples.
+Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_1.
+Print Assumptions InCorrectnessPrinciples.second_symmetry_rule_1.
+Print Assumptions InCorrectnessPrinciples.first_imp_symmetry_rule.
+Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule.
+Print Assumptions InCorrectnessPrinciples.principle_of_agreement.
+Print Assumptions InCorrectnessPrinciples.principle_of_denial.
+Print Assumptions TriplesTaxonomy.dwlp_under_galois_asp_over_pure.
+Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_aspPure.
+Print Assumptions InCorrectnessPrinciples.second_symmetry_rule_aspPure.
+Print Assumptions InCorrectnessPrinciples.first_imp_symmetry_rule_aspPure.
+Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule_aspPure.
+Print Assumptions InCorrectnessPrinciples.principle_of_agreement_aspPure.
+Print Assumptions InCorrectnessPrinciples.principle_of_denial_aspPure.
+Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_aspStExc.
+Print Assumptions InCorrectnessPrinciples.second_symmetry_rule_aspStExc.
+Print Assumptions InCorrectnessPrinciples.first_imp_symmetry_rule_aspStExc.
+Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule_aspStExc.
+Print Assumptions InCorrectnessPrinciples.principle_of_agreement_aspStExc.
+Print Assumptions InCorrectnessPrinciples.principle_of_denial_aspStExc.
+Print Assumptions InCorrectnessPrinciples.second_symmetry_rule_dwlpPure.
+Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule_dwlpPure.
+Print Assumptions InCorrectnessPrinciples.principle_of_agreement_dwlpPure.
+Print Assumptions InCorrectnessPrinciples.principle_of_denial_dwlpPure.
+Print Assumptions InCorrectnessPrinciples.second_symmetry_rule_dwlpStExc.
+Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule_dwlpStExc.
+Print Assumptions InCorrectnessPrinciples.principle_of_agreement_dwlpStExc.
+Print Assumptions InCorrectnessPrinciples.principle_of_denial_dwlpStExc.
+
 (** The Dijkstra monad of a monad morphism.  The construction is closed;
     an instance carries the assumptions of its morphism and of the order of
     its target, and the WP, ASP and DSLP ones are closed.  The

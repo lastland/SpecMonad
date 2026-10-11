@@ -28,3 +28,6 @@ state. The SP morphisms keep exceptions and omit divergence.
   WP Dijkstra monad, `progA_Dasp`, `progEx_Ddslp_op`; for ASP `Under`,
   `progA_Dasp_op` is a typing and `progloom_harder_not_Dasp_op` a triple
   that is not one; for DSLP `Over`, `progloom_harder_not_Ddslp`.
+- [InCorrectnessPrinciples.v](../../../../Code/Verification/DivNonDetStExc/InCorrectnessPrinciples.v):
+  O'Hearn's rules for the `aspStExc` triples (`..._aspStExc`), and their
+  `dwlpStExc` variants through `dwlp_under_galois_asp_over_exc`.

@@ -30,7 +30,8 @@ setting directory has the same files, one per concept:
 | `DijkstraMonads.v` | the Dijkstra monads of the morphisms |
 | `Typings.v` | which triples are typings |
 
-plus `InCorrectnessPrinciples.v` in `DivNonDetSt/` and `Examples.v`,
+plus `InCorrectnessPrinciples.v` (O'Hearn's rewriting rules, instances of
+`Generic/InCorrectnessPrinciples.v`) in every setting, and `Examples.v`,
 `DijkstraExamples.v` in `DivNonDetStExc/`. File names repeat across settings;
 declarations do not, so a qualified name such as `Morphisms.dwpSt` is
 unambiguous.

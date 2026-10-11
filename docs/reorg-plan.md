@@ -232,7 +232,14 @@ Departures from the plan:
   compiles without it, then the whole build is redone), and the four
   `SpecReading` instances of the base SP monads, which the partition had put
   in `Generic/Triple.v` (its keyword list missed the bare monad names), moved
-  to `DivNonDet/Triples.v`. The plan above uses
+  to `DivNonDet/Triples.v`.
+- New code (not a move): O'Hearn's rewriting rules, previously only with
+  state, were proved once in `Generic/InCorrectnessPrinciples.v` for the ASP
+  reading of any relation and instantiated in every setting
+  (`DivNonDet/`, `DivNonDetStExc/` new; the state rules re-derived with
+  identical statements), with the base Galois edge
+  `dwlp_under_galois_asp_over_pure`. 41 declarations were added, none removed
+  or changed; all are closed under the global context. The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

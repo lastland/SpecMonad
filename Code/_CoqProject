@@ -5,12 +5,14 @@ Verification/Generic/Triple.v
 Verification/Generic/DijkstraMonad.v
 Verification/Generic/TripleTaxonomy.v
 Verification/Generic/Typings.v
+Verification/Generic/InCorrectnessPrinciples.v
 Verification/DivNonDet/Computation.v
 Verification/DivNonDet/Morphisms.v
 Verification/DivNonDet/Triples.v
 Verification/DivNonDet/TriplesTaxonomy.v
 Verification/DivNonDet/DijkstraMonads.v
 Verification/DivNonDet/Typings.v
+Verification/DivNonDet/InCorrectnessPrinciples.v
 Verification/DivNonDetSt/Computation.v
 Verification/DivNonDetSt/Morphisms.v
 Verification/DivNonDetSt/Triples.v
@@ -25,6 +27,7 @@ Verification/DivNonDetStExc/TriplesTaxonomy.v
 Verification/DivNonDetStExc/Examples.v
 Verification/DivNonDetStExc/DijkstraMonads.v
 Verification/DivNonDetStExc/Typings.v
+Verification/DivNonDetStExc/InCorrectnessPrinciples.v
 Verification/DivNonDetStExc/DijkstraExamples.v
 Lib/Arrow/Arrow.v
 Lib/Arrow/ArrowApplyFacts.v

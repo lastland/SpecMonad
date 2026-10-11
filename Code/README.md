@@ -29,10 +29,10 @@ propositional extensionality and, where stated, excluded middle
 | [WP/](WP) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
 | [SP/](SP) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
 | [PTMonadTaxonomy/](PTMonadTaxonomy) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
-| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad `divndNE`, by setting; each setting directory has the same files: `Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`, `DijkstraMonads.v`, `Typings.v` |
+| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad `divndNE`, by setting; each setting directory has the same files: `Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`, `DijkstraMonads.v`, `Typings.v`, `InCorrectnessPrinciples.v` (O'Hearn's rules) |
 | ↳ [Generic/](Verification/Generic) | §5, §6 | what is the same at every setting: the general triple, the Dijkstra construction, triples as typings at any indices |
 | ↳ [DivNonDet/](Verification/DivNonDet) | §1, §5, §6 | base setting `divndNE`; the readings defined once (`dwpPure`, `aspPure`, …) |
-| ↳ [DivNonDetSt/](Verification/DivNonDetSt) | §5, §6 | with state, `stateT S divndNE`; the lifts (`dwpSt`, …); the diagram; O'Hearn's rules |
+| ↳ [DivNonDetSt/](Verification/DivNonDetSt) | §5, §6 | with state, `stateT S divndNE`; the lifts (`dwpSt`, …); the diagram |
 | ↳ [DivNonDetStExc/](Verification/DivNonDetStExc) | §5, §6 | with state and exceptions, `stateT S (optionT divndNE)`; the lifts (`dwpStExc`, …); the diagram; the examples |
 | [GaloisConnections/](GaloisConnections) | §7 | the DM4All specification monads and their adjunctions |
 | [Tests/](Tests) | — | regression and instance checks |
@@ -56,7 +56,7 @@ flowchart RL
   Relational[Relational] -->|16| Lib[Lib]
   SP[SP] -->|11| Relational[Relational]
   Tests[Tests] -->|2| GaloisConnections[GaloisConnections]
-  Verification_DivNonDet -->|6| Verification_Generic
+  Verification_DivNonDet -->|8| Verification_Generic
   Verification_DivNonDetSt -->|12| Verification_DivNonDet
   Verification_DivNonDetStExc -->|11| Verification_DivNonDet
   Verification_Generic -->|3| PTMonadTaxonomy[PTMonadTaxonomy]

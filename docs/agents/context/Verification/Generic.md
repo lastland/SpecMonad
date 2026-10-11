@@ -33,3 +33,7 @@ Parent: [Verification](../Verification.md). What is the same at every setting.
   reaches every result (`le_aspUnder`, `dslpOver_le`), which gives the
   triple when the precondition is inhabited (`aspUnder_typing_triple`) and
   is vacuous when it is empty.
+- [InCorrectnessPrinciples.v](../../../../Code/Verification/Generic/InCorrectnessPrinciples.v): O'Hearn's
+  rewriting rules (symmetry, consequence, agreement, denial) for
+  `aspHolds R` on any relation `R`. Every ASP triple is such a judgement, so
+  each setting instantiates them.

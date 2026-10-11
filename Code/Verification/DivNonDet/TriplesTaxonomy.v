@@ -123,3 +123,17 @@ Section BaseWP.
     - intros [a [Ho H]]. exists (Some a). exact (conj Ho H).
   Qed.
 End BaseWP.
+
+(** The Galois edge as an equivalence of triples, at the base: the demonic
+    liberal WP [Under] triple is the ASP [Over] triple with the same pre- and
+    postcondition.  With state and with exceptions it is
+    [dwlp_under_galois_asp_over] and [dwlp_under_galois_asp_over_exc]. *)
+Theorem dwlp_under_galois_asp_over_pure {A} (d : divndNE A)
+  (b : unit -> Prop) (c : A -> Prop) :
+  triple (@dwlpPure) d Under b c <-> triple (@aspPure) d Over b c.
+Proof.
+  rewrite triple_aspPure. cbn. split.
+  - intros H a [u [Hb Ha]]. exact (proj1 (galois_slice_dwlpPure d c) (H u Hb) a Ha).
+  - intros H u Hb. apply (proj2 (galois_slice_dwlpPure d c)).
+    intros a Ha. exact (H a (ex_intro _ u (conj Hb Ha))).
+Qed.

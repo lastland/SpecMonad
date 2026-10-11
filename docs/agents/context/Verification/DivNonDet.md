@@ -33,3 +33,10 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
 - [Typings.v](../../../../Code/Verification/DivNonDet/Typings.v): without state the ASP `Under`
   triple is a typing at `aspUnder`, for a precondition that holds
   (`triple_under_aspPure`); `oneOrTwo_Dasp_op`.
+- [TriplesTaxonomy.v](../../../../Code/Verification/DivNonDet/TriplesTaxonomy.v) also states the Galois
+  edge as an equivalence of triples without state,
+  `dwlp_under_galois_asp_over_pure`.
+- [InCorrectnessPrinciples.v](../../../../Code/Verification/DivNonDet/InCorrectnessPrinciples.v):
+  O'Hearn's rules for the `aspPure` triples (`first_symmetry_rule_aspPure`,
+  ..., `principle_of_denial_aspPure`), and their `dwlpPure` variants through
+  that edge.

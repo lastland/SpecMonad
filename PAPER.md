@@ -251,10 +251,10 @@ Hoare triples over-approximate.
   `ArrowLoop` for the option-relation arrow
   (`OptionLoop.optionRel_no_lawful_ArrowLoop`), transported to the option ASP
   and DSLP arrows (`SPostArrEquiv.optionASP_no_lawful_ArrowLoop`).
-- [Verification/DivNonDetSt/InCorrectnessPrinciples.v](Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v):
+- `InCorrectnessPrinciples.v` in [Generic/](Code/Verification/Generic/InCorrectnessPrinciples.v) and in each setting ([DivNonDet/](Code/Verification/DivNonDet/InCorrectnessPrinciples.v), [DivNonDetSt/](Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v), [DivNonDetStExc/](Code/Verification/DivNonDetStExc/InCorrectnessPrinciples.v)):
   O'Hearn's rewriting rules (symmetry, consequence, agreement, denial) for
-  the `Morphisms.aspSt` triples, with `Morphisms.dwlpSt` variants
-  (`InCorrectnessPrinciples.principle_of_denial_asp`).
+  the ASP triples at each setting, with demonic liberal WP variants (e.g.
+  `InCorrectnessPrinciples.principle_of_denial_asp` with state). The rules are proved once for the ASP reading of any relation and instantiated at each setting; the demonic liberal WP variants go through each setting's Galois edge (without state, `dwlp_under_galois_asp_over_pure` in `DivNonDet/TriplesTaxonomy.v`).
 - [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v):
   Galois connections between binary specification arrows (relations,
   pre/post pairs, monotone SP and WP transformers, relational pre/post
