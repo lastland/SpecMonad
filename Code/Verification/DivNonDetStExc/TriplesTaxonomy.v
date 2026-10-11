@@ -1,6 +1,6 @@
 (** * The taxonomy diagram, with state and exceptions
 
-    The edges of [State/TripleTaxonomySt.v] for [m : stdivexcndNE S A], under
+    The edges of [DivNonDetSt/TriplesTaxonomy.v] for [m : stdivexcndNE S A], under
     the same names with [_exc]; the base lemmas are used at the result type
     [option (A * S)]. *)
 
@@ -21,13 +21,13 @@ From Incorrectness.PTMonadTaxonomy Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import TripleTaxonomyPure.
-From Incorrectness.Verification.StateExc Require Import ComputationStExc.
-From Incorrectness.Verification.StateExc Require Import MorphismsStExc.
-From Incorrectness.Verification.StateExc Require Import TriplesStExc.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
+From Incorrectness.Verification.DivNonDetStExc Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetStExc Require Import Triples.
 
 
 (** The same under [stateT] over [optionT]. *)

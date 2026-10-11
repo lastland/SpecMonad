@@ -7,9 +7,9 @@
       [divndNE A]                    the elements of [divnd A] with an outcome
 
     The two other settings are monad transformers applied to it:
-    [stdivndNE S = stateT S divndNE] ([State/ComputationSt.v]) and
+    [stdivndNE S = stateT S divndNE] ([DivNonDetSt/Computation.v]) and
     [stdivexcndNE S = stateT S (optionT divndNE)]
-    ([StateExc/ComputationStExc.v]). *)
+    ([DivNonDetStExc/Computation.v]). *)
 
 From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.

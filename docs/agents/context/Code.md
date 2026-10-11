@@ -23,8 +23,8 @@ the layers listed in [scripts/layers.txt](../../../Code/scripts/layers.txt), che
 - [PTMonadTaxonomy](PTMonadTaxonomy.md): the relations of the taxonomy (§4).
 - [Verification](Verification.md): everything that involves the computation
   monad, by setting: [Generic](Verification/Generic.md),
-  [Base](Verification/Base.md), [State](Verification/State.md),
-  [StateExc](Verification/StateExc.md) (§1, §5, §6).
+  [DivNonDet](Verification/DivNonDet.md), [DivNonDetSt](Verification/DivNonDetSt.md),
+  [DivNonDetStExc](Verification/DivNonDetStExc.md) (§1, §5, §6).
 - [GaloisConnections](GaloisConnections.md): DM4All monads and
   their adjunctions (§7).
 - [Tests](Tests.md): instance and regression checks.

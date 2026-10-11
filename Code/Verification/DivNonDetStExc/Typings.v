@@ -19,15 +19,15 @@ From Incorrectness.SP Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import Typings.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import DijkstraPure.
-From Incorrectness.Verification.Base Require Import TypingsPure.
-From Incorrectness.Verification.StateExc Require Import ComputationStExc.
-From Incorrectness.Verification.StateExc Require Import MorphismsStExc.
-From Incorrectness.Verification.StateExc Require Import TriplesStExc.
-From Incorrectness.Verification.StateExc Require Import DijkstraStExc.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import DijkstraMonads.
+From Incorrectness.Verification.DivNonDet Require Import Typings.
+From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
+From Incorrectness.Verification.DivNonDetStExc Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetStExc Require Import Triples.
+From Incorrectness.Verification.DivNonDetStExc Require Import DijkstraMonads.
 
 
 Definition wpUnderStExc {S A} (pre : S -> Prop) (post : option (A * S) -> Prop)

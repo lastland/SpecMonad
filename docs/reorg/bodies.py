@@ -47,6 +47,11 @@ SPLIT_FILES = {"Code/" + p for sp in SPECS if "SOURCE" in sp
 # partition_check.py.
 SPLIT_FILES |= {"Code/" + p for sp in SPECS if "SOURCES" in sp
                 for p in list(sp["SOURCES"]) + [t for t in sp["TARGET"].values() if t]}
+for _f in sorted((Path(__file__).parent / "specs").glob("*_renames.txt")):
+    for _l in _f.read_text().split():
+        _a, _b = _l.split("=")
+        if "Code/" + _a in SPLIT_FILES:
+            SPLIT_FILES.add("Code/" + _b)
 SPLIT_FILES |= {LATER[f] for f in SPLIT_FILES if f in LATER}
 # Qualifier rewrites a split forced on other files, applied to the old text.
 QUALIFIED = {}

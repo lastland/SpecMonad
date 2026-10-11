@@ -29,9 +29,9 @@ From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Relational Require PredMonad RelMonads.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.State Require Import ComputationSt.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require Import Computation.
 
 
 Local Notation Pred := PredMonad.PredM.Pred.

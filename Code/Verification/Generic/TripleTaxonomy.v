@@ -3,8 +3,8 @@
     The SP edges of Verscht and Kaminski's diagram (POPL 2025, Figure 10)
     hold between the four readings of one relation, at arbitrary indices.
     The diagram itself is proved for computations with state in
-    [State/TripleTaxonomySt.v] and with state and exceptions in
-    [StateExc/TripleTaxonomyStExc.v]. *)
+    [DivNonDetSt/TriplesTaxonomy.v] and with state and exceptions in
+    [DivNonDetStExc/TriplesTaxonomy.v]. *)
 
 From Coq Require Import Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.

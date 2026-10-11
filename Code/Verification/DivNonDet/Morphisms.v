@@ -12,7 +12,7 @@
            each fixed input ([arrow_morphism_monad]).
 
     Each has an [IsMonadMorphism] instance.  Their lifts are in
-    [State/MorphismsSt.v] and [StateExc/MorphismsStExc.v].  At the input
+    [DivNonDetSt/Morphisms.v] and [DivNonDetStExc/Morphisms.v].  At the input
     [unit] DSP coincides with ASP and ASLP with DSLP ([DSPMonad.v],
     [ASLPMonad.v]); what tells the four apart is the base arrow at an
     arbitrary input. *)
@@ -36,7 +36,7 @@ From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Relational Require PredMonad RelMonads.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
 
 
 Local Notation Pred := PredMonad.PredM.Pred.
@@ -116,13 +116,13 @@ Section BaseWP.
     - intros A B x k p. split.
       + intros H oa Ho. destruct oa as [a|].
         * intros ob Hob. apply H.
-          apply (proj2 (DivNonDetNE.outcomes_bind (getNE x) (fun a => getNE (k a)) ob)).
+          apply (proj2 (Computation.outcomes_bind (getNE x) (fun a => getNE (k a)) ob)).
           exists (Some a). exact (conj Ho Hob).
         * refine (H None _).
-          apply (proj2 (DivNonDetNE.outcomes_bind (getNE x) (fun a => getNE (k a)) None)).
+          apply (proj2 (Computation.outcomes_bind (getNE x) (fun a => getNE (k a)) None)).
           exists None. exact (conj Ho eq_refl).
       + intros H ob Hob.
-        apply (proj1 (DivNonDetNE.outcomes_bind (getNE x)
+        apply (proj1 (Computation.outcomes_bind (getNE x)
                         (fun a => getNE (k a)) ob)) in Hob.
         destruct Hob as [[a|] [Ho Hk]].
         * exact (H (Some a) Ho ob Hk).
@@ -142,17 +142,17 @@ Section BaseWP.
       + intro H. exists (Some a). exact (conj eq_refl H).
     - intros A B x k p. split.
       + intros [ob [Hob H]].
-        apply (proj1 (DivNonDetNE.outcomes_bind (getNE x)
+        apply (proj1 (Computation.outcomes_bind (getNE x)
                         (fun a => getNE (k a)) ob)) in Hob.
         destruct Hob as [[a|] [Ho Hk]].
         * exists (Some a). split; [ exact Ho |]. exists ob. exact (conj Hk H).
         * subst ob. exists None. exact (conj Ho H).
       + intros [[a|] [Ho H]].
         * destruct H as [ob [Hob H]]. exists ob. split; [| exact H ].
-          apply (proj2 (DivNonDetNE.outcomes_bind (getNE x) (fun a => getNE (k a)) ob)).
+          apply (proj2 (Computation.outcomes_bind (getNE x) (fun a => getNE (k a)) ob)).
           exists (Some a). exact (conj Ho Hob).
         * exists None. split; [| exact H ].
-          apply (proj2 (DivNonDetNE.outcomes_bind (getNE x) (fun a => getNE (k a)) None)).
+          apply (proj2 (Computation.outcomes_bind (getNE x) (fun a => getNE (k a)) None)).
           exists None. exact (conj Ho eq_refl).
   Qed.
 End BaseWP.
@@ -222,7 +222,7 @@ Proof.
             <-> exists a, unOptionT (getNE x) (Some a)
                           /\ unOptionT (getNE (k a)) (Some b)).
     etransitivity;
-      [ exact (DivNonDetNE.outcomes_bind (getNE x) (fun a => getNE (k a)) (Some b)) |].
+      [ exact (Computation.outcomes_bind (getNE x) (fun a => getNE (k a)) (Some b)) |].
     split.
     + intros [[a|] [Ho Hk]]; [ exists a; exact (conj Ho Hk) | discriminate Hk ].
     + intros [a [Ho Hk]]. exists (Some a). exact (conj Ho Hk).

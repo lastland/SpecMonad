@@ -18,14 +18,14 @@ From Incorrectness.SP Require Import ASPMonad.
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import TripleTaxonomyPure.
-From Incorrectness.Verification.State Require Import ComputationSt.
-From Incorrectness.Verification.State Require Import MorphismsSt.
-From Incorrectness.Verification.State Require Import TriplesSt.
-From Incorrectness.Verification.State Require Import TripleTaxonomySt.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetSt Require Import Computation.
+From Incorrectness.Verification.DivNonDetSt Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require Import Triples.
+From Incorrectness.Verification.DivNonDetSt Require Import TriplesTaxonomy.
 
 
 Section OHearnRewritingRules.

@@ -18,12 +18,12 @@ From Incorrectness.Lib.Arrow.StateArrowT Require
   Core ArrowApplyLaws.
 From Incorrectness.Lib.Arrow.OptionArrowT Require
   ArrowApplyLaws.
-From Incorrectness.Verification.Base Require
-  DivNonDetNE.
-From Incorrectness.Verification.State Require
-  ComputationSt.
-From Incorrectness.Verification.StateExc Require
-  ComputationStExc.
+From Incorrectness.Verification.DivNonDet Require
+  Computation.
+From Incorrectness.Verification.DivNonDetSt Require
+  Computation.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Computation.
 From Incorrectness.Relational Require
   PredMonad OptionLoop.
 From Incorrectness.WP Require
@@ -35,55 +35,55 @@ From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Verification.Generic Require
   Triple.
-From Incorrectness.Verification.Base Require
-  TriplesPure.
-From Incorrectness.Verification.State Require
-  TriplesSt.
-From Incorrectness.Verification.StateExc Require
-  TriplesStExc.
-From Incorrectness.Verification.Base Require
-  MorphismsPure.
-From Incorrectness.Verification.State Require
-  MorphismsSt.
-From Incorrectness.Verification.StateExc Require
-  MorphismsStExc.
+From Incorrectness.Verification.DivNonDet Require
+  Triples.
+From Incorrectness.Verification.DivNonDetSt Require
+  Triples.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Triples.
+From Incorrectness.Verification.DivNonDet Require
+  Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require
+  Morphisms.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Morphisms.
 From Incorrectness.Verification.Generic Require
   Triple.
-From Incorrectness.Verification.Base Require
-  TriplesPure.
-From Incorrectness.Verification.State Require
-  TriplesSt.
-From Incorrectness.Verification.StateExc Require
-  TriplesStExc.
+From Incorrectness.Verification.DivNonDet Require
+  Triples.
+From Incorrectness.Verification.DivNonDetSt Require
+  Triples.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Triples.
 From Incorrectness.Verification.Generic Require
   TripleTaxonomy.
-From Incorrectness.Verification.Base Require
-  TripleTaxonomyPure.
-From Incorrectness.Verification.State Require
-  TripleTaxonomySt.
-From Incorrectness.Verification.StateExc Require
-  TripleTaxonomyStExc Examples.
-From Incorrectness.Verification.State Require
+From Incorrectness.Verification.DivNonDet Require
+  TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetSt Require
+  TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetStExc Require
+  TriplesTaxonomy Examples.
+From Incorrectness.Verification.DivNonDetSt Require
   InCorrectnessPrinciples.
 From Incorrectness.Verification.Generic Require
   DijkstraMonad.
-From Incorrectness.Verification.Base Require
-  DijkstraPure.
-From Incorrectness.Verification.State Require
-  DijkstraSt.
-From Incorrectness.Verification.StateExc Require
-  DijkstraStExc.
+From Incorrectness.Verification.DivNonDet Require
+  DijkstraMonads.
+From Incorrectness.Verification.DivNonDetSt Require
+  DijkstraMonads.
+From Incorrectness.Verification.DivNonDetStExc Require
+  DijkstraMonads.
 From Incorrectness.Verification.Generic Require
   Typings.
-From Incorrectness.Verification.Base Require
-  TypingsPure.
-From Incorrectness.Verification.State Require
-  TypingsSt.
-From Incorrectness.Verification.StateExc Require
-  TypingsStExc.
-From Incorrectness.Verification.Base Require
-  TypingsPure.
-From Incorrectness.Verification.StateExc Require
+From Incorrectness.Verification.DivNonDet Require
+  Typings.
+From Incorrectness.Verification.DivNonDetSt Require
+  Typings.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Typings.
+From Incorrectness.Verification.DivNonDet Require
+  Typings.
+From Incorrectness.Verification.DivNonDetStExc Require
   DijkstraExamples.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections GaloisArr.
@@ -100,7 +100,7 @@ Check MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax.
 
 (** Bullet 3: "our base computation monad of nondeterminism and
     nontermination" (non-empty outcome sets, divergence an outcome). *)
-Check DivNonDetNE.divndNE.
+Check Computation.divndNE.
 
 (* ================================================================= *)
 (** ** Section 2, Background: WP monads                              *)
@@ -316,31 +316,31 @@ Check Triple.triple.
 
 (** The eight base morphisms out of [divndNE]: WP into [WPure]; SP into
     [ASP], [DSLP], [DSP], [ASLP]. *)
-Check MorphismsPure.dwpPure_morphism.
-Check MorphismsPure.dwlpPure_morphism.
-Check MorphismsPure.awpPure_morphism.
-Check MorphismsPure.awlpPure_morphism.
-Check MorphismsPure.aspPure_morphism_rel.
-Check MorphismsPure.dslpPure_morphism_rel.
-Check MorphismsPure.dspPure_morphism_rel.
-Check MorphismsPure.aslpPure_morphism_rel.
+Check Morphisms.dwpPure_morphism.
+Check Morphisms.dwlpPure_morphism.
+Check Morphisms.awpPure_morphism.
+Check Morphisms.awlpPure_morphism.
+Check Morphisms.aspPure_morphism_rel.
+Check Morphisms.dslpPure_morphism_rel.
+Check Morphisms.dspPure_morphism_rel.
+Check Morphisms.aslpPure_morphism_rel.
 
 (** Lifted to state + exceptions; incorrectness logic [q => asp [[c]] p] is
     [triple aspSt c Under p q]. *)
-Check MorphismsStExc.dwpStExc_morphism.
-Check MorphismsStExc.aspStExc_morphism_rel.
-Check MorphismsStExc.dspStExc_morphism_rel.
-Check MorphismsSt.aspSt.
-Check TriplesSt.triple_aspSt.
+Check Morphisms.dwpStExc_morphism.
+Check Morphisms.aspStExc_morphism_rel.
+Check Morphisms.dspStExc_morphism_rel.
+Check Morphisms.aspSt.
+Check Triples.triple_aspSt.
 
 (** The taxonomy diagram on the triples of one stateful program (26 edges;
     again with exceptions, suffix [_exc]). *)
-Check TripleTaxonomySt.dwp_under_dwlp_under.
-Check TripleTaxonomySt.dsp_under_asp_under.
-Check TripleTaxonomySt.awp_under_contra_dwlp_over.
-Check TripleTaxonomySt.asp_under_contra_dslp_over.
-Check TripleTaxonomySt.dwlp_under_galois_asp_over.
-Check TripleTaxonomySt.awp_over_galois_dslp_under.
+Check TriplesTaxonomy.dwp_under_dwlp_under.
+Check TriplesTaxonomy.dsp_under_asp_under.
+Check TriplesTaxonomy.awp_under_contra_dwlp_over.
+Check TriplesTaxonomy.asp_under_contra_dslp_over.
+Check TriplesTaxonomy.dwlp_under_galois_asp_over.
+Check TriplesTaxonomy.awp_over_galois_dslp_under.
 
 (** Verified programs: one per triple kind (16), and O'Hearn's Example 3.1. *)
 Check Examples.progA_dwp_under.
@@ -373,13 +373,13 @@ Check DSPMonad.OrderedMonad_DSP.
 Check DijkstraMonad.DM.
 Check DijkstraMonad.DMop.
 Check DijkstraMonad.DM_laws.
-Check DijkstraStExc.Dasp_laws.
+Check DijkstraMonads.Dasp_laws.
 
 (** Triples are typings: every WP triple, ASP [Over], DSLP [Under]. *)
-Check TypingsStExc.triple_under_wpStExc.
-Check TypingsStExc.triple_over_wpStExc.
-Check TypingsStExc.triple_over_aspStExc.
-Check TypingsStExc.triple_under_dslpStExc.
+Check Typings.triple_under_wpStExc.
+Check Typings.triple_over_wpStExc.
+Check Typings.triple_over_aspStExc.
+Check Typings.triple_under_dslpStExc.
 
 (** ASP [Under] / DSLP [Over]: typing at the natural index demands that
     every start state in [P] reach every result in [Q], which implies the
@@ -387,10 +387,10 @@ Check TypingsStExc.triple_under_dslpStExc.
     (with state); without state ASP [Under] is a typing. *)
 Check Typings.le_aspUnder.
 Check Typings.aspUnder_typing_triple.
-Check TypingsSt.no_asp_under_index.
-Check TypingsSt.no_dslp_over_index.
+Check Typings.no_asp_under_index.
+Check Typings.no_dslp_over_index.
 Check Triple.Under.
-Check TypingsPure.triple_under_aspPure.
+Check Typings.triple_under_aspPure.
 
 (** Typed programs, a triple that is not a typing, the stateless case. *)
 Check DijkstraExamples.progA_Ddwp.
@@ -403,7 +403,7 @@ Check Examples.progloom_harder_asp_under.
 Check Typings.dslpOver_typing_triple.
 Check DijkstraExamples.progloom_harder_dslp_over.
 Check DijkstraExamples.progloom_harder_not_Ddslp.
-Check TypingsPure.oneOrTwo_Dasp_op.
+Check Typings.oneOrTwo_Dasp_op.
 
 (* ================================================================= *)
 (** ** Section 7, Galois connections (contribution bullet 6)         *)
@@ -443,7 +443,7 @@ Check SPostArrEquiv.optionASP_no_lawful_ArrowLoop.
 
 (** O'Hearn's rewriting rules over [aspSt] triples. *)
 Check InCorrectnessPrinciples.principle_of_denial_asp.
-Check MorphismsSt.dwlpSt.
+Check Morphisms.dwlpSt.
 
 (** Galois connections between binary specification arrows. *)
 Check GaloisArr.Galois_RPP_WP.

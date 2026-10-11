@@ -13,7 +13,7 @@ From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
 
 Definition stdivexcndNE (S : Type) : Type -> Type := stateT S (optionT divndNE).
 #[global] Instance Monad__stdivexcndNE (S : Type) : Monad (stdivexcndNE S) :=

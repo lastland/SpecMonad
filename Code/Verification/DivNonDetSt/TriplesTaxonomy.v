@@ -1,12 +1,12 @@
 (** * The taxonomy diagram, with state
 
     For one computation [m : stdivndNE S A], read in the eight ways of
-    [MorphismsSt.v], the sixteen triples stand in the relations of Verscht
+    [Morphisms.v], the sixteen triples stand in the relations of Verscht
     and Kaminski's diagram (POPL 2025, Figure 10): sixteen implications
     ([dwp_under_dwlp_under] &c.), eight contrapositives
     ([awp_under_contra_dwlp_over] &c., classical) and two Galois connections
     ([dwlp_under_galois_asp_over], [awp_over_galois_dslp_under]).  The WP
-    edges are the base edges of [Base/TripleTaxonomyPure.v] carried start
+    edges are the base edges of [DivNonDet/TriplesTaxonomy.v] carried start
     state by start state; the SP edges are those of one relation
     ([Generic/TripleTaxonomy.v]). *)
 
@@ -27,13 +27,13 @@ From Incorrectness.PTMonadTaxonomy Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import TripleTaxonomyPure.
-From Incorrectness.Verification.State Require Import ComputationSt.
-From Incorrectness.Verification.State Require Import MorphismsSt.
-From Incorrectness.Verification.State Require Import TriplesSt.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetSt Require Import Computation.
+From Incorrectness.Verification.DivNonDetSt Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require Import Triples.
 
 
 (** A relation between the base morphisms is one between their lifts,

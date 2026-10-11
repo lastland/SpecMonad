@@ -224,7 +224,10 @@ Departures from the plan:
   lifts, siblings). Every declaration went to the highest setting its code
   or its dependencies name; sections serving several settings were cut with
   their headers copied; 379 qualified names follow
-  (`docs/reorg/partition-map.txt`). The plan above uses
+  (`docs/reorg/partition-map.txt`). The setting directories were then renamed `DivNonDet/`,
+  `DivNonDetSt/`, `DivNonDetStExc/`, with the same file names in each
+  (`Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`,
+  `DijkstraMonads.v`, `Typings.v`). The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

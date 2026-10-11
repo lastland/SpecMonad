@@ -15,7 +15,7 @@ The organising principle is a dependency boundary:
 `WP/`, `SP/` and `Relational/` use specification types, generic
 infrastructure (`Lib/`) and library definitions. The computation side is one
 base monad, `divndNE`, and its transformer stacks, under `Verification/`,
-which is split by setting: `Base/` (`divndNE`), `State/` and `StateExc/` (its
+which is split by setting: `DivNonDet/` (`divndNE`), `DivNonDetSt/` and `DivNonDetStExc/` (its
 two lifts), and `Generic/` for what is the same at every setting. Each
 setting holds its computation monad, the morphisms out of it, their triples,
 the triple diagram and the Dijkstra monads.
@@ -40,7 +40,7 @@ and so on.
 
 ## 2. Computation monads
 
-All computation monads are in one file, `DivNonDetNE.v`. The base monad is
+All computation monads are in one file, `Computation.v`. The base monad is
 built in three steps:
 
 | Step | Definition | Role |
@@ -61,7 +61,7 @@ construction:
 
 Besides the three monads the file has the choice, divergence, raise and pick
 operations of the stacks, and the outcome lemmas `outSt_*` / `outStExc_*`.
-`Verification/Base/MorphismsPure.v` imports it.
+`Verification/DivNonDet/Morphisms.v` imports it.
 `TransformerLaws.v` proves the `optionT` / `stateT` laws for any
 base monad, and lifts orders (`OrderedMonad_stateT`, ...) and monad morphisms
 (`MonadMorphism_stateT`, ...) through them.
@@ -208,7 +208,7 @@ through the subset type.
 
 The adjunction and `Proper_bind` proofs use the bundled monotonicity. Each WP
 morphism therefore supplies a monotonicity proof when constructing a `WPure`
-value (`demonic_mono`, `angelic_mono` in `Verification/Base/MorphismsPure.v`).
+value (`demonic_mono`, `angelic_mono` in `Verification/DivNonDet/Morphisms.v`).
 
 All three WP orders live in `WP/WPure.v`. Each stack order is a generic
 lift of **reverse implication** from `WP_le`; the formulas below omit runners:
@@ -268,7 +268,7 @@ one and an SP `Under` triple the incorrectness-like one.
 A statement that mentions `triple θ` depends on the assumptions of `θ`'s
 instance, that is, of its target monad and of its return/bind laws.
 
-### The eight readings, lifted — `Verification/Base/MorphismsPure.v`
+### The eight readings, lifted — `Verification/DivNonDet/Morphisms.v`
 
 Each reading is defined once, over the non-empty base `divndNE`, and lifted.
 They are monad morphisms and are not called observations: an effect
@@ -288,13 +288,13 @@ are not. A map is named by its reading and its level: `dwpPure`, `dwpSt`,
   (`Lib/Monad/TransformerLaws.v`) lift them, and the triple of a
   lifted morphism is the base triple at every start state
   (`triple_dwpSt`, `triple_dwpStExc`, and so on, in
-  `Verification/State/TriplesSt.v`).
+  `Verification/DivNonDetSt/Triples.v`).
 - **SP.** A base arrow morphism out of `Rel` (`SP/SPostArrEquiv.v`) is
   lifted by the arrow transformers and applied to the relation between start
   states and terminating outcomes; `arrow_morphism_monad`
   (`Lib/Arrow/ArrowMorphism.v`) makes it a monad morphism. The triple at every
   level is one judgement on the base arrow, re-indexed (`triple_aspSt`, and so
-  on, in `Verification/State/TriplesSt.v`). An SP triple at the state level is not a family of base triples, and
+  on, in `Verification/DivNonDetSt/Triples.v`). An SP triple at the state level is not a family of base triples, and
   at unit input the four SP readings are two.
 
 The lifted SP morphism theorems inherit the functional extensionality of the
@@ -304,7 +304,7 @@ the relations denoted (`aspSt_morphism_rel`, and so on), and the
 morphisms are closed, and those through DSP and ASLP use excluded middle. See
 the [Triples context](agents/context/Verification.md).
 
-## 6. The triple diagram — `Verification/State/TripleTaxonomySt.v`
+## 6. The triple diagram — `Verification/DivNonDetSt/TriplesTaxonomy.v`
 
 Figure 5 of Lena Verscht and Benjamin Lucien Kaminski's
 [*A Taxonomy of Hoare-Like Logics: Towards a Holistic View using Predicate
@@ -787,7 +787,7 @@ not convert `Rel_eq` into equality of relation values.
 
 ## 9. Examples, rewriting rules, Dijkstra monads
 
-**Examples.** `Verification/StateExc/Examples.v` defines `progA`, `progB`, `progRet`,
+**Examples.** `Verification/DivNonDetStExc/Examples.v` defines `progA`, `progB`, `progRet`,
 `progEx`, `example_state` (Example 3.1 of Peter W. O'Hearn's
 [*Incorrectness Logic*](https://doi.org/10.1145/3371078), POPL 2020),
 `progloom` and `progloom_harder` over `stateT S (optionT divndNE)`, and
@@ -796,7 +796,7 @@ contrast angelic *coverage* (`awpStExc` `Under`: from every start state some
 run raises) with bug *presence* (`aspStExc` `Under`: the raise is reached from
 some start state), over the same program and postcondition.
 
-**Rewriting rules.** `Verification/State/InCorrectnessPrinciples.v` states O'Hearn's
+**Rewriting rules.** `Verification/DivNonDetSt/InCorrectnessPrinciples.v` states O'Hearn's
 rules over the `aspSt` triples of a computation with state: the two symmetry
 rules, the two rules of consequence, and the principles of agreement and
 denial. The correctness-side rules also have a variant for the demonic
@@ -845,7 +845,7 @@ inclusions of relations, so they are closed under intersection, and these
 triples are not. Without state there is one start point and the ASP `Under`
 triple is a typing (`triple_under_aspPure`, for a precondition that holds).
 
-`Verification/StateExc/DijkstraExamples.v` types one program in each of the eight WP
+`Verification/DivNonDetStExc/DijkstraExamples.v` types one program in each of the eight WP
 Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a
@@ -866,7 +866,7 @@ theorem of interest rather than inferring its assumptions from imports.
 
 Run `make check` from `Code/` for assumption reports. The separate
 [Checks/Assumptions.v](../Code/Checks/Assumptions.v) reports the outcome laws
-of `DivNonDetNE.v`, the arrow law packages, ordered-bind counterexamples, the
+of `Computation.v`, the arrow law packages, ordered-bind counterexamples, the
 separation of the four healthiness classes, and the triples development of
 §5, §6 and §9 (morphisms, lifts, both diagrams, examples, rewriting rules,
 Dijkstra monads). See the [Checks context](agents/context/Checks.md) for audit

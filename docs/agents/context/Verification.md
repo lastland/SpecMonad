@@ -7,9 +7,9 @@ Everything that involves the computation monad, split by **setting**:
 
 | Setting | Computation monad | WP target | SP targets | Directory |
 |---|---|---|---|---|
-| base | `divndNE` | `WPure` | `ASP`, `DSLP`, `DSP`, `ASLP` | [Base](Verification/Base.md) |
-| state | `stdivndNE S = stateT S divndNE` | `WSt S` | `ASPSt S` … | [State](Verification/State.md) |
-| state + exceptions | `stdivexcndNE S = stateT S (optionT divndNE)` | `WStExc S` | `ASPStExc S` … | [StateExc](Verification/StateExc.md) |
+| base | `divndNE` | `WPure` | `ASP`, `DSLP`, `DSP`, `ASLP` | [DivNonDet](Verification/DivNonDet.md) |
+| state | `stdivndNE S = stateT S divndNE` | `WSt S` | `ASPSt S` … | [DivNonDetSt](Verification/DivNonDetSt.md) |
+| state + exceptions | `stdivexcndNE S = stateT S (optionT divndNE)` | `WStExc S` | `ASPStExc S` … | [DivNonDetStExc](Verification/DivNonDetStExc.md) |
 
 What is the same at every setting -- the general triple, the Dijkstra
 construction, the comparison of triples with typings at arbitrary indices --
@@ -17,20 +17,23 @@ is in [Generic](Verification/Generic.md).
 
 Each setting is a lift of the **base**, not of the previous setting: state
 lifts by `stateT`, state and exceptions by `stateT` over `optionT`. So
-`State/` and `StateExc/` both import `Base/` and `Generic/` and never each
-other ([layers.txt](../../../Code/scripts/layers.txt)). Every setting has the
-same files, named by concept and suffixed by the setting as the identifiers
-are (`Pure`, `St`, `StExc`):
+`DivNonDetSt/` and `DivNonDetStExc/` both import `DivNonDet/` and `Generic/`
+and never each other ([layers.txt](../../../Code/scripts/layers.txt)). Every
+setting directory has the same files, one per concept:
 
-| Concept | Base | State | StateExc |
-|---|---|---|---|
-| computation monad | `DivNonDetNE.v` | `ComputationSt.v` | `ComputationStExc.v` |
-| the eight readings as monad morphisms | `MorphismsPure.v` | `MorphismsSt.v` | `MorphismsStExc.v` |
-| triples of those morphisms | `TriplesPure.v` | `TriplesSt.v` | `TriplesStExc.v` |
-| Verscht and Kaminski's diagram | `TripleTaxonomyPure.v` | `TripleTaxonomySt.v` | `TripleTaxonomyStExc.v` |
-| Dijkstra monads | `DijkstraPure.v` | `DijkstraSt.v` | `DijkstraStExc.v` |
-| triples as typings | `TypingsPure.v` | `TypingsSt.v` | `TypingsStExc.v` |
-| examples, rules | -- | `InCorrectnessPrinciples.v` | `Examples.v`, `DijkstraExamples.v` |
+| File | Contents |
+|---|---|
+| `Computation.v` | the computation monad (`divndNE`, or its lift) |
+| `Morphisms.v` | the eight readings as monad morphisms (at state: lifts of the base ones) |
+| `Triples.v` | the specification monads' readings and the triples of the morphisms |
+| `TriplesTaxonomy.v` | Verscht and Kaminski's diagram |
+| `DijkstraMonads.v` | the Dijkstra monads of the morphisms |
+| `Typings.v` | which triples are typings |
+
+plus `InCorrectnessPrinciples.v` in `DivNonDetSt/` and `Examples.v`,
+`DijkstraExamples.v` in `DivNonDetStExc/`. File names repeat across settings;
+declarations do not, so a qualified name such as `Morphisms.dwpSt` is
+unambiguous.
 
 Names follow the same pattern: a lowercase reading followed by the setting,
 `dwpPure` / `dwpSt` / `dwpStExc`, and likewise for `dwlp`, `awp`, `awlp`,

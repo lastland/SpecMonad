@@ -78,12 +78,12 @@ What is formalised:
   `triple θ m k P Q` is defined for any monad morphism `θ`; its sixteen
   instances are the correctness and incorrectness triples, and the triple of
   a lifted morphism is the base triple re-indexed. See
-  [`Verification/Base/MorphismsPure.v`](Code/Verification/Base/MorphismsPure.v).
+  [`Verification/DivNonDet/Morphisms.v`](Code/Verification/DivNonDet/Morphisms.v).
 
 - **The taxonomy of triples**: the 26 edges of Verscht and Kaminski's diagram
   (implications, contrapositives, and the two Galois connections between WP
   and SP), with state and with state and exceptions, in
-  [`Verification/State/TripleTaxonomySt.v`](Code/Verification/State/TripleTaxonomySt.v). A separate
+  [`Verification/DivNonDetSt/TriplesTaxonomy.v`](Code/Verification/DivNonDetSt/TriplesTaxonomy.v). A separate
   development relates the specification monads themselves
   (`PTMonadTaxonomy/MonadTaxonomy.v`).
 
@@ -94,7 +94,7 @@ What is formalised:
 - **Incorrectness principles** from Peter W. O'Hearn's
   [*Incorrectness Logic*](https://doi.org/10.1145/3371078) (POPL 2020), proved
   over the ASP triples, with demonic liberal WP variants, in
-  [`Verification/State/InCorrectnessPrinciples.v`](Code/Verification/State/InCorrectnessPrinciples.v).
+  [`Verification/DivNonDetSt/InCorrectnessPrinciples.v`](Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v).
 
 - **Dijkstra monads**: the Dijkstra monad of any monad morphism into an
   ordered monad, at every lifted morphism, with triples identified with

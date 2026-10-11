@@ -48,9 +48,9 @@ and the opt-in audits.
 | [PTMonadTaxonomy](PTMonadTaxonomy.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
 | [Verification](Verification.md) | §1, §5, §6 | The computation monad, morphisms, triples, Dijkstra monads; by setting |
 | [Verification/Generic](Verification/Generic.md) | §5, §6 | General triple, Dijkstra construction, typings at any indices |
-| [Verification/Base](Verification/Base.md) | §1, §5, §6 | `divndNE` and the eight base readings |
-| [Verification/State](Verification/State.md) | §5, §6 | Lifts to state; diagram; O'Hearn's rules |
-| [Verification/StateExc](Verification/StateExc.md) | §5, §6 | Lifts to state and exceptions; diagram; examples |
+| [Verification/DivNonDet](Verification/DivNonDet.md) | §1, §5, §6 | `divndNE` and the eight base readings |
+| [Verification/DivNonDetSt](Verification/DivNonDetSt.md) | §5, §6 | Lifts to state; diagram; O'Hearn's rules |
+| [Verification/DivNonDetStExc](Verification/DivNonDetStExc.md) | §5, §6 | Lifts to state and exceptions; diagram; examples |
 | [GaloisConnections](GaloisConnections.md) | §7 | DM4All monads and adjunctions |
 | [Tests](Tests.md) | — | Generic regression, concrete instances, semantic clients |
 | [Checks](Checks.md) | — | Assumption reporting, paper claims |

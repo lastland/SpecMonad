@@ -29,26 +29,26 @@ propositional extensionality and, where stated, excluded middle
 | [WP/](WP) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
 | [SP/](SP) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
 | [PTMonadTaxonomy/](PTMonadTaxonomy) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
-| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad `divndNE`, by setting; each setting has its computation monad, the eight readings as monad morphisms, their triples, the triple diagram, Dijkstra monads and typings |
+| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad `divndNE`, by setting; each setting directory has the same files: `Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`, `DijkstraMonads.v`, `Typings.v` |
 | ↳ [Generic/](Verification/Generic) | §5, §6 | what is the same at every setting: the general triple, the Dijkstra construction, triples as typings at any indices |
-| ↳ [Base/](Verification/Base) | §1, §5, §6 | `divndNE`; the readings defined once (`dwpPure`, `aspPure`, …) |
-| ↳ [State/](Verification/State) | §5, §6 | `stateT S divndNE`; the lifts (`dwpSt`, …); the diagram; O'Hearn's rules |
-| ↳ [StateExc/](Verification/StateExc) | §5, §6 | `stateT S (optionT divndNE)`; the lifts (`dwpStExc`, …); the diagram; the examples |
+| ↳ [DivNonDet/](Verification/DivNonDet) | §1, §5, §6 | base setting `divndNE`; the readings defined once (`dwpPure`, `aspPure`, …) |
+| ↳ [DivNonDetSt/](Verification/DivNonDetSt) | §5, §6 | with state, `stateT S divndNE`; the lifts (`dwpSt`, …); the diagram; O'Hearn's rules |
+| ↳ [DivNonDetStExc/](Verification/DivNonDetStExc) | §5, §6 | with state and exceptions, `stateT S (optionT divndNE)`; the lifts (`dwpStExc`, …); the diagram; the examples |
 | [GaloisConnections/](GaloisConnections) | §7 | the DM4All specification monads and their adjunctions |
 | [Tests/](Tests) | — | regression and instance checks |
 | [Checks/](Checks) | — | opt-in audits: assumptions and the paper claims |
 
 Each directory has a reading guide in
 [docs/agents/context/](../docs/agents/context/README.md) (`SP/` → `SP.md`,
-`Verification/State/` → `Verification/State.md`).
+`Verification/DivNonDetSt/` → `Verification/DivNonDetSt.md`).
 
 ```mermaid
 flowchart RL
   subgraph Verification[Verification/]
-    Verification_Base[Base]
+    Verification_DivNonDet[DivNonDet]
+    Verification_DivNonDetSt[DivNonDetSt]
+    Verification_DivNonDetStExc[DivNonDetStExc]
     Verification_Generic[Generic]
-    Verification_State[State]
-    Verification_StateExc[StateExc]
   end
   GaloisConnections[GaloisConnections] -->|1| PTMonadTaxonomy[PTMonadTaxonomy]
   PTMonadTaxonomy[PTMonadTaxonomy] -->|21| SP[SP]
@@ -56,10 +56,10 @@ flowchart RL
   Relational[Relational] -->|16| Lib[Lib]
   SP[SP] -->|11| Relational[Relational]
   Tests[Tests] -->|2| GaloisConnections[GaloisConnections]
-  Verification_Base -->|11| Verification_Generic
+  Verification_DivNonDet -->|11| Verification_Generic
+  Verification_DivNonDetSt -->|22| Verification_DivNonDet
+  Verification_DivNonDetStExc -->|26| Verification_DivNonDet
   Verification_Generic -->|3| PTMonadTaxonomy[PTMonadTaxonomy]
-  Verification_State -->|22| Verification_Base
-  Verification_StateExc -->|26| Verification_Base
   WP[WP] -->|4| Lib[Lib]
 ```
 
@@ -89,15 +89,15 @@ file-level graph with a directory-only view.
    [WP/WPVariants.v](WP/WPVariants.v).
 5. §4: [PTMonadTaxonomy/TransformerRelations.v](PTMonadTaxonomy/TransformerRelations.v), then
    `Section Flavours` of [PTMonadTaxonomy/MonadTaxonomy.v](PTMonadTaxonomy/MonadTaxonomy.v).
-6. §5: [Verification/Base/MorphismsPure.v](Verification/Base/MorphismsPure.v)
-   (the readings, shared with §6), [Verification/State/MorphismsSt.v](Verification/State/MorphismsSt.v)
+6. §5: [Verification/DivNonDet/Morphisms.v](Verification/DivNonDet/Morphisms.v)
+   (the readings, shared with §6), [Verification/DivNonDetSt/Morphisms.v](Verification/DivNonDetSt/Morphisms.v)
    (their lifts), [Verification/Generic/Triple.v](Verification/Generic/Triple.v),
-   [Verification/State/TriplesSt.v](Verification/State/TriplesSt.v),
-   [Verification/State/TripleTaxonomySt.v](Verification/State/TripleTaxonomySt.v),
-   [Verification/StateExc/Examples.v](Verification/StateExc/Examples.v).
+   [Verification/DivNonDetSt/Triples.v](Verification/DivNonDetSt/Triples.v),
+   [Verification/DivNonDetSt/TriplesTaxonomy.v](Verification/DivNonDetSt/TriplesTaxonomy.v),
+   [Verification/DivNonDetStExc/Examples.v](Verification/DivNonDetStExc/Examples.v).
 7. §6: [Verification/Generic/DijkstraMonad.v](Verification/Generic/DijkstraMonad.v),
    [Verification/Generic/Typings.v](Verification/Generic/Typings.v),
-   [Verification/StateExc/DijkstraExamples.v](Verification/StateExc/DijkstraExamples.v).
+   [Verification/DivNonDetStExc/DijkstraExamples.v](Verification/DivNonDetStExc/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
 The [design notes](../docs/design.md) tell the longer story;

@@ -20,8 +20,8 @@
 
     The construction asks for the morphism and for the order ([OrderedTarget])
     and for nothing else.  The instances for the morphisms of each setting
-    are in [Base/DijkstraPure.v], [State/DijkstraSt.v] and
-    [StateExc/DijkstraStExc.v]. *)
+    are in [DivNonDet/DijkstraMonads.v], [DivNonDetSt/DijkstraMonads.v] and
+    [DivNonDetStExc/DijkstraMonads.v]. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions
   Classical_Prop.

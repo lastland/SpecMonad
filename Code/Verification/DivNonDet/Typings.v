@@ -26,10 +26,10 @@ From Incorrectness.SP Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import Typings.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import DijkstraPure.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import DijkstraMonads.
 
 
 Definition wpUnderPure {A} (pre : Prop) (post : A -> Prop) : WPure A :=

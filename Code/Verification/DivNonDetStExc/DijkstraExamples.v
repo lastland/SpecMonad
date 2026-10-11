@@ -15,7 +15,7 @@
       not, so it is not typed at [aspUnder]
       ([progloom_harder_not_Dasp_op]).  The DSLP [Over] examples are the
       same two at the complements.  The stateless case is in
-      [Base/TypingsPure.v]. *)
+      [DivNonDet/Typings.v]. *)
 
 From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
@@ -30,17 +30,17 @@ From Incorrectness.SP Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import Typings.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import DijkstraPure.
-From Incorrectness.Verification.Base Require Import TypingsPure.
-From Incorrectness.Verification.StateExc Require Import ComputationStExc.
-From Incorrectness.Verification.StateExc Require Import MorphismsStExc.
-From Incorrectness.Verification.StateExc Require Import TriplesStExc.
-From Incorrectness.Verification.StateExc Require Import Examples.
-From Incorrectness.Verification.StateExc Require Import DijkstraStExc.
-From Incorrectness.Verification.StateExc Require Import TypingsStExc.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import DijkstraMonads.
+From Incorrectness.Verification.DivNonDet Require Import Typings.
+From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
+From Incorrectness.Verification.DivNonDetStExc Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetStExc Require Import Triples.
+From Incorrectness.Verification.DivNonDetStExc Require Import Examples.
+From Incorrectness.Verification.DivNonDetStExc Require Import DijkstraMonads.
+From Incorrectness.Verification.DivNonDetStExc Require Import Typings.
 
 
 (* ================================================================= *)

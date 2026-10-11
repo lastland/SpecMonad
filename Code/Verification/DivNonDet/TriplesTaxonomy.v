@@ -6,7 +6,7 @@
     [galois_awpPure_slice]).  Four of the WP implications go from a demonic
     to an angelic reading and need the computation to have an outcome;
     every element of [divndNE] has one.  The diagram is assembled with state
-    in [State/TripleTaxonomySt.v]. *)
+    in [DivNonDetSt/TriplesTaxonomy.v]. *)
 
 From Coq Require Import Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
@@ -25,9 +25,9 @@ From Incorrectness.PTMonadTaxonomy Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
 
 
 (* ================================================================= *)

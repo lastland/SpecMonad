@@ -8,7 +8,7 @@
     DSLP [Under] one in [DMop].  For ASP [Under] and DSLP [Over], a typing is
     an inclusion of relations, and the indices one would like to use give
     more than the triple.  The instances and the negative results are in
-    [Base/TypingsPure.v], [State/TypingsSt.v] and [StateExc/TypingsStExc.v]. *)
+    [DivNonDet/Typings.v], [DivNonDetSt/Typings.v] and [DivNonDetStExc/Typings.v]. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions
   Classical_Prop.

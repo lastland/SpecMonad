@@ -22,15 +22,15 @@ From Incorrectness.SP Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import Typings.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.Base Require Import MorphismsPure.
-From Incorrectness.Verification.Base Require Import TriplesPure.
-From Incorrectness.Verification.Base Require Import DijkstraPure.
-From Incorrectness.Verification.Base Require Import TypingsPure.
-From Incorrectness.Verification.State Require Import ComputationSt.
-From Incorrectness.Verification.State Require Import MorphismsSt.
-From Incorrectness.Verification.State Require Import TriplesSt.
-From Incorrectness.Verification.State Require Import DijkstraSt.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDet Require Import Morphisms.
+From Incorrectness.Verification.DivNonDet Require Import Triples.
+From Incorrectness.Verification.DivNonDet Require Import DijkstraMonads.
+From Incorrectness.Verification.DivNonDet Require Import Typings.
+From Incorrectness.Verification.DivNonDetSt Require Import Computation.
+From Incorrectness.Verification.DivNonDetSt Require Import Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require Import Triples.
+From Incorrectness.Verification.DivNonDetSt Require Import DijkstraMonads.
 
 
 Definition wpUnderSt {S A} (pre : S -> Prop) (post : A * S -> Prop)

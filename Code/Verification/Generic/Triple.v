@@ -7,8 +7,8 @@
     monad says how its elements are read ([SpecReading]): forward (SP) or
     backward (WP), and on which types its pre- and postconditions are
     predicates.  The readings of the specification monads at each setting
-    are in [Base/TriplesPure.v], [State/TriplesSt.v] and
-    [StateExc/TriplesStExc.v].
+    are in [DivNonDet/Triples.v], [DivNonDetSt/Triples.v] and
+    [DivNonDetStExc/Triples.v].
 
     The SP judgements [aspHolds], [dslpHolds], [dspHolds], [aslpHolds] are
     stated on a base arrow at arbitrary indices: the triple of an SP morphism

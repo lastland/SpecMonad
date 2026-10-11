@@ -15,9 +15,9 @@ From Incorrectness.SP Require
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections.
-From Incorrectness.Verification.Base Require Import DivNonDetNE.
-From Incorrectness.Verification.State Require Import ComputationSt.
-From Incorrectness.Verification.StateExc Require Import ComputationStExc.
+From Incorrectness.Verification.DivNonDet Require Import Computation.
+From Incorrectness.Verification.DivNonDetSt Require Import Computation.
+From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
 
 (** Shared algebraic helpers take their congruence/application premises
     explicitly. Generic monad laws derive pure congruence constructively;
@@ -35,11 +35,11 @@ Print Assumptions ArrowApplyLaws_stateArrT.
 
 (** Computation-owned outcome laws use pointwise equivalence and are
     closed under the global context. *)
-Print Assumptions DivNonDetNE.outcomes_bind.
-Print Assumptions DivNonDetNE.diverge_absorbing.
-Print Assumptions DivNonDetNE.empty_prefix_blocks.
-Print Assumptions ComputationSt.outSt_bind.
-Print Assumptions ComputationStExc.outStExc_bind.
+Print Assumptions Computation.outcomes_bind.
+Print Assumptions Computation.diverge_absorbing.
+Print Assumptions Computation.empty_prefix_blocks.
+Print Assumptions Computation.outSt_bind.
+Print Assumptions Computation.outStExc_bind.
 
 (** Shared structural equations: each uses only its explicit relational
     hypotheses, including faithfulness, with no global axioms. *)
@@ -197,40 +197,40 @@ Print Assumptions RelArrowCoherence.relS_bind.
 From Incorrectness.Lib.Monad Require OrderedMonad.
 From Incorrectness.Lib.Arrow Require ArrowMorphism.
 From Incorrectness.Lib.Monad Require TransformerLaws.
-From Incorrectness.Verification.Base Require
-  MorphismsPure.
-From Incorrectness.Verification.State Require
-  MorphismsSt.
-From Incorrectness.Verification.StateExc Require
-  MorphismsStExc.
+From Incorrectness.Verification.DivNonDet Require
+  Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require
+  Morphisms.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Morphisms.
 From Incorrectness.Verification.Generic Require
   Triple.
-From Incorrectness.Verification.Base Require
-  TriplesPure.
-From Incorrectness.Verification.State Require
-  TriplesSt.
-From Incorrectness.Verification.StateExc Require
-  TriplesStExc.
+From Incorrectness.Verification.DivNonDet Require
+  Triples.
+From Incorrectness.Verification.DivNonDetSt Require
+  Triples.
+From Incorrectness.Verification.DivNonDetStExc Require
+  Triples.
 From Incorrectness.Verification.Generic Require
   TripleTaxonomy.
-From Incorrectness.Verification.Base Require
-  TripleTaxonomyPure.
-From Incorrectness.Verification.State Require
-  TripleTaxonomySt.
-From Incorrectness.Verification.StateExc Require
-  TripleTaxonomyStExc Examples.
-From Incorrectness.Verification.State Require
+From Incorrectness.Verification.DivNonDet Require
+  TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetSt Require
+  TriplesTaxonomy.
+From Incorrectness.Verification.DivNonDetStExc Require
+  TriplesTaxonomy Examples.
+From Incorrectness.Verification.DivNonDetSt Require
   InCorrectnessPrinciples.
 From Incorrectness.Verification.Generic Require DijkstraMonad.
-From Incorrectness.Verification.Base Require DijkstraPure.
-From Incorrectness.Verification.State Require DijkstraSt.
-From Incorrectness.Verification.StateExc Require DijkstraStExc.
+From Incorrectness.Verification.DivNonDet Require DijkstraMonads.
+From Incorrectness.Verification.DivNonDetSt Require DijkstraMonads.
+From Incorrectness.Verification.DivNonDetStExc Require DijkstraMonads.
 From Incorrectness.Verification.Generic Require Typings.
-From Incorrectness.Verification.Base Require TypingsPure.
-From Incorrectness.Verification.State Require TypingsSt.
-From Incorrectness.Verification.StateExc Require TypingsStExc.
-From Incorrectness.Verification.Base Require TypingsPure.
-From Incorrectness.Verification.StateExc Require DijkstraExamples.
+From Incorrectness.Verification.DivNonDet Require Typings.
+From Incorrectness.Verification.DivNonDetSt Require Typings.
+From Incorrectness.Verification.DivNonDetStExc Require Typings.
+From Incorrectness.Verification.DivNonDet Require Typings.
+From Incorrectness.Verification.DivNonDetStExc Require DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.
 Print Assumptions OrderedMonad.MonadMorphism_ext.
 Print Assumptions OrderedMonad.MonadMorphism_of_laws.
@@ -249,93 +249,93 @@ Print Assumptions SPostArrEquiv.aslp_from_rel_morphism.
 
 (** The WP morphisms out of [divndNE] at the three levels, and the lifting
     of their triples: closed. *)
-Print Assumptions MorphismsPure.dwpPure_morphism.
-Print Assumptions MorphismsPure.dwlpPure_morphism.
-Print Assumptions MorphismsPure.awpPure_morphism.
-Print Assumptions MorphismsPure.awlpPure_morphism.
-Print Assumptions MorphismsSt.dwpSt_morphism.
-Print Assumptions MorphismsSt.dwlpSt_morphism.
-Print Assumptions MorphismsSt.awpSt_morphism.
-Print Assumptions MorphismsSt.awlpSt_morphism.
-Print Assumptions MorphismsStExc.dwpStExc_morphism.
-Print Assumptions MorphismsStExc.dwlpStExc_morphism.
-Print Assumptions MorphismsStExc.awpStExc_morphism.
-Print Assumptions MorphismsStExc.awlpStExc_morphism.
-Print Assumptions TriplesSt.spec_holds_wpSt.
-Print Assumptions TriplesStExc.spec_holds_wpStExc.
-Print Assumptions TriplesSt.triple_dwpSt.
-Print Assumptions TriplesStExc.triple_dwpStExc.
+Print Assumptions Morphisms.dwpPure_morphism.
+Print Assumptions Morphisms.dwlpPure_morphism.
+Print Assumptions Morphisms.awpPure_morphism.
+Print Assumptions Morphisms.awlpPure_morphism.
+Print Assumptions Morphisms.dwpSt_morphism.
+Print Assumptions Morphisms.dwlpSt_morphism.
+Print Assumptions Morphisms.awpSt_morphism.
+Print Assumptions Morphisms.awlpSt_morphism.
+Print Assumptions Morphisms.dwpStExc_morphism.
+Print Assumptions Morphisms.dwlpStExc_morphism.
+Print Assumptions Morphisms.awpStExc_morphism.
+Print Assumptions Morphisms.awlpStExc_morphism.
+Print Assumptions Triples.spec_holds_wpSt.
+Print Assumptions Triples.spec_holds_wpStExc.
+Print Assumptions Triples.triple_dwpSt.
+Print Assumptions Triples.triple_dwpStExc.
 
 (** The SP morphisms.  Obtained by lifting the base arrow morphism through
     the arrow transformers, the morphism theorems above the base inherit
     the functional extensionality of the transformer law packages. *)
-Print Assumptions MorphismsPure.spPure_morphism.
-Print Assumptions MorphismsSt.spSt_morphism.
-Print Assumptions MorphismsStExc.spStExc_morphism.
-Print Assumptions MorphismsSt.aspSt_morphism.
-Print Assumptions MorphismsStExc.dslpStExc_morphism.
-Print Assumptions MorphismsSt.dspSt_morphism.
-Print Assumptions MorphismsStExc.aslpStExc_morphism.
+Print Assumptions Morphisms.spPure_morphism.
+Print Assumptions Morphisms.spSt_morphism.
+Print Assumptions Morphisms.spStExc_morphism.
+Print Assumptions Morphisms.aspSt_morphism.
+Print Assumptions Morphisms.dslpStExc_morphism.
+Print Assumptions Morphisms.dspSt_morphism.
+Print Assumptions Morphisms.aslpStExc_morphism.
 
 (** The same statements proved through the relations denoted: closed for ASP
     and DSLP, excluded middle for DSP and ASLP.  The [IsMonadMorphism]
     instances are built from these, so a triple carries no more than this. *)
-Print Assumptions MorphismsPure.spPure_morphism_rel.
-Print Assumptions MorphismsSt.spSt_morphism_rel.
-Print Assumptions MorphismsStExc.spStExc_morphism_rel.
-Print Assumptions MorphismsSt.aspSt_morphism_rel.
-Print Assumptions MorphismsStExc.aspStExc_morphism_rel.
-Print Assumptions MorphismsSt.dslpSt_morphism_rel.
-Print Assumptions MorphismsStExc.dslpStExc_morphism_rel.
-Print Assumptions MorphismsSt.dspSt_morphism_rel.
-Print Assumptions MorphismsStExc.dspStExc_morphism_rel.
-Print Assumptions MorphismsSt.aslpSt_morphism_rel.
-Print Assumptions MorphismsStExc.aslpStExc_morphism_rel.
-Print Assumptions TriplesSt.triple_aspSt.
-Print Assumptions TriplesStExc.triple_aspStExc.
-Print Assumptions TriplesSt.triple_dslpSt.
-Print Assumptions TriplesStExc.triple_dslpStExc.
-Print Assumptions TriplesSt.triple_dspSt.
-Print Assumptions TriplesStExc.triple_dspStExc.
-Print Assumptions TriplesSt.triple_aslpSt.
-Print Assumptions TriplesStExc.triple_aslpStExc.
+Print Assumptions Morphisms.spPure_morphism_rel.
+Print Assumptions Morphisms.spSt_morphism_rel.
+Print Assumptions Morphisms.spStExc_morphism_rel.
+Print Assumptions Morphisms.aspSt_morphism_rel.
+Print Assumptions Morphisms.aspStExc_morphism_rel.
+Print Assumptions Morphisms.dslpSt_morphism_rel.
+Print Assumptions Morphisms.dslpStExc_morphism_rel.
+Print Assumptions Morphisms.dspSt_morphism_rel.
+Print Assumptions Morphisms.dspStExc_morphism_rel.
+Print Assumptions Morphisms.aslpSt_morphism_rel.
+Print Assumptions Morphisms.aslpStExc_morphism_rel.
+Print Assumptions Triples.triple_aspSt.
+Print Assumptions Triples.triple_aspStExc.
+Print Assumptions Triples.triple_dslpSt.
+Print Assumptions Triples.triple_dslpStExc.
+Print Assumptions Triples.triple_dspSt.
+Print Assumptions Triples.triple_dspStExc.
+Print Assumptions Triples.triple_aslpSt.
+Print Assumptions Triples.triple_aslpStExc.
 
 (** The taxonomy diagram at the state level.
 
     Implications between WP triples: closed. *)
-Print Assumptions TripleTaxonomySt.dwp_under_dwlp_under.
-Print Assumptions TripleTaxonomySt.awp_under_awlp_under.
-Print Assumptions TripleTaxonomySt.dwp_under_awp_under.
-Print Assumptions TripleTaxonomySt.dwlp_under_awlp_under.
-Print Assumptions TripleTaxonomySt.dwlp_over_dwp_over.
-Print Assumptions TripleTaxonomySt.awlp_over_awp_over.
-Print Assumptions TripleTaxonomySt.awp_over_dwp_over.
-Print Assumptions TripleTaxonomySt.awlp_over_dwlp_over.
+Print Assumptions TriplesTaxonomy.dwp_under_dwlp_under.
+Print Assumptions TriplesTaxonomy.awp_under_awlp_under.
+Print Assumptions TriplesTaxonomy.dwp_under_awp_under.
+Print Assumptions TriplesTaxonomy.dwlp_under_awlp_under.
+Print Assumptions TriplesTaxonomy.dwlp_over_dwp_over.
+Print Assumptions TriplesTaxonomy.awlp_over_awp_over.
+Print Assumptions TriplesTaxonomy.awp_over_dwp_over.
+Print Assumptions TriplesTaxonomy.awlp_over_dwlp_over.
 
 (** Implications between SP triples: excluded middle, from the DSP and ASLP
     carriers. *)
-Print Assumptions TripleTaxonomySt.aslp_over_asp_over.
-Print Assumptions TripleTaxonomySt.aslp_over_dslp_over.
-Print Assumptions TripleTaxonomySt.asp_over_dsp_over.
-Print Assumptions TripleTaxonomySt.dslp_over_dsp_over.
-Print Assumptions TripleTaxonomySt.dsp_under_dslp_under.
-Print Assumptions TripleTaxonomySt.dsp_under_asp_under.
-Print Assumptions TripleTaxonomySt.dslp_under_aslp_under.
-Print Assumptions TripleTaxonomySt.asp_under_aslp_under.
+Print Assumptions TriplesTaxonomy.aslp_over_asp_over.
+Print Assumptions TriplesTaxonomy.aslp_over_dslp_over.
+Print Assumptions TriplesTaxonomy.asp_over_dsp_over.
+Print Assumptions TriplesTaxonomy.dslp_over_dsp_over.
+Print Assumptions TriplesTaxonomy.dsp_under_dslp_under.
+Print Assumptions TriplesTaxonomy.dsp_under_asp_under.
+Print Assumptions TriplesTaxonomy.dslp_under_aslp_under.
+Print Assumptions TriplesTaxonomy.asp_under_aslp_under.
 
 (** Contrapositives: excluded middle. *)
-Print Assumptions TripleTaxonomySt.awp_under_contra_dwlp_over.
-Print Assumptions TripleTaxonomySt.awlp_under_contra_dwp_over.
-Print Assumptions TripleTaxonomySt.dwp_under_contra_awlp_over.
-Print Assumptions TripleTaxonomySt.dwlp_under_contra_awp_over.
-Print Assumptions TripleTaxonomySt.dsp_under_contra_aslp_over.
-Print Assumptions TripleTaxonomySt.dslp_under_contra_asp_over.
-Print Assumptions TripleTaxonomySt.asp_under_contra_dslp_over.
-Print Assumptions TripleTaxonomySt.aslp_under_contra_dsp_over.
+Print Assumptions TriplesTaxonomy.awp_under_contra_dwlp_over.
+Print Assumptions TriplesTaxonomy.awlp_under_contra_dwp_over.
+Print Assumptions TriplesTaxonomy.dwp_under_contra_awlp_over.
+Print Assumptions TriplesTaxonomy.dwlp_under_contra_awp_over.
+Print Assumptions TriplesTaxonomy.dsp_under_contra_aslp_over.
+Print Assumptions TriplesTaxonomy.dslp_under_contra_asp_over.
+Print Assumptions TriplesTaxonomy.asp_under_contra_dslp_over.
+Print Assumptions TriplesTaxonomy.aslp_under_contra_dsp_over.
 
 (** The two Galois edges: closed. *)
-Print Assumptions TripleTaxonomySt.dwlp_under_galois_asp_over.
-Print Assumptions TripleTaxonomySt.awp_over_galois_dslp_under.
+Print Assumptions TriplesTaxonomy.dwlp_under_galois_asp_over.
+Print Assumptions TriplesTaxonomy.awp_over_galois_dslp_under.
 
 (** One example per triple kind.  The twelve WP, ASP and DSLP examples are
     closed; the four DSP and ASLP examples use excluded middle. *)
@@ -366,13 +366,13 @@ Print Assumptions DSPASLPArr.no_ASPArr_for_dslp.
 
 (** The diagram with exceptions: the same pattern as at the state level.
     WP implications and Galois edges closed, the rest excluded middle. *)
-Print Assumptions TripleTaxonomyStExc.dwp_under_dwlp_under_exc.
-Print Assumptions TripleTaxonomyStExc.awlp_over_dwlp_over_exc.
-Print Assumptions TripleTaxonomyStExc.dwlp_under_galois_asp_over_exc.
-Print Assumptions TripleTaxonomyStExc.awp_over_galois_dslp_under_exc.
-Print Assumptions TripleTaxonomyStExc.dsp_under_asp_under_exc.
-Print Assumptions TripleTaxonomyStExc.asp_under_contra_dslp_over_exc.
-Print Assumptions TripleTaxonomyStExc.awp_under_contra_dwlp_over_exc.
+Print Assumptions TriplesTaxonomy.dwp_under_dwlp_under_exc.
+Print Assumptions TriplesTaxonomy.awlp_over_dwlp_over_exc.
+Print Assumptions TriplesTaxonomy.dwlp_under_galois_asp_over_exc.
+Print Assumptions TriplesTaxonomy.awp_over_galois_dslp_under_exc.
+Print Assumptions TriplesTaxonomy.dsp_under_asp_under_exc.
+Print Assumptions TriplesTaxonomy.asp_under_contra_dslp_over_exc.
+Print Assumptions TriplesTaxonomy.awp_under_contra_dwlp_over_exc.
 
 (** The rewriting rules, for ASP and for the demonic liberal WP: closed. *)
 Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_asp.
@@ -398,16 +398,16 @@ Print Assumptions DijkstraMonad.DMop_bind.
     propositional extensionality from the laws of [SetM]. *)
 Print Assumptions DijkstraMonad.DM_laws.
 Print Assumptions DijkstraMonad.DMop_laws.
-Print Assumptions DijkstraStExc.Ddwp_laws.
-Print Assumptions DijkstraStExc.Dasp_op_laws.
-Print Assumptions DijkstraStExc.OrderedTarget_dwpStExc.
-Print Assumptions DijkstraSt.OrderedTarget_awlpSt.
-Print Assumptions DijkstraStExc.OrderedTarget_aspStExc.
-Print Assumptions DijkstraSt.OrderedTarget_dslpSt.
-Print Assumptions TypingsStExc.triple_under_wpStExc.
-Print Assumptions TypingsStExc.triple_over_wpStExc.
-Print Assumptions TypingsStExc.triple_over_aspStExc.
-Print Assumptions TypingsStExc.triple_under_dslpStExc.
+Print Assumptions DijkstraMonads.Ddwp_laws.
+Print Assumptions DijkstraMonads.Dasp_op_laws.
+Print Assumptions DijkstraMonads.OrderedTarget_dwpStExc.
+Print Assumptions DijkstraMonads.OrderedTarget_awlpSt.
+Print Assumptions DijkstraMonads.OrderedTarget_aspStExc.
+Print Assumptions DijkstraMonads.OrderedTarget_dslpSt.
+Print Assumptions Typings.triple_under_wpStExc.
+Print Assumptions Typings.triple_over_wpStExc.
+Print Assumptions Typings.triple_over_aspStExc.
+Print Assumptions Typings.triple_under_dslpStExc.
 
 (** Specification monads: the pulled-back order, submonads, and the four WP
     flavours as submonads of [WPure]: closed. *)
@@ -425,9 +425,9 @@ Print Assumptions WPVariants.OrderedMonad_WPSub.
 Print Assumptions Typings.le_aspUnder.
 Print Assumptions Typings.dslpOver_le.
 Print Assumptions Typings.dslpOver_typing_triple.
-Print Assumptions TypingsSt.no_asp_under_index.
-Print Assumptions TypingsSt.no_dslp_over_index.
-Print Assumptions TypingsPure.triple_under_aspPure.
+Print Assumptions Typings.no_asp_under_index.
+Print Assumptions Typings.no_dslp_over_index.
+Print Assumptions Typings.triple_under_aspPure.
 
 (** Typed programs.  The WP, ASP and pure ones are closed; the DSLP ones use
     excluded middle. *)
@@ -446,4 +446,4 @@ Print Assumptions DijkstraExamples.progloom_harder_not_Dasp_op.
 Print Assumptions DijkstraExamples.progA_Ddslp.
 Print Assumptions DijkstraExamples.progloom_harder_dslp_over.
 Print Assumptions DijkstraExamples.progloom_harder_not_Ddslp.
-Print Assumptions TypingsPure.oneOrTwo_Dasp_op.
+Print Assumptions Typings.oneOrTwo_Dasp_op.
