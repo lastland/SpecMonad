@@ -184,7 +184,7 @@ End PTHolds.
 
 From ExtLib Require Import StateMonad OptionMonad.
 From Incorrectness.WP Require Import
-  WPureMonad.
+  WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 

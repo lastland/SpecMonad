@@ -28,7 +28,7 @@ From Incorrectness.GaloisConnections Require Import
 From Incorrectness.SP Require Import
   SPostMonad.
 From Incorrectness.WP Require Import
-  WPureMonad.
+  WPure.
 From Incorrectness.GaloisConnections Require Import
   RelPrePostMonad.
 

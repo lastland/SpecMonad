@@ -57,7 +57,7 @@ From Incorrectness.Relational Require Import
 From Incorrectness.SP Require Import
   SPostArr SPostArrEquiv.
 From Incorrectness.WP Require Import
-  WPureMonad.
+  WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Relational Require PredMonad RelMonads.

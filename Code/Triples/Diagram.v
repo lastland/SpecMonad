@@ -67,7 +67,7 @@ From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.GaloisConnections Require Import GaloisArr.
 From Incorrectness.WP Require Import
-  WPureMonad.
+  WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy Require Import

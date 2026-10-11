@@ -379,10 +379,10 @@ Print Assumptions DijkstraMonad.triple_under_dslpStExc.
 Print Assumptions OrderedMonad.OrderedMonad_flip.
 Print Assumptions OrderedMonad.OrderedMonad_pullback.
 Print Assumptions OrderedMonad.OrderedMonad_SubMonad.
-Print Assumptions WPureMonad.OrderedMonad_WPure.
-Print Assumptions WPureMonad.OrderedMonad_WSt.
-Print Assumptions WPureMonad.OrderedMonad_WStExc.
-Print Assumptions WPureMonad.OrderedMonad_WPSub.
+Print Assumptions WPure.OrderedMonad_WPure.
+Print Assumptions WPure.OrderedMonad_WSt.
+Print Assumptions WPure.OrderedMonad_WStExc.
+Print Assumptions WPVariants.OrderedMonad_WPSub.
 
 (** ASP [Under] and DSLP [Over] are not typings: closed, except that a DSLP
     [Over] typing gives its triple by excluded middle.  Without state the

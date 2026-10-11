@@ -35,7 +35,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Computation Require Import DivNonDetNE.
 From Incorrectness.WP Require Import
-  WPureMonad.
+  WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Triples Require Import Triple MonadMorphisms.

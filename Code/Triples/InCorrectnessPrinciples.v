@@ -14,7 +14,7 @@
 From ExtLib Require Import Monad StateMonad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Computation Require Import DivNonDetNE.
-From Incorrectness.WP Require Import WPureMonad.
+From Incorrectness.WP Require Import WPure.
 From Incorrectness.SP Require Import ASPMonad.
 From Incorrectness.Triples Require Import Triple MonadMorphisms Diagram.
 

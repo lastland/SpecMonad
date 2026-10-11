@@ -189,7 +189,7 @@ Arguments ordSPStExc {_} {_}.
 
 From ExtLib Require Import MonadState StateMonad.
 From Incorrectness.Relational Require Import PredMonad.
-From Incorrectness.WP Require Import WPureMonad.
+From Incorrectness.WP Require Import WPure.
 
 Module SPStMonotone.
 (* A stateful forward predicate transformer is monotone when it

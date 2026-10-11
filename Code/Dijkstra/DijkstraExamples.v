@@ -29,7 +29,7 @@ From Incorrectness.Computation Require Import
 From Incorrectness.Relational Require Import Rel.
 From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.WP Require Import
-  WPureMonad.
+  WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad.
 From Incorrectness.Triples Require Import Triple MonadMorphisms Examples.
