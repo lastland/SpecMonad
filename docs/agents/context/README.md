@@ -14,7 +14,7 @@ The directories under `Code/` follow the paper and form layers
 - Lib supplies generic arrows, transformers, morphisms, arrow monads, ordered
   monads and monadic relations; it names no specification carrier.
 - `Verification/` groups everything that involves the computation monad:
-  Computation, Triples and DijkstraMonads.
+  Computation, MonadMorphisms, Triples and DijkstraMonads.
 - Computation owns effect outcomes (`divndNE` and its stacks). Relational owns
   relations, their four SP readings and `Pred`: proof infrastructure that SP
   builds on.
@@ -22,8 +22,8 @@ The directories under `Code/` follow the paper and form layers
   SP arrows (`SPostArr.v`, `DSPASLPArr.v`) never import the SP monad files.
 - PTMonadTaxonomy states implication, contrapositive and Galois connection on bare
   transformers and then as monadic relations between the monads.
-- Triples defines monad morphisms out of `divndNE` and its stacks, lifts their
-  triples, and proves the triple diagram at the state level and with
+- MonadMorphisms defines the 24 monad morphisms out of `divndNE` and its
+  stacks. Triples lifts their triples, and proves the triple diagram at the state level and with
   exceptions. DijkstraMonads gives each morphism its Dijkstra monad and identifies
   triples with typings.
 - GaloisConnections relates the DM4All specification monads.
@@ -48,7 +48,8 @@ and the opt-in audits.
 | [SP](SP.md) | §3.1-3.5 | SP arrows and monads |
 | [PTMonadTaxonomy](PTMonadTaxonomy.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
 | [Verification/Computation](Verification/Computation.md) | §1, §5 | Outcomes and effect stacks |
-| [Verification/Triples](Verification/Triples.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
+| [Verification/MonadMorphisms](Verification/MonadMorphisms.md) | §5, §6 | The 24 monad morphisms out of `divndNE`, used by triples and Dijkstra monads |
+| [Verification/Triples](Verification/Triples.md) | §5 | Triples of the morphisms, diagram, examples, rewriting rules |
 | [Verification/DijkstraMonads](Verification/DijkstraMonads.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
 | [GaloisConnections](GaloisConnections.md) | §7 | DM4All monads and adjunctions |
 | [Tests](Tests.md) | — | Generic regression, concrete instances, semantic clients |

@@ -52,7 +52,7 @@ The selected reports cover:
 
 - The triples development: monad morphisms and their transformer lifts,
   `arrow_morphism_monad`, the base arrow morphisms, the morphisms of
-  [Verification/Triples/MonadMorphisms.v](../../../Code/Verification/Triples/MonadMorphisms.v) at three levels
+  [Verification/MonadMorphisms/MonadMorphisms.v](../../../Code/Verification/MonadMorphisms/MonadMorphisms.v) at three levels
   with both proofs of each SP morphism, the edges of
   [Verification/Triples/TripleTaxonomy.v](../../../Code/Verification/Triples/TripleTaxonomy.v) with state and with
   exceptions, the examples of [Verification/Triples/Examples.v](../../../Code/Verification/Triples/Examples.v),

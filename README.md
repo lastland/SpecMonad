@@ -78,7 +78,7 @@ What is formalised:
   `triple θ m k P Q` is defined for any monad morphism `θ`; its sixteen
   instances are the correctness and incorrectness triples, and the triple of
   a lifted morphism is the base triple re-indexed. See
-  [`Verification/Triples/MonadMorphisms.v`](Code/Verification/Triples/MonadMorphisms.v).
+  [`Verification/MonadMorphisms/MonadMorphisms.v`](Code/Verification/MonadMorphisms/MonadMorphisms.v).
 
 - **The taxonomy of triples**: the 26 edges of Verscht and Kaminski's diagram
   (implications, contrapositives, and the two Galois connections between WP

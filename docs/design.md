@@ -34,7 +34,7 @@ abbreviated **DM4all** below.
 ## 1. Directory layout
 
 See [Code/README.md](../Code/README.md). Logical paths follow the
-directories: `Incorrectness.WP.WPure`, `Incorrectness.Triples.MonadMorphisms`,
+directories: `Incorrectness.WP.WPure`, `Incorrectness.Verification.MonadMorphisms.MonadMorphisms`,
 and so on.
 
 ## 2. Computation monads
@@ -60,7 +60,7 @@ construction:
 
 Besides the three monads the file has the choice, divergence, raise and pick
 operations of the stacks, and the outcome lemmas `outSt_*` / `outStExc_*`.
-`Verification/Triples/MonadMorphisms.v` imports it.
+`Verification/MonadMorphisms/MonadMorphisms.v` imports it.
 `TransformerLaws.v` proves the `optionT` / `stateT` laws for any
 base monad, and lifts orders (`OrderedMonad_stateT`, ...) and monad morphisms
 (`MonadMorphism_stateT`, ...) through them.
@@ -207,7 +207,7 @@ through the subset type.
 
 The adjunction and `Proper_bind` proofs use the bundled monotonicity. Each WP
 morphism therefore supplies a monotonicity proof when constructing a `WPure`
-value (`demonic_mono`, `angelic_mono` in `Verification/Triples/MonadMorphisms.v`).
+value (`demonic_mono`, `angelic_mono` in `Verification/MonadMorphisms/MonadMorphisms.v`).
 
 All three WP orders live in `WP/WPure.v`. Each stack order is a generic
 lift of **reverse implication** from `WP_le`; the formulas below omit runners:
@@ -267,7 +267,7 @@ one and an SP `Under` triple the incorrectness-like one.
 A statement that mentions `triple θ` depends on the assumptions of `θ`'s
 instance, that is, of its target monad and of its return/bind laws.
 
-### The eight readings, lifted — `Verification/Triples/MonadMorphisms.v`
+### The eight readings, lifted — `Verification/MonadMorphisms/MonadMorphisms.v`
 
 Each reading is defined once, over the non-empty base `divndNE`, and lifted.
 They are monad morphisms and are not called observations: an effect
@@ -286,13 +286,14 @@ are not. A map is named by its reading and its level: `dwpPure`, `dwpSt`,
   `MonadMorphism_stateT` and `MonadMorphism_optionT`
   (`Lib/Monad/TransformerLaws.v`) lift them, and the triple of a
   lifted morphism is the base triple at every start state
-  (`triple_dwpSt`, `triple_dwpStExc`, and so on).
+  (`triple_dwpSt`, `triple_dwpStExc`, and so on, in
+  `Verification/Triples/MorphismTriples.v`).
 - **SP.** A base arrow morphism out of `Rel` (`SP/SPostArrEquiv.v`) is
   lifted by the arrow transformers and applied to the relation between start
   states and terminating outcomes; `arrow_morphism_monad`
   (`Lib/Arrow/ArrowMorphism.v`) makes it a monad morphism. The triple at every
   level is one judgement on the base arrow, re-indexed (`triple_aspSt`, and so
-  on). An SP triple at the state level is not a family of base triples, and
+  on, in `Verification/Triples/MorphismTriples.v`). An SP triple at the state level is not a family of base triples, and
   at unit input the four SP readings are two.
 
 The lifted SP morphism theorems inherit the functional extensionality of the

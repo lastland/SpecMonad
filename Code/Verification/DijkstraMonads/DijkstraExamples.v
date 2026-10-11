@@ -32,7 +32,9 @@ From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad.
-From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms Examples.
+From Incorrectness.Verification.Triples Require Import Triple.
+From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import Examples.
 From Incorrectness.Verification.DijkstraMonads Require Import DijkstraMonad.
 
 (* ================================================================= *)

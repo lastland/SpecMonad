@@ -23,7 +23,8 @@ the layers listed in [scripts/layers.txt](../../../Code/scripts/layers.txt), che
 - [PTMonadTaxonomy](PTMonadTaxonomy.md): the relations of the taxonomy (§4).
 - `Verification/`: everything that involves the computation monad.
   [Computation](Verification/Computation.md) holds `divndNE` and its two
-  stacks; [Triples](Verification/Triples.md) and
+  stacks; [MonadMorphisms](Verification/MonadMorphisms.md) the 24 monad
+  morphisms out of them; [Triples](Verification/Triples.md) and
   [DijkstraMonads](Verification/DijkstraMonads.md):
   monad morphisms, triples, Dijkstra monads (§5-6).
 - [GaloisConnections](GaloisConnections.md): DM4All monads and

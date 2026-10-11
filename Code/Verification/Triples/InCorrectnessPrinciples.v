@@ -16,7 +16,9 @@ From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Verification.Computation Require Import DivNonDetNE.
 From Incorrectness.WP Require Import WPure.
 From Incorrectness.SP Require Import ASPMonad.
-From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms TripleTaxonomy.
+From Incorrectness.Verification.Triples Require Import Triple.
+From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import TripleTaxonomy.
 
 Section OHearnRewritingRules.
   Variable S : Type.

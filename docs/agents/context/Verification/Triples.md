@@ -14,44 +14,21 @@ resolved from `W` and `A`. The second part of the file declares the
 `SpecReading` instance of every specification monad the morphisms land in;
 the monad files themselves do not mention triples.
 
-Everything here is a monad morphism out of the non-empty base `divndNE` or
-one of its two transformer stacks, all three defined in
-[DivNonDetNE.v](../../../../Code/Verification/Computation/DivNonDetNE.v). The maps are monad morphisms and nothing
-more: the DSP and ASLP targets are not specification monads.
+The maps the triples are read through are the 24 monad morphisms of
+[MonadMorphisms](MonadMorphisms.md): eight readings (`dwp`, `dwlp`, `awp`,
+`awlp`, `asp`, `dslp`, `dsp`, `aslp`) at three levels (`xPure`, `xSt`,
+`xStExc`). Below, `x` stands for any of the eight.
 
-| Level | Computation | WP target | SP targets |
-|---|---|---|---|
-| base | `divndNE` | `WPure` | `ASP`, `DSLP`, `DSP`, `ASLP` |
-| state | `stdivndNE S` | `WSt S` | `ASPSt S` and the other three |
-| state + exceptions | `stdivexcndNE S` | `WStExc S` | `ASPStExc S` and the other three |
+## MorphismTriples.v
 
-Names: a lowercase reading followed by the level, `dwpPure` / `dwpSt` /
-`dwpStExc`, and likewise for `dwlp`, `awp`, `awlp`, `asp`, `dslp`, `dsp`,
-`aslp`. Below, `x` stands for any of the eight.
-
-## MonadMorphisms.v
-
-- WP: `dwpPure`, `dwlpPure`, `awpPure`, `awlpPure : divndNE A -> WPure A`,
-  each a `MonadMorphism`. The state maps are `stateT_map S σ` and the
-  state+exception ones `stateT_map S (optionT_map σ)`, morphisms by
-  `MonadMorphism_stateT` / `MonadMorphism_optionT`. `triple_xSt` and
-  `triple_xStExc` say a lifted triple is the base triple at every start
-  state; `spec_holds_wpSt` / `spec_holds_wpStExc` say it for any base map.
-- SP: `sliceNE` keeps the terminating outcomes; `outcomes0`, `outcomesSt`,
-  `outcomesStExc` read a `Pred` stack as an element of the relation stack.
-  `spPure F`, `spSt F`, `spStExc F` apply a base arrow morphism `F` out of
-  `Rel`, lifted by `state_arrow_map` / `option_arrow_map`; the four readings
-  are the four choices of `F`. `triple_xPure`, `triple_xSt`, `triple_xStExc`
-  state the triple at each level as one judgement (`aspHolds`, `dslpHolds`,
-  `dspHolds`, `aslpHolds`) on the base arrow, at indices `(unit, A)`,
-  `(unit * S, A * S)`, `(unit * S, option (A * S))`.
-- Each SP morphism statement has two proofs. `x*_morphism` composes the
-  lifts (`arrow_morphism_monad`, `state_arrow_morphism`,
-  `state_option_arrow_morphism`) and, above the base, inherits the functional
-  extensionality of the transformer law packages. `x*_morphism_rel` goes
-  through the relations denoted: closed for ASP and DSLP, excluded middle for
-  DSP and ASLP. The `IsMonadMorphism` instances use the `_rel` proofs, so a
-  triple depends on no more than those.
+- WP: `triple_xSt` and `triple_xStExc` say a lifted triple is the base
+  triple at every start state; `spec_holds_wpSt` / `spec_holds_wpStExc` say
+  it for any base map.
+- SP: `triple_xPure`, `triple_xSt`, `triple_xStExc` state the triple at each
+  level as one judgement (`aspHolds`, `dslpHolds`, `dspHolds`, `aslpHolds`)
+  on the base arrow, at indices `(unit, A)`, `(unit * S, A * S)`,
+  `(unit * S, option (A * S))`. An SP triple does not split start state by
+  start state.
 - `xSt_read` / `xStExc_read` unfold a triple to a statement about the
   outcomes `outSt` / `outStExc` of the program.
 

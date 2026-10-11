@@ -38,7 +38,9 @@ From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Verification.Triples Require Import Triple MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import Triple.
+From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
+From Incorrectness.Verification.Triples Require Import MorphismTriples.
 
 Import MonadNotation.
 Open Scope monad_scope.

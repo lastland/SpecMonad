@@ -30,7 +30,11 @@ From Incorrectness.SP Require
 From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Verification.Triples Require
-  Triple MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
+  Triple.
+From Incorrectness.Verification.MonadMorphisms Require
+  MonadMorphisms.
+From Incorrectness.Verification.Triples Require
+  MorphismTriples TripleTaxonomy Examples InCorrectnessPrinciples.
 From Incorrectness.Verification.DijkstraMonads Require
   DijkstraMonad DijkstraExamples.
 From Incorrectness.GaloisConnections Require
@@ -279,7 +283,7 @@ Check MonadMorphisms.dwpStExc_morphism.
 Check MonadMorphisms.aspStExc_morphism_rel.
 Check MonadMorphisms.dspStExc_morphism_rel.
 Check MonadMorphisms.aspSt.
-Check MonadMorphisms.triple_aspSt.
+Check MorphismTriples.triple_aspSt.
 
 (** The taxonomy diagram on the triples of one stateful program (26 edges;
     again with exceptions, suffix [_exc]). *)

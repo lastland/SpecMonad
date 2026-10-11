@@ -38,7 +38,7 @@ are resolved to the wrong morphism.
 ## The liftable morphisms
 
 There are 18 `OrderedTarget` instances, one per WP, ASP and DSLP morphism of
-[Verification/Triples/MonadMorphisms.v](../../../../Code/Verification/Triples/MonadMorphisms.v): six readings at the
+[Verification/MonadMorphisms/MonadMorphisms.v](../../../../Code/Verification/MonadMorphisms/MonadMorphisms.v): six readings at the
 base, with state, and with state and exceptions. Each names the natural order
 of the target:
 

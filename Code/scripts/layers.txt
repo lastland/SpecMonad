@@ -8,7 +8,8 @@ WP:                          Lib
 SP:                          Lib Relational
 PTMonadTaxonomy:             Lib Relational WP SP
 Verification/Computation:    Lib
-Verification/Triples:        Lib Verification/Computation Relational WP SP PTMonadTaxonomy
-Verification/DijkstraMonads: Lib Verification/Computation Relational WP SP PTMonadTaxonomy Verification/Triples
+Verification/MonadMorphisms: Lib Verification/Computation Relational WP SP
+Verification/Triples:        Lib Verification/Computation Verification/MonadMorphisms Relational WP SP PTMonadTaxonomy
+Verification/DijkstraMonads: Lib Verification/Computation Verification/MonadMorphisms Relational WP SP PTMonadTaxonomy Verification/Triples
 GaloisConnections:           Lib Relational WP SP PTMonadTaxonomy
-Tests:                       Lib Verification/Computation Relational WP SP PTMonadTaxonomy Verification/Triples Verification/DijkstraMonads GaloisConnections
+Tests:                       Lib Verification/Computation Verification/MonadMorphisms Relational WP SP PTMonadTaxonomy Verification/Triples Verification/DijkstraMonads GaloisConnections

@@ -195,8 +195,10 @@ Print Assumptions RelArrowCoherence.relS_bind.
 From Incorrectness.Lib.Monad Require OrderedMonad.
 From Incorrectness.Lib.Arrow Require ArrowMorphism.
 From Incorrectness.Lib.Monad Require TransformerLaws.
+From Incorrectness.Verification.MonadMorphisms Require
+  MonadMorphisms.
 From Incorrectness.Verification.Triples Require
-  MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
+  MorphismTriples TripleTaxonomy Examples InCorrectnessPrinciples.
 From Incorrectness.Verification.DijkstraMonads Require DijkstraMonad DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.
 Print Assumptions OrderedMonad.MonadMorphism_ext.
@@ -228,10 +230,10 @@ Print Assumptions MonadMorphisms.dwpStExc_morphism.
 Print Assumptions MonadMorphisms.dwlpStExc_morphism.
 Print Assumptions MonadMorphisms.awpStExc_morphism.
 Print Assumptions MonadMorphisms.awlpStExc_morphism.
-Print Assumptions MonadMorphisms.spec_holds_wpSt.
-Print Assumptions MonadMorphisms.spec_holds_wpStExc.
-Print Assumptions MonadMorphisms.triple_dwpSt.
-Print Assumptions MonadMorphisms.triple_dwpStExc.
+Print Assumptions MorphismTriples.spec_holds_wpSt.
+Print Assumptions MorphismTriples.spec_holds_wpStExc.
+Print Assumptions MorphismTriples.triple_dwpSt.
+Print Assumptions MorphismTriples.triple_dwpStExc.
 
 (** The SP morphisms.  Obtained by lifting the base arrow morphism through
     the arrow transformers, the morphism theorems above the base inherit
@@ -258,14 +260,14 @@ Print Assumptions MonadMorphisms.dspSt_morphism_rel.
 Print Assumptions MonadMorphisms.dspStExc_morphism_rel.
 Print Assumptions MonadMorphisms.aslpSt_morphism_rel.
 Print Assumptions MonadMorphisms.aslpStExc_morphism_rel.
-Print Assumptions MonadMorphisms.triple_aspSt.
-Print Assumptions MonadMorphisms.triple_aspStExc.
-Print Assumptions MonadMorphisms.triple_dslpSt.
-Print Assumptions MonadMorphisms.triple_dslpStExc.
-Print Assumptions MonadMorphisms.triple_dspSt.
-Print Assumptions MonadMorphisms.triple_dspStExc.
-Print Assumptions MonadMorphisms.triple_aslpSt.
-Print Assumptions MonadMorphisms.triple_aslpStExc.
+Print Assumptions MorphismTriples.triple_aspSt.
+Print Assumptions MorphismTriples.triple_aspStExc.
+Print Assumptions MorphismTriples.triple_dslpSt.
+Print Assumptions MorphismTriples.triple_dslpStExc.
+Print Assumptions MorphismTriples.triple_dspSt.
+Print Assumptions MorphismTriples.triple_dspStExc.
+Print Assumptions MorphismTriples.triple_aslpSt.
+Print Assumptions MorphismTriples.triple_aslpStExc.
 
 (** The taxonomy diagram at the state level.
 

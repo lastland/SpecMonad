@@ -210,7 +210,10 @@ Departures from the plan:
   without clashing with the paper title or with `Lib/Monad/MonadRelation.v`.
   `Dijkstra/` was renamed `DijkstraMonads/` likewise. `Computation/`, `Triples/` and
   `DijkstraMonads/` were then grouped under `Verification/`, and the context
-  guides moved to `docs/agents/context/`. The plan above uses
+  guides moved to `docs/agents/context/`. Last, `Verification/Triples/MonadMorphisms.v`
+  was split: the 24 morphisms, shared by triples and Dijkstra monads, went to
+  `Verification/MonadMorphisms/MonadMorphisms.v`; their 46 triple lemmas
+  stayed as `Verification/Triples/MorphismTriples.v` (`specs/step11_morphisms.py`). The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

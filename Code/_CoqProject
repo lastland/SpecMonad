@@ -55,7 +55,8 @@ PTMonadTaxonomy/SPStBindComparisons.v
 PTMonadTaxonomy/MonadTaxonomy.v
 PTMonadTaxonomy/Carriers.v
 Verification/Triples/Triple.v
-Verification/Triples/MonadMorphisms.v
+Verification/MonadMorphisms/MonadMorphisms.v
+Verification/Triples/MorphismTriples.v
 Verification/Triples/TripleTaxonomy.v
 Verification/Triples/Examples.v
 Verification/Triples/InCorrectnessPrinciples.v
