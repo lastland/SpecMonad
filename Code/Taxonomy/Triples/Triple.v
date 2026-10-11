@@ -185,7 +185,7 @@ End PTHolds.
 From ExtLib Require Import StateMonad OptionMonad.
 From Incorrectness.WP Require Import
   WPureMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 
 (** A WP element is read backward, from a postcondition to the precondition

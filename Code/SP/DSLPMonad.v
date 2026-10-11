@@ -26,7 +26,7 @@ From Hammer Require Import Tactics.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Arrow Require Import ArrowMonad.
-From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
+From Incorrectness.SP Require Export SPostArr.
 
 
 
@@ -520,7 +520,7 @@ Arguments bindDSLPStExc {S} {A} {B}.
     carry the orders to each other. *)
 
 From Coq Require Import PropExtensionality Classical_Prop.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPostMonad SPPredicateTransformers.
+From Incorrectness.SP Require Import SPostMonad SPPredicateTransformers.
 
 Section PureDSLPMonad.
   Definition MeetPreserving {A} (w : SPPure A) : Prop :=

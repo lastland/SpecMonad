@@ -10,7 +10,7 @@ From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
 From Incorrectness.Lib.Arrow Require Import OptionArrowT StateArrowT.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Relational Require Import Rel.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.SP Require Import SPostArr.
 
 (** Pointwise transformer equivalence is the public equality, including
     for arrows selected at runtime and pointwise-related continuations. *)

@@ -24,7 +24,7 @@
     [SPPredicateTransformers.v] defines the unrestricted [SPPure] carrier. *)
 
 From ITree Require Import Basics.Monad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
+From Incorrectness.SP Require Import SPPredicateTransformers.
 
 Module SPM.
 

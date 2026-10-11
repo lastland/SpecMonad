@@ -12,7 +12,7 @@ From Incorrectness.Lib.Arrow Require Export ArrowMonad.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT
   ArrowMorphism RelArrowCoherence.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
-From Incorrectness.Taxonomy.Arrows Require Export PredicateTransformerProperties.
+From Incorrectness.SP Require Export PredicateTransformerProperties.
 
 (** ** Raw transformers and healthiness conditions
     Nonempty families define conjunctivity/disjunctivity; strictness and top

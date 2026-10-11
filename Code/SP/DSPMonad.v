@@ -17,8 +17,8 @@ From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Arrow Require Import ArrowMonad RelArrowCoherence.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
-From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import ASPMonad.
+From Incorrectness.SP Require Export SPostArr.
+From Incorrectness.SP Require Import ASPMonad.
 
 Definition DSP (A : Type) : Type := DSPArr unit A.
 #[global] Instance Monad_DSP : Monad DSP := Monad_Arrow DSPArr unit.
@@ -484,7 +484,7 @@ Qed.
     each other. *)
 
 From Coq Require Import PropExtensionality.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import SPPredicateTransformers.
+From Incorrectness.SP Require Import SPPredicateTransformers.
 
 Section PureDSPMonad.
 

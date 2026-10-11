@@ -24,7 +24,9 @@ From Coq Require Import RelationClasses Classical_Prop.
 From Incorrectness.Relational Require Import
   PredMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  PrePostMonad SPostMonad.
+  PrePostMonad.
+From Incorrectness.SP Require Import
+  SPostMonad.
 From Incorrectness.WP Require Import
   WPureMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import

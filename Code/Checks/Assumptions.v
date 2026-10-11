@@ -1,14 +1,18 @@
 (** Console assumption reports, compiled explicitly by [make check]. *)
 From Incorrectness.Lib.Arrow Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import
+From Incorrectness.SP Require Import
   SPostArr.
 From Incorrectness.Relational Require Import
   RelSPostArr.
+From Incorrectness.SP Require Import
+  SPostArrEquiv.
 From Incorrectness.Taxonomy.Arrows Require Import
-  SPostArrEquiv GaloisArr.
-From Incorrectness.Taxonomy.BaseSpecMonads Require ASPMonad DSLPMonad DSPMonad
-  ASLPMonad BaseGaloisConnections.
+  GaloisArr.
+From Incorrectness.SP Require
+  ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.Taxonomy.BaseSpecMonads Require
+  BaseGaloisConnections.
 From Incorrectness.Computation Require Import DivNonDetNE.
 
 (** Shared algebraic helpers take their congruence/application premises

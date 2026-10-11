@@ -52,10 +52,10 @@ From Incorrectness.Lib.Monad Require Import
 From Incorrectness.Computation Require Import
   DivNonDetNE.
 From Incorrectness.Relational Require Import Rel.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
+From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.WP Require Import
   WPureMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.
 

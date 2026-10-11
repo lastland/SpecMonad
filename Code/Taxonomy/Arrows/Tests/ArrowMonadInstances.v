@@ -13,8 +13,10 @@ From Incorrectness.Lib.Arrow Require Import OptionArrowT StateArrowT.
 From Incorrectness.Relational Require Import
   Rel.
 From Incorrectness.Taxonomy.Arrows Require Import
-  PrePostArr RelPrePostArr SPostArr.
-From Incorrectness.Taxonomy.BaseSpecMonads Require ASPMonad DSLPMonad.
+  PrePostArr RelPrePostArr.
+From Incorrectness.SP Require Import
+  SPostArr.
+From Incorrectness.SP Require ASPMonad DSLPMonad.
 
 Create HintDb sp_arrow_bind.
 #[local] Hint Unfold bind_arrow arr_fanout arr_split arr_second arr_id
@@ -413,9 +415,9 @@ Definition spostarr_dslp_monad_laws (S : Type) :
 (** Cross-API clients: these must typecheck by conversion, without a map
     between bundles or equality reflection. They also pin the dictionaries
     selected after importing the arrow and unary monad APIs. *)
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+From Incorrectness.SP Require Import
   ASPMonad DSLPMonad.
-From Incorrectness.Taxonomy.Arrows Require Import SPostArrEquiv.
+From Incorrectness.SP Require Import SPostArrEquiv.
 
 Module CanonicalSP.
   Definition asp_dictionary : Arrow ASPArr := _.

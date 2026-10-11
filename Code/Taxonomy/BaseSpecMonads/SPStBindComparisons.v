@@ -2,7 +2,7 @@
 
 From ExtLib Require Import Monad.
 From Incorrectness.Lib.Arrow Require Import RelArrowCoherence.
-From Incorrectness.Taxonomy.BaseSpecMonads Require Import
+From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad SPPredicateTransformers.
 
 Local Obligation Tactic := idtac.

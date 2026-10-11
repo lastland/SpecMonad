@@ -4,7 +4,7 @@ From Coq Require Import Lia.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Relational Require Import
   Rel.
-From Incorrectness.Taxonomy.Arrows Require Import
+From Incorrectness.SP Require Import
   SPostArr SPostArrEquiv.
 
 (** A many-to-one pure arrow still has an angelic witness after conversion
