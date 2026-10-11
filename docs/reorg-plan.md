@@ -1,7 +1,8 @@
 # Plan: reorganize the artifact to follow the paper
 
 Status: revised after three reviews (paper fidelity, Coq engineering, artifact
-evaluation). Branch `reorganize-by-paper`, worktree `../artifact-reorg`.
+evaluation), then executed on branch `reorganize-by-paper` (worktree
+`../artifact-reorg`). See "As executed" at the end.
 
 ## Goal
 
@@ -171,3 +172,47 @@ comparison; layer check (reporting only until step 7, enforcing after).
 - Merging the three definitions of strict/terminating/conjunctive/disjunctive.
 - Updating the "Artifact:" paths inside `idm.tex` (separate repository);
   `PAPER.md` gives the new paths.
+
+## As executed
+
+Every code step is one commit (step 4: one per destination directory),
+verified from a clean build with `docs/reorg/verify.sh`: same declarations,
+statements (`Set Printing All`), `About` facts, distinct instances and
+`make check` assumptions as the baseline; layer check; renamed bodies
+unchanged apart from Requires (or comments only, reported as such); for each
+split, `split.py --check` (the parts' code is the old code plus the listed
+duplicated preamble lines).
+
+| Step | Commits |
+|---|---|
+| 0 tooling | `76ab804` |
+| 1 clear names | `fbe53d4` |
+| 2 Lib | `993d5d0` |
+| 3 Computation, Relational | `a0b37cc` |
+| 4 moves | `257b981` `5fb9848` `66ee0e5` `c863a4c` `bf80471` `d3c7b3f` `4ba2d1f` `474bda8` |
+| 5 WPure / WPVariants | `97d7eeb` |
+| 6 RawSP / MonotoneSPSt | `c1381f7` |
+| 7 TransformerTaxonomy / GaloisArr, layers enforced | `c10e640` |
+| 8 StatefulSPostCounterexample | `446c99b` |
+| optional: SPostArr / DSPASLPArr | `e433f07` |
+| optional: TaxonomyCarriers / MonadTaxonomy | `dbc9817` |
+| docs | `f944b79` `b7fefda` `328988a`, then the claims index |
+
+Departures from the plan:
+
+- Docs keep the repository's `CONTEXT.md` convention (one per directory)
+  instead of per-directory READMEs; `Code/README.md` is the entry point and
+  the old `Taxonomy/README.md` became `docs/design.md`.
+- The layer check is not part of `make check`, which runs inside the Coq
+  container in CI: it is `make layers` and a separate CI job, with a
+  Require-parsing fallback when `coqdep` is absent (same edges as `coqdep`).
+- Instance database: after the `SPostArr.v` split the 24 DSP/ASLP instances
+  are registered once instead of twice. The second copy came from the alias
+  `Module PropertySP := SPostArr.` in `SPostArrEquiv.v`, which does not cover
+  `DSPASLPArr.v`. Distinct instances are unchanged.
+- Split importers: SP files may only import `RawSP.v`; files that imported a
+  whole split file outside SP keep importing every part they use.
+
+Directory graph after the reorganization (transitively reduced; was 6
+directories with an `Arrows` <-> `BaseSpecMonads` cycle): see
+[Code/README.md](../Code/README.md#layout-in-paper-order).

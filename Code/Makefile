@@ -7,7 +7,8 @@
 # (see .gitignore); this wrapper is the committed interface.
 #
 #   make                     build everything (default; no assumption reports)
-#   make check               opt-in audit: build the project, print assumptions
+#   make check               opt-in audit: build the project, print assumptions,
+#                             and compile the paper-claims index
 #   make clean               delegate clean and also remove the audit's outputs
 #   make layers              check that imports respect scripts/layers.txt
 #                             (python3; runs as its own CI step)
@@ -43,6 +44,9 @@ all: delegate
 .PHONY: check
 check: delegate
 	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/Assumptions.v
+	@# The claims index only has to compile: every name in PAPER.md exists.
+	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/PaperClaims.v > /dev/null
+	@echo "Checks/PaperClaims.v: all paper claims resolve"
 
 .PHONY: layers
 layers:
@@ -52,7 +56,9 @@ layers:
 clean: regen
 	$(MAKE) -f $(COQMAKEFILE) clean
 	rm -f Checks/Assumptions.vo Checks/Assumptions.vos Checks/Assumptions.vok \
-	  Checks/Assumptions.glob Checks/.Assumptions.aux
+	  Checks/Assumptions.glob Checks/.Assumptions.aux \
+	  Checks/PaperClaims.vo Checks/PaperClaims.vos Checks/PaperClaims.vok \
+	  Checks/PaperClaims.glob Checks/.PaperClaims.aux
 
 # Share one dependency graph across all/check and explicit file/install goals.
 # The audit requires the whole project even when all was not requested.
