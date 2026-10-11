@@ -17,7 +17,7 @@ The selected reports cover:
   take congruence or fixed-arrow application equations explicitly; the monad
   derives congruence from application coherence.
 - The outcome laws of
-  [DivNonDetNE.v](../../../Code/Verification/Computation/DivNonDetNE.v): bind on
+  [DivNonDetNE.v](../../../Code/Verification/Base/DivNonDetNE.v): bind on
   `divnd`, absorption of divergence, blocking of the empty prefix, and bind
   on the two stacks.
 - Shared structural equations in
@@ -52,13 +52,13 @@ The selected reports cover:
 
 - The triples development: monad morphisms and their transformer lifts,
   `arrow_morphism_monad`, the base arrow morphisms, the morphisms of
-  [Verification/MonadMorphisms/MonadMorphisms.v](../../../Code/Verification/MonadMorphisms/MonadMorphisms.v) at three levels
+  [Verification/Base/MorphismsPure.v](../../../Code/Verification/Base/MorphismsPure.v) at three levels
   with both proofs of each SP morphism, the edges of
-  [Verification/Triples/TripleTaxonomy.v](../../../Code/Verification/Triples/TripleTaxonomy.v) with state and with
-  exceptions, the examples of [Verification/Triples/Examples.v](../../../Code/Verification/Triples/Examples.v),
-  the rules of [Verification/Triples/InCorrectnessPrinciples.v](../../../Code/Verification/Triples/InCorrectnessPrinciples.v),
+  [Verification/State/TripleTaxonomySt.v](../../../Code/Verification/State/TripleTaxonomySt.v) with state and with
+  exceptions, the examples of [Verification/StateExc/Examples.v](../../../Code/Verification/StateExc/Examples.v),
+  the rules of [Verification/State/InCorrectnessPrinciples.v](../../../Code/Verification/State/InCorrectnessPrinciples.v),
   and the construction, instances and triple identifications of
-  [DijkstraMonad.v](../../../Code/Verification/DijkstraMonads/DijkstraMonad.v).
+  [DijkstraMonad.v](../../../Code/Verification/Generic/DijkstraMonad.v).
 - The separation of the four healthiness classes in
   [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v).
 
@@ -69,7 +69,7 @@ and the generic option-order lift.
 
 The semantic regressions `empty_prefix_blocks` and `diverge_survives_empty`
 live beside the computation laws in
-[DivNonDetNE.v](../../../Code/Verification/Computation/DivNonDetNE.v). They are proofs
+[DivNonDetNE.v](../../../Code/Verification/Base/DivNonDetNE.v). They are proofs
 in the normal build; the audit also reports the first.
 
 [SPostArrInfrastructure.v](../../../Code/Tests/SPostArrInfrastructure.v)

@@ -1,11 +1,10 @@
 (** * Programs typed in the Dijkstra monads
 
-    The programs are those of [Verification/Triples/Examples.v], with state and
-    exceptions.
+    The programs of [Examples.v], with state and exceptions.
 
     - One typed program for each of the eight WP Dijkstra monads, for ASP
       [Over] and for DSLP [Under].  Each is the triple proved in
-      [Verification/Triples/Examples.v], read as a typing.
+      [Examples.v], read as a typing.
 
     - ASP [Under] and DSLP [Over], where triple and typing differ.  A typing
       at [aspUnder] says every start state in the precondition reaches every
@@ -15,28 +14,34 @@
       a positive balance, since an even balance raises, but an odd one does
       not, so it is not typed at [aspUnder]
       ([progloom_harder_not_Dasp_op]).  The DSLP [Over] examples are the
-      same two at the complements.
-
-    - Without state the ASP [Under] triple is a typing:
-      [oneOrTwo_Dasp_op]. *)
+      same two at the complements.  The stateless case is in
+      [Base/TypingsPure.v]. *)
 
 From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Verification.Computation Require Import
-  DivNonDetNE.
 From Incorrectness.Relational Require Import Rel.
 From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad.
-From Incorrectness.Verification.Triples Require Import Triple.
-From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
-From Incorrectness.Verification.Triples Require Import Examples.
-From Incorrectness.Verification.DijkstraMonads Require Import DijkstraMonad.
-From Incorrectness.Verification.TriplesAsTypings Require Import TriplesAsTypings.
+From Incorrectness.Verification.Generic Require Import Triple.
+From Incorrectness.Verification.Generic Require Import DijkstraMonad.
+From Incorrectness.Verification.Generic Require Import Typings.
+From Incorrectness.Verification.Base Require Import DivNonDetNE.
+From Incorrectness.Verification.Base Require Import MorphismsPure.
+From Incorrectness.Verification.Base Require Import TriplesPure.
+From Incorrectness.Verification.Base Require Import DijkstraPure.
+From Incorrectness.Verification.Base Require Import TypingsPure.
+From Incorrectness.Verification.StateExc Require Import ComputationStExc.
+From Incorrectness.Verification.StateExc Require Import MorphismsStExc.
+From Incorrectness.Verification.StateExc Require Import TriplesStExc.
+From Incorrectness.Verification.StateExc Require Import Examples.
+From Incorrectness.Verification.StateExc Require Import DijkstraStExc.
+From Incorrectness.Verification.StateExc Require Import TypingsStExc.
+
 
 (* ================================================================= *)
 (** * WP: the eight Dijkstra monads                                   *)
@@ -211,25 +216,3 @@ Proof.
   destruct (proj1 (progloom_harder_out 1 _) Hr') as [n Hn].
   cbn in Hn. discriminate Hn.
 Qed.
-
-(* ================================================================= *)
-(** * Without state                                                   *)
-(* ================================================================= *)
-
-(** A computation with no state that returns [1] or [2]. *)
-Definition oneOrTwo : divndNE nat := orNE (retNE 1) (retNE 2).
-
-Theorem oneOrTwo_asp_under :
-  triple (@aspPure) oneOrTwo Under (fun _ => True) (fun a => a = 1).
-Proof.
-  intros a Ha. subst a. exists tt. split; [ exact I |].
-  cbn. left. reflexivity.
-Qed.
-
-(** The triple is a typing: there is one start point. *)
-Definition oneOrTwo_Dasp_op :
-  DMop (@aspPure) (@ordASP)
-    (aspUnder (fun _ : unit => True) (fun a : nat => a = 1)) :=
-  exist _ oneOrTwo
-    (proj1 (triple_under_aspPure (@aspPure) oneOrTwo _ _ I)
-       oneOrTwo_asp_under).

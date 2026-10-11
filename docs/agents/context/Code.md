@@ -21,13 +21,10 @@ the layers listed in [scripts/layers.txt](../../../Code/scripts/layers.txt), che
 - [WP](WP.md) and [SP](SP.md): the specification monads
   (paper §2-3).
 - [PTMonadTaxonomy](PTMonadTaxonomy.md): the relations of the taxonomy (§4).
-- `Verification/`: everything that involves the computation monad.
-  [Computation](Verification/Computation.md) holds `divndNE` and its two
-  stacks; [MonadMorphisms](Verification/MonadMorphisms.md) the 24 monad
-  morphisms out of them; [Triples](Verification/Triples.md) and
-  [DijkstraMonads](Verification/DijkstraMonads.md), each built on the
-  morphisms alone (§5, §6); [TriplesAsTypings](Verification/TriplesAsTypings.md)
-  compares the two (§6).
+- [Verification](Verification.md): everything that involves the computation
+  monad, by setting: [Generic](Verification/Generic.md),
+  [Base](Verification/Base.md), [State](Verification/State.md),
+  [StateExc](Verification/StateExc.md) (§1, §5, §6).
 - [GaloisConnections](GaloisConnections.md): DM4All monads and
   their adjunctions (§7).
 - [Tests](Tests.md): instance and regression checks.

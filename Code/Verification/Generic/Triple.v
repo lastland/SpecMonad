@@ -1,22 +1,43 @@
-(** * Triples
+(** * Triples, for any monad morphism
 
     [triple θ m k P Q] is the triple of the computation [m] through the
     monad morphism [θ], for every kind of triple at once: the specification
     [θ m] is read as a predicate transformer, and [k] says on which side of
-    it the precondition [P] and the postcondition [Q] lie.
+    it the precondition [P] and the postcondition [Q] lie.  A specification
+    monad says how its elements are read ([SpecReading]): forward (SP) or
+    backward (WP), and on which types its pre- and postconditions are
+    predicates.  The readings of the specification monads at each setting
+    are in [Base/TriplesPure.v], [State/TriplesSt.v] and
+    [StateExc/TriplesStExc.v].
 
-    The first part of the file is general.  A specification monad says how
-    its elements are read ([SpecReading]): forward (SP) or backward (WP),
-    and on which types its pre- and postconditions are predicates.  The
-    second part gives that reading for each specification monad of
-    [SP/] and [WP/].
-
-    Monad morphisms are in [Lib/Monad/OrderedMonad.v]; the morphisms of this
-    development are in [MonadMorphisms.v]. *)
+    The SP judgements [aspHolds], [dslpHolds], [dspHolds], [aslpHolds] are
+    stated on a base arrow at arbitrary indices: the triple of an SP morphism
+    at every setting is one of them, re-indexed.  Monad morphisms are in
+    [Lib/Monad/OrderedMonad.v]. *)
 
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
+From ExtLib Require Import StateMonad OptionMonad.
+From Incorrectness.WP Require Import
+  WPure.
+From Incorrectness.SP Require Import
+  ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Coq Require Import Morphisms RelationClasses.
+From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
+From Incorrectness.Lib.Arrow Require Import
+  Arrow OptionArrowT StateArrowT ArrowMonad ArrowMorphism RelArrowCoherence.
+From Incorrectness.Lib.Monad Require Import
+  OrderedMonad.
+From Incorrectness.Lib.Monad Require Import
+  TransformerLaws.
+From Incorrectness.Relational Require Import
+  Rel RelSPostArr.
+From Incorrectness.SP Require Import
+  SPostArr DSPASLPArr SPostArrEquiv.
+From Incorrectness.Relational Require PredMonad RelMonads.
+From Incorrectness.Verification.Generic Require Import DijkstraMonad.
+
 
 (* ================================================================= *)
 (** * The general triple                                              *)
@@ -178,38 +199,6 @@ Section PTHolds.
   Qed.
 End PTHolds.
 
-(* ================================================================= *)
-(** * How each specification monad is read                            *)
-(* ================================================================= *)
-
-From ExtLib Require Import StateMonad OptionMonad.
-From Incorrectness.WP Require Import
-  WPure.
-From Incorrectness.SP Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad.
-
-(** A WP element is read backward, from a postcondition to the precondition
-    it needs.  Preconditions are on [unit], or on the start state;
-    postconditions on the result, on result and final state, or on the
-    outcome of a computation that may raise. *)
-
-#[global] Instance SpecReading_WPure (A : Type) :
-  SpecReading WPure A unit A := {|
-  spec_read := fun w : WPure A => Backward (fun Q (_ : unit) => getWPure w Q)
-|}.
-
-#[global] Instance SpecReading_WSt (S A : Type) :
-  SpecReading (WSt S) A S (A * S)%type := {|
-  spec_read := fun w : WSt S A =>
-    Backward (fun Q s => getWPure (runStateT w s) Q)
-|}.
-
-#[global] Instance SpecReading_WStExc (S A : Type) :
-  SpecReading (WStExc S) A S (option (A * S)) := {|
-  spec_read := fun w : WStExc S A =>
-    Backward (fun Q s => getWPure (unOptionT (runStateT w s)) Q)
-|}.
-
 (** An SP element is read forward, from a precondition to the postcondition
     it establishes.  The monads fix the input [unit], so a precondition is
     on [unit], or on the start state. *)
@@ -219,29 +208,9 @@ From Incorrectness.SP Require Import
   spec_read := fun w : ASP A => Forward (getASPArr w)
 |}.
 
-#[global] Instance SpecReading_ASPSt (S A : Type) :
-  SpecReading (ASPSt S) A S (A * S)%type := {|
-  spec_read := fun w : ASPSt S A => Forward (getASPSt w)
-|}.
-
-#[global] Instance SpecReading_ASPStExc (S A : Type) :
-  SpecReading (ASPStExc S) A S (option (A * S)) := {|
-  spec_read := fun w : ASPStExc S A => Forward (getASPStExc w)
-|}.
-
 #[global] Instance SpecReading_DSLP (A : Type) :
   SpecReading DSLP A unit A := {|
   spec_read := fun w : DSLP A => Forward (getDSLPArr w)
-|}.
-
-#[global] Instance SpecReading_DSLPSt (S A : Type) :
-  SpecReading (DSLPSt S) A S (A * S)%type := {|
-  spec_read := fun w : DSLPSt S A => Forward (getDSLPSt w)
-|}.
-
-#[global] Instance SpecReading_DSLPStExc (S A : Type) :
-  SpecReading (DSLPStExc S) A S (option (A * S)) := {|
-  spec_read := fun w : DSLPStExc S A => Forward (getDSLPStExc w)
 |}.
 
 #[global] Instance SpecReading_DSP (A : Type) :
@@ -249,27 +218,45 @@ From Incorrectness.SP Require Import
   spec_read := fun w : DSP A => Forward (getDSP w)
 |}.
 
-#[global] Instance SpecReading_DSPSt (S A : Type) :
-  SpecReading (DSPSt S) A S (A * S)%type := {|
-  spec_read := fun w : DSPSt S A => Forward (getDSPSt w)
-|}.
-
-#[global] Instance SpecReading_DSPStExc (S A : Type) :
-  SpecReading (DSPStExc S) A S (option (A * S)) := {|
-  spec_read := fun w : DSPStExc S A => Forward (getDSPStExc w)
-|}.
-
 #[global] Instance SpecReading_ASLP (A : Type) :
   SpecReading ASLP A unit A := {|
   spec_read := fun w : ASLP A => Forward (getASLP w)
 |}.
 
-#[global] Instance SpecReading_ASLPSt (S A : Type) :
-  SpecReading (ASLPSt S) A S (A * S)%type := {|
-  spec_read := fun w : ASLPSt S A => Forward (getASLPSt w)
-|}.
+(** The judgement on a base arrow, at arbitrary indices: [X] is what a
+    precondition is a predicate on, [Y] what a postcondition is. *)
 
-#[global] Instance SpecReading_ASLPStExc (S A : Type) :
-  SpecReading (ASLPStExc S) A S (option (A * S)) := {|
-  spec_read := fun w : ASLPStExc S A => Forward (getASLPStExc w)
-|}.
+Definition aspHolds {X Y : Type} (R : Rel X Y) (k : approxKind)
+  (P : X -> Prop) (Q : Y -> Prop) : Prop :=
+  pt_holds (Forward (getASPArr (@relASP X Y R))) k P Q.
+
+Definition dslpHolds {X Y : Type} (R : Rel X Y) (k : approxKind)
+  (P : X -> Prop) (Q : Y -> Prop) : Prop :=
+  pt_holds (Forward (getDSLPArr (@relDSLP X Y R))) k P Q.
+
+Definition dspHolds {X Y : Type} (R : Rel X Y) (k : approxKind)
+  (P : X -> Prop) (Q : Y -> Prop) : Prop :=
+  pt_holds (Forward (getDSP (@dspOfRelArr X Y R))) k P Q.
+
+Definition aslpHolds {X Y : Type} (R : Rel X Y) (k : approxKind)
+  (P : X -> Prop) (Q : Y -> Prop) : Prop :=
+  pt_holds (Forward (getASLP (@aslpOfRelArr X Y R))) k P Q.
+
+(** Each reading of a relation, spelled out. *)
+Lemma aspHolds_read {X Y : Type} (R : Rel X Y) (P : X -> Prop) (y : Y) :
+  getASPArr (relASP R) P y <-> exists x, P x /\ R x y.
+Proof. reflexivity. Qed.
+
+Lemma dslpHolds_read {X Y : Type} (R : Rel X Y) (P : X -> Prop) (y : Y) :
+  getDSLPArr (relDSLP R) P y <-> forall x, R x y -> P x.
+Proof. reflexivity. Qed.
+
+Lemma dspHolds_read {X Y : Type} (R : Rel X Y) (P : X -> Prop) (y : Y) :
+  getDSP (dspOfRelArr R) P y
+  <-> (exists x, P x /\ R x y) /\ (forall x, R x y -> P x).
+Proof. reflexivity. Qed.
+
+Lemma aslpHolds_read {X Y : Type} (R : Rel X Y) (P : X -> Prop) (y : Y) :
+  getASLP (aslpOfRelArr R) P y
+  <-> (exists x, P x /\ R x y) \/ (forall x, R x y -> P x).
+Proof. reflexivity. Qed.

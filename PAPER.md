@@ -41,7 +41,7 @@ end of this file maps them to the current ones.
 | Intro: the state monad transformer applied to the base *sp* monad has the shape `S -> P -> (A * S -> P)` | none (a statement about types) | | not formalized |
 | Bullet 1: four lawful *sp* monads from arrows with application, extended by arrow transformers; four *wp* monads, all submonads of one | see Sections 3.2 to 3.6 | | proved |
 | Bullet 2: taxonomy of the eight monads; preserved by monad and arrow transformers (state, exceptions) | see Section 4 | | partial: generic for monad transformers; for arrow transformers at the stacks used (base, `stateArrT`, `stateArrT` over `optionArrT`); Section 4.3 not formalized |
-| Bullet 3: triples from monad morphisms out of the computation monad, lifted to state and exceptions; verified examples | `DivNonDetNE.divndNE`; see Section 5 | [Verification/Computation/DivNonDetNE.v](Code/Verification/Computation/DivNonDetNE.v) | proved, except that the *wp* morphisms land in `WPure`, not in the four *wp* variants |
+| Bullet 3: triples from monad morphisms out of the computation monad, lifted to state and exceptions; verified examples | `DivNonDetNE.divndNE`; see Section 5 | [Verification/Base/DivNonDetNE.v](Code/Verification/Base/DivNonDetNE.v) | proved, except that the *wp* morphisms land in `WPure`, not in the four *wp* variants |
 | Bullet 4: Dijkstra monads indexed by *asp*, *dslp*, and by *wp* with either order | see Section 6 | | proved; the *wp* Dijkstra monads are indexed by `WPure` and its stacks, not by the four variants |
 | Bullet 5: *dsp*, *aslp* are lawful but not specification monads; under-approximate *asp* / over-approximate *dslp* orders differ from the triples; other triples are typings | see Section 6 | | proved; see [Gaps](#gaps-and-differences-from-the-paper) for the direction of "weaker" |
 | Bullet 6: Galois connections with `Pred` and pre/postcondition pairs, the `Pred` ≅ `SPost` isomorphism extended to *asp* and *dslp*, preserved by transformers | see Section 7 | | partial: only the DM4All base adjunctions are proved |
@@ -136,13 +136,13 @@ Hoare triples over-approximate.
 |---|---|---|---|
 | Monad morphisms; lifting through monad transformers | `OrderedMonad.MonadMorphism`, `TransformerLaws.MonadMorphism_stateT`, `TransformerLaws.MonadMorphism_optionT` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v), [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v) | proved |
 | Arrow morphisms; lifting through arrow transformers; to monad morphisms; the base arrow morphisms between the SP arrows and `Rel` | `ArrowMorphism.ArrowMorphism`, `ArrowMorphism.state_option_arrow_morphism`, `ArrowMorphism.arrow_morphism_monad`, `SPostArrEquiv.asp_to_rel_morphism`, `SPostArrEquiv.dslp_to_rel_morphism` | [Lib/Arrow/ArrowMorphism.v](Code/Lib/Arrow/ArrowMorphism.v), [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v) | proved |
-| One triple for any monad morphism, under or over | `Triple.triple` | [Verification/Triples/Triple.v](Code/Verification/Triples/Triple.v) | proved (definition) |
-| Morphisms from the computation monad into the four *wp* monads | `MonadMorphisms.dwpPure_morphism`, `MonadMorphisms.dwlpPure_morphism`, `MonadMorphisms.awpPure_morphism`, `MonadMorphisms.awlpPure_morphism` | [Verification/MonadMorphisms/MonadMorphisms.v](Code/Verification/MonadMorphisms/MonadMorphisms.v) | partial: they land in `WPure`, see [Gaps](#gaps-and-differences-from-the-paper) |
-| Morphisms into the four *sp* monads | `MonadMorphisms.aspPure_morphism_rel`, `MonadMorphisms.dslpPure_morphism_rel`, `MonadMorphisms.dspPure_morphism_rel`, `MonadMorphisms.aslpPure_morphism_rel` | [Verification/MonadMorphisms/MonadMorphisms.v](Code/Verification/MonadMorphisms/MonadMorphisms.v) | proved |
-| Lifted to state and exceptions "for free" | `MonadMorphisms.dwpStExc_morphism`, `MonadMorphisms.aspStExc_morphism_rel`, `MonadMorphisms.dspStExc_morphism_rel` | [Verification/MonadMorphisms/MonadMorphisms.v](Code/Verification/MonadMorphisms/MonadMorphisms.v) | proved (all eight readings at both levels) |
-| Incorrectness triple `[p]c[q]` as `q => asp [[c]] p` | `MorphismTriples.triple_aspSt` | [Verification/Triples/MorphismTriples.v](Code/Verification/Triples/MorphismTriples.v) | proved |
-| The triple diagram (Verscht and Kaminski) for monadic programs | `TripleTaxonomy.dwp_under_dwlp_under`, `TripleTaxonomy.dsp_under_asp_under`, `TripleTaxonomy.awp_under_contra_dwlp_over`, `TripleTaxonomy.asp_under_contra_dslp_over`, `TripleTaxonomy.dwlp_under_galois_asp_over`, `TripleTaxonomy.awp_over_galois_dslp_under` | [Verification/Triples/TripleTaxonomy.v](Code/Verification/Triples/TripleTaxonomy.v) | proved (26 edges with state, again with exceptions) |
-| One verified example per triple kind; O'Hearn's example | `Examples.progA_dwp_under`, `Examples.progA_asp_under`, `Examples.progEx_dslp_under`, `Examples.example_incorrect` | [Verification/Triples/Examples.v](Code/Verification/Triples/Examples.v) | proved (16 kinds) |
+| One triple for any monad morphism, under or over | `Triple.triple` | [Verification/Generic/Triple.v](Code/Verification/Generic/Triple.v) | proved (definition) |
+| Morphisms from the computation monad into the four *wp* monads | `MorphismsPure.dwpPure_morphism`, `MorphismsPure.dwlpPure_morphism`, `MorphismsPure.awpPure_morphism`, `MorphismsPure.awlpPure_morphism` | [Verification/Base/MorphismsPure.v](Code/Verification/Base/MorphismsPure.v) | partial: they land in `WPure`, see [Gaps](#gaps-and-differences-from-the-paper) |
+| Morphisms into the four *sp* monads | `MorphismsPure.aspPure_morphism_rel`, `MorphismsPure.dslpPure_morphism_rel`, `MorphismsPure.dspPure_morphism_rel`, `MorphismsPure.aslpPure_morphism_rel` | [Verification/Base/MorphismsPure.v](Code/Verification/Base/MorphismsPure.v) | proved |
+| Lifted to state and exceptions "for free" | `MorphismsStExc.dwpStExc_morphism`, `MorphismsStExc.aspStExc_morphism_rel`, `MorphismsStExc.dspStExc_morphism_rel` | [Verification/StateExc/MorphismsStExc.v](Code/Verification/StateExc/MorphismsStExc.v) | proved (all eight readings at both levels) |
+| Incorrectness triple `[p]c[q]` as `q => asp [[c]] p` | `TriplesSt.triple_aspSt` | [Verification/State/TriplesSt.v](Code/Verification/State/TriplesSt.v) | proved |
+| The triple diagram (Verscht and Kaminski) for monadic programs | `TripleTaxonomySt.dwp_under_dwlp_under`, `TripleTaxonomySt.dsp_under_asp_under`, `TripleTaxonomySt.awp_under_contra_dwlp_over`, `TripleTaxonomySt.asp_under_contra_dslp_over`, `TripleTaxonomySt.dwlp_under_galois_asp_over`, `TripleTaxonomySt.awp_over_galois_dslp_under` | [Verification/State/TripleTaxonomySt.v](Code/Verification/State/TripleTaxonomySt.v) | proved (26 edges with state, again with exceptions) |
+| One verified example per triple kind; O'Hearn's example | `Examples.progA_dwp_under`, `Examples.progA_asp_under`, `Examples.progEx_dslp_under`, `Examples.example_incorrect` | [Verification/StateExc/Examples.v](Code/Verification/StateExc/Examples.v) | proved (16 kinds) |
 
 ## Section 6: Dijkstra monads
 
@@ -151,11 +151,11 @@ Hoare triples over-approximate.
 | Specification monads stay so with the order flipped | `OrderedMonad.OrderedMonad_flip` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v) | proved |
 | ASP and DSLP are specification monads | `ASPMonad.OrderedMonad_ASPSt`, `ASPMonad.OrderedMonad_ASPStExc`, `DSLPMonad.OrderedMonad_DSLPSt`, `DSLPMonad.OrderedMonad_DSLPStExc` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved (also without state) |
 | DSP and ASLP: `bind` not monotone for the natural order, so not specification monads | `DSPMonad.not_OrderedMonad_DSPSt`, `ASLPMonad.not_OrderedMonad_ASLPSt`, `DSPMonad.dsp_arbitrary_bind_impossible` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved with state (and with exceptions); without state they are specification monads, `DSPMonad.OrderedMonad_DSP` |
-| Dijkstra monad of a monad morphism, laws; eight WP and four SP Dijkstra monads | `DijkstraMonad.DM`, `DijkstraMonad.DMop`, `DijkstraMonad.DM_laws`, `DijkstraMonad.Dasp_laws` | [Verification/DijkstraMonads/DijkstraMonad.v](Code/Verification/DijkstraMonads/DijkstraMonad.v) | proved |
-| Other triples are typings | `TriplesAsTypings.triple_under_wpStExc`, `TriplesAsTypings.triple_over_wpStExc`, `TriplesAsTypings.triple_over_aspStExc`, `TriplesAsTypings.triple_under_dslpStExc` | [Verification/TriplesAsTypings/TriplesAsTypings.v](Code/Verification/TriplesAsTypings/TriplesAsTypings.v) | proved |
-| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `TriplesAsTypings.le_aspUnder`, `TriplesAsTypings.aspUnder_typing_triple`, `TriplesAsTypings.no_asp_under_index`, `TriplesAsTypings.no_dslp_over_index` | [Verification/TriplesAsTypings/TriplesAsTypings.v](Code/Verification/TriplesAsTypings/TriplesAsTypings.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
-| Without state, ASP `Triple.Under` is a typing | `TriplesAsTypings.triple_under_aspPure` | [Verification/TriplesAsTypings/TriplesAsTypings.v](Code/Verification/TriplesAsTypings/TriplesAsTypings.v) | proved, for a precondition that holds |
-| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `DijkstraExamples.oneOrTwo_Dasp_op` | [Verification/TriplesAsTypings/DijkstraExamples.v](Code/Verification/TriplesAsTypings/DijkstraExamples.v) | proved |
+| Dijkstra monad of a monad morphism, laws; eight WP and four SP Dijkstra monads | `DijkstraMonad.DM`, `DijkstraMonad.DMop`, `DijkstraMonad.DM_laws`, `DijkstraStExc.Dasp_laws` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v), [Verification/StateExc/DijkstraStExc.v](Code/Verification/StateExc/DijkstraStExc.v) | proved |
+| Other triples are typings | `TypingsStExc.triple_under_wpStExc`, `TypingsStExc.triple_over_wpStExc`, `TypingsStExc.triple_over_aspStExc`, `TypingsStExc.triple_under_dslpStExc` | [Verification/StateExc/TypingsStExc.v](Code/Verification/StateExc/TypingsStExc.v) | proved |
+| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `Typings.le_aspUnder`, `Typings.aspUnder_typing_triple`, `TypingsSt.no_asp_under_index`, `TypingsSt.no_dslp_over_index` | [Verification/Generic/Typings.v](Code/Verification/Generic/Typings.v), [Verification/State/TypingsSt.v](Code/Verification/State/TypingsSt.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
+| Without state, ASP `Triple.Under` is a typing | `TypingsPure.triple_under_aspPure` | [Verification/Base/TypingsPure.v](Code/Verification/Base/TypingsPure.v) | proved, for a precondition that holds |
+| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `TypingsPure.oneOrTwo_Dasp_op` | [Verification/StateExc/DijkstraExamples.v](Code/Verification/StateExc/DijkstraExamples.v), [Verification/Base/TypingsPure.v](Code/Verification/Base/TypingsPure.v) | proved |
 
 ## Section 7: Galois connections between specification monads
 
@@ -182,7 +182,7 @@ Hoare triples over-approximate.
   the same relation), and `GaloisArr.Galois_Rel_SPost` (relations and
   monotone SP transformers). None of these is stated for the unary monad
   `Pred`.
-- **The WP morphisms land in `WPure`.** `MonadMorphisms.dwpPure_morphism` and
+- **The WP morphisms land in `WPure`.** `MorphismsPure.dwpPure_morphism` and
   the other three map into `WPure`; no lemma shows that their image lies in
   DWP, DWLP, AWP or AWLP.
 - **Section 3.3.** Only the angelic counterexample is formalized, and for the
@@ -207,23 +207,23 @@ Hoare triples over-approximate.
 - **Bullet 5, "weaker".** The paper says the under-approximate order on
   *asp* (and the over-approximate order on *dslp*) "correspond to strictly
   weaker specifications than the corresponding triples". In the code, a
-  typing at the natural index (`TriplesAsTypings.le_aspUnder`) asks every start
+  typing at the natural index (`Typings.le_aspUnder`) asks every start
   state in the precondition to reach every result in the postcondition. For
   an inhabited precondition it is strictly stronger than the triple
-  (`TriplesAsTypings.aspUnder_typing_triple`; strictness by
+  (`Typings.aspUnder_typing_triple`; strictness by
   `Examples.progloom_harder_asp_under` with
   `DijkstraExamples.progloom_harder_not_Dasp_op`); for an empty precondition
   it holds of every program, so it is vacuous. Neither "weaker" nor
   "stronger" holds uniformly; what holds for every index is that none has
-  exactly the triples as its typings (`TriplesAsTypings.no_asp_under_index`).
-  Dually for *dslp* Over: `TriplesAsTypings.dslpOver_typing_triple`,
+  exactly the triples as its typings (`TypingsSt.no_asp_under_index`).
+  Dually for *dslp* Over: `Typings.dslpOver_typing_triple`,
   `DijkstraExamples.progloom_harder_dslp_over`,
   `DijkstraExamples.progloom_harder_not_Ddslp`,
-  `TriplesAsTypings.no_dslp_over_index`. "Do not correspond to the triples" is
+  `TypingsSt.no_dslp_over_index`. "Do not correspond to the triples" is
   the accurate wording.
 - **Section 6 Artifact list: programs typed in the Dijkstra monad that cannot
   be typed with the triple** (ASP Under, DSLP Over) are not formalized. By
-  `TriplesAsTypings.le_aspUnder` such a program can exist only for an empty
+  `Typings.le_aspUnder` such a program can exist only for an empty
   precondition.
 - **Section 3.2, `SPostArr_ang` / `SPostArr_dem`.** The arrows restricted only
   by monotonicity and the codomain condition are not defined; the lawful
@@ -251,9 +251,9 @@ Hoare triples over-approximate.
   `ArrowLoop` for the option-relation arrow
   (`OptionLoop.optionRel_no_lawful_ArrowLoop`), transported to the option ASP
   and DSLP arrows (`SPostArrEquiv.optionASP_no_lawful_ArrowLoop`).
-- [Verification/Triples/InCorrectnessPrinciples.v](Code/Verification/Triples/InCorrectnessPrinciples.v):
+- [Verification/State/InCorrectnessPrinciples.v](Code/Verification/State/InCorrectnessPrinciples.v):
   O'Hearn's rewriting rules (symmetry, consequence, agreement, denial) for
-  the `MonadMorphisms.aspSt` triples, with `MonadMorphisms.dwlpSt` variants
+  the `MorphismsSt.aspSt` triples, with `MorphismsSt.dwlpSt` variants
   (`InCorrectnessPrinciples.principle_of_denial_asp`).
 - [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v):
   Galois connections between binary specification arrows (relations,
@@ -279,7 +279,7 @@ Hoare triples over-approximate.
 | `{ASP,DSLP,DSP,ASLP}Monad.v` | [SP/](Code/SP) |
 | `Taxonomy/BaseSpecMonads/MonadTaxonomy.v` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) (Figure 1 edges, `Section Flavours`) and [PTMonadTaxonomy/Carriers.v](Code/PTMonadTaxonomy/Carriers.v) |
 | `Taxonomy/BaseSpecMonads/WPureMonad.v` | [WP/WPure.v](Code/WP/WPure.v) and [WP/WPVariants.v](Code/WP/WPVariants.v) |
-| `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | [Verification/Triples/](Code/Verification/Triples); the morphisms of `MonadMorphisms.v` are in [Verification/MonadMorphisms/MonadMorphisms.v](Code/Verification/MonadMorphisms/MonadMorphisms.v), its triple lemmas in [Verification/Triples/MorphismTriples.v](Code/Verification/Triples/MorphismTriples.v) |
-| `Taxonomy/DijkstraMonads/*` | [Verification/DijkstraMonads/](Code/Verification/DijkstraMonads) |
+| `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | split by setting under [Verification/](Code/Verification): the morphisms in `Base/MorphismsPure.v`, `State/MorphismsSt.v`, `StateExc/MorphismsStExc.v`; the triples in `Generic/Triple.v` and `*/Triples*.v`; the diagram in `*/TripleTaxonomy*.v`; the examples in `StateExc/Examples.v`; the rules in `State/InCorrectnessPrinciples.v` |
+| `Taxonomy/DijkstraMonads/*` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v) (the construction) and `Dijkstra*.v` / `Typings*.v` per setting |
 | `Taxonomy/BaseSpecMonads/BaseGaloisConnections.v` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) |
 | `Taxonomy/BaseSpecMonads/NewGaloisConnections.v` | does not exist; see Section 7 |

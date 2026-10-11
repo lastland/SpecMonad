@@ -1,10 +1,10 @@
 (** * Example programs, and a verified triple of each kind
 
     The programs are written in the state-and-exceptions monad
-    [stdivexcndNE nat] of [MonadMorphisms.v].  An outcome from a start state is
-    divergence, a raised exception, or a result with its final state; each
-    program comes with the set of its outcomes ([progA_out] &c.), and every
-    triple below is read off that set.
+    [stdivexcndNE nat].  An outcome from a start state is divergence, a
+    raised exception, or a result with its final state; each program comes
+    with the set of its outcomes ([progA_out] &c.), and every triple below is
+    read off that set.
 
     One example for each of the sixteen kinds of triple:
 
@@ -33,14 +33,19 @@ From Coq Require Import Lia PeanoNat.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Verification.Computation Require Import DivNonDetNE.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Verification.Triples Require Import Triple.
-From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
-From Incorrectness.Verification.Triples Require Import MorphismTriples.
+From Incorrectness.Verification.Generic Require Import Triple.
+From Incorrectness.Verification.Generic Require Import DijkstraMonad.
+From Incorrectness.Verification.Base Require Import DivNonDetNE.
+From Incorrectness.Verification.Base Require Import MorphismsPure.
+From Incorrectness.Verification.Base Require Import TriplesPure.
+From Incorrectness.Verification.StateExc Require Import ComputationStExc.
+From Incorrectness.Verification.StateExc Require Import MorphismsStExc.
+From Incorrectness.Verification.StateExc Require Import TriplesStExc.
+
 
 Import MonadNotation.
 Open Scope monad_scope.

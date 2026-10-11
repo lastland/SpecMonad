@@ -13,12 +13,20 @@
 
 From ExtLib Require Import Monad StateMonad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Verification.Computation Require Import DivNonDetNE.
 From Incorrectness.WP Require Import WPure.
 From Incorrectness.SP Require Import ASPMonad.
-From Incorrectness.Verification.Triples Require Import Triple.
-From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
-From Incorrectness.Verification.Triples Require Import TripleTaxonomy.
+From Incorrectness.Verification.Generic Require Import Triple.
+From Incorrectness.Verification.Generic Require Import DijkstraMonad.
+From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
+From Incorrectness.Verification.Base Require Import DivNonDetNE.
+From Incorrectness.Verification.Base Require Import MorphismsPure.
+From Incorrectness.Verification.Base Require Import TriplesPure.
+From Incorrectness.Verification.Base Require Import TripleTaxonomyPure.
+From Incorrectness.Verification.State Require Import ComputationSt.
+From Incorrectness.Verification.State Require Import MorphismsSt.
+From Incorrectness.Verification.State Require Import TriplesSt.
+From Incorrectness.Verification.State Require Import TripleTaxonomySt.
+
 
 Section OHearnRewritingRules.
   Variable S : Type.

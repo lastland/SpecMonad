@@ -1,24 +1,23 @@
-(** * The computation monads: non-empty nondeterminism with divergence
+(** * The base computation monad: non-empty nondeterminism with divergence
 
-    One base monad and two monad transformer stacks over it:
-
-      [divndNE A]                                           base
-      [stdivndNE S A]    = [stateT S divndNE A]             state
-      [stdivexcndNE S A] = [stateT S (optionT divndNE) A]   state and exceptions
-
-    The base is built in three steps:
+    The base monad is built in three steps:
 
       [SetM A  = A -> Prop]          a set of outcomes
       [divnd A = optionT SetM A]     a set of outcomes, [None] being divergence
       [divndNE A]                    the elements of [divnd A] with an outcome
 
-    The two stacks are non-empty from every start state by construction. *)
+    The two other settings are monad transformers applied to it:
+    [stdivndNE S = stateT S divndNE] ([State/ComputationSt.v]) and
+    [stdivexcndNE S = stateT S (optionT divndNE)]
+    ([StateExc/ComputationStExc.v]). *)
 
 From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
+From Incorrectness.Verification.Generic Require Import DijkstraMonad.
+
 
 (* ================================================================= *)
 (** * Sets of outcomes: [SetM]                                        *)
@@ -314,170 +313,6 @@ Proof.
              (fun a => getNE (f a)) (fun a => getNE (g a)) Hfg).
 Qed.
 
-
-(* ================================================================= *)
-(** * The two stacks: [stdivndNE] and [stdivexcndNE]                  *)
-(* ================================================================= *)
-
-(** The state transformer applied to [divndNE], and to [divndNE] under the
-    option transformer.  Monad, equality and state operations are ExtLib's
-    and [TransformerLaws.v]'s, at the base dictionaries above. *)
-
-Definition stdivndNE (S : Type) : Type -> Type := stateT S divndNE.
-Definition stdivexcndNE (S : Type) : Type -> Type := stateT S (optionT divndNE).
-
-#[global] Instance Monad__stdivndNE (S : Type) : Monad (stdivndNE S) :=
-  @Monad_stateT S divndNE Monad__divndNE.
-#[global] Instance Monad__stdivexcndNE (S : Type) : Monad (stdivexcndNE S) :=
-  @Monad_stateT S (optionT divndNE) (@Monad_optionT divndNE Monad__divndNE).
-
-Definition Eq1__stdivndNE (S : Type) : Eq1 (stdivndNE S) :=
-  @Eq1_stateT S divndNE Eq1__divndNE.
-Definition Eq1__stdivexcndNE (S : Type) : Eq1 (stdivexcndNE S) :=
-  @Eq1_stateT S (optionT divndNE) (@Eq1_optionT divndNE Eq1__divndNE).
-
-(** The two stacks are lawful: the generic transformer laws, at the base. *)
-Definition Eq1Equivalence__stdivndNE (S : Type)
-  : @Eq1Equivalence (stdivndNE S) (Monad__stdivndNE S) (Eq1__stdivndNE S) :=
-  Eq1Equivalence_stateT S divndNE.
-Definition MonadLawsE__stdivndNE (S : Type)
-  : @MonadLawsE (stdivndNE S) (Eq1__stdivndNE S) (Monad__stdivndNE S) :=
-  MonadLawsE_stateT S divndNE.
-Definition Eq1Equivalence__stdivexcndNE (S : Type)
-  : @Eq1Equivalence (stdivexcndNE S) (Monad__stdivexcndNE S) (Eq1__stdivexcndNE S) :=
-  Eq1Equivalence_stateT S (optionT divndNE).
-Definition MonadLawsE__stdivexcndNE (S : Type)
-  : @MonadLawsE (stdivexcndNE S) (Eq1__stdivexcndNE S) (Monad__stdivexcndNE S) :=
-  MonadLawsE_stateT S (optionT divndNE).
-
-#[global] Instance MonadState__stdivndNE (S : Type) : MonadState S (stdivndNE S) :=
-  @MonadState_stateT S divndNE Monad__divndNE.
-#[global] Instance MonadState__stdivexcndNE (S : Type) : MonadState S (stdivexcndNE S) :=
-  @MonadState_stateT S (optionT divndNE) (@Monad_optionT divndNE Monad__divndNE).
-
-(** The outcomes of a computation from a start state: a non-empty set of
-    [option]s, [None] being divergence.  At state+exceptions an outcome that
-    is not divergence is itself an [option], [None] being a raised
-    exception. *)
-Definition outSt {S A} (m : stdivndNE S A) (s : S) : option (A * S) -> Prop :=
-  unOptionT (getNE (runStateT m s)).
-Definition outStExc {S A} (m : stdivexcndNE S A) (s : S)
-  : option (option (A * S)) -> Prop :=
-  unOptionT (getNE (unOptionT (runStateT m s))).
-
-(** Choice and divergence, pointwise in the start state; raising. *)
-Definition orSt {S A} (m1 m2 : stdivndNE S A) : stdivndNE S A :=
-  mkStateT (fun s => orNE (runStateT m1 s) (runStateT m2 s)).
-Definition divergeSt {S A} : stdivndNE S A :=
-  mkStateT (fun _ => divergeNE).
-
-Definition orStExc {S A} (m1 m2 : stdivexcndNE S A) : stdivexcndNE S A :=
-  mkStateT (fun s =>
-    mkOptionT (orNE (unOptionT (runStateT m1 s)) (unOptionT (runStateT m2 s)))).
-Definition divergeStExc {S A} : stdivexcndNE S A :=
-  mkStateT (fun _ => mkOptionT divergeNE).
-Definition raiseStExc {S A} : stdivexcndNE S A :=
-  mkStateT (fun _ => mkOptionT (retNE None)).
-
-(** An arbitrary natural number, with the state unchanged. *)
-Definition pickStExc {S} : stdivexcndNE S nat :=
-  mkStateT (fun s =>
-    mkOptionT
-      (exist _
-         (@mkOptionT SetM _ (fun o => exists n : nat, o = Some (Some (n, s))))
-         (ex_intro _ (Some (Some (0, s))) (ex_intro _ 0 eq_refl)))).
-
-(** The outcomes of each operation. *)
-Section Outcomes.
-  Context {S : Type}.
-
-  Lemma outSt_ret {A} (a : A) (s : S) (o : option (A * S)) :
-    outSt (ret a) s o <-> o = Some (a, s).
-  Proof. reflexivity. Qed.
-
-  Lemma outSt_bind {A B} (m : stdivndNE S A) (k : A -> stdivndNE S B) (s : S)
-    (o : option (B * S)) :
-    outSt (bind m k) s o
-    <-> exists o1, outSt m s o1 /\
-          match o1 with
-          | Some (a, s') => outSt (k a) s' o
-          | None => o = None
-          end.
-  Proof.
-    etransitivity;
-      [ exact (outcomes_bind (getNE (runStateT m s))
-                 (fun vs => getNE (let (v, s') := vs in runStateT (k v) s')) o) |].
-    split; intros [o1 [H1 H2]]; exists o1; (split; [ exact H1 |]);
-      destruct o1 as [[a s']|]; exact H2.
-  Qed.
-
-  Lemma outSt_get (s : S) (o : option (S * S)) :
-    outSt get s o <-> o = Some (s, s).
-  Proof. reflexivity. Qed.
-
-  Lemma outSt_put (s' s : S) (o : option (unit * S)) :
-    outSt (put s') s o <-> o = Some (tt, s').
-  Proof. reflexivity. Qed.
-
-  Lemma outSt_or {A} (m1 m2 : stdivndNE S A) (s : S) (o : option (A * S)) :
-    outSt (orSt m1 m2) s o <-> outSt m1 s o \/ outSt m2 s o.
-  Proof. reflexivity. Qed.
-
-  Lemma outSt_diverge {A} (s : S) (o : option (A * S)) :
-    outSt (divergeSt : stdivndNE S A) s o <-> o = None.
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_ret {A} (a : A) (s : S) (o : option (option (A * S))) :
-    outStExc (ret a) s o <-> o = Some (Some (a, s)).
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_bind {A B} (m : stdivexcndNE S A) (k : A -> stdivexcndNE S B) (s : S)
-    (o : option (option (B * S))) :
-    outStExc (bind m k) s o
-    <-> exists o1, outStExc m s o1 /\
-          match o1 with
-          | Some (Some (a, s')) => outStExc (k a) s' o
-          | Some None => o = Some None
-          | None => o = None
-          end.
-  Proof.
-    etransitivity;
-      [ exact (outcomes_bind (getNE (unOptionT (runStateT m s)))
-                 (fun aM => getNE
-                    match aM with
-                    | Some a => unOptionT (let (v, s') := a in runStateT (k v) s')
-                    | None => retNE None
-                    end) o) |].
-    split; intros [o1 [H1 H2]]; exists o1; (split; [ exact H1 |]);
-      destruct o1 as [[[a s']|]|]; exact H2.
-  Qed.
-
-  Lemma outStExc_get (s : S) (o : option (option (S * S))) :
-    outStExc get s o <-> o = Some (Some (s, s)).
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_put (s' s : S) (o : option (option (unit * S))) :
-    outStExc (put s') s o <-> o = Some (Some (tt, s')).
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_or {A} (m1 m2 : stdivexcndNE S A) (s : S)
-    (o : option (option (A * S))) :
-    outStExc (orStExc m1 m2) s o <-> outStExc m1 s o \/ outStExc m2 s o.
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_diverge {A} (s : S) (o : option (option (A * S))) :
-    outStExc (divergeStExc : stdivexcndNE S A) s o <-> o = None.
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_raise {A} (s : S) (o : option (option (A * S))) :
-    outStExc (raiseStExc : stdivexcndNE S A) s o <-> o = Some None.
-  Proof. reflexivity. Qed.
-
-  Lemma outStExc_pick (s : S) (o : option (option (nat * S))) :
-    outStExc pickStExc s o <-> exists n, o = Some (Some (n, s)).
-  Proof. reflexivity. Qed.
-End Outcomes.
-
 (** Equal computations of the base monad have the same outcomes. *)
 Lemma eq1_outcomes {A} (x y : divndNE A) :
   eq1 x y -> forall oa, unOptionT (getNE x) oa <-> unOptionT (getNE y) oa.
@@ -485,4 +320,3 @@ Proof.
   intros H oa. change (unOptionT (getNE x) = unOptionT (getNE y)) in H.
   rewrite H. reflexivity.
 Qed.
-

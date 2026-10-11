@@ -1,7 +1,31 @@
 -Q . Incorrectness
 
 Lib/Monad/TransformerLaws.v
-Verification/Computation/DivNonDetNE.v
+Verification/Generic/Triple.v
+Verification/Generic/DijkstraMonad.v
+Verification/Generic/TripleTaxonomy.v
+Verification/Generic/Typings.v
+Verification/Base/DivNonDetNE.v
+Verification/Base/MorphismsPure.v
+Verification/Base/TriplesPure.v
+Verification/Base/TripleTaxonomyPure.v
+Verification/Base/DijkstraPure.v
+Verification/Base/TypingsPure.v
+Verification/State/ComputationSt.v
+Verification/State/MorphismsSt.v
+Verification/State/TriplesSt.v
+Verification/State/TripleTaxonomySt.v
+Verification/State/InCorrectnessPrinciples.v
+Verification/State/DijkstraSt.v
+Verification/State/TypingsSt.v
+Verification/StateExc/ComputationStExc.v
+Verification/StateExc/MorphismsStExc.v
+Verification/StateExc/TriplesStExc.v
+Verification/StateExc/TripleTaxonomyStExc.v
+Verification/StateExc/Examples.v
+Verification/StateExc/DijkstraStExc.v
+Verification/StateExc/TypingsStExc.v
+Verification/StateExc/DijkstraExamples.v
 Lib/Arrow/Arrow.v
 Lib/Arrow/ArrowApplyFacts.v
 Lib/Arrow/ArrowMonad.v
@@ -54,12 +78,3 @@ GaloisConnections/BaseGaloisConnections.v
 PTMonadTaxonomy/SPStBindComparisons.v
 PTMonadTaxonomy/MonadTaxonomy.v
 PTMonadTaxonomy/Carriers.v
-Verification/Triples/Triple.v
-Verification/MonadMorphisms/MonadMorphisms.v
-Verification/Triples/MorphismTriples.v
-Verification/Triples/TripleTaxonomy.v
-Verification/Triples/Examples.v
-Verification/Triples/InCorrectnessPrinciples.v
-Verification/DijkstraMonads/DijkstraMonad.v
-Verification/TriplesAsTypings/TriplesAsTypings.v
-Verification/TriplesAsTypings/DijkstraExamples.v

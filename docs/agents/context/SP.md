@@ -3,8 +3,8 @@
 Parent: [Code](Code.md). Paper: Section 3.1-3.5 (strongest
 postcondition monads). Builds on [Lib](Lib.md) and
 [Relational](Relational.md); used by
-[PTMonadTaxonomy](PTMonadTaxonomy.md), [Triples](Verification/Triples.md),
-[DijkstraMonads](Verification/DijkstraMonads.md). Source declarations determine exact
+[PTMonadTaxonomy](PTMonadTaxonomy.md), [Triples](Verification.md),
+[DijkstraMonads](Verification.md). Source declarations determine exact
 types, selected dictionaries and orders. Qualify shared names, especially
 unary accessors such as `ASPMonad.getASP` against the binary
 `SPostArr.getASP` (and likewise for DSLP).

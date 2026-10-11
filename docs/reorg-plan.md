@@ -217,7 +217,14 @@ Departures from the plan:
   Then `DijkstraMonad.v` was split at its comparison with triples
   (`specs/step12_typings.py`): the construction stays in
   `Verification/DijkstraMonads/`, which no longer depends on `Triples/`; the
-  comparison and `DijkstraExamples.v` went to `Verification/TriplesAsTypings/`. The plan above uses
+  comparison and `DijkstraExamples.v` went to `Verification/TriplesAsTypings/`.
+  Finally `Verification/` was split by setting (`specs/step13_settings.py`,
+  `partition.py`, checked by `partition_check.py`): `Generic/` (the same at
+  every setting), `Base/` (`divndNE`), `State/` and `StateExc/` (its two
+  lifts, siblings). Every declaration went to the highest setting its code
+  or its dependencies name; sections serving several settings were cut with
+  their headers copied; 379 qualified names follow
+  (`docs/reorg/partition-map.txt`). The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

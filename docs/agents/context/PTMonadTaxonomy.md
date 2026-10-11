@@ -4,13 +4,13 @@ Parent: [Code](Code.md). Paper: Section 4 (taxonomy of predicate
 transformer monads, Figure 1). Builds on [WP](WP.md),
 [SP](SP.md), [Relational](Relational.md) and
 [MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v); used by
-[Triples](Verification/Triples.md). The [design notes](../../design.md)
+[Triples](Verification.md). The [design notes](../../design.md)
 give the longer story.
 
 The directory is named after Section 4's title, "Taxonomy of Predicate
 Transformer Monads" (PT = predicate transformer). "Taxonomy" names two things
 in the code: this directory, whose [MonadTaxonomy.v](../../../Code/PTMonadTaxonomy/MonadTaxonomy.v) has the
-edges of Figure 1, and [Verification/Triples/TripleTaxonomy.v](../../../Code/Verification/Triples/TripleTaxonomy.v),
+edges of Figure 1, and [Verification/State/TripleTaxonomySt.v](../../../Code/Verification/State/TripleTaxonomySt.v),
 Verscht and Kaminski's taxonomy of triples (Section 4.1) for monadic
 programs. The relations themselves are monadic relations in the sense of
 [Lib/Monad/MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v).

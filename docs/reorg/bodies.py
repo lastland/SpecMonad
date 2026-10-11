@@ -41,12 +41,17 @@ LATER = {"Code/Taxonomy/TransformerTaxonomy.v": "Code/PTMonadTaxonomy/Transforme
          "Code/Triples/Diagram.v": "Code/Triples/TripleTaxonomy.v"}
 LATER_QUALIFIERS = [("TransformerTaxonomy", "TransformerRelations"),
                     ("TaxonomyCarriers", "Carriers"), ("Diagram", "TripleTaxonomy")]
-SPLIT_FILES = {"Code/" + p for sp in SPECS for p in [sp["SOURCE"]] + [x[0] for x in sp["PARTS"]]}
+SPLIT_FILES = {"Code/" + p for sp in SPECS if "SOURCE" in sp
+               for p in [sp["SOURCE"]] + [x[0] for x in sp["PARTS"]]}
+# Partitions (several sources into several targets) are checked by
+# partition_check.py.
+SPLIT_FILES |= {"Code/" + p for sp in SPECS if "SOURCES" in sp
+                for p in list(sp["SOURCES"]) + [t for t in sp["TARGET"].values() if t]}
 SPLIT_FILES |= {LATER[f] for f in SPLIT_FILES if f in LATER}
 # Qualifier rewrites a split forced on other files, applied to the old text.
 QUALIFIED = {}
 for sp in SPECS:
-    for f, pairs in sp.get("QUALIFIED", {}).items():
+    for f, pairs in (sp.get("QUALIFIED") or {}).items():
         QUALIFIED.setdefault("Code/" + f, []).extend(pairs)
 out = subprocess.run(["git", "diff", "-M50%", "--name-status", base, "--", "Code"],
                      cwd=REPO, capture_output=True, text=True, check=True).stdout
