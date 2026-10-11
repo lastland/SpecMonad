@@ -17,7 +17,7 @@
     the monad laws do not require equality of predicate functions.
 
     The unary carrier is [PPM.PrePost].  Its binary counterpart is
-    [PrePostArr] in [Arrows/PrePostArr.v], with a post-relation that also
+    [PrePostArr] in [GaloisConnections/PrePostArr.v], with a post-relation that also
     retains the input.  Qualify [PPM.pre] and [PPM.post] when importing their
     short names would shadow local binders. *)
 

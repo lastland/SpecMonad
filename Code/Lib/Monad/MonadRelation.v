@@ -18,7 +18,7 @@
     A monad relation lifts through each monad transformer
     ([MonadRelation_stateT], [MonadRelation_optionT]), pointwise, as an
     order does
-    ([ComputationMonads/TransformerLaws.v]).
+    ([Lib/Monad/TransformerLaws.v]).
 
     For two arrows with relational semantics ([RelArrowCoherence.v]),
     inclusion of the relations denoted is a monad relation between the

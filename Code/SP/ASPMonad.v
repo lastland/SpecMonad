@@ -9,13 +9,13 @@
     Fixing the input at [unit] gives a SPECIFICATION MONAD in each case: a
     monad ([MonadLawsE]) whose refinement order is a preorder for which
     [bind] is monotone in both arguments ([OrderedMonad],
-    [Classes/OrderedMonad.v]).
+    [Lib/Monad/OrderedMonad.v]).
 
-    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Classes/ArrowMonad.v])
+    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Lib/Arrow/ArrowMonad.v])
     at the arrow and at its two transformer stacks.  The orders are not
     generic -- [bind] monotonicity is proved below from [aspRel_incl].
 
-    [Arrows/SPostArr.v] owns the binary carrier, operations, recovered-relation
+    [SP/SPostArr.v] owns the binary carrier, operations, recovered-relation
     facts and laws. This module re-exports that infrastructure and fixes the
     input for unary specifications, runners and refinement orders.
 
@@ -33,7 +33,7 @@ From Incorrectness.SP Require Export SPostArr.
 (** ** [ASP = ASPArr unit]: a specification monad                *)
 (* ================================================================= *)
 
-(** [ret_arrow] / [bind_arrow] ([Classes/ArrowMonad.v]) at input [unit], ordered by
+(** [ret_arrow] / [bind_arrow] ([Lib/Arrow/ArrowMonad.v]) at input [unit], ordered by
     pointwise implication. *)
 
 Section ASP.

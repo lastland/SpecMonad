@@ -30,7 +30,7 @@ From Incorrectness.Lib.Monad Require Import TransformerLaws.
 Section WPure.
 
   (** The underlying, unrestricted transformer type.  The arrow presentation
-      in [Arrows/WPArr.v] uses this with Leibniz [ArrowEq].  The [WPure]
+      in [GaloisConnections/WPArr.v] uses this with Leibniz [ArrowEq].  The [WPure]
       subset below instead uses pointwise logical equivalence for [Eq1]. *)
   Definition WPureT (A : Type) : Type := (A -> Prop) -> Prop.
 

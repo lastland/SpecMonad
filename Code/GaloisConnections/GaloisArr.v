@@ -326,7 +326,7 @@ Instance Galois_RPP_WP
 (* ================================================================= *)
 
 (** The unary [SPM.SPost] / [RPPM.RelPrePost] adjunction is proved in
-    [BaseSpecMonads/BaseGaloisConnections.v].  The proposed binary map
+    [GaloisConnections/BaseGaloisConnections.v].  The proposed binary map
     below instead takes a validator of input-indexed post-relations:
 
       [gamma_uni r P b = forall R0, r P R0 -> forall a, P a -> R0 a b].

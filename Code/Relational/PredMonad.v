@@ -11,7 +11,7 @@
     [PredMonad.v]).
 
     Wrapped in a module to keep the unary [Pred] distinct from the BINARY
-    relation arrow [Rel A B = A -> B -> Prop] in [Taxonomy/Arrows/Rel.v]
+    relation arrow [Rel A B = A -> B -> Prop] in [Relational/Rel.v]
     (formerly [PredArr]); the two are different type constructors and a
     top-level clash would be silent.
     Write [PredM.Pred] here, or [Import PredM] in a file that does not use

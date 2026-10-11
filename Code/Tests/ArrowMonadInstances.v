@@ -390,7 +390,7 @@ Definition rel_state_option_monad_laws (S : Type) :
           ArrowChoice_Rel
           ArrowApply_Rel)) bool) := _.
 
-(** The monad dictionaries of [BaseSpecMonads/ASPMonad] and [DSLPMonad] at
+(** The monad dictionaries of [SP/ASPMonad] and [DSLPMonad] at
     the state-over-option stacks are the generic arrow monads. Explicit
     generic dictionaries pin the exact instance at arbitrary state and avoid
     competing recursive option/state resolution paths. *)

@@ -95,7 +95,7 @@ Local Notation Monad_Pred := PredMonad.PredM.Monad_Pred.
 (* ================================================================= *)
 
 (** A transformer in [PT B S] is a family of unary transformers indexed by
-    [S], and each homomorphism property of [Arrows/SPostArr.v] is the corresponding
+    [S], and each homomorphism property of [SP/SPostArr.v] is the corresponding
     property of [WPureMonad.v] at every state. *)
 
 Section SecondIndex.

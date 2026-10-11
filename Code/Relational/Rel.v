@@ -23,9 +23,9 @@
         [progRelM S A = stateT S (optionT (Rel unit)) A]
         [nditRelM S A = stateT S (optionT (optionT (Rel unit))) A]
 
-    The arrow view uses [Classes/ArrowMonad.v] after stacking effects;
+    The arrow view uses [Lib/Arrow/ArrowMonad.v] after stacking effects;
     the monad view uses the generic [optionT] / [stateT] laws from
-    [ComputationMonads/TransformerLaws.v].  Named dictionaries and
+    [Lib/Monad/TransformerLaws.v].  Named dictionaries and
     resolution checks live in [Tests/ArrowMonadInstances.v] and
     [Tests/ArrowTransformerInstances.v].  This file owns the binary
     [SPureArr], [SPStArr], and [SPStExcArr] compatibility names, their
@@ -149,7 +149,7 @@ End RelMonad.
 (* ================================================================= *)
 
 (** [optionRel] inherits [Arrow], [ArrowChoice], [ArrowApply], and their
-    laws through [Classes/OptionArrowT].  It does not inherit lawful
+    laws through [Lib/Arrow/OptionArrowT].  It does not inherit lawful
     [ArrowLoop]: [OptionLoop.v] refutes unrestricted left tightening
     for these option operations, using an empty feedback type. *)
 
@@ -209,7 +209,7 @@ Section MonadSpec.
 
   (** One [optionT] layer.  Chains: base [Rel unit] through [optionT]
       and [stateT], inheriting [Monad], [Eq1], and [MonadLawsE] from
-      the transformer instances in [ComputationMonads/TransformerLaws.v]. *)
+      the transformer instances in [Lib/Monad/TransformerLaws.v]. *)
   Definition progRelM (A : Type) : Type :=
     stateT S (optionT (Rel unit)) A.
 
@@ -230,7 +230,7 @@ End MonadSpec.
     [Eq1Equivalence] and [MonadLawsE] for the second-argument monad
     instance on [Rel A].  The [ArrowLaws] / [ArrowChoiceLaws] /
     [ArrowApplyLaws] for [optionRel] are inherited from the generic
-    transformer laws in [Classes/OptionArrowT] applied to these. *)
+    transformer laws in [Lib/Arrow/OptionArrowT] applied to these. *)
 
 From Coq Require Import FunctionalExtensionality PropExtensionality.
 From Hammer Require Import Tactics.

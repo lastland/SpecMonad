@@ -210,6 +210,21 @@ Departures from the plan:
   are registered once instead of twice. The second copy came from the alias
   `Module PropertySP := SPostArr.` in `SPostArrEquiv.v`, which does not cover
   `DSPASLPArr.v`. Distinct instances are unchanged.
+- One elaborated term changed (found by the final engineering review, which
+  compared the `Print` of all 2927 declarations at the base and at the head):
+  the transparent instance `GaloisArr.Galois_Rel_SPost` now fills its
+  `PreOrder` field with `TransformerTaxonomy.pt_le_PreOrder` instead of
+  `MonotoneSPost_le_PreOrder`. Step 7 made `pt_le_PreOrder` visible earlier
+  in `GaloisArr.v`, and it wins resolution. Both are `Prop` proofs about
+  definitionally equal relations, so nothing downstream changes; sources are
+  otherwise unchanged and 2907 declarations are identical, the other 19
+  differing only in auto-generated names.
+- Known blind spots of the per-step checks: `inventory.py` compares types,
+  not bodies; its qualifier normalization merges same-named declarations of
+  different files (`SPSt` in RawSP / RelMonads, `retP` in WPure /
+  PredMonad, ...); notations are compared by name; the instance database is
+  the one seen by a file requiring the whole build. The final review covered
+  the first two with a strict body comparison.
 - Split importers: SP files may only import `RawSP.v`; files that imported a
   whole split file outside SP keep importing every part they use.
 

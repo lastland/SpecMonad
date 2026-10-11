@@ -1,7 +1,7 @@
 (** * Infrastructure regression for the fundamental SP arrow interface.
 
     Standalone checks that [SPostArr.v] alone supports downstream
-    clients, with no BaseSpecMonads import: the four canonical law
+    clients, with no import of the SP monad files: the four canonical law
     packages resolve; the moved DSP/ASLP binary stacks, relation
     constructors, and explicit dictionaries are available; split DSP
     composition is distinguished from naive transformer composition on a

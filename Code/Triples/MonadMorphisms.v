@@ -16,7 +16,7 @@
            transformers ([MonadMorphism_stateT], [MonadMorphism_optionT]) to
            [stdivndNE S ~> WSt S] and [stdivexcndNE S ~> WStExc S];
 
-      SP   a base arrow morphism [Rel ~> arr] ([Arrows/SPostArrEquiv.v]),
+      SP   a base arrow morphism [Rel ~> arr] ([SP/SPostArrEquiv.v]),
            lifted by the arrow transformers ([state_arrow_morphism],
            [state_option_arrow_morphism]) and applied to the relation
            between start states and terminating outcomes.  An arrow morphism

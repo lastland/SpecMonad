@@ -1,6 +1,6 @@
 # Computation context
 
-Parent: [Code](../Taxonomy/CONTEXT.md). Paper: the computation monad of nondeterminism
+Parent: [Code](../CONTEXT.md). Paper: the computation monad of nondeterminism
 and nontermination (Introduction, Section 5). Consumers: [Triples](../Triples/CONTEXT.md)
 and [Dijkstra](../Dijkstra/CONTEXT.md).
 

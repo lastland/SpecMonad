@@ -22,7 +22,7 @@ From Incorrectness.WP Require Import WPure.
       [X]      = { f : WPureT A | f healthy }
       [XSt S]  = [stateT S X]
 
-    The conditions are the homomorphism properties of [Arrows/SPostArr.v],
+    The conditions are the homomorphism properties of [SP/SPostArr.v],
     stated for a transformer at one input.  All four flavours are monotone:
 
       [AWP]    strict, disjunctive        some outcome satisfies the postcondition

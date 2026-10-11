@@ -79,7 +79,7 @@ End PropertyEquality.
 
 (** Because [Rel] already has [ArrowLaws], [ArrowChoiceLaws], and
     [ArrowApplyLaws] instances, [optionRel = optionArrT Rel]
-    inherits the transformer laws from [Classes/OptionArrowT] without
+    inherits the transformer laws from [Lib/Arrow/OptionArrowT] without
     any custom proof. *)
 
 Definition ArrowLaws_optionRel : ArrowLaws optionRel := _.

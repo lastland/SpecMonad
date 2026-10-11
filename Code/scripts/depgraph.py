@@ -81,7 +81,9 @@ def parse_requires() -> dict[str, list[str]]:
                 cands = [g for g, lg in logical.items()
                          if lg == full or (lg.endswith("." + name) and (not prefix or lg.startswith(prefix + ".")))]
                 exact = [g for g in cands if logical[g] == full]
-                found += exact or cands[:1]
+                if not exact and len(cands) > 1:
+                    sys.exit(f"{f}: ambiguous Require {full}: {cands}")
+                found += exact or cands
         deps[f] = sorted(set(found) - {f})
     return deps
 

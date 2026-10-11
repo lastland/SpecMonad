@@ -180,7 +180,7 @@ Section StateT.
 End StateT.
 
 (* ================================================================= *)
-(** ** Ordered lifts, for [Classes/OrderedMonad.v]                   *)
+(** ** Ordered lifts, for [Lib/Monad/OrderedMonad.v]                   *)
 (* ================================================================= *)
 
 (** Each transformer lifts an ordered monad pointwise.  Theorems, not
@@ -237,7 +237,7 @@ End OrderedStateT.
 
 
 (* ================================================================= *)
-(** ** Monad-morphism lifts, for [Classes/OrderedMonad.v]            *)
+(** ** Monad-morphism lifts, for [Lib/Monad/OrderedMonad.v]            *)
 (* ================================================================= *)
 
 (** Each transformer acts on monad morphisms: a morphism between two base

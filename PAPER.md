@@ -40,9 +40,9 @@ end of this file maps them to the current ones.
 | Intro: "monotone *sps* alone do *not* form a lawful monad" | `MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax` | [Taxonomy/MonotoneSPSt.v](Code/Taxonomy/MonotoneSPSt.v) | proved, for monotone stateful transformers over an inhabited state type (take `S = unit` for the base case): left unit holds only as an inequation |
 | Intro: the state monad transformer applied to the base *sp* monad has the shape `S -> P -> (A * S -> P)` | none (a statement about types) | | not formalized |
 | Bullet 1: four lawful *sp* monads from arrows with application, extended by arrow transformers; four *wp* monads, all submonads of one | see Sections 3.2 to 3.6 | | proved |
-| Bullet 2: taxonomy of the eight monads; preserved by monad and arrow transformers (state, exceptions) | see Section 4 | | proved, except Section 4.3 |
-| Bullet 3: triples from monad morphisms out of the computation monad, lifted to state and exceptions; verified examples | `DivNonDetNE.divndNE`; see Section 5 | [Computation/DivNonDetNE.v](Code/Computation/DivNonDetNE.v) | proved |
-| Bullet 4: Dijkstra monads indexed by *asp*, *dslp*, and by *wp* with either order | see Section 6 | | proved |
+| Bullet 2: taxonomy of the eight monads; preserved by monad and arrow transformers (state, exceptions) | see Section 4 | | partial: generic for monad transformers; for arrow transformers at the stacks used (base, `stateArrT`, `stateArrT` over `optionArrT`); Section 4.3 not formalized |
+| Bullet 3: triples from monad morphisms out of the computation monad, lifted to state and exceptions; verified examples | `DivNonDetNE.divndNE`; see Section 5 | [Computation/DivNonDetNE.v](Code/Computation/DivNonDetNE.v) | proved, except that the *wp* morphisms land in `WPure`, not in the four *wp* variants |
+| Bullet 4: Dijkstra monads indexed by *asp*, *dslp*, and by *wp* with either order | see Section 6 | | proved; the *wp* Dijkstra monads are indexed by `WPure` and its stacks, not by the four variants |
 | Bullet 5: *dsp*, *aslp* are lawful but not specification monads; under-approximate *asp* / over-approximate *dslp* orders differ from the triples; other triples are typings | see Section 6 | | proved; see [Gaps](#gaps-and-differences-from-the-paper) for the direction of "weaker" |
 | Bullet 6: Galois connections with `Pred` and pre/postcondition pairs, the `Pred` ≅ `SPost` isomorphism extended to *asp* and *dslp*, preserved by transformers | see Section 7 | | partial: only the DM4All base adjunctions are proved |
 | Bullet 7: "We mechanize all definitions and proofs in Rocq" | | | partial: see [Gaps](#gaps-and-differences-from-the-paper) |
@@ -52,7 +52,7 @@ end of this file maps them to the current ones.
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | `WPure A = (A -> P) -> P`, monotone, with the continuation `ret` / `bind`; monad laws | `WPure.WPure`, `WPure.MonadLawsE_WPure` | [WP/WPure.v](Code/WP/WPure.v) | proved |
-| Pointwise order, `bind` monotone (an ordered monad) | `WPure.OrderedMonad_WPure` | [WP/WPure.v](Code/WP/WPure.v) | proved |
+| Pointwise order, `bind` monotone (an ordered monad) | `WPure.OrderedMonad_WPure`, `MonadTaxonomy.impliesWPure` | [WP/WPure.v](Code/WP/WPure.v), [Taxonomy/MonadTaxonomy.v](Code/Taxonomy/MonadTaxonomy.v) | proved; `WP_le` is DM4All's reverse implication (`OrderedMonad_flip` gives the other direction); the paper's forward order is `impliesWPure` |
 | `WSt` by the state monad transformer, monotone, ordered; with exceptions | `WPure.OrderedMonad_WSt`, `WPure.OrderedMonad_WStExc` | [WP/WPure.v](Code/WP/WPure.v) | proved |
 
 ## Section 3: SP monads
@@ -71,7 +71,7 @@ end of this file maps them to the current ones.
 |---|---|---|---|
 | An arrow with application, input type fixed, is a lawful monad (Lindley et al.) | `ArrowMonad.MonadLawsE_Arrow` | [Lib/Arrow/ArrowMonad.v](Code/Lib/Arrow/ArrowMonad.v) | proved |
 | State arrow transformer `stateArrT`; it and the option transformer preserve the laws | `StateArrowT.Core.stateArrT`, `StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT`, `OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT/), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT/) | proved |
-| `SPostArr_ang` / `SPostArr_dem`: lawful angelic and demonic arrows | `SPostArr.ASPArr`, `SPostArr.ArrowApplyLaws_ASPArr`, `SPostArr.DSLPArr`, `SPostArr.ArrowApplyLaws_DSLPArr` | [SP/SPostArr.v](Code/SP/SPostArr.v) | proved |
+| `SPostArr_ang` / `SPostArr_dem`: lawful angelic and demonic arrows | `SPostArr.ASPArr`, `SPostArr.ArrowApplyLaws_ASPArr`, `SPostArr.DSLPArr`, `SPostArr.ArrowApplyLaws_DSLPArr` | [SP/SPostArr.v](Code/SP/SPostArr.v) | partial: the lawful arrows are the Section 3.4 carriers (monotone + strict + disjunctive, monotone + terminating + conjunctive); the arrow restricted only by monotonicity and the codomain condition is not formalized, see [Gaps](#gaps-and-differences-from-the-paper) |
 | "results in a lawful monad that is exactly `SPost_ang`" (resp. `SPost_dem`) | `ASPMonad.ASP`, `ASPMonad.ASPSP`, `ASPMonad.kenji_iff_singleton`, `ASPMonad.aspsp_to_asp_morphism`, `ASPMonad.asp_to_aspsp_morphism`, `DSLPMonad.dslpsp_to_dslp_morphism`, `DSLPMonad.dslp_to_dslpsp_morphism` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: isomorphic, not equal; goes through the direct monads `ASPMonad.ASPSP` / `DSLPMonad.DSLPSP` on `P -> A -> P`, not through `SPostMonad.SPM.SPost` |
 
 ### 3.3 Correcting stateful SPostArr
@@ -122,14 +122,20 @@ end of this file maps them to the current ones.
 | Fig. 1a: without state DSP coincides with ASP, ASLP with DSLP | `MonadTaxonomy.MonadRelation_dsp_asp_pure`, `MonadTaxonomy.MonadRelation_aslp_dslp_pure` | [Taxonomy/MonadTaxonomy.v](Code/Taxonomy/MonadTaxonomy.v) | proved |
 | 4.3 Category-theoretic insights | none | | not formalized (the section is empty in the paper) |
 | 4.4 Effect-modularity: monadic relations lift through `stateT` / `optionT` | `MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT`, `MonadTaxonomy.MonadRelation_impliesWPure`, `MonadTaxonomy.MonadRelation_implies_WPSubStExc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [Taxonomy/MonadTaxonomy.v](Code/Taxonomy/MonadTaxonomy.v) | proved |
-| 4.4: SP edges at any arrow-transformer stack; Galois edges from one `Pred` / `WPure` relation; instances without state and with exceptions | `MonadRelation.MonadRelation_rel_incl_state_option`, `MonadTaxonomy.MonadRelation_GaloisPredWP`, `MonadTaxonomy.MonadRelation_dsp_implies_asp_exc`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_pure`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_one`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [Taxonomy/MonadTaxonomy.v](Code/Taxonomy/MonadTaxonomy.v) | proved; the lifting is generic for monad transformers, and for arrow transformers it is proved at the base, `stateArrT`, and `stateArrT` over `optionArrT` stacks |
+| 4.4: SP edges at any arrow-transformer stack; Galois edges from one `Pred` / `WPure` relation; instances without state and with exceptions | `MonadRelation.MonadRelation_rel_incl_state_option`, `MonadTaxonomy.MonadRelation_GaloisPredWP`, `MonadTaxonomy.MonadRelation_dsp_implies_asp_exc`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_pure`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_one`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [Taxonomy/MonadTaxonomy.v](Code/Taxonomy/MonadTaxonomy.v) | partial: generic for monad transformers; for arrow transformers proved at the base, `stateArrT`, and `stateArrT` over `optionArrT` stacks, not for an arbitrary arrow transformer |
 
 ## Section 5: Triples
+
+`Triple.Under` / `Triple.Over` name where the transformer sits (Section 4.1):
+an `Under` triple puts the transformer's value in the conclusion
+(`pre ⊆ wp post`, `post ⊆ sp pre`). So the Hoare triple `{p}c{q}` is
+`dwlp Under` or, equivalently, `asp Over`, although the introduction calls
+Hoare triples over-approximate.
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | Monad morphisms; lifting through monad transformers | `OrderedMonad.MonadMorphism`, `TransformerLaws.MonadMorphism_stateT`, `TransformerLaws.MonadMorphism_optionT` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v), [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v) | proved |
-| Arrow morphisms; lifting through arrow transformers; to monad morphisms | `ArrowMorphism.ArrowMorphism`, `ArrowMorphism.state_option_arrow_morphism`, `ArrowMorphism.arrow_morphism_monad` | [Lib/Arrow/ArrowMorphism.v](Code/Lib/Arrow/ArrowMorphism.v) | proved |
+| Arrow morphisms; lifting through arrow transformers; to monad morphisms; the base arrow morphisms between the SP arrows and `Rel` | `ArrowMorphism.ArrowMorphism`, `ArrowMorphism.state_option_arrow_morphism`, `ArrowMorphism.arrow_morphism_monad`, `SPostArrEquiv.asp_to_rel_morphism`, `SPostArrEquiv.dslp_to_rel_morphism` | [Lib/Arrow/ArrowMorphism.v](Code/Lib/Arrow/ArrowMorphism.v), [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v) | proved |
 | One triple for any monad morphism, under or over | `Triple.triple` | [Triples/Triple.v](Code/Triples/Triple.v) | proved (definition) |
 | Morphisms from the computation monad into the four *wp* monads | `MonadMorphisms.dwpPure_morphism`, `MonadMorphisms.dwlpPure_morphism`, `MonadMorphisms.awpPure_morphism`, `MonadMorphisms.awlpPure_morphism` | [Triples/MonadMorphisms.v](Code/Triples/MonadMorphisms.v) | partial: they land in `WPure`, see [Gaps](#gaps-and-differences-from-the-paper) |
 | Morphisms into the four *sp* monads | `MonadMorphisms.aspPure_morphism_rel`, `MonadMorphisms.dslpPure_morphism_rel`, `MonadMorphisms.dspPure_morphism_rel`, `MonadMorphisms.aslpPure_morphism_rel` | [Triples/MonadMorphisms.v](Code/Triples/MonadMorphisms.v) | proved |
@@ -200,13 +206,32 @@ end of this file maps them to the current ones.
 - **Section 4.3** has no code.
 - **Bullet 5, "weaker".** The paper says the under-approximate order on
   *asp* (and the over-approximate order on *dslp*) "correspond to strictly
-  weaker specifications than the corresponding triples". In the code, a typing at the natural index
-  (`DijkstraMonad.le_aspUnder`) asks every start state in the precondition
-  to reach every result in the postcondition; it implies the triple when
-  the precondition is inhabited (`DijkstraMonad.aspUnder_typing_triple`),
-  not conversely, and no index has exactly the triples as its typings
-  (`DijkstraMonad.no_asp_under_index`, `DijkstraMonad.no_dslp_over_index`).
-  So the typing is the stronger requirement on the program.
+  weaker specifications than the corresponding triples". In the code, a
+  typing at the natural index (`DijkstraMonad.le_aspUnder`) asks every start
+  state in the precondition to reach every result in the postcondition. For
+  an inhabited precondition it is strictly stronger than the triple
+  (`DijkstraMonad.aspUnder_typing_triple`; strictness by
+  `Examples.progloom_harder_asp_under` with
+  `DijkstraExamples.progloom_harder_not_Dasp_op`); for an empty precondition
+  it holds of every program, so it is vacuous. Neither "weaker" nor
+  "stronger" holds uniformly; what holds for every index is that none has
+  exactly the triples as its typings (`DijkstraMonad.no_asp_under_index`).
+  Dually for *dslp* Over: `DijkstraMonad.dslpOver_typing_triple`,
+  `DijkstraExamples.progloom_harder_dslp_over`,
+  `DijkstraExamples.progloom_harder_not_Ddslp`,
+  `DijkstraMonad.no_dslp_over_index`. "Do not correspond to the triples" is
+  the accurate wording.
+- **Section 6 Artifact list: programs typed in the Dijkstra monad that cannot
+  be typed with the triple** (ASP Under, DSLP Over) are not formalized. By
+  `DijkstraMonad.le_aspUnder` such a program can exist only for an empty
+  precondition.
+- **Section 3.2, `SPostArr_ang` / `SPostArr_dem`.** The arrows restricted only
+  by monotonicity and the codomain condition are not defined; the lawful
+  arrows in the code are the Section 3.4 carriers `SPostArr.ASPArr` and
+  `SPostArr.DSLPArr`. Note for the paper: since `stateArrT` preserves the
+  arrow laws for any lawful base arrow, a codomain-only arrow lawful at every
+  input would make the Section 3.3 stateful monad lawful, so the Section 3.2
+  claim can hold at most at input `unit`.
 - **Admitted.** `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_bind` in
   [Taxonomy/MonotoneSPSt.v](Code/Taxonomy/MonotoneSPSt.v) is `Admitted`.
   Nothing uses it; the Galois edges are proved another way. It is the only

@@ -25,7 +25,7 @@
     the first part ([impliesWSt_pt], [contraWSt_pt], [GaloisSPWP_pt]
     &c.), and has that relation's laws.
 
-    Each is a RELATION BETWEEN MONADS ([Classes/MonadRelation.v]): it holds
+    Each is a RELATION BETWEEN MONADS ([Lib/Monad/MonadRelation.v]): it holds
     at [ret] and is preserved by [bind].  [SPStMon S] has two structures,
     angelic and demonic, each a monad only up to an inequation
     ([MonotoneSPSt.v]); the contrapositive exchanges them, and
@@ -65,7 +65,7 @@
     &c.), unique by the laws of the relation.
 
     The relations do not depend on the transformers a monad is built with
-    ([Classes/MonadRelation.v]).  On the WP side implication and the
+    ([Lib/Monad/MonadRelation.v]).  On the WP side implication and the
     contrapositive are relations of the base monad [WPure] with itself
     ([MonadRelation_impliesWPure], [MonadRelation_contraWPure]); the ones on
     [WSt S] are their [stateT] lifts ([impliesWSt_lift], [contraWSt_lift]),
@@ -156,7 +156,7 @@ Local Notation Monad_Pred := PredMonad.PredM.Monad_Pred.
 (** Implication and the contrapositive are relations of [WPure] with itself,
     and every WP monad of the development is a stack of monad transformers
     over [WPure] or over one of its flavours.  A monad relation lifts through
-    each transformer ([Classes/MonadRelation.v]), so the two relations are
+    each transformer ([Lib/Monad/MonadRelation.v]), so the two relations are
     proved once, here, and every stack inherits them: pointwise in the start
     state under [stateT], at postconditions on [option A] under [optionT]. *)
 
@@ -940,7 +940,7 @@ End SPInclusions.
 (* ================================================================= *)
 
 (** A DSP element has an ASP part and a DSLP part, and so has an ASLP
-    element ([Arrows/SPostArr.v]).  Each part denotes the relation of its
+    element ([SP/SPostArr.v]).  Each part denotes the relation of its
     element.  Between ASP elements implication is inclusion of the relations
     denoted, and between DSLP elements the converse inclusion ([aspRel_incl],
     [dslpRel_incl]).  So implication between a part and an element of the
@@ -1493,7 +1493,7 @@ Section Flavours.
   Proof. intros P r H. exact (proj2 (aslp_join_of R) P r (or_intror H)). Qed.
 
   (** DSP and ASLP are compared with the other flavours through their parts
-      ([Arrows/SPostArr.v]).  A DSP element is the meet of
+      ([SP/SPostArr.v]).  A DSP element is the meet of
       its two parts, and an ASLP element the join of its two.  Classical. *)
   Lemma dsp_meet_parts {A} (d : DSPSt S A) :
     asDSPStMon d ≈ meetSPSt (asSPStMon (aspPartArr d)) (asDSLPStMon (dslpPartArr d)).

@@ -9,9 +9,9 @@
     its elements are read ([SpecReading]): forward (SP) or backward (WP),
     and on which types its pre- and postconditions are predicates.  The
     second part gives that reading for each specification monad of
-    [BaseSpecMonads/].
+    [SP/] and [WP/].
 
-    Monad morphisms are in [Classes/OrderedMonad.v]; the morphisms of this
+    Monad morphisms are in [Lib/Monad/OrderedMonad.v]; the morphisms of this
     development are in [MonadMorphisms.v]. *)
 
 From ExtLib Require Import Monad.

@@ -7,7 +7,7 @@
     operations: pure, composition, first, choice ([left]), and application.
     Application preservation also converts the arrow stored in the input.
 
-    The generic machinery imported from [Classes/ArrowMorphism.v] lifts
+    The generic machinery imported from [Lib/Arrow/ArrowMorphism.v] lifts
     these laws through the existing option and state transformers.  The
     [ArrowMorphism] API uses the selected equalities [Rel_eq] and pointwise
     transformer equivalence, including properness of both maps. *)
@@ -220,7 +220,7 @@ Qed.
 
 (** ** Any arrow with relational semantics
 
-    The semantic dictionaries of [Classes/RelArrowCoherence.v] say that
+    The semantic dictionaries of [Lib/Arrow/RelArrowCoherence.v] say that
     [rel_reading] preserves the five operations into [Rel], and
     [rel_arrow_eq] that it is proper.  So it is a morphism, and so is any
     map back from relations that it inverts on the right. *)

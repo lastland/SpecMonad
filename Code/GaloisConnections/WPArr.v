@@ -1,7 +1,7 @@
 (** * The raw weakest-precondition arrow [WPArr].
 
     [WPArr A B = A -> WPureT B = A -> (B -> Prop) -> Prop] uses the
-    unrestricted carrier from [BaseSpecMonads/WPureMonad.v], not its
+    unrestricted carrier from [WP/WPure.v], not its
     monotone subset [WPure].  Composition passes a continuation backward:
 
       [arr_comp f g a Q = f a (fun b => g b Q)].

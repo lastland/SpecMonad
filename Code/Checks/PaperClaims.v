@@ -345,6 +345,12 @@ Check DijkstraExamples.progA_Ddwp.
 Check DijkstraExamples.progA_Dasp.
 Check DijkstraExamples.progEx_Ddslp_op.
 Check DijkstraExamples.progloom_harder_not_Dasp_op.
+Check MonadTaxonomy.impliesWPure.
+(* Bullet 5 gap: strictness of the typing and the DSLP Over dual. *)
+Check Examples.progloom_harder_asp_under.
+Check DijkstraMonad.dslpOver_typing_triple.
+Check DijkstraExamples.progloom_harder_dslp_over.
+Check DijkstraExamples.progloom_harder_not_Ddslp.
 Check DijkstraExamples.oneOrTwo_Dasp_op.
 
 (* ================================================================= *)

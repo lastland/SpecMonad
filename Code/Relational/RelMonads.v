@@ -5,10 +5,10 @@
       [SPSt S A]    = [SPStArr S unit A]
       [SPStExc S A] = [SPStExcArr S unit A] = [progRelArr S A]
 
-    [Arrows/Rel.v] owns the binary carriers, stacks, selected equality/law
-    dictionaries, and congruence facts. [Arrows/RelSPostArr.v] owns their
+    [Relational/Rel.v] owns the binary carriers, stacks, selected equality/law
+    dictionaries, and congruence facts. [Relational/RelSPostArr.v] owns their
     four SP readings, healthiness, recovery, inclusion, and operation facts.
-    Generic semantic normalization lives in [Classes/RelArrowCoherence.v].
+    Generic semantic normalization lives in [Lib/Arrow/RelArrowCoherence.v].
 
     Here the selected [Monad] and [Eq1] interfaces inherit the arrow laws.
     The return/bind formulas preserve the fixed input and thread the

@@ -19,7 +19,7 @@ unary accessors such as `ASPMonad.getASP` against the binary
 | 3.3-3.4 | [PredicateTransformerProperties.v](PredicateTransformerProperties.v) | `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, `ConjunctiveArr` for `(A -> Prop) -> B -> Prop`; see [PROPERTY_TERMINOLOGY.md](PROPERTY_TERMINOLOGY.md) |
 | 3.2, 3.4 | [SPostArr.v](SPostArr.v) | the raw `SPArrT` and its properties; the ASP and DSLP arrows, normal forms, recovered relations, laws, stacks, `asp_to_dslp` |
 | 3.5 | [DSPASLPArr.v](DSPASLPArr.v) | the DSP and ASLP arrows, their stacks, and the separation of the four classes |
-| — | [SPostArrEquiv.v](SPostArrEquiv.v) | ASP/DSLP/DSP/ASLP arrows as morphisms to and from `Rel`; the transported `ArrowLoop` obstruction |
+| 5 | [SPostArrEquiv.v](SPostArrEquiv.v) | ASP/DSLP/DSP/ASLP arrows as morphisms to and from `Rel`; the transported `ArrowLoop` obstruction |
 | 3.4-3.5 | [ASPMonad.v](ASPMonad.v), [DSLPMonad.v](DSLPMonad.v), [DSPMonad.v](DSPMonad.v), [ASLPMonad.v](ASLPMonad.v) | the four SP monads at input `unit`, with state and with state and exceptions |
 
 ## The arrows

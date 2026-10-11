@@ -12,10 +12,10 @@
 
     The second half of the file has the other ingredient of an effect
     observation, a monad morphism ([MonadMorphism]).  The triple of a
-    computation through one is in [Taxonomy/Triples/Triple.v].
+    computation through one is in [Triples/Triple.v].
 
     Lifts through [optionT] / [stateT] are in
-    [Taxonomy/ComputationMonads/TransformerLaws.v]. *)
+    [Lib/Monad/TransformerLaws.v]. *)
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
 From ExtLib Require Import Monad.

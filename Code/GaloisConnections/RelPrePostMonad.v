@@ -24,7 +24,7 @@
     [bind_ret_l] go through, and it is the dual of [SPostMonad.v]'s [Over p].
 
     The unary carrier is [RPPM.RelPrePost].  The separate binary carrier
-    [RelPrePostArr] in [Arrows/RelPrePostArr.v] validates input-indexed
+    [RelPrePostArr] in [GaloisConnections/RelPrePostArr.v] validates input-indexed
     post-relations and uses projection-induced arrow equality. *)
 
 From ITree Require Import Basics.Monad.

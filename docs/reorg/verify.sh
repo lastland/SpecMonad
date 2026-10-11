@@ -27,7 +27,7 @@ fi
 python3 scripts/inventory.py snapshot "$OUT/inv.json" > /dev/null
 python3 scripts/inventory.py compare "$B/inv.json" "$OUT/inv.json" | grep -v '^  moved'
 
-python3 scripts/depgraph.py --check-layers 2>/dev/null | tail -1 || true
+python3 scripts/depgraph.py --check-layers 2>&1 | tail -1
 
 if [ -n "$REV" ]; then
   python3 ../docs/reorg/bodies.py "$REV" > "$OUT/bodies.log" || { grep 'BODY CHANGED' "$OUT/bodies.log"; exit 1; }

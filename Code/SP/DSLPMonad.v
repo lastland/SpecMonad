@@ -7,11 +7,11 @@
       [DSLPStExc S] = [stateArrT S (optionArrT DSLPArr) unit] (* SLP^StExc  *)
 
     Fixing the input at [unit] gives a SPECIFICATION MONAD in each case.
-    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Classes/ArrowMonad.v])
+    The [MonadLawsE] instances are [MonadLawsE_Arrow] ([Lib/Arrow/ArrowMonad.v])
     at the arrow and at its two transformer stacks; [bind] monotonicity is
     proved from [dslpRel_incl], which runs backwards relative to ASP's.
 
-    [Arrows/SPostArr.v] owns the binary carrier, operations, recovered-relation
+    [SP/SPostArr.v] owns the binary carrier, operations, recovered-relation
     facts and laws. This module re-exports that infrastructure and fixes the
     input for unary specifications, runners and refinement orders.
 
@@ -34,7 +34,7 @@ From Incorrectness.SP Require Export SPostArr.
 (** ** [DSLP = DSLPArr unit]: a specification monad                *)
 (* ================================================================= *)
 
-(** [ret_arrow] / [bind_arrow] ([Classes/ArrowMonad.v]) at input [unit], ordered by
+(** [ret_arrow] / [bind_arrow] ([Lib/Arrow/ArrowMonad.v]) at input [unit], ordered by
     pointwise implication. *)
 
 Section DSLP.

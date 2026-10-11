@@ -26,7 +26,7 @@ propositional extensionality and, where stated, excluded middle
 |---|---|---|
 | [Lib/](Lib/CONTEXT.md) | background | arrows with application and choice, the option/state arrow transformers, arrow morphisms, the monad of an arrow at a fixed input; ordered monads, monad morphisms, monadic relations, monad-transformer laws |
 | [Computation/](Computation/CONTEXT.md) | §1, §5 | `divndNE`, nondeterminism and nontermination, with state and with state and exceptions |
-| [Relational/](Relational/CONTEXT.md) | — | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
+| [Relational/](Relational/CONTEXT.md) | infrastructure; `Pred` (§7) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
 | [WP/](WP/CONTEXT.md) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
 | [SP/](SP/CONTEXT.md) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
 | [Taxonomy/](Taxonomy/CONTEXT.md) | §4 | the taxonomy on bare transformers, then as monadic relations between the monads (Figure 1) |
@@ -66,17 +66,22 @@ file-level graph with a directory-only view.
 
 ## Where to start reading
 
-1. [WP/WPure.v](WP/WPure.v), the familiar WP monad.
-2. [SP/SPostMonad.v](SP/SPostMonad.v) and
+1. §2: [WP/WPure.v](WP/WPure.v), the familiar WP monad.
+2. §3.1, §3.3: [SP/SPostMonad.v](SP/SPostMonad.v) and
    [SP/StatefulSPostCounterexample.v](SP/StatefulSPostCounterexample.v):
    the SP monad and why state breaks it.
-3. [SP/SPostArr.v](SP/SPostArr.v), [SP/DSPASLPArr.v](SP/DSPASLPArr.v), then
-   [SP/ASPMonad.v](SP/ASPMonad.v) and its three siblings.
-4. [Taxonomy/TransformerTaxonomy.v](Taxonomy/TransformerTaxonomy.v), then
+3. §3.2: [Lib/Arrow/ArrowMonad.v](Lib/Arrow/ArrowMonad.v) (the monad of an
+   arrow with application) and [Lib/Arrow/StateArrowT.v](Lib/Arrow/StateArrowT.v).
+4. §3.4–3.5: [SP/SPostArr.v](SP/SPostArr.v), [SP/DSPASLPArr.v](SP/DSPASLPArr.v),
+   then [SP/ASPMonad.v](SP/ASPMonad.v) and its three siblings; §3.6:
+   [WP/WPVariants.v](WP/WPVariants.v).
+5. §4: [Taxonomy/TransformerTaxonomy.v](Taxonomy/TransformerTaxonomy.v), then
    `Section Flavours` of [Taxonomy/MonadTaxonomy.v](Taxonomy/MonadTaxonomy.v).
-5. [Triples/MonadMorphisms.v](Triples/MonadMorphisms.v) and
-   [Triples/Examples.v](Triples/Examples.v);
-   [Dijkstra/DijkstraMonad.v](Dijkstra/DijkstraMonad.v).
+6. §5: [Triples/MonadMorphisms.v](Triples/MonadMorphisms.v),
+   [Triples/Diagram.v](Triples/Diagram.v), [Triples/Examples.v](Triples/Examples.v).
+7. §6: [Dijkstra/DijkstraMonad.v](Dijkstra/DijkstraMonad.v),
+   [Dijkstra/DijkstraExamples.v](Dijkstra/DijkstraExamples.v).
+8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
 The [design notes](../docs/design.md) tell the longer story;
 `Backup/` and `ITreeExamples/` are outside the build.
