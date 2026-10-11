@@ -31,7 +31,7 @@ propositional extensionality and, where stated, excluded middle
 | [SP/](SP/CONTEXT.md) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
 | [PTMonadTaxonomy/](PTMonadTaxonomy/CONTEXT.md) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
 | [Triples/](Triples/CONTEXT.md) | §5 | monad morphisms out of `divndNE`, the general triple, the triple diagram, examples |
-| [Dijkstra/](Dijkstra/CONTEXT.md) | §6 | Dijkstra monads of the morphisms; which triples are typings |
+| [DijkstraMonads/](DijkstraMonads/CONTEXT.md) | §6 | Dijkstra monads of the morphisms; which triples are typings |
 | [GaloisConnections/](GaloisConnections/CONTEXT.md) | §7 | the DM4All specification monads and their adjunctions |
 | [Tests/](Tests/CONTEXT.md) | — | regression and instance checks |
 | [Checks/](Checks/CONTEXT.md) | — | opt-in audits: assumptions and the paper claims |
@@ -39,7 +39,7 @@ propositional extensionality and, where stated, excluded middle
 ```mermaid
 flowchart RL
   Computation[Computation] -->|1| Lib[Lib]
-  Dijkstra[Dijkstra] -->|5| Triples[Triples]
+  DijkstraMonads[DijkstraMonads] -->|5| Triples[Triples]
   GaloisConnections[GaloisConnections] -->|1| PTMonadTaxonomy[PTMonadTaxonomy]
   PTMonadTaxonomy[PTMonadTaxonomy] -->|21| SP[SP]
   PTMonadTaxonomy[PTMonadTaxonomy] -->|5| WP[WP]
@@ -79,8 +79,8 @@ file-level graph with a directory-only view.
    `Section Flavours` of [PTMonadTaxonomy/MonadTaxonomy.v](PTMonadTaxonomy/MonadTaxonomy.v).
 6. §5: [Triples/MonadMorphisms.v](Triples/MonadMorphisms.v),
    [Triples/TripleTaxonomy.v](Triples/TripleTaxonomy.v), [Triples/Examples.v](Triples/Examples.v).
-7. §6: [Dijkstra/DijkstraMonad.v](Dijkstra/DijkstraMonad.v),
-   [Dijkstra/DijkstraExamples.v](Dijkstra/DijkstraExamples.v).
+7. §6: [DijkstraMonads/DijkstraMonad.v](DijkstraMonads/DijkstraMonad.v),
+   [DijkstraMonads/DijkstraExamples.v](DijkstraMonads/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
 The [design notes](../docs/design.md) tell the longer story;

@@ -22,7 +22,7 @@ The directories under `Code/` follow the paper and form layers
   transformers and then as monadic relations between the monads.
 - Triples defines monad morphisms out of `divndNE` and its stacks, lifts their
   triples, and proves the triple diagram at the state level and with
-  exceptions. Dijkstra gives each morphism its Dijkstra monad and identifies
+  exceptions. DijkstraMonads gives each morphism its Dijkstra monad and identifies
   triples with typings.
 - GaloisConnections relates the DM4All specification monads.
 - Tests check instances/laws and semantic clients; Checks reports selected
@@ -47,7 +47,7 @@ and the opt-in audits.
 | [SP](Code/SP/CONTEXT.md) | §3.1-3.5 | SP arrows and monads |
 | [PTMonadTaxonomy](Code/PTMonadTaxonomy/CONTEXT.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
 | [Triples](Code/Triples/CONTEXT.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
-| [Dijkstra](Code/Dijkstra/CONTEXT.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
+| [DijkstraMonads](Code/DijkstraMonads/CONTEXT.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
 | [GaloisConnections](Code/GaloisConnections/CONTEXT.md) | §7 | DM4All monads and adjunctions |
 | [Tests](Code/Tests/CONTEXT.md) | — | Generic regression, concrete instances, semantic clients |
 | [Checks](Code/Checks/CONTEXT.md) | — | Assumption reporting, paper claims |
@@ -58,7 +58,7 @@ For effects, read computation → Triples contexts. For a
 representation change, read carrier → equivalence → examples/tests. For a
 generic law, read Lib → transformer → generic/concrete tests. For a
 judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
-typings, read carrier/order → Triples → Dijkstra. For a paper claim, start
+typings, read carrier/order → Triples → DijkstraMonads. For a paper claim, start
 from [PAPER.md](PAPER.md).
 
 `Backup/` (with the former `Taxonomy/deprecated/`) and `ITreeExamples/` are outside the normal

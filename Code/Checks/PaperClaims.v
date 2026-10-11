@@ -31,7 +31,7 @@ From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Triples Require
   Triple MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
-From Incorrectness.Dijkstra Require
+From Incorrectness.DijkstraMonads Require
   DijkstraMonad DijkstraExamples.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections GaloisArr.

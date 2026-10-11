@@ -22,7 +22,7 @@ the layers listed in [scripts/layers.txt](scripts/layers.txt), checked by
 - [WP](WP/CONTEXT.md) and [SP](SP/CONTEXT.md): the specification monads
   (paper §2-3).
 - [PTMonadTaxonomy](PTMonadTaxonomy/CONTEXT.md): the relations of the taxonomy (§4).
-- [Triples](Triples/CONTEXT.md) and [Dijkstra](Dijkstra/CONTEXT.md):
+- [Triples](Triples/CONTEXT.md) and [DijkstraMonads](DijkstraMonads/CONTEXT.md):
   monad morphisms, triples, Dijkstra monads (§5-6).
 - [GaloisConnections](GaloisConnections/CONTEXT.md): DM4All monads and
   their adjunctions (§7).

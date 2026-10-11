@@ -2,7 +2,7 @@
 
 Parent: [Code](../CONTEXT.md). Paper: the computation monad of nondeterminism
 and nontermination (Introduction, Section 5). Consumers: [Triples](../Triples/CONTEXT.md)
-and [Dijkstra](../Dijkstra/CONTEXT.md).
+and [DijkstraMonads](../DijkstraMonads/CONTEXT.md).
 
 These modules own computations and outcome relations, not specification
 well-formedness or readings. The generic transformer laws they rely on are in

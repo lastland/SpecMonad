@@ -17,7 +17,7 @@ infrastructure (`Lib/`) and library definitions. The computation side is one
 base monad, `divndNE`, and its transformer stacks (`Computation/`); the
 morphisms out of it, their triples, the triple diagram, the examples and the
 rewriting rules live in `Triples/`, and the Dijkstra monads of those
-morphisms in `Dijkstra/`.
+morphisms in `DijkstraMonads/`.
 
 Start with the computation monads (§2), then choose a specification
 presentation (§3–4 and §8) and the morphisms into it (§5). The
@@ -176,7 +176,7 @@ with exceptions the monads are the arrow stacks.
 
 The elements that a pair of a pre- and a postcondition determines are the
 indices of §9: `aspOver`, `dslpUnder`, `aspUnder`, `dslpOver` in
-`Dijkstra/DijkstraMonad.v`.
+`DijkstraMonads/DijkstraMonad.v`.
 
 ## 4. The WP specification monads
 
@@ -222,7 +222,7 @@ The lifts preserve argument order: a transformer that yields pointwise weaker
 preconditions is lower in the refinement order. The DM4all adjunctions and
 the identification of WP triples with Dijkstra typings use these reverse
 orders: an `Under` triple is `θ m ⊑ wpUnder pre post` and an `Over` triple
-`wpOver pre post ⊑ θ m` (`Dijkstra/DijkstraMonad.v`).
+`wpOver pre post ⊑ θ m` (`DijkstraMonads/DijkstraMonad.v`).
 
 **`GaloisConnections/WPArr.v` uses the raw carrier `WPureT`**, not `WPure`. Its `ArrowEq`
 is Leibniz equality. Some laws hold by conversion; laws involving products and
@@ -803,7 +803,7 @@ liberal WP triples `dwlpSt`
 `principle_of_agreement_dwlp`, `principle_of_denial_dwlp`), each obtained from
 its ASP counterpart through the Galois edge of the diagram.
 
-**Dijkstra monads.** `Dijkstra/DijkstraMonad.v` gives, for any monad
+**Dijkstra monads.** `DijkstraMonads/DijkstraMonad.v` gives, for any monad
 morphism `θ : M ~> W` into a specification monad `(W, le)`,
 
 ```text
@@ -843,12 +843,12 @@ inclusions of relations, so they are closed under intersection, and these
 triples are not. Without state there is one start point and the ASP `Under`
 triple is a typing (`triple_under_aspPure`, for a precondition that holds).
 
-`Dijkstra/DijkstraExamples.v` types one program in each of the eight WP
+`DijkstraMonads/DijkstraExamples.v` types one program in each of the eight WP
 Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a
 stateless program at ASP `Under`. See the
-[Dijkstra context](../Code/Dijkstra/CONTEXT.md).
+[Dijkstra context](../Code/DijkstraMonads/CONTEXT.md).
 
 ## 10. Build status
 
@@ -914,4 +914,4 @@ class), not `MonadLaws`.
 next to the arrows of `SP/SPostArr.v`, and `WP/WPVariants.v` has a third copy
 of the four homomorphism properties for unary WP transformers. `SPostMonad.v`,
 the SP monad files, `SPStBindComparisons.v` and `MonotoneSPSt.v` use the raw
-ones; nothing in `Triples/` or `Dijkstra/` does.
+ones; nothing in `Triples/` or `DijkstraMonads/` does.

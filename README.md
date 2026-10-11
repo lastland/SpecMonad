@@ -99,7 +99,7 @@ What is formalised:
 - **Dijkstra monads**: the Dijkstra monad of any monad morphism into an
   ordered monad, at every lifted morphism, with triples identified with
   typings where that is exact. See the
-  [Dijkstra context](Code/Dijkstra/CONTEXT.md).
+  [Dijkstra context](Code/DijkstraMonads/CONTEXT.md).
 
 ## Question
 

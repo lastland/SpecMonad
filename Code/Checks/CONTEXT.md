@@ -58,7 +58,7 @@ The selected reports cover:
   exceptions, the examples of [Triples/Examples.v](../Triples/Examples.v),
   the rules of [Triples/InCorrectnessPrinciples.v](../Triples/InCorrectnessPrinciples.v),
   and the construction, instances and triple identifications of
-  [DijkstraMonad.v](../Dijkstra/DijkstraMonad.v).
+  [DijkstraMonad.v](../DijkstraMonads/DijkstraMonad.v).
 - The separation of the four healthiness classes in
   [DSPASLPArr.v](../SP/DSPASLPArr.v).
 

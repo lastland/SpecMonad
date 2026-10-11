@@ -197,7 +197,7 @@ From Incorrectness.Lib.Arrow Require ArrowMorphism.
 From Incorrectness.Lib.Monad Require TransformerLaws.
 From Incorrectness.Triples Require
   MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
-From Incorrectness.Dijkstra Require DijkstraMonad DijkstraExamples.
+From Incorrectness.DijkstraMonads Require DijkstraMonad DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.
 Print Assumptions OrderedMonad.MonadMorphism_ext.
 Print Assumptions OrderedMonad.MonadMorphism_of_laws.

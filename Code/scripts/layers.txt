@@ -9,6 +9,6 @@ WP:                 Lib
 SP:                 Lib Relational
 PTMonadTaxonomy:    Lib Relational WP SP
 Triples:            Lib Computation Relational WP SP PTMonadTaxonomy
-Dijkstra:           Lib Computation Relational WP SP PTMonadTaxonomy Triples
+DijkstraMonads:     Lib Computation Relational WP SP PTMonadTaxonomy Triples
 GaloisConnections:  Lib Relational WP SP PTMonadTaxonomy
-Tests:              Lib Computation Relational WP SP PTMonadTaxonomy Triples Dijkstra GaloisConnections
+Tests:              Lib Computation Relational WP SP PTMonadTaxonomy Triples DijkstraMonads GaloisConnections

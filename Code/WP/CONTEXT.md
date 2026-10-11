@@ -2,7 +2,7 @@
 
 Parent: [Code](../CONTEXT.md). Paper: Section 2 (WP monads) and Section 3.6
 (the four WP monads). Consumers: [PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md),
-[Triples](../Triples/CONTEXT.md), [Dijkstra](../Dijkstra/CONTEXT.md),
+[Triples](../Triples/CONTEXT.md), [DijkstraMonads](../DijkstraMonads/CONTEXT.md),
 [Galois connections](../GaloisConnections/CONTEXT.md).
 
 - [WPure.v](WPure.v): `WPureT` is the raw WP transformer and `WPure` its

@@ -151,11 +151,11 @@ Hoare triples over-approximate.
 | Specification monads stay so with the order flipped | `OrderedMonad.OrderedMonad_flip` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v) | proved |
 | ASP and DSLP are specification monads | `ASPMonad.OrderedMonad_ASPSt`, `ASPMonad.OrderedMonad_ASPStExc`, `DSLPMonad.OrderedMonad_DSLPSt`, `DSLPMonad.OrderedMonad_DSLPStExc` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved (also without state) |
 | DSP and ASLP: `bind` not monotone for the natural order, so not specification monads | `DSPMonad.not_OrderedMonad_DSPSt`, `ASLPMonad.not_OrderedMonad_ASLPSt`, `DSPMonad.dsp_arbitrary_bind_impossible` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved with state (and with exceptions); without state they are specification monads, `DSPMonad.OrderedMonad_DSP` |
-| Dijkstra monad of a monad morphism, laws; eight WP and four SP Dijkstra monads | `DijkstraMonad.DM`, `DijkstraMonad.DMop`, `DijkstraMonad.DM_laws`, `DijkstraMonad.Dasp_laws` | [Dijkstra/DijkstraMonad.v](Code/Dijkstra/DijkstraMonad.v) | proved |
-| Other triples are typings | `DijkstraMonad.triple_under_wpStExc`, `DijkstraMonad.triple_over_wpStExc`, `DijkstraMonad.triple_over_aspStExc`, `DijkstraMonad.triple_under_dslpStExc` | [Dijkstra/DijkstraMonad.v](Code/Dijkstra/DijkstraMonad.v) | proved |
-| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `DijkstraMonad.le_aspUnder`, `DijkstraMonad.aspUnder_typing_triple`, `DijkstraMonad.no_asp_under_index`, `DijkstraMonad.no_dslp_over_index` | [Dijkstra/DijkstraMonad.v](Code/Dijkstra/DijkstraMonad.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
-| Without state, ASP `Triple.Under` is a typing | `DijkstraMonad.triple_under_aspPure` | [Dijkstra/DijkstraMonad.v](Code/Dijkstra/DijkstraMonad.v) | proved, for a precondition that holds |
-| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `DijkstraExamples.oneOrTwo_Dasp_op` | [Dijkstra/DijkstraExamples.v](Code/Dijkstra/DijkstraExamples.v) | proved |
+| Dijkstra monad of a monad morphism, laws; eight WP and four SP Dijkstra monads | `DijkstraMonad.DM`, `DijkstraMonad.DMop`, `DijkstraMonad.DM_laws`, `DijkstraMonad.Dasp_laws` | [DijkstraMonads/DijkstraMonad.v](Code/DijkstraMonads/DijkstraMonad.v) | proved |
+| Other triples are typings | `DijkstraMonad.triple_under_wpStExc`, `DijkstraMonad.triple_over_wpStExc`, `DijkstraMonad.triple_over_aspStExc`, `DijkstraMonad.triple_under_dslpStExc` | [DijkstraMonads/DijkstraMonad.v](Code/DijkstraMonads/DijkstraMonad.v) | proved |
+| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `DijkstraMonad.le_aspUnder`, `DijkstraMonad.aspUnder_typing_triple`, `DijkstraMonad.no_asp_under_index`, `DijkstraMonad.no_dslp_over_index` | [DijkstraMonads/DijkstraMonad.v](Code/DijkstraMonads/DijkstraMonad.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
+| Without state, ASP `Triple.Under` is a typing | `DijkstraMonad.triple_under_aspPure` | [DijkstraMonads/DijkstraMonad.v](Code/DijkstraMonads/DijkstraMonad.v) | proved, for a precondition that holds |
+| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `DijkstraExamples.oneOrTwo_Dasp_op` | [DijkstraMonads/DijkstraExamples.v](Code/DijkstraMonads/DijkstraExamples.v) | proved |
 
 ## Section 7: Galois connections between specification monads
 
@@ -280,6 +280,6 @@ Hoare triples over-approximate.
 | `Taxonomy/BaseSpecMonads/MonadTaxonomy.v` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) (Figure 1 edges, `Section Flavours`) and [PTMonadTaxonomy/Carriers.v](Code/PTMonadTaxonomy/Carriers.v) |
 | `Taxonomy/BaseSpecMonads/WPureMonad.v` | [WP/WPure.v](Code/WP/WPure.v) and [WP/WPVariants.v](Code/WP/WPVariants.v) |
 | `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | [Triples/](Code/Triples/) |
-| `Taxonomy/DijkstraMonads/*` | [Dijkstra/](Code/Dijkstra/) |
+| `Taxonomy/DijkstraMonads/*` | [DijkstraMonads/](Code/DijkstraMonads/) |
 | `Taxonomy/BaseSpecMonads/BaseGaloisConnections.v` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) |
 | `Taxonomy/BaseSpecMonads/NewGaloisConnections.v` | does not exist; see Section 7 |

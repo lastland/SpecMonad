@@ -4,7 +4,7 @@ Parent: [Code](../CONTEXT.md). Paper: Section 3.1-3.5 (strongest
 postcondition monads). Builds on [Lib](../Lib/CONTEXT.md) and
 [Relational](../Relational/CONTEXT.md); used by
 [PTMonadTaxonomy](../PTMonadTaxonomy/CONTEXT.md), [Triples](../Triples/CONTEXT.md),
-[Dijkstra](../Dijkstra/CONTEXT.md). Source declarations determine exact
+[DijkstraMonads](../DijkstraMonads/CONTEXT.md). Source declarations determine exact
 types, selected dictionaries and orders. Qualify shared names, especially
 unary accessors such as `ASPMonad.getASP` against the binary
 `SPostArr.getASP` (and likewise for DSLP).

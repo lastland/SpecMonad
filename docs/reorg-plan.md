@@ -54,7 +54,7 @@ this.
 | `SP/` | §3.1–3.5 | Lib, Relational |
 | `Taxonomy/` | §4 | Lib, Relational, WP, SP |
 | `Triples/` | §5 (and the §4.1 triple diagram, which needs the morphisms) | Lib, Computation, Relational, WP, SP, Taxonomy |
-| `Dijkstra/` | §6 | all above |
+| `DijkstraMonads/` | §6 | all above |
 | `GaloisConnections/` | §7 | Lib, Relational, WP, SP, Taxonomy |
 | `Tests/` | — | anything |
 
@@ -83,7 +83,7 @@ today's.
 | `T/Arrows/GaloisArr.v` | `Taxonomy/TransformerTaxonomy.v` (390–end, plus `MonotoneSPost`, `SPost_le` and their preorders from 72–84, 106–115) + `GaloisConnections/GaloisArr.v` (the rest) |
 | `T/BaseSpecMonads/{SPStBindComparisons,MonadTaxonomy}.v` | `Taxonomy/` |
 | `T/Triples/*.v` | `Triples/` |
-| `T/DijkstraMonads/*.v` | `Dijkstra/` |
+| `T/DijkstraMonads/*.v` | `DijkstraMonads/` |
 | `T/BaseSpecMonads/{PrePostMonad,RelPrePostMonad,BaseGaloisConnections}.v`, `T/Arrows/{PrePostArr,RelPrePostArr,WPArr}.v` | `GaloisConnections/` |
 | `Classes/Tests/*.v`, `T/Arrows/Tests/*.v`, `T/Arrows/Examples/*.v` | `Tests/` |
 | `T/deprecated/` | `Backup/Taxonomy-deprecated/` (the hyphen keeps it off the `-Q` load path) |
@@ -115,7 +115,7 @@ comparison; layer check (reporting only until step 7, enforcing after).
 1. **Clear the names.** Move `T/deprecated/`, `T/MeetingNotes/`.
 2. **`Lib/`.**
 3. **`Computation/`, `Relational/`** (with the `SPure.v` → `RelMonads.v` rename).
-4. **`WP/`, `SP/`, `Taxonomy/`, `Triples/`, `Dijkstra/`,
+4. **`WP/`, `SP/`, `Taxonomy/`, `Triples/`, `DijkstraMonads/`,
    `GaloisConnections/`, `Tests/`**, unsplit. Interim homes:
    `WP/WPureMonad.v`, `SP/SPPredicateTransformers.v`, `SP/SPostMonad.v`,
    `GaloisConnections/GaloisArr.v`. Afterwards `git status --ignored` shows
@@ -208,7 +208,8 @@ Departures from the plan:
   its name (Figure 1; cited by the paper). The directory was then renamed
   again, `MonadRelations/` -> `PTMonadTaxonomy/`, to match Section 4's title
   without clashing with the paper title or with `Lib/Monad/MonadRelation.v`.
-  The plan above uses the earlier names.
+  `Dijkstra/` was renamed `DijkstraMonads/` likewise. The plan above uses
+  the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)
   instead of per-directory READMEs; `Code/README.md` is the entry point and
