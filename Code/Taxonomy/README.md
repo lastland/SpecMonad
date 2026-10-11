@@ -59,7 +59,7 @@ Taxonomy/
                          Diagram                     -- the taxonomy diagram at the state level
                          Examples                    -- one verified triple per kind
                          InCorrectnessPrinciples     -- O'Hearn's rewriting rules
-  deprecated/            older iterations, excluded from the build
+  (older iterations now live in ../Backup/Taxonomy-deprecated/)
 ```
 
 Logical paths follow the directories: `Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad`,
@@ -904,7 +904,7 @@ every theorem in this README, and do not compare assumptions against an allowlis
 
 Not in the build, deliberately:
 
-- `deprecated/` — earlier iterations. Ignore when grepping for symbol
+- `../Backup/Taxonomy-deprecated/` — earlier iterations. Ignore when grepping for symbol
   references.
 
 The maintained `Code/Makefile` regenerates the gitignored `Makefile.coq` from

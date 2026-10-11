@@ -24,7 +24,7 @@ Source declarations and [_CoqProject](../_CoqProject) override older names.
 - [DijkstraMonads](DijkstraMonads/CONTEXT.md) gives the Dijkstra monad of any
   monad morphism into an ordered monad, instantiates it at every morphism of
   Triples, and identifies triples with typings where that is exact.
-- deprecated is excluded. Tests, examples, and assumption audits are distinct.
+- Tests, examples, and assumption audits are distinct.
 
 ## Semantic cautions
 

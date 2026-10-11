@@ -51,9 +51,9 @@ generic law, read Classes → transformer → generic/concrete tests. For a
 judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
 typings, read carrier/order → Triples → DijkstraMonads.
 
-`Taxonomy/deprecated/`, `Backup/`, and `ITreeExamples/` are outside the normal
+`Backup/` (with the former `Taxonomy/deprecated/`) and `ITreeExamples/` are outside the normal
 manifest. Consult them deliberately; copied ITree provenance is in its README.
-MeetingNotes and paper notes are research discussion, not adopted ADRs.
+[Meeting notes](docs/meeting-notes/) and paper notes are research discussion, not adopted ADRs.
 `fstar/` is separate; local `Papers/` availability is checkout-specific.
 See [CI](.github/workflows/SpecMonad.yml), [tracker](docs/agents/issue-tracker.md),
 and [labels](docs/agents/triage-labels.md) for supporting workflows.

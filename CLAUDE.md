@@ -27,7 +27,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Read [CONTEXT-MAP.md](CONTEXT-MAP.md), then the parent and local contexts
 relevant to the task. These describe the current source contracts and build
-boundaries. `Taxonomy/deprecated/` is excluded from `_CoqProject`; omit it from
+boundaries. `Backup/` (including `Backup/Taxonomy-deprecated/`) is excluded from `_CoqProject`; omit it from
 normal symbol searches.
 
 Concrete arrow instantiation checks live in `Taxonomy/Arrows/Tests/`.
