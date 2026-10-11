@@ -200,6 +200,14 @@ duplicated preamble lines).
 
 Departures from the plan:
 
+- After the final review, the section 4 directory `Taxonomy/` was renamed
+  `MonadRelations/` (the paper uses "taxonomy" for the whole paper, for
+  section 4.1's taxonomy of triples, and for Figure 1): `TransformerTaxonomy.v`
+  -> `TransformerRelations.v`, `TaxonomyCarriers.v` -> `Carriers.v`, and
+  `Triples/Diagram.v` -> `Triples/TripleTaxonomy.v`. `MonadTaxonomy.v` keeps
+  its name (Figure 1; cited by the paper). The plan above uses the earlier
+  names.
+
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)
   instead of per-directory READMEs; `Code/README.md` is the entry point and
   the old `Taxonomy/README.md` became `docs/design.md`.

@@ -32,7 +32,17 @@ def code(text):
 base = sys.argv[1]
 # Split files are checked by `split.py --check`, not here.
 SPECS = [runpy.run_path(str(f)) for f in sorted((Path(__file__).parent / "specs").glob("*.py"))]
+# Renames made after the splits (section 4 directory named by content).
+LATER = {"Code/Taxonomy/TransformerTaxonomy.v": "Code/MonadRelations/TransformerRelations.v",
+         "Code/Taxonomy/TaxonomyCarriers.v": "Code/MonadRelations/Carriers.v",
+         "Code/Taxonomy/MonotoneSPSt.v": "Code/MonadRelations/MonotoneSPSt.v",
+         "Code/Taxonomy/MonadTaxonomy.v": "Code/MonadRelations/MonadTaxonomy.v",
+         "Code/Taxonomy/SPStBindComparisons.v": "Code/MonadRelations/SPStBindComparisons.v",
+         "Code/Triples/Diagram.v": "Code/Triples/TripleTaxonomy.v"}
+LATER_QUALIFIERS = [("TransformerTaxonomy", "TransformerRelations"),
+                    ("TaxonomyCarriers", "Carriers"), ("Diagram", "TripleTaxonomy")]
 SPLIT_FILES = {"Code/" + p for sp in SPECS for p in [sp["SOURCE"]] + [x[0] for x in sp["PARTS"]]}
+SPLIT_FILES |= {LATER[f] for f in SPLIT_FILES if f in LATER}
 # Qualifier rewrites a split forced on other files, applied to the old text.
 QUALIFIED = {}
 for sp in SPECS:
@@ -51,8 +61,11 @@ for line in out.splitlines():
     old = subprocess.run(["git", "show", f"{base}:{parts[1]}"], cwd=REPO,
                          capture_output=True, text=True, check=True).stdout
     new = (REPO / parts[2]).read_text()
-    for o, n in QUALIFIED.get(parts[2], []):
+    inv = {v: k for k, v in LATER.items()}
+    for o, n in QUALIFIED.get(parts[2], []) + QUALIFIED.get(inv.get(parts[2], ""), []):
         old = old.replace(o, n)
+    for o, n in LATER_QUALIFIERS:
+        old = re.sub(r"(?<![\w.'])" + o + r"\.(?=[A-Za-z_])", n + ".", old)
     if body(old) == body(new):
         verdict = "same"
     elif code(old) == code(new):

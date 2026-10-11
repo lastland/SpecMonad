@@ -1,4 +1,4 @@
-# Taxonomy context
+# MonadRelations context
 
 Parent: [Code](../CONTEXT.md). Paper: Section 4 (taxonomy of predicate
 transformer monads, Figure 1). Builds on [WP](../WP/CONTEXT.md),
@@ -7,9 +7,15 @@ transformer monads, Figure 1). Builds on [WP](../WP/CONTEXT.md),
 [Triples](../Triples/CONTEXT.md). The [design notes](../../docs/design.md)
 give the longer story.
 
+The directory is named for what Section 4 does: it relates the monads by
+implication, contrapositive and Galois connection. "Taxonomy" is kept for the
+two diagrams: [MonadTaxonomy.v](MonadTaxonomy.v) (Figure 1, between the
+monads) and [Triples/TripleTaxonomy.v](../Triples/TripleTaxonomy.v)
+(Verscht and Kaminski's diagram of triples, for monadic programs).
+
 ## Files in reading order
 
-- [TransformerTaxonomy.v](TransformerTaxonomy.v) (§4.1): the monotone
+- [TransformerRelations.v](TransformerRelations.v) (§4.1): the monotone
   carrier `MonotoneSPost` read with either index fixed, as `MonoPT` (first
   index: SP; second: WP), and the three relations of Verscht and Kaminski's
   taxonomy on bare transformers: `pt_le` (implication), `Contrapositive`, and
@@ -25,7 +31,7 @@ give the longer story.
 - [SPStBindComparisons.v](SPStBindComparisons.v): the state bind of each SP
   monad read as a monotone stateful transformer and compared with the
   `SPStMon` structures. Not in the paper.
-- [TaxonomyCarriers.v](TaxonomyCarriers.v): the carriers of the SP and WP
+- [Carriers.v](Carriers.v): the carriers of the SP and WP
   monads inside `MonoPT` — the second index one state at a time, the first
   along `S ~ unit * S` — the four refinements, the broad monads, the WP and SP
   variants inside them, the pure level, duals under `Contrapositive`, and

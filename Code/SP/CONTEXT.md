@@ -3,7 +3,7 @@
 Parent: [Code](../CONTEXT.md). Paper: Section 3.1-3.5 (strongest
 postcondition monads). Builds on [Lib](../Lib/CONTEXT.md) and
 [Relational](../Relational/CONTEXT.md); used by
-[Taxonomy](../Taxonomy/CONTEXT.md), [Triples](../Triples/CONTEXT.md),
+[MonadRelations](../MonadRelations/CONTEXT.md), [Triples](../Triples/CONTEXT.md),
 [Dijkstra](../Dijkstra/CONTEXT.md). Source declarations determine exact
 types, selected dictionaries and orders. Qualify shared names, especially
 unary accessors such as `ASPMonad.getASP` against the binary
@@ -105,7 +105,7 @@ The canonical `ASPStExc` / `DSLPStExc` are definitionally the compatibility
 `ASPostArr` / `DSLPostArr` stacks of `SPostArr.v`. That an ASP element and the
 DSLP element denoting the same relation correspond under `ret` and `bind` is
 `MonadRelation_contra_asp_dslp_exc_one` / `_two` in
-[MonadTaxonomy.v](../Taxonomy/MonadTaxonomy.v).
+[MonadTaxonomy.v](../MonadRelations/MonadTaxonomy.v).
 
 Read: properties → `SPostArr.v` → `DSPASLPArr.v` → a monad file; the
 [checked clients](../Tests/CONTEXT.md) exercise the public operations.

@@ -302,7 +302,7 @@ the relations denoted (`aspSt_morphism_rel`, and so on), and the
 morphisms are closed, and those through DSP and ASLP use excluded middle. See
 the [Triples context](../Code/Triples/CONTEXT.md).
 
-## 6. The triple diagram — `Triples/Diagram.v`
+## 6. The triple diagram — `Triples/TripleTaxonomy.v`
 
 Figure 5 of Lena Verscht and Benjamin Lucien Kaminski's
 [*A Taxonomy of Hoare-Like Logics: Towards a Holistic View using Predicate
@@ -443,7 +443,7 @@ operations, normal forms, recovered relations, laws, binary stacks, and
 arrow-level conversions. No monad file and nothing in `Relational/RelMonads.v`
 is a dependency of these implementations. The SP dependency direction is
 `Lib/` and `Relational/` → `SPostArr` → `DSPASLPArr` → the monad files →
-`Taxonomy/` → `Triples/`.
+`MonadRelations/` → `Triples/`.
 
 `Rel.v` separately owns the relation carrier, stacks, and congruence;
 `RelSPostArr.v` owns their four SP readings and supporting facts.

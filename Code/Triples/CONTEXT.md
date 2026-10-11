@@ -55,7 +55,7 @@ Names: a lowercase reading followed by the level, `dwpPure` / `dwpSt` /
 - `xSt_read` / `xStExc_read` unfold a triple to a statement about the
   outcomes `outSt` / `outStExc` of the program.
 
-## Diagram.v
+## TripleTaxonomy.v
 
 The taxonomy diagram of Verscht and Kaminski for one `m : stdivndNE S A`, a
 precondition on start states and a postcondition on `A * S`: sixteen

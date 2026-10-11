@@ -3,7 +3,7 @@
 
     The WP monads are read at the second index of [MonoPT] and the SP monads
     at the first; the four refinements of each family become subsets of
-    that one carrier, where [TransformerTaxonomy.v] states implication,
+    that one carrier, where [TransformerRelations.v] states implication,
     contrapositive and Galois connection once.  The broad monads [WSt S]
     and [SPStMon S], the variants inside them, the pure level, and the
     duals and adjoints of the healthiness classes.  [MonadTaxonomy.v]
@@ -23,17 +23,17 @@ From Incorrectness.Lib.Monad Require Import
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr DSPASLPArr.
-From Incorrectness.Taxonomy Require Import TransformerTaxonomy.
+From Incorrectness.MonadRelations Require Import TransformerRelations.
 From Incorrectness.WP Require Import
   WPure WPVariants.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy Require Import SPStBindComparisons.
+From Incorrectness.MonadRelations Require Import SPStBindComparisons.
 From Incorrectness.Relational Require
   PredMonad.
 From Incorrectness.SP Require
   RawSP.
-From Incorrectness.Taxonomy Require
+From Incorrectness.MonadRelations Require
   MonotoneSPSt.
 
 Import MonotoneSPSt.SPStMonotone.
@@ -48,7 +48,7 @@ Local Notation Monad_Pred := PredMonad.PredM.Monad_Pred.
 (** * The carriers of the SP and WP monads inside the monotone arrow carrier *)
 (* ================================================================= *)
 
-(** [TransformerTaxonomy.v] states the relations of the taxonomy on
+(** [TransformerRelations.v] states the relations of the taxonomy on
     [MonoPT A B], monotone maps from predicates on [A] to predicates on
     [B].  This part shows that the carriers of the specification monads are
     that type with one index fixed, so that the relations apply to them:
@@ -280,13 +280,13 @@ Definition dspMono {A B} (f : DSPArr A B) : MonoPT A B :=
 Definition aslpMono {A B} (f : ASLPArr A B) : MonoPT A B :=
   mkMonoPT (getASLP f) (proj1 (proj2_sig f)).
 
-(** [MonoPT] and its order are the monotone carrier of [TransformerTaxonomy.v] and
+(** [MonoPT] and its order are the monotone carrier of [TransformerRelations.v] and
     its order, under the neutral names. *)
 
-Lemma MonoPT_MonotoneSPost A B : MonoPT A B = TransformerTaxonomy.MonotoneSPost A B.
+Lemma MonoPT_MonotoneSPost A B : MonoPT A B = TransformerRelations.MonotoneSPost A B.
 Proof. reflexivity. Qed.
 
-Lemma pt_le_MonotoneSPost_le A B : @pt_le A B = @TransformerTaxonomy.MonotoneSPost_le A B.
+Lemma pt_le_MonotoneSPost_le A B : @pt_le A B = @TransformerRelations.MonotoneSPost_le A B.
 Proof. reflexivity. Qed.
 
 (* ================================================================= *)
@@ -747,7 +747,7 @@ End PureCarriers.
 (* ================================================================= *)
 
 (** [pt_dual] exchanges strictness with termination and disjunctivity with
-    conjunctivity ([TransformerTaxonomy.v]), so the contrapositive of an element of
+    conjunctivity ([TransformerRelations.v]), so the contrapositive of an element of
     [ASPArr A B] is in [DSLPArr A B] and conversely, and likewise for
     [DSPArr A B] and [ASLPArr A B], at the same indices.  The halves about
     families are classical. *)
@@ -801,7 +801,7 @@ End Duals.
 (* ================================================================= *)
 
 (** A left adjoint is strict and disjunctive and a right adjoint terminating
-    and conjunctive ([TransformerTaxonomy.v]).  Conversely every element of [ASPArr A B]
+    and conjunctive ([TransformerRelations.v]).  Conversely every element of [ASPArr A B]
     has a right adjoint and every element of [DSLPArr B A] a left one, both
     read off the relation the element denotes.  So [GaloisPT] relates the
     carrier of [ASPSt S] to that of [DWLPSt S], and the carrier of

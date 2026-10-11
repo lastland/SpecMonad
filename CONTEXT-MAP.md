@@ -18,7 +18,7 @@ The directories under `Code/` follow the paper and form layers
   builds on.
 - WP and SP own the specification monads, their properties and orders. The
   SP arrows (`SPostArr.v`, `DSPASLPArr.v`) never import the SP monad files.
-- Taxonomy states implication, contrapositive and Galois connection on bare
+- MonadRelations states implication, contrapositive and Galois connection on bare
   transformers and then as monadic relations between the monads.
 - Triples defines monad morphisms out of `divndNE` and its stacks, lifts their
   triples, and proves the triple diagram at the state level and with
@@ -45,7 +45,7 @@ and the opt-in audits.
 | [Relational](Code/Relational/CONTEXT.md) | — | Relations, SP readings, `Pred` |
 | [WP](Code/WP/CONTEXT.md) | §2, §3.6 | WP monads and variants |
 | [SP](Code/SP/CONTEXT.md) | §3.1-3.5 | SP arrows and monads |
-| [Taxonomy](Code/Taxonomy/CONTEXT.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
+| [MonadRelations](Code/MonadRelations/CONTEXT.md) | §4 | Implication, contrapositive, Galois; Figure 1 |
 | [Triples](Code/Triples/CONTEXT.md) | §5 | Morphisms out of `divndNE`, triples, diagram, examples, rewriting rules |
 | [Dijkstra](Code/Dijkstra/CONTEXT.md) | §6 | Dijkstra monad of a monad morphism; triples as typings |
 | [GaloisConnections](Code/GaloisConnections/CONTEXT.md) | §7 | DM4All monads and adjunctions |

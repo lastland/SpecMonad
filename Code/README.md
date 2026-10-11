@@ -29,7 +29,7 @@ propositional extensionality and, where stated, excluded middle
 | [Relational/](Relational/CONTEXT.md) | infrastructure; `Pred` (§7) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
 | [WP/](WP/CONTEXT.md) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
 | [SP/](SP/CONTEXT.md) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
-| [Taxonomy/](Taxonomy/CONTEXT.md) | §4 | the taxonomy on bare transformers, then as monadic relations between the monads (Figure 1) |
+| [MonadRelations/](MonadRelations/CONTEXT.md) | §4 | the taxonomy on bare transformers, then as monadic relations between the monads (Figure 1) |
 | [Triples/](Triples/CONTEXT.md) | §5 | monad morphisms out of `divndNE`, the general triple, the triple diagram, examples |
 | [Dijkstra/](Dijkstra/CONTEXT.md) | §6 | Dijkstra monads of the morphisms; which triples are typings |
 | [GaloisConnections/](GaloisConnections/CONTEXT.md) | §7 | the DM4All specification monads and their adjunctions |
@@ -40,14 +40,14 @@ propositional extensionality and, where stated, excluded middle
 flowchart RL
   Computation[Computation] -->|1| Lib[Lib]
   Dijkstra[Dijkstra] -->|5| Triples[Triples]
-  GaloisConnections[GaloisConnections] -->|1| Taxonomy[Taxonomy]
+  GaloisConnections[GaloisConnections] -->|1| MonadRelations[MonadRelations]
+  MonadRelations[MonadRelations] -->|21| SP[SP]
+  MonadRelations[MonadRelations] -->|5| WP[WP]
   Relational[Relational] -->|16| Lib[Lib]
   SP[SP] -->|11| Relational[Relational]
-  Taxonomy[Taxonomy] -->|21| SP[SP]
-  Taxonomy[Taxonomy] -->|5| WP[WP]
   Tests[Tests] -->|2| GaloisConnections[GaloisConnections]
   Triples[Triples] -->|4| Computation[Computation]
-  Triples[Triples] -->|3| Taxonomy[Taxonomy]
+  Triples[Triples] -->|3| MonadRelations[MonadRelations]
   WP[WP] -->|4| Lib[Lib]
 ```
 
@@ -55,7 +55,7 @@ Edges implied by others are omitted; a label counts the direct imports
 between the two directories (`python3 scripts/depgraph.py --mermaid`
 regenerates this). Two edges deserve a word: `GaloisConnections/GaloisArr.v`
 reuses the monotone carrier `MonotoneSPost` of
-`Taxonomy/TransformerTaxonomy.v`, and `Tests/ArrowMonadInstances.v`
+`MonadRelations/TransformerRelations.v`, and `Tests/ArrowMonadInstances.v`
 instantiates the arrow-level specification types of `GaloisConnections/`
 (Tests also imports SP, Relational and Lib directly). `Checks/` is outside
 the build and the graph. Each
@@ -75,10 +75,10 @@ file-level graph with a directory-only view.
 4. §3.4–3.5: [SP/SPostArr.v](SP/SPostArr.v), [SP/DSPASLPArr.v](SP/DSPASLPArr.v),
    then [SP/ASPMonad.v](SP/ASPMonad.v) and its three siblings; §3.6:
    [WP/WPVariants.v](WP/WPVariants.v).
-5. §4: [Taxonomy/TransformerTaxonomy.v](Taxonomy/TransformerTaxonomy.v), then
-   `Section Flavours` of [Taxonomy/MonadTaxonomy.v](Taxonomy/MonadTaxonomy.v).
+5. §4: [MonadRelations/TransformerRelations.v](MonadRelations/TransformerRelations.v), then
+   `Section Flavours` of [MonadRelations/MonadTaxonomy.v](MonadRelations/MonadTaxonomy.v).
 6. §5: [Triples/MonadMorphisms.v](Triples/MonadMorphisms.v),
-   [Triples/Diagram.v](Triples/Diagram.v), [Triples/Examples.v](Triples/Examples.v).
+   [Triples/TripleTaxonomy.v](Triples/TripleTaxonomy.v), [Triples/Examples.v](Triples/Examples.v).
 7. §6: [Dijkstra/DijkstraMonad.v](Dijkstra/DijkstraMonad.v),
    [Dijkstra/DijkstraExamples.v](Dijkstra/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).

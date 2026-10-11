@@ -83,9 +83,9 @@ What is formalised:
 - **The taxonomy of triples**: the 26 edges of Verscht and Kaminski's diagram
   (implications, contrapositives, and the two Galois connections between WP
   and SP), with state and with state and exceptions, in
-  [`Triples/Diagram.v`](Code/Triples/Diagram.v). A separate
+  [`Triples/TripleTaxonomy.v`](Code/Triples/TripleTaxonomy.v). A separate
   development relates the specification monads themselves
-  (`Taxonomy/MonadTaxonomy.v`).
+  (`MonadRelations/MonadTaxonomy.v`).
 
 - **Examples**: one verified program for each of the sixteen triple kinds,
   and a withdrawal example contrasting angelic WP coverage of every input

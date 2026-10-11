@@ -54,7 +54,7 @@ The selected reports cover:
   `arrow_morphism_monad`, the base arrow morphisms, the morphisms of
   [Triples/MonadMorphisms.v](../Triples/MonadMorphisms.v) at three levels
   with both proofs of each SP morphism, the edges of
-  [Triples/Diagram.v](../Triples/Diagram.v) with state and with
+  [Triples/TripleTaxonomy.v](../Triples/TripleTaxonomy.v) with state and with
   exceptions, the examples of [Triples/Examples.v](../Triples/Examples.v),
   the rules of [Triples/InCorrectnessPrinciples.v](../Triples/InCorrectnessPrinciples.v),
   and the construction, instances and triple identifications of

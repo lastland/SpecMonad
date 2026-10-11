@@ -7,8 +7,8 @@ From Incorrectness.Relational Require Import
   RelSPostArr.
 From Incorrectness.SP Require Import
   SPostArrEquiv.
-From Incorrectness.Taxonomy Require Import
-  TransformerTaxonomy.
+From Incorrectness.MonadRelations Require Import
+  TransformerRelations.
 From Incorrectness.GaloisConnections Require Import
   GaloisArr.
 From Incorrectness.SP Require
@@ -195,8 +195,8 @@ Print Assumptions RelArrowCoherence.relS_bind.
 From Incorrectness.Lib.Monad Require OrderedMonad.
 From Incorrectness.Lib.Arrow Require ArrowMorphism.
 From Incorrectness.Lib.Monad Require TransformerLaws.
-From Incorrectness.Triples Require MonadMorphisms Diagram Examples
-  InCorrectnessPrinciples.
+From Incorrectness.Triples Require
+  MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
 From Incorrectness.Dijkstra Require DijkstraMonad DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.
 Print Assumptions OrderedMonad.MonadMorphism_ext.
@@ -270,39 +270,39 @@ Print Assumptions MonadMorphisms.triple_aslpStExc.
 (** The taxonomy diagram at the state level.
 
     Implications between WP triples: closed. *)
-Print Assumptions Diagram.dwp_under_dwlp_under.
-Print Assumptions Diagram.awp_under_awlp_under.
-Print Assumptions Diagram.dwp_under_awp_under.
-Print Assumptions Diagram.dwlp_under_awlp_under.
-Print Assumptions Diagram.dwlp_over_dwp_over.
-Print Assumptions Diagram.awlp_over_awp_over.
-Print Assumptions Diagram.awp_over_dwp_over.
-Print Assumptions Diagram.awlp_over_dwlp_over.
+Print Assumptions TripleTaxonomy.dwp_under_dwlp_under.
+Print Assumptions TripleTaxonomy.awp_under_awlp_under.
+Print Assumptions TripleTaxonomy.dwp_under_awp_under.
+Print Assumptions TripleTaxonomy.dwlp_under_awlp_under.
+Print Assumptions TripleTaxonomy.dwlp_over_dwp_over.
+Print Assumptions TripleTaxonomy.awlp_over_awp_over.
+Print Assumptions TripleTaxonomy.awp_over_dwp_over.
+Print Assumptions TripleTaxonomy.awlp_over_dwlp_over.
 
 (** Implications between SP triples: excluded middle, from the DSP and ASLP
     carriers. *)
-Print Assumptions Diagram.aslp_over_asp_over.
-Print Assumptions Diagram.aslp_over_dslp_over.
-Print Assumptions Diagram.asp_over_dsp_over.
-Print Assumptions Diagram.dslp_over_dsp_over.
-Print Assumptions Diagram.dsp_under_dslp_under.
-Print Assumptions Diagram.dsp_under_asp_under.
-Print Assumptions Diagram.dslp_under_aslp_under.
-Print Assumptions Diagram.asp_under_aslp_under.
+Print Assumptions TripleTaxonomy.aslp_over_asp_over.
+Print Assumptions TripleTaxonomy.aslp_over_dslp_over.
+Print Assumptions TripleTaxonomy.asp_over_dsp_over.
+Print Assumptions TripleTaxonomy.dslp_over_dsp_over.
+Print Assumptions TripleTaxonomy.dsp_under_dslp_under.
+Print Assumptions TripleTaxonomy.dsp_under_asp_under.
+Print Assumptions TripleTaxonomy.dslp_under_aslp_under.
+Print Assumptions TripleTaxonomy.asp_under_aslp_under.
 
 (** Contrapositives: excluded middle. *)
-Print Assumptions Diagram.awp_under_contra_dwlp_over.
-Print Assumptions Diagram.awlp_under_contra_dwp_over.
-Print Assumptions Diagram.dwp_under_contra_awlp_over.
-Print Assumptions Diagram.dwlp_under_contra_awp_over.
-Print Assumptions Diagram.dsp_under_contra_aslp_over.
-Print Assumptions Diagram.dslp_under_contra_asp_over.
-Print Assumptions Diagram.asp_under_contra_dslp_over.
-Print Assumptions Diagram.aslp_under_contra_dsp_over.
+Print Assumptions TripleTaxonomy.awp_under_contra_dwlp_over.
+Print Assumptions TripleTaxonomy.awlp_under_contra_dwp_over.
+Print Assumptions TripleTaxonomy.dwp_under_contra_awlp_over.
+Print Assumptions TripleTaxonomy.dwlp_under_contra_awp_over.
+Print Assumptions TripleTaxonomy.dsp_under_contra_aslp_over.
+Print Assumptions TripleTaxonomy.dslp_under_contra_asp_over.
+Print Assumptions TripleTaxonomy.asp_under_contra_dslp_over.
+Print Assumptions TripleTaxonomy.aslp_under_contra_dsp_over.
 
 (** The two Galois edges: closed. *)
-Print Assumptions Diagram.dwlp_under_galois_asp_over.
-Print Assumptions Diagram.awp_over_galois_dslp_under.
+Print Assumptions TripleTaxonomy.dwlp_under_galois_asp_over.
+Print Assumptions TripleTaxonomy.awp_over_galois_dslp_under.
 
 (** One example per triple kind.  The twelve WP, ASP and DSLP examples are
     closed; the four DSP and ASLP examples use excluded middle. *)
@@ -333,13 +333,13 @@ Print Assumptions DSPASLPArr.no_ASPArr_for_dslp.
 
 (** The diagram with exceptions: the same pattern as at the state level.
     WP implications and Galois edges closed, the rest excluded middle. *)
-Print Assumptions Diagram.dwp_under_dwlp_under_exc.
-Print Assumptions Diagram.awlp_over_dwlp_over_exc.
-Print Assumptions Diagram.dwlp_under_galois_asp_over_exc.
-Print Assumptions Diagram.awp_over_galois_dslp_under_exc.
-Print Assumptions Diagram.dsp_under_asp_under_exc.
-Print Assumptions Diagram.asp_under_contra_dslp_over_exc.
-Print Assumptions Diagram.awp_under_contra_dwlp_over_exc.
+Print Assumptions TripleTaxonomy.dwp_under_dwlp_under_exc.
+Print Assumptions TripleTaxonomy.awlp_over_dwlp_over_exc.
+Print Assumptions TripleTaxonomy.dwlp_under_galois_asp_over_exc.
+Print Assumptions TripleTaxonomy.awp_over_galois_dslp_under_exc.
+Print Assumptions TripleTaxonomy.dsp_under_asp_under_exc.
+Print Assumptions TripleTaxonomy.asp_under_contra_dslp_over_exc.
+Print Assumptions TripleTaxonomy.awp_under_contra_dwlp_over_exc.
 
 (** The rewriting rules, for ASP and for the demonic liberal WP: closed. *)
 Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_asp.

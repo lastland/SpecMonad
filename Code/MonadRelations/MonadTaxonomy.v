@@ -5,9 +5,9 @@
     no observation appears: an element of a monad is a predicate
     transformer, and the relations are between elements.
 
-    [TaxonomyCarriers.v] places the carriers of the monads inside the
+    [Carriers.v] places the carriers of the monads inside the
     monotone arrow carrier, where the three relations are stated once
-    ([TransformerTaxonomy.v]).  This file states them on the monads; its
+    ([TransformerRelations.v]).  This file states them on the monads; its
     [Section Flavours] has the edges of the paper's Figure 1.
 
     They are defined on the two broad monads, in the monads' own terms:
@@ -21,7 +21,7 @@
                        [GaloisWPSP w m]: the WP element is left adjoint to the SP one
 
     Each is the corresponding relation of the arrow carrier
-    ([TransformerTaxonomy.v]), read through the carrier isomorphisms of
+    ([TransformerRelations.v]), read through the carrier isomorphisms of
     the first part ([impliesWSt_pt], [contraWSt_pt], [GaloisSPWP_pt]
     &c.), and has that relation's laws.
 
@@ -124,19 +124,19 @@ From Incorrectness.Lib.Monad Require Import
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.SP Require Import SPostArr DSPASLPArr.
-From Incorrectness.Taxonomy Require Import TransformerTaxonomy.
+From Incorrectness.MonadRelations Require Import TransformerRelations.
 From Incorrectness.WP Require Import
   WPure WPVariants.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy Require Import SPStBindComparisons.
+From Incorrectness.MonadRelations Require Import SPStBindComparisons.
 From Incorrectness.Relational Require
   PredMonad.
 From Incorrectness.SP Require
   RawSP.
-From Incorrectness.Taxonomy Require
+From Incorrectness.MonadRelations Require
   MonotoneSPSt.
-From Incorrectness.Taxonomy Require Import TaxonomyCarriers.
+From Incorrectness.MonadRelations Require Import Carriers.
 
 Import MonotoneSPSt.SPStMonotone.
 

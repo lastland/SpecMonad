@@ -27,10 +27,10 @@ From Incorrectness.WP Require
 From Incorrectness.SP Require
   SPostMonad StatefulSPostCounterexample PredicateTransformerProperties
   SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy Require
-  TransformerTaxonomy MonotoneSPSt SPStBindComparisons MonadTaxonomy.
+From Incorrectness.MonadRelations Require
+  TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Triples Require
-  Triple MonadMorphisms Diagram Examples InCorrectnessPrinciples.
+  Triple MonadMorphisms TripleTaxonomy Examples InCorrectnessPrinciples.
 From Incorrectness.Dijkstra Require
   DijkstraMonad DijkstraExamples.
 From Incorrectness.GaloisConnections Require
@@ -192,9 +192,9 @@ Check WPVariants.OrderedMonad_DWLPSt_op.
 
 (** 4.1: implication, contrapositive and Galois connection on bare
     monotone transformers. *)
-Check TransformerTaxonomy.pt_le.
-Check TransformerTaxonomy.Contrapositive.
-Check TransformerTaxonomy.GaloisPT.
+Check TransformerRelations.pt_le.
+Check TransformerRelations.Contrapositive.
+Check TransformerRelations.GaloisPT.
 
 (** 4.2: DM4All's monadic relation; an ordered monad's order is one. *)
 Check MonadRelation.MonadRelation.
@@ -283,12 +283,12 @@ Check MonadMorphisms.triple_aspSt.
 
 (** The taxonomy diagram on the triples of one stateful program (26 edges;
     again with exceptions, suffix [_exc]). *)
-Check Diagram.dwp_under_dwlp_under.
-Check Diagram.dsp_under_asp_under.
-Check Diagram.awp_under_contra_dwlp_over.
-Check Diagram.asp_under_contra_dslp_over.
-Check Diagram.dwlp_under_galois_asp_over.
-Check Diagram.awp_over_galois_dslp_under.
+Check TripleTaxonomy.dwp_under_dwlp_under.
+Check TripleTaxonomy.dsp_under_asp_under.
+Check TripleTaxonomy.awp_under_contra_dwlp_over.
+Check TripleTaxonomy.asp_under_contra_dslp_over.
+Check TripleTaxonomy.dwlp_under_galois_asp_over.
+Check TripleTaxonomy.awp_over_galois_dslp_under.
 
 (** Verified programs: one per triple kind (16), and O'Hearn's Example 3.1. *)
 Check Examples.progA_dwp_under.
