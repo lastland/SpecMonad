@@ -362,8 +362,10 @@ for (const g of new Set(DATA.map(n => n.group))) {
 }
 for (const [k, c] of dirCount) {
   const [a, b] = k.split("⇒");
+  // Redundant when b is reached from a through another directory.
+  const red = (dirAdj.get(a) || []).some(o => o !== b && dirClosure.get(o).has(b));
   elements.push({ classes: "diredge offmode" + (dirClosure.get(b).has(a) ? " cyc" : ""),
-    data: { id: "dir:" + k, source: "dir:" + a, target: "dir:" + b, label: String(c) } });
+    data: { id: "dir:" + k, source: "dir:" + a, target: "dir:" + b, label: String(c), redundant: red ? 1 : 0 } });
 }
 
 const dirMaxLines = Math.max(...elements.filter(e => e.classes && e.classes.includes("dirnode")).map(e => e.data.lines), 1);
