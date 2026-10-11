@@ -25,5 +25,6 @@ Parent: [Code](Code.md). Paper: Section 2 (WP monads) and Section 3.6
 
 Only [PTMonadTaxonomy](PTMonadTaxonomy.md) imports `WPVariants.v`. The monad
 morphisms of [Triples](Verification.md) land in `WPure` itself; no
-lemma places their image in a variant. Keep WP triple argument and direction
+lemma places their image in a variant; see
+[the note on proving it](../../notes/wp-readings-soundness.md). Keep WP triple argument and direction
 changes in mind: the orders are reverse implication.
