@@ -11,7 +11,7 @@ OUT=$(mktemp -d)
 
 # Stale .vo files would satisfy a Require that still names an old path.
 find . \( -name '*.vo' -o -name '*.vos' -o -name '*.vok' -o -name '*.glob' -o -name '.*.aux' \) \
-  -not -path './Backup/*' -not -path './ITreeExamples/*' -delete
+  -not -path './Backup/*' -delete
 start=$(date +%s)
 make -j8 > "$OUT/build.log" 2>&1 || { tail -30 "$OUT/build.log"; echo "BUILD FAILED"; exit 1; }
 echo "build: ok ($(( $(date +%s) - start ))s)"

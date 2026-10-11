@@ -64,8 +64,9 @@ judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
 typings, read carrier/order → Generic/DijkstraMonad.v → the setting's Dijkstra and Typings files. For a paper claim, start
 from [PAPER.md](../../../PAPER.md).
 
-`Backup/` (with the former `Taxonomy/deprecated/`) and `ITreeExamples/` are outside the normal
-manifest. Consult them deliberately; copied ITree provenance is in its README.
+`Backup/` (with the former `Taxonomy/deprecated/` and `ITreeExamples/`) is outside the normal
+manifest. Consult it deliberately; the provenance of the copied ITree examples
+is in [Backup/ITreeExamples/README.md](../../../Code/Backup/ITreeExamples/README.md).
 [Meeting notes](../../meeting-notes) and paper notes are research discussion, not adopted ADRs.
 `fstar/` is separate; local `Papers/` availability is checkout-specific.
 See [CI](../../../.github/workflows/SpecMonad.yml), [tracker](../issue-tracker.md),

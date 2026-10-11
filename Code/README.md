@@ -101,4 +101,4 @@ file-level graph with a directory-only view.
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
 The [design notes](../docs/design.md) tell the longer story;
-`Backup/` and `ITreeExamples/` are outside the build.
+`Backup/` (including the former `ITreeExamples/`) is outside the build.

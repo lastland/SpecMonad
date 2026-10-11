@@ -40,4 +40,4 @@ carrier's equality and order: similar names can reverse implication.
 Unary monads differ from binary arrows at a fixed input. Well-formedness,
 monad laws, monotonicity in a precondition, and ordered bind are separate.
 Some exploratory proofs end in `Abort`; build membership does not turn them
-into results. `Backup/` (with the former `Taxonomy/deprecated/`) and `ITreeExamples/` are excluded. Follow parent/local contexts and source links.
+into results. `Backup/` (with the former `Taxonomy/deprecated/` and `ITreeExamples/`) is excluded. Follow parent/local contexts and source links.
