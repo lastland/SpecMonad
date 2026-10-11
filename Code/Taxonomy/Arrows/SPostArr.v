@@ -11,7 +11,7 @@ From Hammer Require Import Tactics.
 From Incorrectness.Lib.Arrow Require Export ArrowMonad.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT
   ArrowMorphism RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
+From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export PredicateTransformerProperties.
 
 (** ** Raw transformers and healthiness conditions

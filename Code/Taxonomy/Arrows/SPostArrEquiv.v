@@ -16,7 +16,8 @@ From Coq Require Import Morphisms.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Arrow Require Import RelArrowCoherence.
 From Incorrectness.Lib.Arrow Require Export ArrowMorphism.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr OptionLoop SPostArr.
+From Incorrectness.Relational Require Import Rel RelSPostArr OptionLoop.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
 
 Module PropertySP := SPostArr.
 Module RelSP := RelSPostArr.

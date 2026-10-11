@@ -2,10 +2,14 @@
 From Incorrectness.Lib.Arrow Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import
-  SPostArr RelSPostArr SPostArrEquiv GaloisArr.
+  SPostArr.
+From Incorrectness.Relational Require Import
+  RelSPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import
+  SPostArrEquiv GaloisArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require ASPMonad DSLPMonad DSPMonad
   ASLPMonad BaseGaloisConnections.
-From Incorrectness.Taxonomy.ComputationMonads Require Import DivNonDetNE.
+From Incorrectness.Computation Require Import DivNonDetNE.
 
 (** Shared algebraic helpers take their congruence/application premises
     explicitly. Generic monad laws derive pure congruence constructively;

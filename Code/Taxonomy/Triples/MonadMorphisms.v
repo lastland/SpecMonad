@@ -50,13 +50,15 @@ From Incorrectness.Lib.Monad Require Import
   OrderedMonad.
 From Incorrectness.Lib.Monad Require Import
   TransformerLaws.
-From Incorrectness.Taxonomy.ComputationMonads Require Import
+From Incorrectness.Computation Require Import
   DivNonDetNE.
+From Incorrectness.Relational Require Import
+  Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Import
-  Rel RelSPostArr SPostArr SPostArrEquiv.
+  SPostArr SPostArrEquiv.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.
-From Incorrectness.Taxonomy.BaseSpecMonads Require PredMonad SPure.
+From Incorrectness.Relational Require PredMonad RelMonads.
 From Incorrectness.Taxonomy.Triples Require Import Triple.
 
 Local Notation Pred := PredMonad.PredM.Pred.

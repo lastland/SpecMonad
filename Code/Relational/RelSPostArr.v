@@ -17,7 +17,7 @@
     recovery, inclusion, and operation facts. [aspOf] and [dslpOf] are
     transparent aliases of [asp] and [dslp]. Their recovery is constructive;
     [dspOf_rel] and [aslpOf_rel] use excluded middle. Unit-input monad
-    interfaces and relational orders live in [BaseSpecMonads/SPure.v].
+    interfaces and relational orders live in [RelMonads.v].
 
     [SPostArr.v] gives the property-only transformer presentation;
     [SPostArrEquiv.v] relates the ASP/DSLP arrows to [Rel], preserving their
@@ -25,7 +25,7 @@
 
 From Coq Require Import Classical_Prop.
 From Incorrectness.Lib.Arrow Require Import Arrow.
-From Incorrectness.Taxonomy.Arrows Require Export Rel.
+From Incorrectness.Relational Require Export Rel.
 
 (** ** Angelic strongest postcondition *)
 

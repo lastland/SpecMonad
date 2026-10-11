@@ -30,7 +30,7 @@
     [Tests/ArrowTransformerInstances.v].  This file owns the binary
     [SPureArr], [SPStArr], and [SPStExcArr] compatibility names, their
     selected equality/law dictionaries, and relational congruence facts.
-    [BaseSpecMonads/SPure.v] supplies their unit-input monad interfaces
+    [RelMonads.v] supplies their unit-input monad interfaces
     and orders; [RelSPostArr.v] supplies the four SP readings.
 
     This file proves the base arrow laws, including [ArrowLoopLaws];

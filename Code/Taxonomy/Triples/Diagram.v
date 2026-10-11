@@ -62,8 +62,9 @@ From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
-From Incorrectness.Taxonomy.ComputationMonads Require Import DivNonDetNE.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr SPostArr GaloisArr.
+From Incorrectness.Computation Require Import DivNonDetNE.
+From Incorrectness.Relational Require Import Rel RelSPostArr.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr GaloisArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad MonadTaxonomy.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms.

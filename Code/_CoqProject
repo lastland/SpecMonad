@@ -1,7 +1,7 @@
 -Q . Incorrectness
 
 Lib/Monad/TransformerLaws.v
-Taxonomy/ComputationMonads/DivNonDetNE.v
+Computation/DivNonDetNE.v
 Lib/Arrow/Arrow.v
 Lib/Arrow/ArrowApplyFacts.v
 Lib/Arrow/ArrowMonad.v
@@ -20,24 +20,24 @@ Lib/Arrow/RelArrowCoherence.v
 Lib/Galois.v
 Lib/Monad/OrderedMonad.v
 Lib/Monad/MonadRelation.v
-Taxonomy/BaseSpecMonads/PredMonad.v
+Relational/PredMonad.v
 Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
 Taxonomy/BaseSpecMonads/WPureMonad.v
 Taxonomy/BaseSpecMonads/RelPrePostMonad.v
 Taxonomy/BaseSpecMonads/SPPredicateTransformers.v
-Taxonomy/Arrows/Rel.v
-Taxonomy/Arrows/RelSPostArr.v
+Relational/Rel.v
+Relational/RelSPostArr.v
 Taxonomy/Arrows/PredicateTransformerProperties.v
 Taxonomy/Arrows/SPostArr.v
-Taxonomy/Arrows/OptionLoop.v
+Relational/OptionLoop.v
 Taxonomy/Arrows/SPostArrEquiv.v
 Taxonomy/Arrows/Examples/SPostArrExamples.v
 Taxonomy/Arrows/PrePostArr.v
 Taxonomy/Arrows/WPArr.v
 Taxonomy/Arrows/RelPrePostArr.v
 Taxonomy/Arrows/GaloisArr.v
-Taxonomy/BaseSpecMonads/SPure.v
+Relational/RelMonads.v
 Taxonomy/BaseSpecMonads/ASPMonad.v
 Taxonomy/BaseSpecMonads/DSLPMonad.v
 Taxonomy/BaseSpecMonads/DSPMonad.v

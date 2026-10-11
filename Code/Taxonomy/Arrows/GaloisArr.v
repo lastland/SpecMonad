@@ -41,7 +41,8 @@
 From Coq Require Import Morphisms RelationClasses Relation_Definitions Classical_Prop.
 
 From Incorrectness.Lib Require Import Galois.
-From Incorrectness.Taxonomy.Arrows Require Import RelSPostArr Rel PrePostArr WPArr RelPrePostArr SPostArr.
+From Incorrectness.Relational Require Import RelSPostArr Rel.
+From Incorrectness.Taxonomy.Arrows Require Import PrePostArr WPArr RelPrePostArr SPostArr.
 
 (* ================================================================= *)
 (** ** Local subtypes                                                  *)

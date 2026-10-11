@@ -10,8 +10,10 @@ From Coq Require Import Morphisms.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad RelArrowCoherence.
 From Incorrectness.Lib.Arrow Require Import OptionArrowT StateArrowT.
+From Incorrectness.Relational Require Import
+  Rel.
 From Incorrectness.Taxonomy.Arrows Require Import
-  Rel PrePostArr RelPrePostArr SPostArr.
+  PrePostArr RelPrePostArr SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require ASPMonad DSLPMonad.
 
 Create HintDb sp_arrow_bind.

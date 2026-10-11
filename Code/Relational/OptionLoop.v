@@ -18,7 +18,7 @@
 
 From Coq Require Import FunctionalExtensionality.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT.
-From Incorrectness.Taxonomy.Arrows Require Import Rel.
+From Incorrectness.Relational Require Import Rel.
 
 (** Fix the existing operation and equality dictionaries explicitly. *)
 Local Notation OA := (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel).

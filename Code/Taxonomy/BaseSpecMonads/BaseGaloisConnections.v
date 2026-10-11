@@ -21,8 +21,10 @@
     [wp_pp_over_adjunction] is the only classical one. *)
 
 From Coq Require Import RelationClasses Classical_Prop.
+From Incorrectness.Relational Require Import
+  PredMonad.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
-  PredMonad PrePostMonad SPostMonad WPureMonad RelPrePostMonad.
+  PrePostMonad SPostMonad WPureMonad RelPrePostMonad.
 
 Import PredM SPM RPPM.
 (* [PPM] is deliberately NOT imported: it binds [pre] and [post], which

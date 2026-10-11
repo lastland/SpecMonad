@@ -24,9 +24,10 @@ From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import
+From Incorrectness.Computation Require Import
   DivNonDetNE.
-From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
+From Incorrectness.Relational Require Import Rel.
+From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms Examples.

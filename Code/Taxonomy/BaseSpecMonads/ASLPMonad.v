@@ -16,7 +16,7 @@ From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Lib.Arrow Require Import ArrowMonad RelArrowCoherence.
-From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
+From Incorrectness.Relational Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPMonad.
 

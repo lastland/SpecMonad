@@ -31,6 +31,6 @@ python3 scripts/depgraph.py --check-layers 2>/dev/null | tail -1 || true
 
 if [ -n "$REV" ]; then
   python3 ../docs/reorg/bodies.py "$REV" > "$OUT/bodies.log" || { grep 'BODY CHANGED' "$OUT/bodies.log"; exit 1; }
-  echo "renamed files with unchanged bodies: $(grep -c '^same' "$OUT/bodies.log")"
+  echo "renamed files: $(grep -c "^same" "$OUT/bodies.log") unchanged, $(grep -c "^comments only" "$OUT/bodies.log") with comment edits ($(grep "^comments only" "$OUT/bodies.log" | sed "s/.* -> //" | tr "\n" " "))"
 fi
 echo "VERIFY OK ($OUT)"
