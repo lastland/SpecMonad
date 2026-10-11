@@ -72,7 +72,7 @@ def split(spec):
     bodies = []
     for path, header, ranges in parts:
         body = "".join("".join(lines[a - 1:(b if b else len(lines))]) for a, b in ranges)
-        bodies.append(header.rstrip("\n") + "\n\n" + body.lstrip("\n"))
+        bodies.append((header.rstrip("\n") + "\n\n" if header.strip() else "") + body.lstrip("\n"))
     # Rewrite importers first, while the source still resolves.
     uses = spec["USES"]
     for p in CODE.rglob("*.v"):

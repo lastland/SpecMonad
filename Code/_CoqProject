@@ -23,6 +23,7 @@ Lib/Monad/MonadRelation.v
 Relational/PredMonad.v
 GaloisConnections/PrePostMonad.v
 SP/SPostMonad.v
+SP/StatefulSPostCounterexample.v
 WP/WPure.v
 WP/WPVariants.v
 GaloisConnections/RelPrePostMonad.v
