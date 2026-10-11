@@ -1,5 +1,5 @@
-From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Classes.StateArrowT Require Import Core.
+From Incorrectness.Lib.Arrow Require Import Arrow.
+From Incorrectness.Lib.Arrow.StateArrowT Require Import Core.
 
 (* ================================================================= *)
 (** ** ArrowApplyLaws for [stateArrT]                                 *)

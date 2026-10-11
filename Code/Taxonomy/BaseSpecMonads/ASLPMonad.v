@@ -13,7 +13,9 @@
 From Coq Require Import Morphisms RelationClasses Setoid Classical_Prop.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad ArrowMonad RelArrowCoherence.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import ArrowMonad RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import DSLPMonad.

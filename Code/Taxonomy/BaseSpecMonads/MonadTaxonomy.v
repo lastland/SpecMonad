@@ -112,9 +112,15 @@
 From Coq Require Import Morphisms RelationClasses Relation_Definitions Setoid Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad
-  ArrowMonad RelArrowCoherence MonadRelation.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+From Incorrectness.Lib.Arrow Require Import
+  Arrow OptionArrowT StateArrowT.
+From Incorrectness.Lib.Monad Require Import
+  OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import
+  ArrowMonad RelArrowCoherence.
+From Incorrectness.Lib.Monad Require Import
+  MonadRelation.
+From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr SPostArr GaloisArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.

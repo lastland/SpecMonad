@@ -116,6 +116,22 @@ def normalizer(logicals):
     return lambda s: pat.sub("@", s)
 
 
+def hints(lines, norm):
+    """Individual hints of `Print HintDb`, one per instance and head.  The order
+    within a head follows the order in which the snapshot file loads modules,
+    which is alphabetical by path, so it is not compared; evar numbers neither."""
+    out, head = [], None
+    for line in lines:
+        m = re.match(r"^For (.+?) ->\s*(.*)$", line)
+        if not m:
+            continue
+        head, rest = m.groups()
+        for h in re.split(r"(?<=, id \d\))\s*|(?<=, id \d\d\))\s*", rest):
+            if h.strip():
+                out.append(norm(re.sub(r"\?M\d+", "?M", f"{head} -> {h.strip()}")))
+    return out
+
+
 def compare(old_path, new_path):
     old, new = (json.loads(Path(p).read_text()) for p in (old_path, new_path))
     norm = normalizer(sorted(set(old["logicals"]) | set(new["logicals"]), key=len, reverse=True))
@@ -136,10 +152,9 @@ def compare(old_path, new_path):
     for label, diff in (("only in old", lost), ("only in new", gained)):
         for (k, st), c in sorted(diff.items()):
             print(f"{label}: {c}x {k[0]} {'.'.join(x for x in k[1:] if x)} : {st[:200]}")
-    oi = [norm(x) for x in old["instances"]]
-    ni = [norm(x) for x in new["instances"]]
+    oi, ni = hints(old["instances"], norm), hints(new["instances"], norm)
     same_set = Counter(oi) == Counter(ni)
-    print(f"instance database: {'same' if oi == ni else 'same entries, different order' if same_set else 'DIFFERENT'}")
+    print(f"instance database: {'same' if same_set else 'DIFFERENT'} ({len(ni)} hints)")
     if not same_set:
         for x in sorted((Counter(oi) - Counter(ni)).elements()):
             print("  instance only in old:", x[:200])

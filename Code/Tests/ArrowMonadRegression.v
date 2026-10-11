@@ -2,7 +2,7 @@
 
 From Coq Require Import FunctionalExtensionality RelationClasses.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowApplyFacts ArrowMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowApplyFacts ArrowMonad.
 
 (** These checks guard the helpers' dependency boundary: core facts need
     ordinary pure congruence, and static application needs its fixed-arrow

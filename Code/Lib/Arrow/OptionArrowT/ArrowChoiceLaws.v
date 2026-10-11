@@ -1,6 +1,6 @@
 From Coq Require Import Morphisms.
-From Incorrectness.Classes Require Import Arrow.
-From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
+From Incorrectness.Lib.Arrow Require Import Arrow.
+From Incorrectness.Lib.Arrow.OptionArrowT Require Import Core ArrowLaws.
 
 Section GenericOptionArrTChoiceLaws.
 

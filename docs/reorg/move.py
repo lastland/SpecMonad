@@ -55,11 +55,17 @@ def render(indent, kind, groups, multiline):
     out = []
     for prefix, names in groups:
         head = f"{indent}{'From ' + prefix + ' ' if prefix else ''}Require{' ' + kind if kind else ''}"
-        if multiline and len(names) > 1:
-            out.append(head + "\n" + "\n".join(f"{indent}  {n}" for n in names[:-1])
-                       + f"\n{indent}  {names[-1]}.")
-        else:
+        if not multiline:
             out.append(f"{head} {' '.join(names)}.")
+            continue
+        lines, cur = [], indent + " "
+        for n in names:
+            if len(cur) + 1 + len(n) > 78 and cur.strip():
+                lines.append(cur)
+                cur = indent + " "
+            cur += " " + n
+        lines.append(cur)
+        out.append(head + "\n" + "\n".join(lines) + ".")
     return "\n".join(out)
 
 
@@ -80,6 +86,9 @@ def rewrite(text: str, moves: dict[str, str], files: list[str]) -> str:
                 groups[-1][1].append(short)
             else:
                 groups.append((p, [short]))
+        if len(groups) == 1 and groups[0][1] == names and prefix:
+            # Same modules, one directory: change only the prefix, keep layout.
+            return m.group(0).replace(prefix, groups[0][0], 1)
         return render(m.group("indent"), m.group("kind"), groups, "\n" in m.group("names"))
     return SENTENCE.sub(sub, text)
 

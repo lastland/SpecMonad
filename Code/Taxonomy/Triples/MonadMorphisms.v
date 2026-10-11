@@ -44,10 +44,14 @@
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT ArrowMonad
-  ArrowMorphism RelArrowCoherence OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import
+  Arrow OptionArrowT StateArrowT ArrowMonad ArrowMorphism RelArrowCoherence.
+From Incorrectness.Lib.Monad Require Import
+  OrderedMonad.
+From Incorrectness.Lib.Monad Require Import
+  TransformerLaws.
 From Incorrectness.Taxonomy.ComputationMonads Require Import
-  TransformerLaws DivNonDetNE.
+  DivNonDetNE.
 From Incorrectness.Taxonomy.Arrows Require Import
   Rel RelSPostArr SPostArr SPostArrEquiv.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import

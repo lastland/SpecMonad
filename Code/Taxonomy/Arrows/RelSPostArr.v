@@ -24,7 +24,7 @@
     readings and arrow operations through the option and state transformers. *)
 
 From Coq Require Import Classical_Prop.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Lib.Arrow Require Import Arrow.
 From Incorrectness.Taxonomy.Arrows Require Export Rel.
 
 (** ** Angelic strongest postcondition *)

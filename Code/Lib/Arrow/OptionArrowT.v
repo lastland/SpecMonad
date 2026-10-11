@@ -8,4 +8,4 @@
     Concrete instances for [optionArrT Pred] now live in
     [Taxonomy/Pred.v] alongside the [Pred] monad definitions. *)
 
-From Incorrectness.Classes.OptionArrowT Require Export Core ArrowLaws ArrowChoiceLaws ArrowApplyLaws.
+From Incorrectness.Lib.Arrow.OptionArrowT Require Export Core ArrowLaws ArrowChoiceLaws ArrowApplyLaws.

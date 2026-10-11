@@ -21,7 +21,7 @@
 
 From Coq Require Import RelationClasses.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
 
 (* ================================================================= *)
 (** ** Type definition                                                *)

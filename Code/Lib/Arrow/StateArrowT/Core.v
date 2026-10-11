@@ -4,7 +4,7 @@
     through an arrow by transforming both input and output. *)
 
 From Coq Require Import FunctionalExtensionality Morphisms.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Lib.Arrow Require Import Arrow.
 
 (* ================================================================= *)
 (** ** Definition and Arrow instance                                   *)

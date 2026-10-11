@@ -4,5 +4,5 @@
     [StateArrowT/ArrowChoiceLaws.v] for generic ArrowChoiceLaws proof,
     [StateArrowT/ArrowApplyLaws.v] for generic ArrowApplyLaws proof. *)
 
-From Incorrectness.Classes.StateArrowT Require Export
+From Incorrectness.Lib.Arrow.StateArrowT Require Export
   Core ArrowChoiceLaws ArrowApplyLaws.

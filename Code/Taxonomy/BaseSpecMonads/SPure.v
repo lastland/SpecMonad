@@ -19,9 +19,10 @@
 From Coq Require Import Relation_Definitions RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
-From Incorrectness.Classes Require Import ArrowMonad RelArrowCoherence.
+From Incorrectness.Lib.Arrow Require Import ArrowMonad RelArrowCoherence.
 
 (* ================================================================= *)
 (** ** The monad views, at input [unit]                              *)

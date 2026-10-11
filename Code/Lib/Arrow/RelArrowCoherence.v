@@ -34,7 +34,7 @@
     from new concrete proofs here. *)
 
 From Coq Require Import Classes.Morphisms_Prop.
-From Incorrectness.Classes Require Import Arrow ArrowMonad ArrowMorphism OptionArrowT StateArrowT.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad ArrowMorphism OptionArrowT StateArrowT.
 
 (** This ordinary record packages only the relation semantics needed by
     these proofs.  In particular, [present_app] evaluates the relation

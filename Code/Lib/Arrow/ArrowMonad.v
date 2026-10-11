@@ -5,7 +5,7 @@
     arrow's own equivalence relation. *)
 
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowApplyFacts.
 
 Section ArrowMonad.
   Variable arr : Type -> Type -> Type.

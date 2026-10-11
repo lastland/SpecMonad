@@ -39,8 +39,8 @@
 From Coq Require Import RelationClasses.
 From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad OptionArrowT StateArrowT.
+From Incorrectness.Lib.Monad Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** ** [Rel]: definition and arrow instances                         *)

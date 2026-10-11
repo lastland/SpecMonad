@@ -8,8 +8,8 @@
 From Coq Require Import FunctionalExtensionality PropExtensionality RelationClasses
   Morphisms Setoid Classical_Prop.
 From Hammer Require Import Tactics.
-From Incorrectness.Classes Require Export ArrowMonad.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT
+From Incorrectness.Lib.Arrow Require Export ArrowMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT
   ArrowMorphism RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr.
 From Incorrectness.Taxonomy.Arrows Require Export PredicateTransformerProperties.

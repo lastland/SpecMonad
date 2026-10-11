@@ -18,7 +18,7 @@
     pointwise-equivalent continuations. *)
 
 From Coq Require Import RelationClasses.
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Lib.Arrow Require Import Arrow.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad.
 
 (* ================================================================= *)

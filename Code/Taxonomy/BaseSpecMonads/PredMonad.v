@@ -102,7 +102,7 @@ End PredMFacts.
     results is bigger. *)
 
 From Coq Require Import RelationClasses.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 Definition Pred_le {A} (m1 m2 : PredM.Pred A) : Prop :=
   forall a, m1 a -> m2 a.
@@ -189,7 +189,7 @@ End PredStExc.
     via the generic [optionT] and [stateT] instances from [Prog].
     Unfolded, [PredStExc S A = S -> option (A * S) -> Prop]. *)
 
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+From Incorrectness.Lib.Monad Require Import TransformerLaws.
 
 
 (* ================================================================= *)

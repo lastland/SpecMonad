@@ -1,7 +1,7 @@
 (** * Checked examples of SP arrows, transformer stacks, and equivalence. *)
 
 From Coq Require Import Lia.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import
   Rel SPostArr SPostArrEquiv.
 

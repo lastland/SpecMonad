@@ -13,9 +13,9 @@
     transformer equivalence, including properness of both maps. *)
 
 From Coq Require Import Morphisms.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Classes Require Import RelArrowCoherence.
-From Incorrectness.Classes Require Export ArrowMorphism.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Lib.Arrow Require Import RelArrowCoherence.
+From Incorrectness.Lib.Arrow Require Export ArrowMorphism.
 From Incorrectness.Taxonomy.Arrows Require Import Rel RelSPostArr OptionLoop SPostArr.
 
 Module PropertySP := SPostArr.

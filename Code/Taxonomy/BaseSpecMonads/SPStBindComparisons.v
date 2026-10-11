@@ -1,7 +1,7 @@
 (** State bind formulas and monotone SP transformer comparisons. *)
 
 From ExtLib Require Import Monad.
-From Incorrectness.Classes Require Import RelArrowCoherence.
+From Incorrectness.Lib.Arrow Require Import RelArrowCoherence.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad SPPredicateTransformers.
 

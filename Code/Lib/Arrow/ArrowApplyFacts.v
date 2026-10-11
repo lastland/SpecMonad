@@ -3,7 +3,7 @@
     These algebraic facts derive extensionality from the arrow and
     application laws, without assuming functional extensionality. *)
 
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Lib.Arrow Require Import Arrow.
 
 Section StaticApplicationFacts.
   Context {arr : Type -> Type -> Type}

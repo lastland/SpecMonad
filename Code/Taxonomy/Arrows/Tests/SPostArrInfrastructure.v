@@ -10,7 +10,7 @@
     [RelArrowCoherence] normalization at the pinned canonical
     dictionaries. *)
 
-From Incorrectness.Classes Require
+From Incorrectness.Lib.Arrow Require
   Import Arrow ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import SPostArr.
 

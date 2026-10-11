@@ -180,7 +180,7 @@ End SPMFacts.
 (** Pointwise implication in the precondition and the result. *)
 
 From Coq Require Import RelationClasses.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 Definition SP_le {A} (m1 m2 : SPM.SPost A) : Prop :=
   forall p a, SPM.app m1 p a -> SPM.app m2 p a.

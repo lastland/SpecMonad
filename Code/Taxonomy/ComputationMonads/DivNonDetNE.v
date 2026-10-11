@@ -18,7 +18,7 @@ From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+From Incorrectness.Lib.Monad Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** * Sets of outcomes: [SetM]                                        *)

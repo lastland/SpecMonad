@@ -33,8 +33,8 @@
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import OrderedMonad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad OptionArrowT StateArrowT
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad OptionArrowT StateArrowT
   RelArrowCoherence.
 
 Class MonadRelation (M N : Type -> Type) {MonadM : Monad M} {MonadN : Monad N}

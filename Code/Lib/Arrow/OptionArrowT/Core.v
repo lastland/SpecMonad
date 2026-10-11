@@ -8,7 +8,7 @@
 
     Concrete instances for [optionArrT Pred] are also given. *)
 
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Lib.Arrow Require Import Arrow.
 
 (* ================================================================= *)
 (** ** Definition                                                      *)

@@ -12,7 +12,7 @@
     counterpart. *)
 
 From ExtLib Require Import Monad StateMonad.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import DivNonDetNE.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import WPureMonad ASPMonad.
 From Incorrectness.Taxonomy.Triples Require Import Triple MonadMorphisms Diagram.

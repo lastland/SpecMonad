@@ -28,7 +28,7 @@
 From Coq Require Import Morphisms.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
 
 (* ================================================================= *)
 (** ** Type definition and projection                                 *)

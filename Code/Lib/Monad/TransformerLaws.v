@@ -187,7 +187,7 @@ End StateT.
     instances: they are recursive in the base monad. *)
 
 From Coq Require Import Relation_Definitions.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 Section OrderedOptionT.
   Context {M : Type -> Type} {MonadM : Monad M} {Eq1M : Eq1 M}.

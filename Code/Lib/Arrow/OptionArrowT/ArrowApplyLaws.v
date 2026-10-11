@@ -1,5 +1,5 @@
-From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
-From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowApplyFacts.
+From Incorrectness.Lib.Arrow.OptionArrowT Require Import Core ArrowLaws.
 
 (* ================================================================= *)
 (** ** Generic [ArrowApplyLaws] for [optionArrT]                      *)

@@ -16,7 +16,7 @@
 
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 (* ================================================================= *)
 (** * The general triple                                              *)

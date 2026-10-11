@@ -45,9 +45,12 @@ From Coq Require Import Morphisms RelationClasses Relation_Definitions
   Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import
+  TransformerLaws.
 From Incorrectness.Taxonomy.ComputationMonads Require Import
-  TransformerLaws DivNonDetNE.
+  DivNonDetNE.
 From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
 From Incorrectness.Taxonomy.BaseSpecMonads Require Import
   WPureMonad ASPMonad DSLPMonad DSPMonad ASLPMonad.

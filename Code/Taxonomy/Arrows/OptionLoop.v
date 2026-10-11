@@ -17,7 +17,7 @@
     hypothesis; functional extensionality is its only axiom. *)
 
 From Coq Require Import FunctionalExtensionality.
-From Incorrectness.Classes Require Import Arrow OptionArrowT.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import Rel.
 
 (** Fix the existing operation and equality dictionaries explicitly. *)

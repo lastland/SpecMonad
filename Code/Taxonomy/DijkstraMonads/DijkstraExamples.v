@@ -23,7 +23,7 @@
 From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.Taxonomy.ComputationMonads Require Import
   DivNonDetNE.
 From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.

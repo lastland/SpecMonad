@@ -184,7 +184,7 @@ End RPPMFacts.
     less is higher. *)
 
 From Coq Require Import RelationClasses.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 Definition MR_le {A} (r1 r2 : RPPM.RelPrePost A) : Prop :=
   forall p post, RPPM.ab (RPPM.runRPP r2 p post)

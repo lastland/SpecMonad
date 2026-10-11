@@ -40,7 +40,7 @@
 
 From Coq Require Import Morphisms RelationClasses Relation_Definitions Classical_Prop.
 
-From Incorrectness.Classes Require Import Galois.
+From Incorrectness.Lib Require Import Galois.
 From Incorrectness.Taxonomy.Arrows Require Import RelSPostArr Rel PrePostArr WPArr RelPrePostArr SPostArr.
 
 (* ================================================================= *)

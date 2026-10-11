@@ -21,8 +21,8 @@
 From Coq Require Import Morphisms RelationClasses Relation_Definitions.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import OrderedMonad.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import TransformerLaws.
 
 (* ================================================================= *)
 (** ** [WPure]                                                       *)

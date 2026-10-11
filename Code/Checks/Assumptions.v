@@ -1,5 +1,5 @@
 (** Console assumption reports, compiled explicitly by [make check]. *)
-From Incorrectness.Classes Require Import
+From Incorrectness.Lib.Arrow Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import
   SPostArr RelSPostArr SPostArrEquiv GaloisArr.
@@ -182,8 +182,9 @@ Print Assumptions RelArrowCoherence.relS_bind.
 
     Monad morphisms, their lifts through the monad transformers, and the
     monad morphism of an arrow morphism: closed. *)
-From Incorrectness.Classes Require OrderedMonad ArrowMorphism.
-From Incorrectness.Taxonomy.ComputationMonads Require TransformerLaws.
+From Incorrectness.Lib.Monad Require OrderedMonad.
+From Incorrectness.Lib.Arrow Require ArrowMorphism.
+From Incorrectness.Lib.Monad Require TransformerLaws.
 From Incorrectness.Taxonomy.Triples Require MonadMorphisms Diagram Examples
   InCorrectnessPrinciples.
 From Incorrectness.Taxonomy.DijkstraMonads Require DijkstraMonad DijkstraExamples.

@@ -133,7 +133,7 @@ End PPMFacts.
     postcondition. *)
 
 From Coq Require Import RelationClasses.
-From Incorrectness.Classes Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 Definition PP_le {A} (m1 m2 : PPM.PrePost A) : Prop :=
   (PPM.pre m2 -> PPM.pre m1) /\ (forall a, PPM.post m1 a -> PPM.post m2 a).

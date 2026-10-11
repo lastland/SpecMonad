@@ -10,8 +10,9 @@
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowApplyFacts OptionArrowT StateArrowT.
-From Incorrectness.Classes Require Import ArrowMonad OrderedMonad.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowApplyFacts OptionArrowT StateArrowT.
+From Incorrectness.Lib.Arrow Require Import ArrowMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 (** ** An ordinary record for all five preservation equations
 

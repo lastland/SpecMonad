@@ -6,9 +6,9 @@
 
 From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Classes Require Import Arrow ArrowMonad.
-From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
-From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
+From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
+From Incorrectness.Lib.Arrow Require Import OptionArrowT StateArrowT.
+From Incorrectness.Lib.Monad Require Import TransformerLaws.
 From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
 
 (** Pointwise transformer equivalence is the public equality, including
