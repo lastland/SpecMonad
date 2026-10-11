@@ -1,4 +1,4 @@
-# Classes context
+# Lib context
 
 Parent: [Code](../CONTEXT.md). Conventions: [CLAUDE.md](../../CLAUDE.md).
 
@@ -99,6 +99,14 @@ arrow-derived monads at the base, `stateArrT`, and `stateArrT`-over-`optionArrT`
 stacks. The reading is always the base arrow's: no transformed arrow gets a
 `RelArrow` instance. Pass every dictionary explicitly in this file.
 
+[TransformerLaws.v](Monad/TransformerLaws.v) proves `Eq1`-generic option and
+state transformer laws from base `MonadLawsE` assumptions. It names no
+concrete computation monad, so specification monads import it without
+depending on a computation. Its `ord_optionT` and `bind_optionT_mono`
+separately lift an explicit reflexive order and simultaneous bind
+monotonicity through `optionT`. `optionT_map` and `stateT_map` lift a map
+between monads; `MonadMorphism_optionT` / `_stateT` lift its morphism laws.
+
 ## Boundaries and tests
 
 Start with `Arrow.v`, then `ArrowApplyFacts.v` and `ArrowMonad.v`, or the
@@ -109,6 +117,6 @@ transformer context relevant to the task. The concrete relational carrier is
 Read [option](Arrow/OptionArrowT/CONTEXT.md) or [state](Arrow/StateArrowT/CONTEXT.md)
 contexts after the base contract. Keep explicit dictionaries in recursive
 transformer stacks. [Generic tests](../Tests/CONTEXT.md) check arrow monads;
-[concrete tests](../Tests/CONTEXT-arrows.md) check carrier instances.
-Classes does not import concrete Taxonomy carriers. The relational carrier
-belongs to Taxonomy/Arrows; use its defining module for exact names.
+[concrete tests](../Tests/CONTEXT.md#concrete-arrow-instance-checks) check carrier instances.
+Lib imports no specification carrier. The relational carrier
+belongs to Relational/; use its defining module for exact names.

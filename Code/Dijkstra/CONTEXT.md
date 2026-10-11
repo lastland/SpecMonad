@@ -1,6 +1,6 @@
 # Dijkstra monads context
 
-Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Read [OrderedMonad.v](../Lib/Monad/OrderedMonad.v)
+Parent: [Code](../CONTEXT.md). Paper: Section 6. Read [OrderedMonad.v](../Lib/Monad/OrderedMonad.v)
 for `MonadMorphism`, `IsMonadMorphism` and `OrderedMonad`, and the
 [Triples context](../Triples/CONTEXT.md) for `triple` and the morphisms, first.
 

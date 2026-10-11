@@ -1,25 +1,27 @@
-# Taxonomy
+# Design notes
 
-This directory is the core of the project. It defines computation monads,
-several families of specification monads, and *monad morphisms* from the
-former into the latter.
+A long-form tour of the development: computation monads, the SP and WP
+specification monads, the morphisms and triples, the DM4All monads and their
+adjunctions, and the arrow/monad split. The directory guide is
+[Code/README.md](../Code/README.md); the paper-to-code index is
+[PAPER.md](../PAPER.md). Section numbers below are this document's, not the
+paper's.
 
 The organising principle is a dependency boundary:
 
 > **Specification carriers do not depend on concrete computation monads.**
 > Monad morphisms connect the two sides by interpreting computation outcomes.
 
-`BaseSpecMonads/` and `Arrows/` use specification types, generic infrastructure,
-and library definitions. The generic `TransformerLaws.v` happens to live under
-`ComputationMonads/`, but names no concrete computation monad. The computation
-side is one base monad, `divndNE`, and its transformer stacks; the morphisms
-out of it, their triples, the triple diagram, the examples and the rewriting
-rules live in `Triples/`, and the Dijkstra monads of those morphisms in
-`DijkstraMonads/`.
+`WP/`, `SP/` and `Relational/` use specification types, generic
+infrastructure (`Lib/`) and library definitions. The computation side is one
+base monad, `divndNE`, and its transformer stacks (`Computation/`); the
+morphisms out of it, their triples, the triple diagram, the examples and the
+rewriting rules live in `Triples/`, and the Dijkstra monads of those
+morphisms in `Dijkstra/`.
 
 Start with the computation monads (§2), then choose a specification
 presentation (§3–4 and §8) and the morphisms into it (§5). The
-[context map](../../CONTEXT-MAP.md) provides shorter directory guides. Formulas
+[context map](../CONTEXT-MAP.md) provides shorter directory guides. Formulas
 below describe carriers and readings; unless shown as complete declarations,
 they are schematic rather than standalone Coq commands.
 
@@ -31,39 +33,9 @@ abbreviated **DM4all** below.
 
 ## 1. Directory layout
 
-```
-Taxonomy/
-  ComputationMonads/     TransformerLaws            -- generic optionT/stateT laws
-                         DivNonDetNE                -- divndNE, stdivndNE, stdivexcndNE
-  BaseSpecMonads/        PredMonad, PrePostMonad, SPostMonad, WPureMonad,
-                         RelPrePostMonad             -- the five DM4all monads
-                         SPPredicateTransformers     -- raw SP carriers, skew-monadic structure
-                         ASPMonad, DSLPMonad, DSPMonad, ASLPMonad -- the four SP monads
-                         SPure                       -- unary relational monads and orders
-                         SPStBindComparisons, MonadTaxonomy
-                         BaseGaloisConnections
-  Arrows/                Rel, PrePostArr, RelPrePostArr, WPArr, GaloisArr
-                         PredicateTransformerProperties -- SP healthiness conditions
-                         SPostArr                    -- all four property-only SP arrows
-                         RelSPostArr                 -- four SP readings of Rel
-                         SPostArrEquiv               -- equivalence and transformer lifts
-                         OptionLoop                  -- obstruction to option feedback
-     Examples/           SPostArrExamples             -- checked clients
-     Tests/              SPostArrInfrastructure       -- standalone four-flavour arrow checks
-                         ArrowMonadInstances          -- concrete monad dictionaries
-                         ArrowTransformerInstances    -- transformer resolution checks
-  DijkstraMonads/        DijkstraMonad               -- DM / DMop of a monad morphism
-                         DijkstraExamples            -- typed programs
-  Triples/               Triple                      -- the general triple and the readings of the targets
-                         MonadMorphisms              -- eight readings of divndNE, lifted
-                         Diagram                     -- the taxonomy diagram at the state level
-                         Examples                    -- one verified triple per kind
-                         InCorrectnessPrinciples     -- O'Hearn's rewriting rules
-  (older iterations now live in ../Backup/Taxonomy-deprecated/)
-```
-
-Logical paths follow the directories: `Incorrectness.Taxonomy.BaseSpecMonads.WPureMonad`,
-`Incorrectness.Taxonomy.Triples.MonadMorphisms`, and so on.
+See [Code/README.md](../Code/README.md). Logical paths follow the
+directories: `Incorrectness.WP.WPure`, `Incorrectness.Triples.MonadMorphisms`,
+and so on.
 
 ## 2. Computation monads
 
@@ -112,7 +84,7 @@ the weaker stateful Kenji-style carrier and its proposed bind.
 | ASLP | terminating, disjunctive | `R⁻¹(y) = ∅ ∨ pre ∩ R⁻¹(y) ≠ ∅` |
 
 The carriers are the binary arrows `ASPArr`, `DSLPArr`, `DSPArr`, `ASLPArr` of
-`Arrows/SPostArr.v` (§8) and their state and state-over-option stacks. One
+`SP/SPostArr.v` (§8) and their state and state-over-option stacks. One
 file per monad fixes the arrow's input to `unit`:
 
 | File | Without state | State | State + exceptions |
@@ -168,7 +140,7 @@ DSLP pulled back along them (`OrderedMonad_pullback`).
 
 Each of the four files ends with the stateless monad written down directly,
 with no arrow, on the raw transformer type `SPPure A = Prop -> A -> Prop` of
-`SPPredicateTransformers.v`:
+`SP/RawSP.v`:
 
 | Direct monad | Carrier condition | `bind m k` at `p`, `b` |
 |---|---|---|
@@ -204,15 +176,15 @@ with exceptions the monads are the arrow stacks.
 
 The elements that a pair of a pre- and a postcondition determines are the
 indices of §9: `aspOver`, `dslpUnder`, `aspUnder`, `dslpOver` in
-`DijkstraMonads/DijkstraMonad.v`.
+`Dijkstra/DijkstraMonad.v`.
 
 ## 4. The WP specification monads
 
-`BaseSpecMonads/WPureMonad.v` defines three WP monads and their refinement
+`WP/WPure.v` defines three WP monads and their refinement
 orders:
 
 ```coq
-WPureT A   := (A -> Prop) -> Prop                    (* raw; used by Arrows/WPArr.v *)
+WPureT A   := (A -> Prop) -> Prop                    (* raw; used by GaloisConnections/WPArr.v *)
 wpure_mono f := forall p q, (p ⊆ q) -> f p -> f q
 WPure  A   := { f : WPureT A | wpure_mono f }        (* the monad *)
 
@@ -229,7 +201,7 @@ functions.
 For `WPure`, the file defines `ret`, `bind`, and pointwise-iff `Eq1`, and
 proves `MonadLawsE` directly. The two stacks inherit their laws from the
 `Eq1`-generic `optionT` and `stateT` instances in
-`ComputationMonads/TransformerLaws.v`.
+`Lib/Monad/TransformerLaws.v`.
 `Coercion getWPure : WPure >-> Funclass` keeps application (`w post`) working
 through the subset type.
 
@@ -237,7 +209,7 @@ The adjunction and `Proper_bind` proofs use the bundled monotonicity. Each WP
 morphism therefore supplies a monotonicity proof when constructing a `WPure`
 value (`demonic_mono`, `angelic_mono` in `Triples/MonadMorphisms.v`).
 
-All three WP orders live in `WPureMonad.v`. Each stack order is a generic
+All three WP orders live in `WP/WPure.v`. Each stack order is a generic
 lift of **reverse implication** from `WP_le`; the formulas below omit runners:
 
 | order | on | meaning of `w1 ⊑ w2` |
@@ -250,16 +222,16 @@ The lifts preserve argument order: a transformer that yields pointwise weaker
 preconditions is lower in the refinement order. The DM4all adjunctions and
 the identification of WP triples with Dijkstra typings use these reverse
 orders: an `Under` triple is `θ m ⊑ wpUnder pre post` and an `Over` triple
-`wpOver pre post ⊑ θ m` (`DijkstraMonads/DijkstraMonad.v`).
+`wpOver pre post ⊑ θ m` (`Dijkstra/DijkstraMonad.v`).
 
-**`Arrows/WPArr.v` uses the raw carrier `WPureT`**, not `WPure`. Its `ArrowEq`
+**`GaloisConnections/WPArr.v` uses the raw carrier `WPureT`**, not `WPure`. Its `ArrowEq`
 is Leibniz equality. Some laws hold by conversion; laws involving products and
 sums also use functional extensionality. This equality contract differs from
 `WPure`'s pointwise logical equivalence.
 
 ## 5. Monad morphisms and triples
 
-[`Lib/Monad/OrderedMonad.v`](../Lib/Monad/OrderedMonad.v) defines a monad morphism
+[`Lib/Monad/OrderedMonad.v`](../Code/Lib/Monad/OrderedMonad.v) defines a monad morphism
 (`MonadMorphism`: properness, and preservation of `ret` and `bind` up to the
 target's equality). `Triples/Triple.v` defines the triple, once (binders
 abbreviated here):
@@ -312,10 +284,10 @@ are not. A map is named by its reading and its level: `dwpPure`, `dwpSt`,
 
 - **WP.** The four base maps are monad morphisms `divndNE ~> WPure`.
   `MonadMorphism_stateT` and `MonadMorphism_optionT`
-  (`ComputationMonads/TransformerLaws.v`) lift them, and the triple of a
+  (`Lib/Monad/TransformerLaws.v`) lift them, and the triple of a
   lifted morphism is the base triple at every start state
   (`triple_dwpSt`, `triple_dwpStExc`, and so on).
-- **SP.** A base arrow morphism out of `Rel` (`Arrows/SPostArrEquiv.v`) is
+- **SP.** A base arrow morphism out of `Rel` (`SP/SPostArrEquiv.v`) is
   lifted by the arrow transformers and applied to the relation between start
   states and terminating outcomes; `arrow_morphism_monad`
   (`Lib/Arrow/ArrowMorphism.v`) makes it a monad morphism. The triple at every
@@ -328,7 +300,7 @@ arrow transformers' law packages. The same statements are also proved through
 the relations denoted (`aspSt_morphism_rel`, and so on), and the
 `IsMonadMorphism` instances use those: triples through the ASP and DSLP
 morphisms are closed, and those through DSP and ASLP use excluded middle. See
-the [Triples context](../Triples/CONTEXT.md).
+the [Triples context](../Code/Triples/CONTEXT.md).
 
 ## 6. The triple diagram — `Triples/Diagram.v`
 
@@ -363,11 +335,11 @@ the particular theorem, not inferred from a file's imports or this summary.
 
 | file | module | carrier | DM4all name |
 |---|---|---|---|
-| `BaseSpecMonads/PredMonad.v` | `PredM` | `Pred A = A -> Prop` | `PredOM` |
-| `BaseSpecMonads/PrePostMonad.v` | `PPM` | `PrePost A = Prop * (A -> Prop)` | `PPSpecMonad` |
-| `BaseSpecMonads/SPostMonad.v` | `SPM` | `SPost A = { f : forall p, A -> Over p \| sp_mono f }` | `ForwardPredTransformer` |
-| `BaseSpecMonads/WPureMonad.v` | — | `WPure A = { f : (A -> Prop) -> Prop \| wpure_mono f }` | `WPure` |
-| `BaseSpecMonads/RelPrePostMonad.v` | `RPPM` | `RelPrePost X = { r : forall p, (X -> Assuming p) -> Assuming p \| rpp_mono r }` | `MRSpec` |
+| `Relational/PredMonad.v` | `PredM` | `Pred A = A -> Prop` | `PredOM` |
+| `GaloisConnections/PrePostMonad.v` | `PPM` | `PrePost A = Prop * (A -> Prop)` | `PPSpecMonad` |
+| `SP/SPostMonad.v` | `SPM` | `SPost A = { f : forall p, A -> Over p \| sp_mono f }` | `ForwardPredTransformer` |
+| `WP/WPure.v` | — | `WPure A = { f : (A -> Prop) -> Prop \| wpure_mono f }` | `WPure` |
+| `GaloisConnections/RelPrePostMonad.v` | `RPPM` | `RelPrePost X = { r : forall p, (X -> Assuming p) -> Assuming p \| rpp_mono r }` | `MRSpec` |
 
 The carrier constraints explain two important proof steps. `Over p` stores a
 proposition that implies `p`; the `SPost` associativity proof uses that implication
@@ -384,7 +356,7 @@ monad:
 | `PredMonad.v` | `Pred_le`; `ordPredStExc` on the stack | `OrderedMonad_Pred`, `OrderedMonad_PredStExc` |
 | `PrePostMonad.v` | `PP_le` | `OrderedMonad_PrePost` |
 | `SPostMonad.v` | `SP_le` | `OrderedMonad_SPost` |
-| `WPureMonad.v` | `WP_le`; `ordWSt`, `ordWStExc` on the stacks | `OrderedMonad_WPure`, `OrderedMonad_WSt`, `OrderedMonad_WStExc` |
+| `WP/WPure.v` | `WP_le`; `ordWSt`, `ordWStExc` on the stacks | `OrderedMonad_WPure`, `OrderedMonad_WSt`, `OrderedMonad_WStExc` |
 | `RelPrePostMonad.v` | `MR_le` | `OrderedMonad_RelPrePost` |
 
 `ordPredStExc` is the pointwise lift of `Pred_le` and runs forward (more
@@ -392,7 +364,7 @@ outcomes is bigger); `ordWSt` and `ordWStExc` are the lifts of `WP_le` and run
 backward (a weaker precondition is bigger). The stack proofs are the generic
 transformer lifts of `TransformerLaws.v`.
 
-`BaseSpecMonads/BaseGaloisConnections.v` uses those orders to establish
+`GaloisConnections/BaseGaloisConnections.v` uses those orders to establish
 DM4all's `Section Adjunctions` results:
 
 | theorem | statement |
@@ -425,9 +397,9 @@ The file does *not* `Import PPM`: `PPM` binds `pre` and `post`, which would
 capture the binders of the SP embeddings, so `PPM.pre` / `PPM.post` are written
 throughout.
 
-### Relation to `Arrows/GaloisArr.v`
+### Relation to `GaloisConnections/GaloisArr.v`
 
-`Arrows/GaloisArr.v` proves four binary connections: `Galois_Rel_PrePost`,
+`GaloisConnections/GaloisArr.v` proves four binary connections: `Galois_Rel_PrePost`,
 `Galois_Rel_SPost`, `Galois_WP_PrePost`, and `Galois_RPP_WP`. Its local
 `MonotoneSPost`, `MonotoneWP`, and `WFRelPrePost` subtypes state the required
 constraints. `Galois_Rel_SPost` is an adjunction with monotone transformers,
@@ -451,11 +423,11 @@ presentations**:
 
 | family | monad (unary carrier) | arrow (binary carrier) |
 |---|---|---|
-| `Pred` / `Rel` | `BaseSpecMonads/PredMonad.v` — `Pred A = A -> Prop` | `Arrows/Rel.v` — `Rel A B = A -> B -> Prop` |
-| `PrePost` | `BaseSpecMonads/PrePostMonad.v` — `PrePost A = Prop * (A -> Prop)` | `Arrows/PrePostArr.v` |
-| `SPost` | `BaseSpecMonads/SPostMonad.v` — `SPost A` over `Over p` | `Arrows/SPostArr.v` — property-only `ASPArr`, `DSLPArr`, `DSPArr`, `ASLPArr`; `Arrows/RelSPostArr.v` — four SP readings of the existing `Rel` carrier |
-| `RelPrePost` | `BaseSpecMonads/RelPrePostMonad.v` — over `Assuming p` | `Arrows/RelPrePostArr.v` |
-| `WPure` / `WP` | `BaseSpecMonads/WPureMonad.v` | `Arrows/WPArr.v` |
+| `Pred` / `Rel` | `Relational/PredMonad.v` — `Pred A = A -> Prop` | `Relational/Rel.v` — `Rel A B = A -> B -> Prop` |
+| `PrePost` | `GaloisConnections/PrePostMonad.v` — `PrePost A = Prop * (A -> Prop)` | `GaloisConnections/PrePostArr.v` |
+| `SPost` | `SP/SPostMonad.v` — `SPost A` over `Over p` | `SP/SPostArr.v` — property-only `ASPArr`, `DSLPArr`, `DSPArr`, `ASLPArr`; `Relational/RelSPostArr.v` — four SP readings of the existing `Rel` carrier |
+| `RelPrePost` | `GaloisConnections/RelPrePostMonad.v` — over `Assuming p` | `GaloisConnections/RelPrePostArr.v` |
+| `WPure` / `WP` | `WP/WPure.v` | `GaloisConnections/WPArr.v` |
 
 The five unary specification-monad files define their carriers **in terms of the result type alone**
 (`Pred A = A -> Prop`), rather than fixing the input of a binary arrow.
@@ -464,19 +436,21 @@ The five unary specification-monad files define their carriers **in terms of the
 properties independently of the base-monad development.
 
 The four public flavour monads instead consume the binary implementation in
-`Arrows/SPostArr.v`, fixing the input and adding unary runners, orders, and
-monad-specific results. `SPostArr.v` owns the raw `SPArrT`, all four canonical
-carriers, operations, normal forms, recovered relations, laws, binary stacks,
-and arrow-level conversions. Their public names live under `SPostArr`; no
-BaseSpecMonads module, including `SPure.v`, is a dependency of this implementation.
-The SP dependency direction is Classes and arrow-owned helpers → SPostArr →
-BaseSpecMonads → Triples.
+`SP/SPostArr.v`, fixing the input and adding unary runners, orders, and
+monad-specific results. `SPostArr.v` owns the raw `SPArrT` and the ASP and
+DSLP carriers; `DSPASLPArr.v` the DSP and ASLP ones. Together they hold the
+operations, normal forms, recovered relations, laws, binary stacks, and
+arrow-level conversions. No monad file and nothing in `Relational/RelMonads.v`
+is a dependency of these implementations. The SP dependency direction is
+`Lib/` and `Relational/` → `SPostArr` → `DSPASLPArr` → the monad files →
+`Taxonomy/` → `Triples/`.
 
 `Rel.v` separately owns the relation carrier, stacks, and congruence;
-`RelSPostArr.v` owns their four SP readings and supporting facts. `SPure.v`
-retains only unary relational monads, their return/bind facts, and orders.
+`RelSPostArr.v` owns their four SP readings and supporting facts.
+`RelMonads.v` retains only unary relational monads, their return/bind facts,
+and orders.
 
-General arrow infrastructure lives in `Code/Classes/`. `ArrowMonad.v` defines
+General arrow infrastructure lives in `Code/Lib/Arrow/`. `ArrowMonad.v` defines
 the generic return/bind operations for `arr I` and proves their monad laws;
 `ArrowApplyFacts.v` supplies the shared algebraic application and arrow
 extensionality lemmas used by the monad and option-transformer proofs.
@@ -530,7 +504,7 @@ retain the assumptions of their own law proofs.
 
 The concrete arrows register their chosen `Eq1` aliases. Generic instances
 provide `Monad`, `Eq1Equivalence`, and `MonadLawsE`. Test-only named dictionary
-aliases and compact return/bind agreement proofs live in `Arrows/Tests/`.
+aliases and compact return/bind agreement proofs live in `Tests/`.
 Production modules retain the compact Pred and RelPrePost operations used by
 their mathematical consumers.
 
@@ -555,12 +529,12 @@ counterexample: a lawful arrow whose application satisfies the old fixed-arrow
 law but violates monad right identity. The stronger application contract
 rejects it.
 
-`Arrows/Tests/SPostArrInfrastructure.v` checks core, choice, and application
-laws for all four property-only flavours without importing BaseSpecMonads.
+`Tests/SPostArrInfrastructure.v` checks core, choice, and application
+laws for all four property-only flavours without importing the SP monad files.
 Its semantic regressions distinguish DSP composition from raw transformer
 composition and exercise binary state-over-option bind with a non-unit input.
 
-`Arrows/Tests/ArrowMonadInstances.v` collects the concrete monad,
+`Tests/ArrowMonadInstances.v` collects the concrete monad,
 `Eq1Equivalence`, and `MonadLawsE` dictionaries of the specification arrows
 together with their compact relational `ret`/`bind` descriptions and agreement
 facts. It checks the exact derived monad dictionary for `Rel`, the property-only
@@ -570,7 +544,7 @@ inputs. The relational checks serve both `asp` and `dslp` readings; the readings
 do not need separate monad dictionaries. Named concrete dictionaries are also
 checked against the generic dictionary, with automatic law resolution under
 their canonical equalities.
-`Arrows/Tests/ArrowTransformerInstances.v` holds the transformer-stack
+`Tests/ArrowTransformerInstances.v` holds the transformer-stack
 resolution checks: the `optionRel` and relational state-over-option laws,
 the monad-view `progRelM` / `nditRelM` stacks, and the double-option
 application-law witnesses. Relational arrow-stack dictionaries resolve through
@@ -589,7 +563,7 @@ update followed by propagated failure.
 
 ### Relational SP readings
 
-[`Arrows/RelSPostArr.v`](../Relational/RelSPostArr.v) computes four SP readings of the
+[`Relational/RelSPostArr.v`](../Code/Relational/RelSPostArr.v) computes four SP readings of the
 existing `Rel A B := A -> B -> Prop` carrier. **An arrow value is a relation**,
 not a pair of a relation and a transformer or a new wrapper:
 
@@ -611,7 +585,7 @@ precondition `eq true`, ASP holds at `tt`, but DSLP fails because `false` is
 also a predecessor.
 
 All four readings use `Arrow_Rel`, `ArrowChoice_Rel`, `ArrowApply_Rel`, and their
-existing laws in [`Rel.v`](../Relational/Rel.v). The selected equality remains
+existing laws in [`Rel.v`](../Code/Relational/Rel.v). The selected equality remains
 `Rel_eq`, namely `forall a b, R a b <-> R' a b`. The same `optionRel` and
 `progRelArr` stacks serve all four readings; choosing a reading changes the
 predicate transformer, not the relation, its operations, or its law packages.
@@ -630,18 +604,18 @@ its §3.2.4 gives the conjunction/disjunction identities.
 
 ### Property-only SP arrows
 
-`Arrows/PredicateTransformerProperties.v` defines `StrictArr`,
+`SP/PredicateTransformerProperties.v` defines `StrictArr`,
 `TerminatingArr`, `ConjunctiveArr`, and `DisjunctiveArr` for
 `(A -> Prop) -> B -> Prop`, following Ralph-Johan Back and Joakim von Wright,
 *Refinement Calculus: A Systematic Introduction* (1997 draft, §16.1; published
-1998). The [terminology source note](../SP/PROPERTY_TERMINOLOGY.md#sources-and-verification-limits)
+1998). The [terminology source note](../Code/SP/PROPERTY_TERMINOLOGY.md#sources-and-verification-limits)
 identifies the version consulted. Conjunctivity and disjunctivity preserve
 arbitrary **nonempty** families. Strictness supplies empty-join preservation;
 termination supplies empty-meet preservation. Here, termination means **top
 preservation**, with its operational interpretation determined by the direction
 of the transformer.
 
-`Arrows/SPostArr.v` implements all four canonical carriers over
+`SP/SPostArr.v` implements all four canonical carriers over
 `SPArrT A B := (A -> Prop) -> B -> Prop`. Each stores only a transformer and
 healthiness proofs, including explicit monotonicity:
 
@@ -725,7 +699,7 @@ their sequencing.
 
 ### Equivalence with `Rel`
 
-[`SPostArrEquiv.v`](../SP/SPostArrEquiv.v) relates property-only ASP and DSLP
+[`SPostArrEquiv.v`](../Code/SP/SPostArrEquiv.v) relates property-only ASP and DSLP
 directly to `Rel`, using the existing maps in `SPostArr.v`:
 
 | Property-only carrier | Map to `Rel` | Map from `Rel` | Packaged morphisms (to / from) |
@@ -777,7 +751,7 @@ and `state_arrow_morphism` directly.
 Inverse and lift proofs use the existing core/choice/application laws under
 the selected equality dictionaries. Inverse application uses `app_ext`; state
 lifting uses the law-derived `pure_ext`. See the
-[Classes contract](../Lib/CONTEXT.md#contracts)
+[Lib contract](../Code/Lib/CONTEXT.md#contracts)
 for each generic theorem's law requirements. The direct-Rel equivalences do
 not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.
 
@@ -785,13 +759,13 @@ not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.
 `ArrowChoiceLaws_*_leibniz` helpers remain independent APIs, not prerequisites
 for these equivalences. `PureASPostArr_eq` / `PureDSLPostArr_eq` also remain
 available to recover equality of bundled property-only arrows where needed.
-Consult the [assumption audit](../Checks/CONTEXT.md) for selected theorem
+Consult the [assumption audit](../Code/Checks/CONTEXT.md) for selected theorem
 dependencies.
 
-Checked clients live in `Arrows/Examples/SPostArrExamples.v`; monad and
-transformer instantiation checks live in `Arrows/Tests/`.
+Checked clients live in `Tests/SPostArrExamples.v`; monad and
+transformer instantiation checks live in `Tests/` too.
 
-`Arrows/OptionLoop.v` proves that `optionRel` cannot satisfy unrestricted
+`Relational/OptionLoop.v` proves that `optionRel` cannot satisfy unrestricted
 `ArrowLoop` left tightening: empty feedback makes failure propagation conflict
 with the empty relation. `SPostArrEquiv.v` transports this obstruction through
 the direct-Rel option maps to property-only ASP and DSLP.
@@ -829,7 +803,7 @@ liberal WP triples `dwlpSt`
 `principle_of_agreement_dwlp`, `principle_of_denial_dwlp`), each obtained from
 its ASP counterpart through the Galois edge of the diagram.
 
-**Dijkstra monads.** `DijkstraMonads/DijkstraMonad.v` gives, for any monad
+**Dijkstra monads.** `Dijkstra/DijkstraMonad.v` gives, for any monad
 morphism `θ : M ~> W` into a specification monad `(W, le)`,
 
 ```text
@@ -869,18 +843,18 @@ inclusions of relations, so they are closed under intersection, and these
 triples are not. Without state there is one start point and the ASP `Under`
 triple is a typing (`triple_under_aspPure`, for a precondition that holds).
 
-`DijkstraMonads/DijkstraExamples.v` types one program in each of the eight WP
+`Dijkstra/DijkstraExamples.v` types one program in each of the eight WP
 Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a
 stateless program at ASP `Under`. See the
-[Dijkstra context](../Dijkstra/CONTEXT.md).
+[Dijkstra context](../Code/Dijkstra/CONTEXT.md).
 
 ## 10. Build status
 
-[`_CoqProject`](../_CoqProject) lists the normal build's sources. The
-[root README](../../README.md#build) gives the build commands, and the
-[opam manifest](../coq-spec-monad.opam) gives dependency constraints. A source
+[`_CoqProject`](../Code/_CoqProject) lists the normal build's sources. The
+[root README](../README.md#build) gives the build commands, and the
+[opam manifest](../Code/coq-spec-monad.opam) gives dependency constraints. A source
 file can belong to the build while containing aborted attempts or disabled
 experiments; neither is an exported theorem.
 
@@ -889,14 +863,14 @@ proofs use classical logic or extensionality. Use `Print Assumptions` on the
 theorem of interest rather than inferring its assumptions from imports.
 
 Run `make check` from `Code/` for assumption reports. The separate
-[Checks/Assumptions.v](../Checks/Assumptions.v) reports the outcome laws
+[Checks/Assumptions.v](../Code/Checks/Assumptions.v) reports the outcome laws
 of `DivNonDetNE.v`, the arrow law packages, ordered-bind counterexamples, the
 separation of the four healthiness classes, and the triples development of
 §5, §6 and §9 (morphisms, lifts, both diagrams, examples, rewriting rules,
-Dijkstra monads). See the [Checks context](../Checks/CONTEXT.md) for audit
+Dijkstra monads). See the [Checks context](../Code/Checks/CONTEXT.md) for audit
 scope and execution details.
 
-The maintained [Code/Makefile](../Makefile) provides this opt-in target;
+The maintained [Code/Makefile](../Code/Makefile) provides this opt-in target;
 the audit file is outside `_CoqProject`, so ordinary `make` does not run it.
 Each explicit `make check` reruns the reports and returns an error if the
 audit file fails to compile. The reports cover selected declarations, not
@@ -925,18 +899,19 @@ stacks:
 | transformer stack | `Class__Type` (two underscores) | `Monad__WStExc`, `MonadState__WSt` |
 
 The SP monads `ASPMonad.v` / `DSLPMonad.v` / `DSPMonad.v` / `ASLPMonad.v`, and
-`SPure.v`, use **one underscore at every layer**: for example, `Monad_ASP`,
+`Relational/RelMonads.v`, use **one underscore at every layer**: for example, `Monad_ASP`,
 `Monad_ASPSt`, `Monad_ASPStExc`, `Eq1_ASPSt`, `MonadLawsE_ASPStExc`, and
 `Monad_SPStExc`. The monad-law class used here is `MonadLawsE` (the ITree
 class), not `MonadLaws`.
 
-`SPPredicateTransformers.v` names its raw carriers by outcome: `SPPure`,
+`SP/RawSP.v` names its raw carriers by outcome: `SPPure`,
 `SPSt` for plain pairs, `SPStExc` for option outcomes, with the raw orders
 `ordSPSt` / `ordSPStExc`. The WP side matches, with `ordWSt` / `ordWStExc`.
 
 ## 12. Known duplication
 
-`SPPredicateTransformers.v` keeps raw SP carriers and healthiness predicates
-of its own, next to the arrows of `Arrows/SPostArr.v`. `SPostMonad.v`,
-`SPStBindComparisons.v` and `MonadTaxonomy.v` use them; nothing in `Triples/`
-or `DijkstraMonads/` does.
+`SP/RawSP.v` keeps raw SP carriers and healthiness predicates of its own,
+next to the arrows of `SP/SPostArr.v`, and `WP/WPVariants.v` has a third copy
+of the four homomorphism properties for unary WP transformers. `SPostMonad.v`,
+the SP monad files, `SPStBindComparisons.v` and `MonotoneSPSt.v` use the raw
+ones; nothing in `Triples/` or `Dijkstra/` does.

@@ -1,45 +1,61 @@
 # Taxonomy context
 
-Parent: [Code](../CONTEXT.md). Details: [README](README.md).
-Source declarations and [_CoqProject](../_CoqProject) override older names.
+Parent: [Code](../CONTEXT.md). Paper: Section 4 (taxonomy of predicate
+transformer monads, Figure 1). Builds on [WP](../WP/CONTEXT.md),
+[SP](../SP/CONTEXT.md), [Relational](../Relational/CONTEXT.md) and
+[MonadRelation.v](../Lib/Monad/MonadRelation.v); used by
+[Triples](../Triples/CONTEXT.md). The [design notes](../../docs/design.md)
+give the longer story.
 
-## Ownership
+## Files in reading order
 
-- [ComputationMonads](../Computation/CONTEXT.md) owns effects and outcomes.
-  Its TransformerLaws is generic and also serves specification stacks.
-- [Arrows](../SP/CONTEXT-arrows.md) owns binary specification interfaces, concrete
-  laws, and ASP/DSLP equivalences with plain `Rel`. `SPostArr.v` implements all
-  four property-only SP arrows, their binary stacks, and conversions without
-  importing BaseSpecMonads. `Rel.v` owns relations; `RelSPostArr.v` owns their
-  SP readings. Generic relational normalization belongs to Classes.
-- [BaseSpecMonads](../SP/CONTEXT.md) owns unary specifications,
-  their properties, orders, and adjunctions. The four public flavour monads
-  consume `SPostArr.v`, and `SPure.v` supplies unary relational monads and
-  orders.
-- [Triples](../Triples/CONTEXT.md) defines monad morphisms out of `divndNE` and
-  its `stateT` / `optionT` stacks, lifts their triples, and proves the
-  taxonomy diagram with state and with state and exceptions. It also holds
-  the examples and O'Hearn's rewriting rules. The maps are not called
-  observations: the DSP and ASLP targets are not specification monads.
-- [DijkstraMonads](../Dijkstra/CONTEXT.md) gives the Dijkstra monad of any
-  monad morphism into an ordered monad, instantiates it at every morphism of
-  Triples, and identifies triples with typings where that is exact.
-- Tests, examples, and assumption audits are distinct.
+- [TransformerTaxonomy.v](TransformerTaxonomy.v) (§4.1): the monotone
+  carrier `MonotoneSPost` read with either index fixed, as `MonoPT` (first
+  index: SP; second: WP), and the three relations of Verscht and Kaminski's
+  taxonomy on bare transformers: `pt_le` (implication), `Contrapositive`, and
+  `GaloisPT`. `pt_under` / `pt_over` are the two triple readings of a
+  transformer. Contrapositive facts that turn a negated statement back into a
+  positive one are classical.
+- [MonotoneSPSt.v](MonotoneSPSt.v): monotone stateful SP transformers
+  `SPStMon` with an angelic and a demonic monad structure, each lawful only up
+  to an inequation (`lunitStrictlyLax`: monotone sps alone are not a lawful
+  monad, paper Introduction and §3.2). `Ladj` / `Radj` relate them to `WSt`,
+  with representability by `PredSt`. `Radj_bind` is `Admitted` and unused:
+  use the bridge lemmas instead.
+- [SPStBindComparisons.v](SPStBindComparisons.v): the state bind of each SP
+  monad read as a monotone stateful transformer and compared with the
+  `SPStMon` structures. Not in the paper.
+- [TaxonomyCarriers.v](TaxonomyCarriers.v): the carriers of the SP and WP
+  monads inside `MonoPT` — the second index one state at a time, the first
+  along `S ~ unit * S` — the four refinements, the broad monads, the WP and SP
+  variants inside them, the pure level, duals under `Contrapositive`, and
+  adjoints.
+- [MonadTaxonomy.v](MonadTaxonomy.v) (§4.2, §4.4): implication,
+  contrapositive and Galois connection as monadic relations
+  ([MonadRelation.v](../Lib/Monad/MonadRelation.v)) on `WPure` and its
+  transformer stacks, on `SPStMon` with its angelic and demonic structures,
+  and between the variant monads at the pure, state and state-option levels.
+  `Section Flavours` has the edges of Figure 1
+  (`MonadRelation_dwp_implies_dwlp`, …, `MonadRelation_contra_*`,
+  `MonadRelation_galois_*`); the file ends with the stateless collapse
+  (`MonadRelation_dsp_asp_pure`, `MonadRelation_aslp_dslp_pure`).
 
-## Semantic cautions
+## Cautions
 
-None can mean exception, divergence, or structural failure depending on the
-layer. With state and exceptions over `divndNE`, outer None is divergence and
-Some None is an exception. The SP morphisms read the terminating outcomes:
-they keep exceptions and omit divergence.
-
-Healthiness, monad equations, precondition monotonicity, and ordered bind
-are separate. DSP and ASLP are not specification monads: their `bind` is not
-monotone for their order. Over/Under SP and WP triples can reverse
-implication and argument order: inspect the local definitions.
-
-For the property-only SP implementation, read Classes and arrow-owned helpers
-→ SPostArr → BaseSpecMonads → Triples. For an effect, read computation/outcomes
-→ specification carrier/order → morphism → diagram/examples. A return/bind
-preservation theorem refers to the selected source and target operations, not
-every similarly named dictionary.
+- DSP and ASLP enter SP implications through one part (`aspOf` / `dslpOf`),
+  because their `bind` does not preserve the pointwise orders (paper's
+  asterisks in Figure 1).
+- `GaloisSPWP` / `GaloisWPSP` are `Ladj` / `Radj`; never use `Radj_bind`.
+  Name the angelic or demonic `SPStMon` structure explicitly.
+- Every variant instance that involves an SP monad goes through the relation
+  the SP element denotes: implication is inclusion and contrapositive is
+  equality of the denoted relations, each one index-generic lemma. A Galois
+  instance is the base relation between `PredM.Pred` and `WPure`
+  (`GaloisPredWP`, `GaloisWPPred`), lifted by the monad transformers on the
+  WP side and read at the denoted results on the SP side
+  (`MonadRelation_rel_pred` and its two stack versions). The Galois instances
+  use no axiom.
+- Healthiness, monad equations, precondition monotonicity and ordered bind
+  are separate. Over/Under SP and WP triples can reverse implication and
+  argument order: inspect the local definitions.
+- §4.3 (category-theoretic insights) has no code.

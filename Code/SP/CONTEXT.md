@@ -1,147 +1,111 @@
-# Base specification monads context
+# SP context
 
-Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Related: [arrows](CONTEXT-arrows.md).
-Source declarations determine exact types, selected dictionaries, and orders.
+Parent: [Code](../CONTEXT.md). Paper: Section 3.1-3.5 (strongest
+postcondition monads). Builds on [Lib](../Lib/CONTEXT.md) and
+[Relational](../Relational/CONTEXT.md); used by
+[Taxonomy](../Taxonomy/CONTEXT.md), [Triples](../Triples/CONTEXT.md),
+[Dijkstra](../Dijkstra/CONTEXT.md). Source declarations determine exact
+types, selected dictionaries and orders. Qualify shared names, especially
+unary accessors such as `ASPMonad.getASP` against the binary
+`SPostArr.getASP` (and likewise for DSLP).
 
-## Shared unary specifications
+## Files in paper order
 
-Every monad file owns its refinement order and the proof that the monad is a
-specification monad under it (`OrderedMonad_*`); there is no separate summary
-file. The table under "Orders and comparisons" lists the verdicts.
+| Paper | File | Contents |
+|---|---|---|
+| 3.1 | [SPostMonad.v](SPostMonad.v) | `SPM.SPost`: monotone transformers into `Over pre` (propositions implying the precondition), `SP_le`, `OrderedMonad_SPost`; the pure predicates `KenjiPureSP` / `KenjiPureDSLP` used by the ASP and DSLP files |
+| 3.3 | [StatefulSPostCounterexample.v](StatefulSPostCounterexample.v) | `KenjiProgSP` and `StKenji.KenjiProgSP`: stateful carriers restricted like `SPost`; `KenjiFailingBind`: the m/f/g counterexample to associativity. Hand-built carriers, not literally `stateArrT` over the angelic arrow; only the angelic case |
+| 3 | [RawSP.v](RawSP.v) | raw `SPPure`, `SPSt`, `SPStExc`, the terminating slice `StTrans`, the order on raw transformers. Not the carriers of the four monads |
+| 3.3-3.4 | [PredicateTransformerProperties.v](PredicateTransformerProperties.v) | `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, `ConjunctiveArr` for `(A -> Prop) -> B -> Prop`; see [PROPERTY_TERMINOLOGY.md](PROPERTY_TERMINOLOGY.md) |
+| 3.2, 3.4 | [SPostArr.v](SPostArr.v) | the raw `SPArrT` and its properties; the ASP and DSLP arrows, normal forms, recovered relations, laws, stacks, `asp_to_dslp` |
+| 3.5 | [DSPASLPArr.v](DSPASLPArr.v) | the DSP and ASLP arrows, their stacks, and the separation of the four classes |
+| — | [SPostArrEquiv.v](SPostArrEquiv.v) | ASP/DSLP/DSP/ASLP arrows as morphisms to and from `Rel`; the transported `ArrowLoop` obstruction |
+| 3.4-3.5 | [ASPMonad.v](ASPMonad.v), [DSLPMonad.v](DSLPMonad.v), [DSPMonad.v](DSPMonad.v), [ASLPMonad.v](ASLPMonad.v) | the four SP monads at input `unit`, with state and with state and exceptions |
 
-- PredMonad: unary PredM.Pred and state/option predicate stacks, with
-  `Pred_le` / `ordPredStExc` and `OrderedMonad_Pred` / `OrderedMonad_PredStExc`.
-- PrePostMonad: PPM.PrePost pairs propositional pre with a result predicate;
-  bind checks continuations universally and collects results existentially.
-  `PP_le` and `OrderedMonad_PrePost` are at the end of the file.
-- SPostMonad: SPM.SPost bundles monotone transformers into Over pre,
-  propositions implying that precondition. It is not a binary SP arrow.
-  `SP_le` and `OrderedMonad_SPost` follow the monad laws.
-- WPureMonad: monotone weakest-precondition transformers, exposed by getWPure,
-  with state/option stacks. WP_le and its generic lifts are reverse
-  implication. `OrderedMonad_WPure`, `OrderedMonad_WSt` and
-  `OrderedMonad_WStExc` are here, and the four flavours AWP, DWLP,
-  DWP, AWLP are ordered as its submonads: `OrderedMonad_WPSub` is
-  `OrderedMonad_pullback` along `toWPure`. Keep the corresponding WP triple argument/direction changes.
-  The file also carves AWP, DWLP, DWP, and AWLP out of WPure as submonads by
-  healthiness (`WPHealth`, `WPSub`), with state stacks and both orders.
-- RelPrePostMonad: validators into Assuming pre, whose propositions satisfy
-  `q <-> (pre -> q)`, with Hoare-order monotonicity. `MR_le` and
-  `OrderedMonad_RelPrePost` are at the end of the file.
+## The arrows
 
-## Raw SP carriers
+`ASPArr` / `DSLPArr` bundle monotonicity with strictness/disjunctivity or
+termination/conjunctivity; `DSPArr` / `ASLPArr` use strictness/conjunctivity
+or termination/disjunctivity. Conjunctive/disjunctive families are nonempty;
+strictness supplies the empty join and termination (top preservation) the
+empty meet. The carriers hold transformers and healthiness proofs, not stored
+relations. The arrow files depend on Lib, Relational and
+`PredicateTransformerProperties.v` (and `DSPASLPArr.v` on `SPostArr.v`), never
+on the monad files.
 
-SPPredicateTransformers defines raw SPPure, shared-precondition SPSt, and
-option-indexed SPStExc, their healthiness predicates, and the skew-monadic
-structures on monotone stateful transformers. They are not the carriers of
-the four SP monads below, which come from the arrows.
+- ASP/DSLP have constructive normal forms (`ASP_normal_form` /
+  `DSLP_normal_form`); DSP/ASLP recover relations classically. DSP/ASLP
+  operations split into ASP and DSLP parts, operate, then recombine by
+  conjunction/disjunction; DSP composition is not raw transformer
+  composition.
+- `getASP` / `getDSLP` expose transformers; `arrASP` / `arrDSLP` lift
+  functions (`arrASP_spec` / `arrDSLP_spec`). `ASP_rel` / `DSLP_rel`, the
+  constructors `relASP` / `relDSLP`, their round trips and rewrite facts are
+  in the arrow layer. `arrow_eq` is pointwise transformer iff;
+  `PureASPostArr_eq` / `PureDSLPostArr_eq` recover bundled equality.
+  Compatibility aliases: `PureASPostArr := ASPArr`, `PureDSLPostArr := DSLPArr`.
+- The canonical `aspRel` probes `fun x => x = a`, `ASP_rel` probes `eq a`:
+  relate them by predicate equivalence, not definitional equality.
+- All four carriers provide `ArrowLaws`, `ArrowChoiceLaws`, `ArrowApplyLaws`
+  by instantiating the shared packages of
+  [RelArrowCoherence.v](../Lib/Arrow/RelArrowCoherence.v). The state-over-option
+  stack maps `A * S` to `option (B * S)`; a propagated `None` carries no final
+  state. `ASPostArr S` / `DSLPostArr S` fix its input to `unit`.
+- `DSPASLPArr.v` ends with `trueFromBoth`: its DSP reading is neither
+  top-preserving nor disjunctive, its ASLP reading neither strict nor
+  conjunctive, its DSLP reading not disjunctive (`no_ASPArr_for_dsp`,
+  `no_DSLPArr_for_dsp`, `no_ASPArr_for_aslp`, `no_DSLPArr_for_aslp`,
+  `no_ASPArr_for_dslp`).
+- [SPostArrEquiv.v](SPostArrEquiv.v): `asp_from_to` / `asp_to_from` and the
+  DSLP pair use the selected `arrow_eq` or `Rel_eq`, not ordinary equality.
+  The maps preserve each reading and all five operations; application
+  preservation also converts the arrow stored in the input. Packaged as
+  `asp_to_rel_morphism` / `asp_from_rel_morphism` and their DSLP
+  counterparts; `rel_reading_morphism` / `rel_section_morphism` give the
+  DSP/ASLP pairs. Module aliases: `PropertySP := SPostArr`,
+  `RelSP := RelSPostArr`. `optionASP_no_left_tightening` /
+  `optionDSLP_no_left_tightening` transport the obstruction of
+  [OptionLoop.v](../Relational/OptionLoop.v); the local loop transport uses
+  property-only extensionality for one substitution under the loop.
 
-- [`WPureT` / `WPure`](../WP/WPure.v) distinguish the raw WP transformer
-  from its monotone subset. `WSt` and `WStExc` stack state and optional
-  exceptions over `WPure`; `getWPure` exposes application.
+## The monads
 
-## Four-flavour public API
+Each monad file fixes input `unit` and uses the generic
+[ArrowMonad.v](../Lib/Arrow/ArrowMonad.v) operations and laws; effects are
+stacked before fixing the input. Each exposes pure/state/state-option
+monads, runners, refinement orders, ordered-bind proofs, and ends with the
+stateless monad defined directly on `SPPure A = Prop -> A -> Prop`: `ASPSP`
+(`Singleton`), `DSLPSP` (`MSingleton`), `DSPSP` / `ASLPSP`, with operations
+suffixed `SP` (`retASPSP`, `bindASPSP`, `getASPSP`). `aspsp_to_asp` /
+`asp_to_aspsp` and the three analogous pairs show each direct monad is the
+arrow-derived one. There is no direct definition with state.
+`DSLPSP` is the paper's `SPost_dem`; ASP and `SPost_ang` meet through
+`kenji_iff_singleton` and `aspsp_to_asp`.
 
-The four public monads consume [Arrows/SPostArr.v](SPostArr.v), which
-implements `ASPArr`, `DSLPArr`, `DSPArr`, and `ASLPArr`, their operations,
-recovered relations, laws, binary stacks, and conversions. `SPostArr.v` does
-not depend on this directory, including `SPure.v`. Its ASP/DSLP normal forms
-and semantic law packages are constructive; DSP/ASLP recovery is classical.
-The selected equalities are transformer iff, not Leibniz bundle equality.
-The `PureASPostArr` / `PureDSLPostArr` compatibility aliases and their plain
-dictionary definitions add neither a second carrier nor instance registrations.
+`DSPMonad.v` and `ASLPMonad.v` close with the pure collapse: at input `unit`
+the DSP and ASP conditions coincide, and so do the ASLP and DSLP ones;
+`dsp_to_asp` / `asp_to_dsp` and `aslp_to_dslp` / `dslp_to_aslp` are the
+identity on transformers, mutually inverse, and preserve `ret`, `bind` and the
+pointwise orders (only ASP-to-DSP is constructive). `OrderedMonad_DSP` /
+`OrderedMonad_ASLP` pull back the ASP / DSLP orders. They also refute the
+ordered monad laws with state (`not_OrderedMonad_DSPSt`,
+`not_OrderedMonad_ASLPSt`, and the `StExc` pair) and prove
+`dsp_arbitrary_bind_impossible` / `aslp_arbitrary_bind_impossible` for
+Boolean state. The monad laws still hold.
 
-## Arrow-derived monad consumers
+| monad | order | ordered? |
+|---|---|---|
+| `SPM.SPost` | `SP_le` | yes |
+| `ASP`, `ASPSt S`, `ASPStExc S`, `ASPSP` | pointwise (follows relation inclusion) | yes |
+| `DSLP`, `DSLPSt S`, `DSLPStExc S`, `DSLPSP` | pointwise (reverses it) | yes |
+| `DSP`, `DSPSP` / `ASLP`, `ASLPSP` | pointwise | yes |
+| `DSPSt S`, `DSPStExc S` / `ASLPSt S`, `ASLPStExc S` | pointwise | no |
 
-`ASPMonad.v`, `DSLPMonad.v`, `DSPMonad.v`, and `ASLPMonad.v` fix input `unit`
-and use generic `Lib/Arrow/ArrowMonad.v` operations and laws. Each exposes
-pure/state/state-option monads, runners, refinement orders, ordered-bind proofs,
-and monad-specific results. Qualify unary accessors such as `ASPMonad.getASP`
-against the binary `SPostArr.getASP` (and likewise for DSLP).
+The canonical `ASPStExc` / `DSLPStExc` are definitionally the compatibility
+`ASPostArr` / `DSLPostArr` stacks of `SPostArr.v`. That an ASP element and the
+DSLP element denoting the same relation correspond under `ret` and `bind` is
+`MonadRelation_contra_asp_dslp_exc_one` / `_two` in
+[MonadTaxonomy.v](../Taxonomy/MonadTaxonomy.v).
 
-`DSPMonad.v` and `ASLPMonad.v` close with the pure collapse. At input `unit`
-the DSP and ASP healthiness conditions coincide, and so do the ASLP and DSLP
-ones; `dsp_to_asp` / `asp_to_dsp` and `aslp_to_dslp` / `dslp_to_aslp` are the
-identity on transformers, mutually inverse, and preserve `ret`, `bind`, and the
-pointwise orders. Only ASP-to-DSP is constructive. `OrderedMonad_DSP` and
-`OrderedMonad_ASLP` pull the orders of ASP and DSLP back along these maps, so
-without state DSP and ASLP are specification monads.
-
-Each of the four files ends with the stateless monad defined directly on
-`SPPure A = Prop -> A -> Prop`: `ASPSP` (`Singleton`), `DSLPSP`
-(`MSingleton`), and `DSPSP` / `ASLPSP`, which are those two under the
-strict-conjunctive / terminating-disjunctive presentation with the monad
-structure transported. Their operations carry the suffix `SP`
-(`retASPSP`, `bindASPSP`, `getASPSP`), because `retASP`, `bindASP`, `getASP`
-belong to the arrow-derived monad. `aspsp_to_asp` / `asp_to_aspsp` and the
-three analogous pairs show that each direct monad is the arrow-derived one:
-mutually inverse monad morphisms that preserve and reflect the order. There
-is no direct definition with state or with exceptions.
-
-[MonadTaxonomy.v](../Taxonomy/MonadTaxonomy.v) places the SP and WP carriers inside
-`MonoPT` and states implication, contrapositive, and Galois connection as
-monadic relations ([Lib/Monad/MonadRelation.v](../Lib/Monad/MonadRelation.v)):
-on WPure and its transformer stacks, on SPStMon with its angelic and demonic
-structures, and between the flavour monads at the pure, state, and state-option
-stacks. DSP and ASLP enter SP implications through one part, because bind does
-not preserve their pointwise orders. `GaloisSPWP` / `GaloisWPSP` are `Ladj` /
-`Radj` of SPPredicateTransformers; use the bridge lemmas, never the admitted
-`Radj_bind`. Name the angelic or demonic SPStMon structure explicitly.
-Every flavour instance that involves an SP monad goes through the relation the
-SP element denotes: implication is inclusion and contrapositive is equality of
-the denoted relations, each one index-generic lemma. A Galois instance is the
-base relation between `PredM.Pred` and `WPure` (`GaloisPredWP`,
-`GaloisWPPred`), lifted by the monad transformers on the WP side and read at
-the denoted results on the SP side (`MonadRelation_rel_pred` and its two stack
-versions). The Galois instances use no axiom.
-
-The canonical `ASPStExc` / `DSLPStExc` monads are definitionally the
-compatibility `ASPostArr` / `DSLPostArr` stacks of `SPostArr.v`, which also
-has the binary `asp_to_dslp` conversion and its relation-reading facts. That
-an ASP element and the DSLP element denoting the same relation correspond
-under `ret` and `bind` is `MonadRelation_contra_asp_dslp_exc_one` / `_two` in
-`MonadTaxonomy.v` (and its state and stateless versions); there is no
-separate bridge file.
-
-[SPure.v](../Relational/RelMonads.v) owns only unary relational monads, return/bind facts, and
-orders. [Rel.v](../Relational/Rel.v) owns the binary relation carrier, stacks, and
-congruence; [RelSPostArr.v](../Relational/RelSPostArr.v) owns the four SP readings.
-Generic normalization (`rel_bind`, `relS_bind`, `relO_*`, `relE_*`) lives in
-[RelArrowCoherence.v](../Lib/Arrow/RelArrowCoherence.v) and uses the existing
-`RelArrow` / `RelArrowChoice` / `RelArrowApply` contracts. `SPostArr.v` specializes
-these facts for its canonical relation-reading wrappers.
-
-- [DSPMonad.v](DSPMonad.v) and [ASLPMonad.v](ASLPMonad.v) refute the ordered
-  monad laws for `DSPSt` / `ASLPSt` and `DSPStExc` / `ASLPStExc` under their
-  pointwise orders (`not_OrderedMonad_*`). Monad laws still hold.
-  `dsp_arbitrary_bind_impossible` and `aslp_arbitrary_bind_impossible`
-  strengthen this for Boolean state: no candidate Boolean-to-unit bind
-  satisfies both left identity for the monad's return and first-argument
-  monotonicity. The contradiction uses only that the candidate's output is in
-  the carrier, independently of the existing bind.
-
-## Orders and comparisons
-
-ASP's transformer order follows relation inclusion; DSLP reverses it. Their
-pointwise orders carry OrderedMonad. DSP and ASLP carry no OrderedMonad with
-state: their pointwise orders fail it (`not_OrderedMonad_DSPSt`,
-`not_OrderedMonad_ASLPSt`, and the `StExc` pair), and a predicate-transformer
-monad is ordered by its own order or not at all. Without state they are
-ordered, as ASP and DSLP.
-
-| monad | order | ordered? | proved in |
-|---|---|---|---|
-| `PredM.Pred`, `PredStExc S` | `Pred_le`, `ordPredStExc` | yes | `PredMonad.v` |
-| `PPM.PrePost` | `PP_le` | yes | `PrePostMonad.v` |
-| `SPM.SPost` | `SP_le` | yes | `SPostMonad.v` |
-| `RPPM.RelPrePost` | `MR_le` | yes | `RelPrePostMonad.v` |
-| `WPure`, `WSt S`, `WStExc S` | `WP_le`, `ordWSt`, `ordWStExc` | yes | `WPureMonad.v` |
-| `ASP`, `ASPSt S`, `ASPStExc S`, `ASPSP` | pointwise | yes | `ASPMonad.v` |
-| `DSLP`, `DSLPSt S`, `DSLPStExc S`, `DSLPSP` | pointwise | yes | `DSLPMonad.v` |
-| `DSP`, `DSPSP` / `ASLP`, `ASLPSP` | pointwise | yes | `DSPMonad.v` / `ASLPMonad.v` |
-| `DSPSt S`, `DSPStExc S` / `ASLPSt S`, `ASLPStExc S` | pointwise | no | `DSPMonad.v` / `ASLPMonad.v` |
-
-BaseGaloisConnections relates the unary DM4All presentations through their
-orders, including both adjunctions between `PrePost` and `WPure`.
-SPStBindComparisons studies skew-monadic/functor structure and bind comparisons.
-Read the chosen carrier, operations, equality, and order before observations.
+Read: properties → `SPostArr.v` → `DSPASLPArr.v` → a monad file; the
+[checked clients](../Tests/CONTEXT.md) exercise the public operations.

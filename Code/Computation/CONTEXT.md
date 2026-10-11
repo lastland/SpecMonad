@@ -1,11 +1,13 @@
-# Computation monads context
+# Computation context
 
-Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Consumers: [Triples](../Triples/CONTEXT.md)
-and [DijkstraMonads](../Dijkstra/CONTEXT.md).
+Parent: [Code](../Taxonomy/CONTEXT.md). Paper: the computation monad of nondeterminism
+and nontermination (Introduction, Section 5). Consumers: [Triples](../Triples/CONTEXT.md)
+and [Dijkstra](../Dijkstra/CONTEXT.md).
 
 These modules own computations and outcome relations, not specification
-well-formedness or readings. TransformerLaws is generic ExtLib infrastructure
-for option/state stacks and is also used by specifications. Avoid
+well-formedness or readings. The generic transformer laws they rely on are in
+[Lib/Monad/TransformerLaws.v](../Lib/Monad/TransformerLaws.v), which names no
+computation monad and also serves the specification stacks. Avoid
 duplicating library laws or computation-owned raw outcome laws in clients.
 
 [DivNonDetNE.v](DivNonDetNE.v) is the one file of computation monads. It
@@ -34,14 +36,8 @@ to it:
 
 - The two stacks are ExtLib's `stateT` and `optionT` applied to `divndNE`;
   no stack is defined by hand.
-- [TransformerLaws.v](../Lib/Monad/TransformerLaws.v) proves `Eq1`-generic option and state
-  transformer laws from base `MonadLawsE` assumptions. It names
-  no concrete computation monad, so [base specifications](../SP/CONTEXT.md)
-  can import it without depending on a concrete computation.
-  Its `ord_optionT` and `bind_optionT_mono` separately lift an explicit
-  reflexive order and simultaneous bind monotonicity through `optionT`.
-  `optionT_map` and `stateT_map` lift a map between monads;
-  `MonadMorphism_optionT` / `_stateT` lift its morphism laws.
+- The transformer laws come from
+  [Lib/Monad/TransformerLaws.v](../Lib/Monad/TransformerLaws.v).
 
 ## Semantic traps
 
@@ -59,5 +55,5 @@ to it:
 
 Read `DivNonDetNE.v` top to bottom: `SetM`, `divnd`, `divndNE`, the two
 stacks. Read `TransformerLaws.v` when following a law instance or a lifted
-morphism through a stack; use the [README](../Taxonomy/README.md#2-computation-monads)
+morphism through a stack; use the [design notes](../../docs/design.md#2-computation-monads)
 for the table of levels.

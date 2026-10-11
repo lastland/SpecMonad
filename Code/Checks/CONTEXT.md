@@ -22,11 +22,13 @@ The selected reports cover:
   on the two stacks.
 - Shared structural equations in
   [RelArrowCoherence.v](../Lib/Arrow/RelArrowCoherence.v), concrete property-only
-  SP law packages in [SPostArr.v](../SP/SPostArr.v), and the existing
+  SP law packages in [SPostArr.v](../SP/SPostArr.v) and
+  [DSPASLPArr.v](../SP/DSPASLPArr.v), and the existing
   relational laws in [Rel.v](../Relational/Rel.v). All four relational SP
   readings reuse those `Rel` laws, rather than contributing duplicate packages.
 - Constructive canonical ASP/DSLP normal forms and all four canonical SP law
-  packages in [SPostArr.v](../SP/SPostArr.v), plus selected
+  packages in [SPostArr.v](../SP/SPostArr.v) and
+  [DSPASLPArr.v](../SP/DSPASLPArr.v), plus selected
   `CanonicalSP` interoperability clients in
   [ArrowMonadInstances.v](../Tests/ArrowMonadInstances.v).
   The clients exercise canonical/compatibility application, bind dictionary
@@ -58,7 +60,7 @@ The selected reports cover:
   and the construction, instances and triple identifications of
   [DijkstraMonad.v](../Dijkstra/DijkstraMonad.v).
 - The separation of the four healthiness classes in
-  [SPostArr.v](../SP/SPostArr.v).
+  [DSPASLPArr.v](../SP/DSPASLPArr.v).
 
 The audit also reports the second adjunction between `PrePost` and `WPure`
 and the generic option-order lift.
@@ -72,7 +74,7 @@ in the normal build; the audit also reports the first.
 
 [SPostArrInfrastructure.v](../Tests/SPostArrInfrastructure.v)
 checks core, choice, and application laws for all four property-only flavours
-without importing BaseSpecMonads. Its semantic regressions distinguish DSP
+without importing the SP monad files. Its semantic regressions distinguish DSP
 composition from raw transformer composition and exercise non-unit
 state-over-option bind. These checks are separate from the assumption reports.
 
@@ -100,7 +102,7 @@ operations lack congruence; public obstruction statements remain semantic.
 Use the audit source and its current output to determine which declarations
 are reported and what assumptions they use.
 
-Related contexts: [Classes](../Lib/CONTEXT.md),
+Related contexts: [Lib](../Lib/CONTEXT.md),
 [generic regressions](../Tests/CONTEXT.md), and
-[concrete Taxonomy tests](../Tests/CONTEXT-arrows.md).
+[concrete instance tests](../Tests/CONTEXT.md#concrete-arrow-instance-checks).
 Those regression/instance checks belong to the normal build, unlike this audit.

@@ -38,6 +38,7 @@ DIRS = {
     "Code/Taxonomy/Triples": "Code/Triples", "Code/Taxonomy/DijkstraMonads": "Code/Dijkstra",
     "Code/Taxonomy/deprecated": "Code/Backup/Taxonomy-deprecated",
     "Code/Taxonomy/MeetingNotes": "docs/meeting-notes",
+    "Code/Taxonomy/README.md": "docs/design.md",
 }
 LINK = re.compile(r"(\]\()([^)\s#]+)(#[^)]*)?(\))")
 

@@ -9,15 +9,28 @@ Makefile for build/audit targets. Source declarations override older prose.
 
 ## Ownership
 
-- [Classes](Lib/CONTEXT.md) supplies generic arrow laws, transformers,
-  morphisms, and fixed-input monads without concrete Taxonomy carriers.
-- [Taxonomy](Taxonomy/CONTEXT.md) separates computation outcomes, base
-  specifications, concrete binary arrows, monad morphisms with their triples,
-  and Dijkstra monads.
-- [Checks](Checks/CONTEXT.md) reports selected assumptions separately from
-  normal tests/examples through `make check` in the maintained [Makefile](Makefile).
-  Reporting is not a proof of axiom-freedom; context documents are not an
-  assumption ledger.
+Directories follow the paper ([README](README.md)); each imports only from
+the layers listed in [scripts/layers.txt](scripts/layers.txt), checked by
+`make layers`.
+
+- [Lib](Lib/CONTEXT.md): generic arrow laws, transformers, morphisms,
+  fixed-input monads, ordered monads, monadic relations, transformer laws.
+  No specification carrier.
+- [Computation](Computation/CONTEXT.md): `divndNE` and its two stacks.
+- [Relational](Relational/CONTEXT.md): relations, their SP readings, `Pred`;
+  proof infrastructure below SP.
+- [WP](WP/CONTEXT.md) and [SP](SP/CONTEXT.md): the specification monads
+  (paper §2-3).
+- [Taxonomy](Taxonomy/CONTEXT.md): the relations of the taxonomy (§4).
+- [Triples](Triples/CONTEXT.md) and [Dijkstra](Dijkstra/CONTEXT.md):
+  monad morphisms, triples, Dijkstra monads (§5-6).
+- [GaloisConnections](GaloisConnections/CONTEXT.md): DM4All monads and
+  their adjunctions (§7).
+- [Tests](Tests/CONTEXT.md): instance and regression checks.
+- [Checks](Checks/CONTEXT.md) reports selected assumptions and checks the
+  paper claims, separately from the build, through `make check` in the
+  maintained [Makefile](Makefile). Reporting is not a proof of axiom-freedom;
+  context documents are not an assumption ledger.
 
 ## Shared distinctions
 

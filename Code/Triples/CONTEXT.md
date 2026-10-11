@@ -1,6 +1,6 @@
 # Triples context
 
-Parent: [Taxonomy](../Taxonomy/CONTEXT.md). Read [OrderedMonad.v](../Lib/Monad/OrderedMonad.v)
+Parent: [Code](../CONTEXT.md). Paper: Section 5. Read [OrderedMonad.v](../Lib/Monad/OrderedMonad.v)
 for `MonadMorphism` and `IsMonadMorphism` first, then
 [TransformerLaws.v](../Lib/Monad/TransformerLaws.v) and
 [ArrowMorphism.v](../Lib/Arrow/ArrowMorphism.v) for the lifts.

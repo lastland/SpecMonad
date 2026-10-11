@@ -3,8 +3,9 @@
 SpecMonad is a work-in-progress Coq development studying how specification
 monads support correctness and incorrectness reasoning about programs.
 
-The core development is [`Code/Taxonomy/`](Code/Taxonomy). Its
-[README](Code/Taxonomy/README.md) explains the semantics, representations, and
+The development in [`Code/`](Code/README.md) is organized by the sections of
+the paper; [PAPER.md](PAPER.md) maps each claim to its Rocq name. The
+[design notes](docs/design.md) explain the semantics, representations, and
 naming conventions. Use the [context map](CONTEXT-MAP.md) to navigate the rest
 of the repository. The [build manifest](Code/_CoqProject) lists the normal
 build's sources; other files include historical and unfinished experiments.
@@ -28,11 +29,11 @@ some attempts end with `Abort` or remain commented out.
 Run `make check` from `Code/` for the opt-in reports of selected theorem
 assumptions. This target is separate from the normal build and does not check
 assumptions against an allowlist. See the
-[build and audit details](Code/Taxonomy/README.md#10-build-status).
+[build and audit details](docs/design.md#10-build-status).
 
 ## The current status
 
-The Taxonomy specification carriers are independent of concrete computation
+The specification carriers are independent of concrete computation
 monads. **Monad morphisms connect computations to specifications**, choosing
 how to interpret their outcomes.
 
@@ -83,7 +84,7 @@ What is formalised:
   and SP), with state and with state and exceptions, in
   [`Triples/Diagram.v`](Code/Triples/Diagram.v). A separate
   development relates the specification monads themselves
-  (`BaseSpecMonads/MonadTaxonomy.v`).
+  (`Taxonomy/MonadTaxonomy.v`).
 
 - **Examples**: one verified program for each of the sixteen triple kinds,
   and a withdrawal example contrasting angelic WP coverage of every input

@@ -8,8 +8,8 @@ Research date: 2026-09-10. Subject:
 **`Code/SP/PredicateTransformerProperties.v`** names the file's role:
 it defines predicate-transformer healthiness conditions and proves consequences
 and specializations.
-The agreed layout places all SP properties under `Taxonomy/Arrows/` and the
-generic `ArrowMorphism` material under `Classes/`.
+The layout places all SP properties under `SP/` and the generic
+`ArrowMorphism` material under `Lib/Arrow/`.
 
 The properties follow Back and von Wright's **homomorphism properties of
 predicate transformers**, with roots in Dijkstra's weakest-precondition

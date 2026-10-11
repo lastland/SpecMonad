@@ -168,6 +168,33 @@ def layer_violations(nodes, layers) -> list[str]:
     return out
 
 
+def mermaid(nodes) -> str:
+    """Directory graph, each edge labelled with its number of imports, with
+    the edges implied by others removed."""
+    group = {n["id"]: n["group"] for n in nodes}
+    count = {}
+    for n in nodes:
+        for d in n["deps"]:
+            a, b = n["group"], group[d]
+            if a != b:
+                count[(a, b)] = count.get((a, b), 0) + 1
+    succ = {}
+    for a, b in count:
+        succ.setdefault(a, set()).add(b)
+
+    def reach(x, seen):
+        for y in succ.get(x, ()):
+            if y not in seen:
+                seen.add(y)
+                reach(y, seen)
+        return seen
+    lines = ["flowchart RL"]
+    for (a, b), c in sorted(count.items()):
+        if not any(o != b and b in reach(o, set()) for o in succ[a]):
+            lines.append(f"  {a.replace('/', '_')}[{a}] -->|{c}| {b.replace('/', '_')}[{b}]")
+    return "\n".join(lines)
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("-o", "--output", default="depgraph.html",
@@ -177,6 +204,8 @@ def main() -> None:
                     help="layer file, relative to Code/ (default: scripts/layers.txt)")
     ap.add_argument("--check-layers", action="store_true",
                     help="only check the layers; exit 1 on a violation")
+    ap.add_argument("--mermaid", action="store_true",
+                    help="only print the directory graph (transitively reduced) as Mermaid")
     args = ap.parse_args()
     layers_path = CODE / args.layers
     layers = read_layers(layers_path) if layers_path.exists() else None
@@ -204,6 +233,10 @@ def main() -> None:
             sys.exit(1 if bad else 0)
     elif args.check_layers:
         sys.exit(f"no layer file at {layers_path}")
+
+    if args.mermaid:
+        print(mermaid(nodes))
+        return
 
     order = list(layers) if layers else []
     html = (TEMPLATE.replace("/*__DATA__*/null", json.dumps(nodes))
