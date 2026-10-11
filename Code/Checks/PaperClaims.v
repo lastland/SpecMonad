@@ -36,7 +36,11 @@ From Incorrectness.Verification.MonadMorphisms Require
 From Incorrectness.Verification.Triples Require
   MorphismTriples TripleTaxonomy Examples InCorrectnessPrinciples.
 From Incorrectness.Verification.DijkstraMonads Require
-  DijkstraMonad DijkstraExamples.
+  DijkstraMonad.
+From Incorrectness.Verification.TriplesAsTypings Require
+  TriplesAsTypings.
+From Incorrectness.Verification.TriplesAsTypings Require
+  DijkstraExamples.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections GaloisArr.
 
@@ -328,21 +332,21 @@ Check DijkstraMonad.DM_laws.
 Check DijkstraMonad.Dasp_laws.
 
 (** Triples are typings: every WP triple, ASP [Over], DSLP [Under]. *)
-Check DijkstraMonad.triple_under_wpStExc.
-Check DijkstraMonad.triple_over_wpStExc.
-Check DijkstraMonad.triple_over_aspStExc.
-Check DijkstraMonad.triple_under_dslpStExc.
+Check TriplesAsTypings.triple_under_wpStExc.
+Check TriplesAsTypings.triple_over_wpStExc.
+Check TriplesAsTypings.triple_over_aspStExc.
+Check TriplesAsTypings.triple_under_dslpStExc.
 
 (** ASP [Under] / DSLP [Over]: typing at the natural index demands that
     every start state in [P] reach every result in [Q], which implies the
     triple but not conversely; no index has the triple as its typings
     (with state); without state ASP [Under] is a typing. *)
-Check DijkstraMonad.le_aspUnder.
-Check DijkstraMonad.aspUnder_typing_triple.
-Check DijkstraMonad.no_asp_under_index.
-Check DijkstraMonad.no_dslp_over_index.
+Check TriplesAsTypings.le_aspUnder.
+Check TriplesAsTypings.aspUnder_typing_triple.
+Check TriplesAsTypings.no_asp_under_index.
+Check TriplesAsTypings.no_dslp_over_index.
 Check Triple.Under.
-Check DijkstraMonad.triple_under_aspPure.
+Check TriplesAsTypings.triple_under_aspPure.
 
 (** Typed programs, a triple that is not a typing, the stateless case. *)
 Check DijkstraExamples.progA_Ddwp.
@@ -352,7 +356,7 @@ Check DijkstraExamples.progloom_harder_not_Dasp_op.
 Check MonadTaxonomy.impliesWPure.
 (* Bullet 5 gap: strictness of the typing and the DSLP Over dual. *)
 Check Examples.progloom_harder_asp_under.
-Check DijkstraMonad.dslpOver_typing_triple.
+Check TriplesAsTypings.dslpOver_typing_triple.
 Check DijkstraExamples.progloom_harder_dslp_over.
 Check DijkstraExamples.progloom_harder_not_Ddslp.
 Check DijkstraExamples.oneOrTwo_Dasp_op.

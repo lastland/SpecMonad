@@ -844,7 +844,7 @@ inclusions of relations, so they are closed under intersection, and these
 triples are not. Without state there is one start point and the ASP `Under`
 triple is a typing (`triple_under_aspPure`, for a precondition that holds).
 
-`Verification/DijkstraMonads/DijkstraExamples.v` types one program in each of the eight WP
+`Verification/TriplesAsTypings/DijkstraExamples.v` types one program in each of the eight WP
 Dijkstra monads, in `Dasp` and in `Ddslp_op`; gives a typing in `Dasp_op` and
 one in `Ddslp` that say more than their triples; gives an ASP `Under` and a
 DSLP `Over` triple that are not typings (`progloom_harder`); and types a

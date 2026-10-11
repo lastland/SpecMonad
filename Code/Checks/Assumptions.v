@@ -199,7 +199,9 @@ From Incorrectness.Verification.MonadMorphisms Require
   MonadMorphisms.
 From Incorrectness.Verification.Triples Require
   MorphismTriples TripleTaxonomy Examples InCorrectnessPrinciples.
-From Incorrectness.Verification.DijkstraMonads Require DijkstraMonad DijkstraExamples.
+From Incorrectness.Verification.DijkstraMonads Require DijkstraMonad.
+From Incorrectness.Verification.TriplesAsTypings Require TriplesAsTypings.
+From Incorrectness.Verification.TriplesAsTypings Require DijkstraExamples.
 Print Assumptions OrderedMonad.MonadMorphism_comp.
 Print Assumptions OrderedMonad.MonadMorphism_ext.
 Print Assumptions OrderedMonad.MonadMorphism_of_laws.
@@ -373,10 +375,10 @@ Print Assumptions DijkstraMonad.OrderedTarget_dwpStExc.
 Print Assumptions DijkstraMonad.OrderedTarget_awlpSt.
 Print Assumptions DijkstraMonad.OrderedTarget_aspStExc.
 Print Assumptions DijkstraMonad.OrderedTarget_dslpSt.
-Print Assumptions DijkstraMonad.triple_under_wpStExc.
-Print Assumptions DijkstraMonad.triple_over_wpStExc.
-Print Assumptions DijkstraMonad.triple_over_aspStExc.
-Print Assumptions DijkstraMonad.triple_under_dslpStExc.
+Print Assumptions TriplesAsTypings.triple_under_wpStExc.
+Print Assumptions TriplesAsTypings.triple_over_wpStExc.
+Print Assumptions TriplesAsTypings.triple_over_aspStExc.
+Print Assumptions TriplesAsTypings.triple_under_dslpStExc.
 
 (** Specification monads: the pulled-back order, submonads, and the four WP
     flavours as submonads of [WPure]: closed. *)
@@ -391,12 +393,12 @@ Print Assumptions WPVariants.OrderedMonad_WPSub.
 (** ASP [Under] and DSLP [Over] are not typings: closed, except that a DSLP
     [Over] typing gives its triple by excluded middle.  Without state the
     ASP [Under] triple is a typing: closed. *)
-Print Assumptions DijkstraMonad.le_aspUnder.
-Print Assumptions DijkstraMonad.dslpOver_le.
-Print Assumptions DijkstraMonad.dslpOver_typing_triple.
-Print Assumptions DijkstraMonad.no_asp_under_index.
-Print Assumptions DijkstraMonad.no_dslp_over_index.
-Print Assumptions DijkstraMonad.triple_under_aspPure.
+Print Assumptions TriplesAsTypings.le_aspUnder.
+Print Assumptions TriplesAsTypings.dslpOver_le.
+Print Assumptions TriplesAsTypings.dslpOver_typing_triple.
+Print Assumptions TriplesAsTypings.no_asp_under_index.
+Print Assumptions TriplesAsTypings.no_dslp_over_index.
+Print Assumptions TriplesAsTypings.triple_under_aspPure.
 
 (** Typed programs.  The WP, ASP and pure ones are closed; the DSLP ones use
     excluded middle. *)

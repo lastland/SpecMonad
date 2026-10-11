@@ -29,11 +29,12 @@ propositional extensionality and, where stated, excluded middle
 | [WP/](WP) | §2, §3.6 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
 | [SP/](SP) | §3.1–3.5 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
 | [PTMonadTaxonomy/](PTMonadTaxonomy) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
-| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad: the four directories below |
+| [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad: the five directories below |
 | ↳ [Computation/](Verification/Computation) | §1, §5 | `divndNE`, nondeterminism and nontermination, with state and with state and exceptions |
 | ↳ [MonadMorphisms/](Verification/MonadMorphisms) | §5, §6 | the 24 monad morphisms out of `divndNE` (eight readings at three levels), shared by triples and Dijkstra monads |
 | ↳ [Triples/](Verification/Triples) | §5 | the general triple, the triples of the morphisms, the triple diagram, examples |
-| ↳ [DijkstraMonads/](Verification/DijkstraMonads) | §6 | Dijkstra monads of the morphisms; which triples are typings |
+| ↳ [DijkstraMonads/](Verification/DijkstraMonads) | §6 | the Dijkstra monad of a monad morphism, and its instances |
+| ↳ [TriplesAsTypings/](Verification/TriplesAsTypings) | §6 | which triples are typings in the Dijkstra monads; typed example programs |
 | [GaloisConnections/](GaloisConnections) | §7 | the DM4All specification monads and their adjunctions |
 | [Tests/](Tests) | — | regression and instance checks |
 | [Checks/](Checks) | — | opt-in audits: assumptions and the paper claims |
@@ -48,6 +49,7 @@ flowchart RL
     Verification_DijkstraMonads[DijkstraMonads]
     Verification_MonadMorphisms[MonadMorphisms]
     Verification_Triples[Triples]
+    Verification_TriplesAsTypings[TriplesAsTypings]
   end
   GaloisConnections[GaloisConnections] -->|1| PTMonadTaxonomy[PTMonadTaxonomy]
   PTMonadTaxonomy[PTMonadTaxonomy] -->|21| SP[SP]
@@ -56,12 +58,14 @@ flowchart RL
   SP[SP] -->|11| Relational[Relational]
   Tests[Tests] -->|2| GaloisConnections[GaloisConnections]
   Verification_Computation -->|1| Lib[Lib]
-  Verification_DijkstraMonads -->|3| Verification_Triples
+  Verification_DijkstraMonads -->|1| Verification_MonadMorphisms
   Verification_MonadMorphisms -->|7| SP[SP]
   Verification_MonadMorphisms -->|1| Verification_Computation
   Verification_MonadMorphisms -->|1| WP[WP]
   Verification_Triples -->|3| PTMonadTaxonomy[PTMonadTaxonomy]
   Verification_Triples -->|4| Verification_MonadMorphisms
+  Verification_TriplesAsTypings -->|2| Verification_DijkstraMonads
+  Verification_TriplesAsTypings -->|3| Verification_Triples
   WP[WP] -->|4| Lib[Lib]
 ```
 
@@ -95,7 +99,8 @@ file-level graph with a directory-only view.
    (shared with §6), [Verification/Triples/MorphismTriples.v](Verification/Triples/MorphismTriples.v),
    [Verification/Triples/TripleTaxonomy.v](Verification/Triples/TripleTaxonomy.v), [Verification/Triples/Examples.v](Verification/Triples/Examples.v).
 7. §6: [Verification/DijkstraMonads/DijkstraMonad.v](Verification/DijkstraMonads/DijkstraMonad.v),
-   [Verification/DijkstraMonads/DijkstraExamples.v](Verification/DijkstraMonads/DijkstraExamples.v).
+   [Verification/TriplesAsTypings/TriplesAsTypings.v](Verification/TriplesAsTypings/TriplesAsTypings.v),
+   [Verification/TriplesAsTypings/DijkstraExamples.v](Verification/TriplesAsTypings/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
 The [design notes](../docs/design.md) tell the longer story;

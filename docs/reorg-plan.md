@@ -213,7 +213,11 @@ Departures from the plan:
   guides moved to `docs/agents/context/`. Last, `Verification/Triples/MonadMorphisms.v`
   was split: the 24 morphisms, shared by triples and Dijkstra monads, went to
   `Verification/MonadMorphisms/MonadMorphisms.v`; their 46 triple lemmas
-  stayed as `Verification/Triples/MorphismTriples.v` (`specs/step11_morphisms.py`). The plan above uses
+  stayed as `Verification/Triples/MorphismTriples.v` (`specs/step11_morphisms.py`).
+  Then `DijkstraMonad.v` was split at its comparison with triples
+  (`specs/step12_typings.py`): the construction stays in
+  `Verification/DijkstraMonads/`, which no longer depends on `Triples/`; the
+  comparison and `DijkstraExamples.v` went to `Verification/TriplesAsTypings/`. The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

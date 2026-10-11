@@ -36,6 +36,7 @@ From Incorrectness.Verification.Triples Require Import Triple.
 From Incorrectness.Verification.MonadMorphisms Require Import MonadMorphisms.
 From Incorrectness.Verification.Triples Require Import Examples.
 From Incorrectness.Verification.DijkstraMonads Require Import DijkstraMonad.
+From Incorrectness.Verification.TriplesAsTypings Require Import TriplesAsTypings.
 
 (* ================================================================= *)
 (** * WP: the eight Dijkstra monads                                   *)

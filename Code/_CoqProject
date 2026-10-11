@@ -61,4 +61,5 @@ Verification/Triples/TripleTaxonomy.v
 Verification/Triples/Examples.v
 Verification/Triples/InCorrectnessPrinciples.v
 Verification/DijkstraMonads/DijkstraMonad.v
-Verification/DijkstraMonads/DijkstraExamples.v
+Verification/TriplesAsTypings/TriplesAsTypings.v
+Verification/TriplesAsTypings/DijkstraExamples.v

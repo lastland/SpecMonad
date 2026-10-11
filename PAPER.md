@@ -152,10 +152,10 @@ Hoare triples over-approximate.
 | ASP and DSLP are specification monads | `ASPMonad.OrderedMonad_ASPSt`, `ASPMonad.OrderedMonad_ASPStExc`, `DSLPMonad.OrderedMonad_DSLPSt`, `DSLPMonad.OrderedMonad_DSLPStExc` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved (also without state) |
 | DSP and ASLP: `bind` not monotone for the natural order, so not specification monads | `DSPMonad.not_OrderedMonad_DSPSt`, `ASLPMonad.not_OrderedMonad_ASLPSt`, `DSPMonad.dsp_arbitrary_bind_impossible` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved with state (and with exceptions); without state they are specification monads, `DSPMonad.OrderedMonad_DSP` |
 | Dijkstra monad of a monad morphism, laws; eight WP and four SP Dijkstra monads | `DijkstraMonad.DM`, `DijkstraMonad.DMop`, `DijkstraMonad.DM_laws`, `DijkstraMonad.Dasp_laws` | [Verification/DijkstraMonads/DijkstraMonad.v](Code/Verification/DijkstraMonads/DijkstraMonad.v) | proved |
-| Other triples are typings | `DijkstraMonad.triple_under_wpStExc`, `DijkstraMonad.triple_over_wpStExc`, `DijkstraMonad.triple_over_aspStExc`, `DijkstraMonad.triple_under_dslpStExc` | [Verification/DijkstraMonads/DijkstraMonad.v](Code/Verification/DijkstraMonads/DijkstraMonad.v) | proved |
-| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `DijkstraMonad.le_aspUnder`, `DijkstraMonad.aspUnder_typing_triple`, `DijkstraMonad.no_asp_under_index`, `DijkstraMonad.no_dslp_over_index` | [Verification/DijkstraMonads/DijkstraMonad.v](Code/Verification/DijkstraMonads/DijkstraMonad.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
-| Without state, ASP `Triple.Under` is a typing | `DijkstraMonad.triple_under_aspPure` | [Verification/DijkstraMonads/DijkstraMonad.v](Code/Verification/DijkstraMonads/DijkstraMonad.v) | proved, for a precondition that holds |
-| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `DijkstraExamples.oneOrTwo_Dasp_op` | [Verification/DijkstraMonads/DijkstraExamples.v](Code/Verification/DijkstraMonads/DijkstraExamples.v) | proved |
+| Other triples are typings | `TriplesAsTypings.triple_under_wpStExc`, `TriplesAsTypings.triple_over_wpStExc`, `TriplesAsTypings.triple_over_aspStExc`, `TriplesAsTypings.triple_under_dslpStExc` | [Verification/TriplesAsTypings/TriplesAsTypings.v](Code/Verification/TriplesAsTypings/TriplesAsTypings.v) | proved |
+| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `TriplesAsTypings.le_aspUnder`, `TriplesAsTypings.aspUnder_typing_triple`, `TriplesAsTypings.no_asp_under_index`, `TriplesAsTypings.no_dslp_over_index` | [Verification/TriplesAsTypings/TriplesAsTypings.v](Code/Verification/TriplesAsTypings/TriplesAsTypings.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
+| Without state, ASP `Triple.Under` is a typing | `TriplesAsTypings.triple_under_aspPure` | [Verification/TriplesAsTypings/TriplesAsTypings.v](Code/Verification/TriplesAsTypings/TriplesAsTypings.v) | proved, for a precondition that holds |
+| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `DijkstraExamples.oneOrTwo_Dasp_op` | [Verification/TriplesAsTypings/DijkstraExamples.v](Code/Verification/TriplesAsTypings/DijkstraExamples.v) | proved |
 
 ## Section 7: Galois connections between specification monads
 
@@ -207,23 +207,23 @@ Hoare triples over-approximate.
 - **Bullet 5, "weaker".** The paper says the under-approximate order on
   *asp* (and the over-approximate order on *dslp*) "correspond to strictly
   weaker specifications than the corresponding triples". In the code, a
-  typing at the natural index (`DijkstraMonad.le_aspUnder`) asks every start
+  typing at the natural index (`TriplesAsTypings.le_aspUnder`) asks every start
   state in the precondition to reach every result in the postcondition. For
   an inhabited precondition it is strictly stronger than the triple
-  (`DijkstraMonad.aspUnder_typing_triple`; strictness by
+  (`TriplesAsTypings.aspUnder_typing_triple`; strictness by
   `Examples.progloom_harder_asp_under` with
   `DijkstraExamples.progloom_harder_not_Dasp_op`); for an empty precondition
   it holds of every program, so it is vacuous. Neither "weaker" nor
   "stronger" holds uniformly; what holds for every index is that none has
-  exactly the triples as its typings (`DijkstraMonad.no_asp_under_index`).
-  Dually for *dslp* Over: `DijkstraMonad.dslpOver_typing_triple`,
+  exactly the triples as its typings (`TriplesAsTypings.no_asp_under_index`).
+  Dually for *dslp* Over: `TriplesAsTypings.dslpOver_typing_triple`,
   `DijkstraExamples.progloom_harder_dslp_over`,
   `DijkstraExamples.progloom_harder_not_Ddslp`,
-  `DijkstraMonad.no_dslp_over_index`. "Do not correspond to the triples" is
+  `TriplesAsTypings.no_dslp_over_index`. "Do not correspond to the triples" is
   the accurate wording.
 - **Section 6 Artifact list: programs typed in the Dijkstra monad that cannot
   be typed with the triple** (ASP Under, DSLP Over) are not formalized. By
-  `DijkstraMonad.le_aspUnder` such a program can exist only for an empty
+  `TriplesAsTypings.le_aspUnder` such a program can exist only for an empty
   precondition.
 - **Section 3.2, `SPostArr_ang` / `SPostArr_dem`.** The arrows restricted only
   by monotonicity and the codomain condition are not defined; the lawful
