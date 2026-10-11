@@ -81,7 +81,6 @@ order pulled back along a monad morphism orders the source
 (`OrderedMonad_pullback`); a submonad, the elements satisfying a predicate
 closed under `ret` and `bind`, is the case of the inclusion
 (`SubMonad`, `OrderedMonad_SubMonad`).
-These differ from [Common/Classes.v](../Common/Classes.v)'s pre/post API.
 
 The same file defines monad morphisms. `MonadMorphism` is a record of
 properness and `ret` / `bind` preservation over explicit dictionaries;

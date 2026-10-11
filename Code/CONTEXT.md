@@ -9,11 +9,8 @@ Makefile for build/audit targets. Source declarations override older prose.
 
 ## Ownership
 
-- [Common](Common/CONTEXT.md) supplies earlier specification interfaces.
 - [Classes](Classes/CONTEXT.md) supplies generic arrow laws, transformers,
   morphisms, and fixed-input monads without concrete Taxonomy carriers.
-- [Identity](Identity/CONTEXT.md), [Reader](Reader/CONTEXT.md),
-  [ST](ST/CONTEXT.md), and [STEx](STEx/CONTEXT.md) study individual effects.
 - [Taxonomy](Taxonomy/CONTEXT.md) separates computation outcomes, base
   specifications, concrete binary arrows, monad morphisms with their triples,
   and Dijkstra monads.

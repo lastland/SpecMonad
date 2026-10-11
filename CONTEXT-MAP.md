@@ -8,7 +8,6 @@ See [domain-document rules](docs/agents/domain.md) for maintenance and ADR use.
 
 ## Architectural relationships
 
-- Common supplies specification interfaces for the earlier effect examples.
 - Classes supplies generic arrows, transformers, morphisms, and arrow monads.
   Taxonomy/Arrows supplies concrete binary specification carriers.
 - ComputationMonads owns effect outcomes; BaseSpecMonads owns unary
@@ -30,15 +29,10 @@ and the opt-in assumption audit.
 | Context | Role |
 |---|---|
 | [Code](Code/CONTEXT.md) | Namespace, build boundaries, shared distinctions |
-| [Common](Code/Common/CONTEXT.md) | Earlier specification interfaces |
 | [Classes](Code/Classes/CONTEXT.md) | Generic arrow contracts |
 | [OptionArrowT](Code/Classes/OptionArrowT/CONTEXT.md) | Option-arrow operations and laws |
 | [StateArrowT](Code/Classes/StateArrowT/CONTEXT.md) | State-arrow operations and laws |
 | [Classes tests](Code/Classes/Tests/CONTEXT.md) | Generic monad regression |
-| [Identity](Code/Identity/CONTEXT.md) | Pure correctness/incorrectness |
-| [Reader](Code/Reader/CONTEXT.md) | Environment-indexed specifications |
-| [ST](Code/ST/CONTEXT.md) | Ordinary and guarded state |
-| [STEx](Code/STEx/CONTEXT.md) | State and exceptions |
 | [Checks](Code/Checks/CONTEXT.md) | Opt-in assumption reporting |
 | [Taxonomy](Code/Taxonomy/CONTEXT.md) | Computation/specification taxonomy |
 | [ComputationMonads](Code/Taxonomy/ComputationMonads/CONTEXT.md) | Outcomes and effect stacks |
