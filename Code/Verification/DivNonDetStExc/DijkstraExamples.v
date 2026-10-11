@@ -20,9 +20,6 @@
 From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Relational Require Import Rel.
-From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
@@ -30,18 +27,11 @@ From Incorrectness.SP Require Import
 From Incorrectness.Verification.Generic Require Import Triple.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import Typings.
-From Incorrectness.Verification.DivNonDet Require Import Computation.
-From Incorrectness.Verification.DivNonDet Require Import Morphisms.
-From Incorrectness.Verification.DivNonDet Require Import Triples.
-From Incorrectness.Verification.DivNonDet Require Import DijkstraMonads.
-From Incorrectness.Verification.DivNonDet Require Import Typings.
 From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
 From Incorrectness.Verification.DivNonDetStExc Require Import Morphisms.
-From Incorrectness.Verification.DivNonDetStExc Require Import Triples.
 From Incorrectness.Verification.DivNonDetStExc Require Import Examples.
 From Incorrectness.Verification.DivNonDetStExc Require Import DijkstraMonads.
 From Incorrectness.Verification.DivNonDetStExc Require Import Typings.
-
 
 (* ================================================================= *)
 (** * WP: the eight Dijkstra monads                                   *)

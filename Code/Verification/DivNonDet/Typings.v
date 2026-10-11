@@ -9,16 +9,11 @@ From Coq Require Import Morphisms RelationClasses Relation_Definitions
   Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Lib.Monad Require Import
-  TransformerLaws.
-From Incorrectness.Relational Require Import Rel.
-From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  ASPMonad DSLPMonad.
 From Coq Require Import Lia PeanoNat Classical_Prop.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From Incorrectness.SP Require Import
@@ -29,8 +24,6 @@ From Incorrectness.Verification.Generic Require Import Typings.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
 From Incorrectness.Verification.DivNonDet Require Import Morphisms.
 From Incorrectness.Verification.DivNonDet Require Import Triples.
-From Incorrectness.Verification.DivNonDet Require Import DijkstraMonads.
-
 
 Definition wpUnderPure {A} (pre : Prop) (post : A -> Prop) : WPure A :=
   mkWPure _ (wpUnder_mono pre post).

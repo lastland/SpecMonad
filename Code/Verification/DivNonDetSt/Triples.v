@@ -22,25 +22,17 @@ From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From Incorrectness.Lib.Arrow Require Import
-  Arrow OptionArrowT StateArrowT ArrowMonad ArrowMorphism RelArrowCoherence.
 From Incorrectness.Lib.Monad Require Import
   OrderedMonad.
 From Incorrectness.Lib.Monad Require Import
   TransformerLaws.
-From Incorrectness.Relational Require Import
-  Rel RelSPostArr.
-From Incorrectness.SP Require Import
-  SPostArr DSPASLPArr SPostArrEquiv.
-From Incorrectness.Relational Require PredMonad RelMonads.
+
 From Incorrectness.Verification.Generic Require Import Triple.
-From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
 From Incorrectness.Verification.DivNonDet Require Import Morphisms.
 From Incorrectness.Verification.DivNonDet Require Import Triples.
 From Incorrectness.Verification.DivNonDetSt Require Import Computation.
 From Incorrectness.Verification.DivNonDetSt Require Import Morphisms.
-
 
 #[global] Instance SpecReading_WSt (S A : Type) :
   SpecReading (WSt S) A S (A * S)%type := {|

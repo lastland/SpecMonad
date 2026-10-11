@@ -9,10 +9,7 @@ From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
-From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
-
-
 
 (* ================================================================= *)
 (** * The two stacks: [stdivndNE] and [stdivexcndNE]                  *)

@@ -227,7 +227,12 @@ Departures from the plan:
   (`docs/reorg/partition-map.txt`). The setting directories were then renamed `DivNonDet/`,
   `DivNonDetSt/`, `DivNonDetStExc/`, with the same file names in each
   (`Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`,
-  `DijkstraMonads.v`, `Typings.v`). The plan above uses
+  `DijkstraMonads.v`, `Typings.v`). Afterwards every Verification file's project imports were
+  minimized (`minimize_requires.py`: an import is dropped when the file still
+  compiles without it, then the whole build is redone), and the four
+  `SpecReading` instances of the base SP monads, which the partition had put
+  in `Generic/Triple.v` (its keyword list missed the bare monad names), moved
+  to `DivNonDet/Triples.v`. The plan above uses
   the earlier names.
 
 - Docs keep the repository's `CONTEXT.md` convention (one per directory)

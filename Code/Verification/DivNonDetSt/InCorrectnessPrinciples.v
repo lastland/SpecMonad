@@ -12,21 +12,10 @@
     counterpart. *)
 
 From ExtLib Require Import Monad StateMonad.
-From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.WP Require Import WPure.
-From Incorrectness.SP Require Import ASPMonad.
 From Incorrectness.Verification.Generic Require Import Triple.
-From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
-From Incorrectness.Verification.DivNonDet Require Import Computation.
-From Incorrectness.Verification.DivNonDet Require Import Morphisms.
-From Incorrectness.Verification.DivNonDet Require Import Triples.
-From Incorrectness.Verification.DivNonDet Require Import TriplesTaxonomy.
 From Incorrectness.Verification.DivNonDetSt Require Import Computation.
 From Incorrectness.Verification.DivNonDetSt Require Import Morphisms.
-From Incorrectness.Verification.DivNonDetSt Require Import Triples.
 From Incorrectness.Verification.DivNonDetSt Require Import TriplesTaxonomy.
-
 
 Section OHearnRewritingRules.
   Variable S : Type.

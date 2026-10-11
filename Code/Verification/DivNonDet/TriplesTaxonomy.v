@@ -11,24 +11,12 @@
 From Coq Require Import Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Lib.Monad Require Import TransformerLaws.
-From Incorrectness.Relational Require Import Rel RelSPostArr.
-From Incorrectness.SP Require Import SPostArr DSPASLPArr.
-From Incorrectness.PTMonadTaxonomy Require Import TransformerRelations.
-From Incorrectness.WP Require Import
-  WPure.
-From Incorrectness.SP Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.PTMonadTaxonomy Require Import
-  Carriers MonadTaxonomy.
+  MonadTaxonomy.
 From Incorrectness.Verification.Generic Require Import Triple.
-From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-From Incorrectness.Verification.Generic Require Import TripleTaxonomy.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
 From Incorrectness.Verification.DivNonDet Require Import Morphisms.
 From Incorrectness.Verification.DivNonDet Require Import Triples.
-
 
 (* ================================================================= *)
 (** * The four WP readings of one base computation                   *)

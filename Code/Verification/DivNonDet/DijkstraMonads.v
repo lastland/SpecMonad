@@ -9,20 +9,12 @@ From Coq Require Import Morphisms RelationClasses Relation_Definitions
   Classical_Prop.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Lib.Arrow Require Import Arrow ArrowMonad.
-From Incorrectness.Lib.Monad Require Import OrderedMonad.
-From Incorrectness.Lib.Monad Require Import
-  TransformerLaws.
-From Incorrectness.Relational Require Import Rel.
-From Incorrectness.SP Require Import SPostArr.
 From Incorrectness.WP Require Import
   WPure.
 From Incorrectness.SP Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  ASPMonad DSLPMonad.
 From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-From Incorrectness.Verification.DivNonDet Require Import Computation.
 From Incorrectness.Verification.DivNonDet Require Import Morphisms.
-
 
 (* ================================================================= *)
 (** * The liftable morphisms                                          *)

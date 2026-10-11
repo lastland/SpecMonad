@@ -16,8 +16,6 @@ From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
-From Incorrectness.Verification.Generic Require Import DijkstraMonad.
-
 
 (* ================================================================= *)
 (** * Sets of outcomes: [SetM]                                        *)
@@ -266,7 +264,6 @@ Definition orNE {A} (m1 m2 : divndNE A) : divndNE A :=
 (** [m] may diverge, on the non-empty fragment. *)
 Definition mayDivergeNE {A} (m : divndNE A) : Prop :=
   mayDiverge (getNE m).
-
 
 Arguments divndNE _.
 Arguments getNE {_}.

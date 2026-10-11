@@ -56,9 +56,9 @@ flowchart RL
   Relational[Relational] -->|16| Lib[Lib]
   SP[SP] -->|11| Relational[Relational]
   Tests[Tests] -->|2| GaloisConnections[GaloisConnections]
-  Verification_DivNonDet -->|11| Verification_Generic
-  Verification_DivNonDetSt -->|22| Verification_DivNonDet
-  Verification_DivNonDetStExc -->|26| Verification_DivNonDet
+  Verification_DivNonDet -->|6| Verification_Generic
+  Verification_DivNonDetSt -->|12| Verification_DivNonDet
+  Verification_DivNonDetStExc -->|11| Verification_DivNonDet
   Verification_Generic -->|3| PTMonadTaxonomy[PTMonadTaxonomy]
   WP[WP] -->|4| Lib[Lib]
 ```

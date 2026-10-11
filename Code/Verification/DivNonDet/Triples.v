@@ -7,30 +7,16 @@
 
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From ExtLib Require Import StateMonad OptionMonad.
 From Incorrectness.WP Require Import
   WPure.
-From Incorrectness.SP Require Import
-  ASPMonad DSLPMonad DSPMonad ASLPMonad.
+
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From Incorrectness.Lib.Arrow Require Import
-  Arrow OptionArrowT StateArrowT ArrowMonad ArrowMorphism RelArrowCoherence.
-From Incorrectness.Lib.Monad Require Import
-  OrderedMonad.
-From Incorrectness.Lib.Monad Require Import
-  TransformerLaws.
-From Incorrectness.Relational Require Import
-  Rel RelSPostArr.
-From Incorrectness.SP Require Import
-  SPostArr DSPASLPArr SPostArrEquiv.
-From Incorrectness.Relational Require PredMonad RelMonads.
+From Incorrectness.SP Require Import ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.Verification.Generic Require Import Triple.
-From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
 From Incorrectness.Verification.DivNonDet Require Import Morphisms.
-
 
 (** A WP element is read backward, from a postcondition to the precondition
     it needs.  Preconditions are on [unit], or on the start state;
@@ -40,6 +26,30 @@ From Incorrectness.Verification.DivNonDet Require Import Morphisms.
 #[global] Instance SpecReading_WPure (A : Type) :
   SpecReading WPure A unit A := {|
   spec_read := fun w : WPure A => Backward (fun Q (_ : unit) => getWPure w Q)
+|}.
+
+(** An SP element is read forward, from a precondition to the postcondition
+    it establishes.  The monads fix the input [unit], so a precondition is
+    on [unit], or on the start state. *)
+
+#[global] Instance SpecReading_ASP (A : Type) :
+  SpecReading ASP A unit A := {|
+  spec_read := fun w : ASP A => Forward (getASPArr w)
+|}.
+
+#[global] Instance SpecReading_DSLP (A : Type) :
+  SpecReading DSLP A unit A := {|
+  spec_read := fun w : DSLP A => Forward (getDSLPArr w)
+|}.
+
+#[global] Instance SpecReading_DSP (A : Type) :
+  SpecReading DSP A unit A := {|
+  spec_read := fun w : DSP A => Forward (getDSP w)
+|}.
+
+#[global] Instance SpecReading_ASLP (A : Type) :
+  SpecReading ASLP A unit A := {|
+  spec_read := fun w : ASLP A => Forward (getASLP w)
 |}.
 
 (** One base arrow, three pairs of indices. *)
