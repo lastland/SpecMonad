@@ -22,3 +22,10 @@ jobs:
             export: 'OPAMWITHTEST'
           env:
             OPAMWITHTEST: 'true'
+
+  layers:
+    name: Directory layers
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v6
+        - run: python3 Code/scripts/depgraph.py --coqdep none --check-layers

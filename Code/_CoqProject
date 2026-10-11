@@ -38,6 +38,7 @@ Tests/SPostArrExamples.v
 GaloisConnections/PrePostArr.v
 GaloisConnections/WPArr.v
 GaloisConnections/RelPrePostArr.v
+Taxonomy/TransformerTaxonomy.v
 GaloisConnections/GaloisArr.v
 Relational/RelMonads.v
 SP/ASPMonad.v

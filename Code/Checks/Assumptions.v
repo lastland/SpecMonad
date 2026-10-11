@@ -7,6 +7,8 @@ From Incorrectness.Relational Require Import
   RelSPostArr.
 From Incorrectness.SP Require Import
   SPostArrEquiv.
+From Incorrectness.Taxonomy Require Import
+  TransformerTaxonomy.
 From Incorrectness.GaloisConnections Require Import
   GaloisArr.
 From Incorrectness.SP Require

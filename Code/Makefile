@@ -9,6 +9,8 @@
 #   make                     build everything (default; no assumption reports)
 #   make check               opt-in audit: build the project, print assumptions
 #   make clean               delegate clean and also remove the audit's outputs
+#   make layers              check that imports respect scripts/layers.txt
+#                             (python3; runs as its own CI step)
 #   make GOAL...             any other goal passes through to Makefile.coq
 #                             (file targets like Classes/Arrow.vo, install, ...)
 #
@@ -42,6 +44,10 @@ all: delegate
 check: delegate
 	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/Assumptions.v
 
+.PHONY: layers
+layers:
+	python3 scripts/depgraph.py --check-layers
+
 .PHONY: clean
 clean: regen
 	$(MAKE) -f $(COQMAKEFILE) clean
@@ -51,7 +57,7 @@ clean: regen
 # Share one dependency graph across all/check and explicit file/install goals.
 # The audit requires the whole project even when all was not requested.
 GOALS       := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)
-BUILD_GOALS := $(filter-out check clean regen,$(GOALS))
+BUILD_GOALS := $(filter-out check clean regen layers,$(GOALS))
 ifneq ($(filter check,$(GOALS)),)
 ifeq ($(filter all,$(BUILD_GOALS)),)
 BUILD_GOALS := all $(BUILD_GOALS)

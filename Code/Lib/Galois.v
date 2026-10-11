@@ -4,7 +4,7 @@
     parameterised over their (preorder) inclusion relations.  Both
     relations are bundled as class indices so that two different Galois
     connections can co-exist for the same pair of types under different
-    orderings.  In [Taxonomy/Arrows/GaloisArr.v] this flexibility is used to state
+    orderings.  In [GaloisConnections/GaloisArr.v] this flexibility is used to state
     connections involving local subtypes ([MonotoneWP],
     [WFRelPrePost], [MonotoneSPost]) whose orders are lifted from
     the global refinement orders on the raw types. *)

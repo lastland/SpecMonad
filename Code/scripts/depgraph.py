@@ -51,10 +51,49 @@ def project_files() -> list[str]:
     return files
 
 
+REQUIRE_RE = re.compile(
+    r"(?:From\s+([\w.']+)\s+)?Require(?:\s+(?:Import|Export))?((?:\s+[\w.']+?)+)\.(?=\s|$)")
+
+
+def parse_requires() -> dict[str, list[str]]:
+    """Fallback when coqdep is unavailable (e.g. on a CI runner outside the
+    Coq image): resolve each `From P Require M` against _CoqProject's -Q
+    mapping as Coq does.  Only project files are resolved."""
+    roots, files = [], project_files()
+    for line in (CODE / "_CoqProject").read_text().splitlines():
+        parts = line.split()
+        if parts[:1] in (["-Q"], ["-R"]):
+            roots.append((parts[1].rstrip("/"), parts[2]))
+    logical = {}
+    for f in files:
+        for phys, log in roots:
+            rel = f if phys == "." else f[len(phys) + 1:] if f.startswith(phys + "/") else None
+            if rel is not None:
+                logical[f] = ".".join([log, *rel[:-2].split("/")])
+    deps = {}
+    for f in files:
+        src = strip_comments((CODE / f).read_text())
+        found = []
+        for m in REQUIRE_RE.finditer(src):
+            prefix = m.group(1)
+            for name in m.group(2).split():
+                full = f"{prefix}.{name}" if prefix else name
+                cands = [g for g, lg in logical.items()
+                         if lg == full or (lg.endswith("." + name) and (not prefix or lg.startswith(prefix + ".")))]
+                exact = [g for g in cands if logical[g] == full]
+                found += exact or cands[:1]
+        deps[f] = sorted(set(found) - {f})
+    return deps
+
+
 def run_coqdep(coqdep: str) -> dict[str, list[str]]:
-    proc = subprocess.run(
-        [coqdep, "-f", "_CoqProject"], cwd=CODE, capture_output=True, text=True
-    )
+    try:
+        proc = subprocess.run(
+            [coqdep, "-f", "_CoqProject"], cwd=CODE, capture_output=True, text=True
+        )
+    except FileNotFoundError:
+        print(f"{coqdep} not found; parsing Require sentences instead", file=sys.stderr)
+        return parse_requires()
     if not proc.stdout.strip():
         sys.exit(f"coqdep produced no output:\n{proc.stderr}")
     if proc.stderr.strip():
