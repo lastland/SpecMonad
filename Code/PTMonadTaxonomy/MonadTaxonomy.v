@@ -836,6 +836,57 @@ Section GaloisMonads.
     DemonicMonotone.Radj m w <-> GaloisWPSP w m.
   Proof. split; [ intros H Q P; exact (H P Q) | intros H P Q; exact (H Q P) ]. Qed.
 
+  Definition dualSP {A} (m : SPStMon S A) : SPStMon S A :=
+    ptSPSt (pt_dual (spstPT m)).
+
+  Definition dualWP {A} (w : WSt S A) : WSt S A :=
+    ptWSt (pt_dual (wstPT w)).
+
+  Lemma contra_dualSP {A} (m : SPStMon S A) : contraSPSt (dualSP m) m.
+  Proof. intros P r. reflexivity. Qed.
+
+  Lemma contra_dualWP {A} (w : WSt S A) : contraWSt (dualWP w) w.
+  Proof. intros Q s. reflexivity. Qed.
+
+  Theorem Radj_dual_iff_Ladj {A} (m : SPStMon S A) (w : WSt S A) :
+    DemonicMonotone.Radj m w <->
+    AngelicMonotone.Ladj (dualSP m) (dualWP w).
+  Proof.
+    split.
+    - intro H.
+      apply (proj2 (Ladj_GaloisSPWP (dualSP m) (dualWP w))).
+      eapply GaloisWPSP_contra.
+      + exact (proj1 (Radj_GaloisWPSP m w) H).
+      + exact (contra_dualWP w).
+      + exact (contra_dualSP m).
+    - intro H.
+      apply (proj2 (Radj_GaloisWPSP m w)).
+      eapply GaloisSPWP_contra.
+      + exact (proj1 (Ladj_GaloisSPWP (dualSP m) (dualWP w)) H).
+      + exact (contraSPSt_sym _ _ (contra_dualSP m)).
+      + exact (contraWSt_sym _ _ (contra_dualWP w)).
+  Qed.
+
+  Theorem Radj_dual_iff_Ladj_contra {A} (m1 m2 : SPStMon S A) (w1 w2 : WSt S A) :
+    contraSPSt m1 m2 -> contraWSt w1 w2 ->
+    DemonicMonotone.Radj m1 w1 <-> AngelicMonotone.Ladj m2 w2.
+  Proof.
+    intros hS hW.
+    split.
+    - intro H.
+      apply (proj2 (Ladj_GaloisSPWP m2 w2)).
+      eapply GaloisWPSP_contra.
+      + exact (proj1 (Radj_GaloisWPSP m1 w1) H).
+      + exact (contraWSt_sym _ _ hW).
+      + exact (contraSPSt_sym _ _ hS).
+    - intro H.
+      apply (proj2 (Radj_GaloisWPSP m1 w1)).
+      eapply GaloisSPWP_contra.
+      + exact (proj1 (Ladj_GaloisSPWP m2 w2) H).
+      + exact hS.
+      + exact hW.
+  Qed.
+
 End GaloisMonads.
 
 (* ================================================================= *)
