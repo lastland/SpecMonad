@@ -15,9 +15,32 @@ From Incorrectness.Classes Require Import ArrowMonad OrderedMonad.
 
 (** ** An ordinary record for all five preservation equations
 
-    The [morphism_app] field changes the type of the embedded arrow in
-    the input.  Treating [app] as a nullary operation with unchanged
-    input would omit this essential part of the equivalence. *)
+    [morphism_pure], [morphism_comp], and [morphism_first] follow the
+    arrow-morphism equations in Atkey's Definition 4.4:
+    [F(arr h) = arr h], [F(f >>> g) = F f >>> F g], and
+    [F(first f) = first (F f)], where [F] is [map].
+    Our fields use the selected destination [arrow_eq] instead of
+    ordinary equality; [≈] below denotes that equivalence.
+
+    This development extends Definition 4.4 with three requirements:
+    - [morphism_proper] maps source-equivalent arrows to
+      destination-equivalent arrows, so [map] respects the selected
+      equivalences.
+    - [morphism_left] preserves [ArrowChoice]'s [arr_left], so the map
+      also preserves branching.
+    - [morphism_app] preserves [ArrowApply] application, converting
+      the embedded arrow in the input:
+      [F(app_src) ≈ arr_dst (fun '(f, a) => (F f, a)) >>> app_dst].
+
+    Source application consumes a source arrow; destination application
+    consumes a destination arrow. The input conversion therefore maps
+    the stored arrow with [F]. Treating [app] as a nullary operation
+    with unchanged input would omit this essential conversion.
+
+    Reference: Robert Atkey, "What is a Categorical Model of Arrows?",
+    MSFP 2008; ENTCS 229 (2011), pp. 19-37, Definition 4.4.
+    Author manuscript (p. 11): https://bentnib.org/arrows.pdf
+    Published version: https://doi.org/10.1016/j.entcs.2011.02.014 *)
 
 Record ArrowMorphism {src dst : Type -> Type -> Type}
   (SA : Arrow src) (SC : @ArrowChoice src SA) (SX : @ArrowApply src SA)
