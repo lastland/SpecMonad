@@ -6,6 +6,7 @@ Classes/Arrow.v
 Classes/ArrowApplyFacts.v
 Classes/ArrowMonad.v
 Classes/Tests/ArrowMonadRegression.v
+Classes/Tests/PureProperRegression.v
 Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
 Classes/OptionArrowT/ArrowChoiceLaws.v

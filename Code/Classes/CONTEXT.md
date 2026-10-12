@@ -11,8 +11,8 @@ naturality and proper composition/first. Choice has sum laws and proper left.
 The core helpers `first_constant` and `pure_comp_ext` take ordinary pure-function
 congruence explicitly, so callers can supply congruence independently of
 application laws. `arr_pure_ext` supplies the functional-extensionality-based
-form; `ArrowApplyFacts.pure_ext` derives the same congruence constructively
-from application coherence.
+form; the global `ArrowApplyFacts.pure_proper` instance derives pointwise
+pure congruence constructively from application coherence.
 `second_constant` derives the companion law for the derived second operation
 from these core facts. `left_assoc_inverse` and `left_context_iso` derive
 inverse-associator and untouched-branch conjugation equations from core/choice
@@ -48,8 +48,11 @@ These contracts neither imply transformed-arrow laws nor include morphism
 transport. Both transformers export instances from `TransformerLaws.v`.
 `arrowT_lift_morphism` explicitly packages the three contracts as an
 `ArrowMorphism`; it is not a global instance.
-`lift_pure_congr` derives target pure congruence from `ArrowTLaw` and explicit
-source pure congruence, with no source/target arrow-law premises.
+The global `lift_pure_proper` instance derives target pointwise pure `Proper`
+from `ArrowTLaw` and source pointwise pure `Proper`, with no source/target
+arrow-law premises. Higher-order congruence arguments can use these instances
+with explicit dictionaries. The regression tests explicitly register their
+source congruence hypotheses for search.
 
 - [ArrowMorphism.v](ArrowMorphism.v) uses an ordinary `ArrowMorphism` record
   with explicit operation and equality dictionaries:
@@ -66,7 +69,7 @@ source pure congruence, with no source/target arrow-law premises.
     uses `app_ext` to replace equivalent embedded arrows.
   - `option_arrow_morphism` requires destination core/choice laws.
   - `state_arrow_morphism` requires destination core/application laws,
-    including the law-derived `pure_ext`.
+    including the law-derived `pure_proper`.
   - `state_option_arrow_morphism` requires all three destination law packages.
 
   `ArrowEq_leibniz` remains an ordinary definition for independent consumers;

@@ -34,14 +34,23 @@ and Coq equality infrastructure, without importing Taxonomy carriers.
   import the public state-transformer reexport, not a concrete carrier.
 - Core-only tests also check `second_constant`; generic application checks
   pure-function evaluation without choice. `LiftPureCongruenceDependencies`
-  checks pure congruence from the lift contract and supplied source congruence
-  with no source/target arrow-law dictionaries.
+  checks pure congruence and `Proper` search from the lift contract and supplied
+  source congruence with no source/target arrow-law dictionaries.
+
+[PureProperRegression.v](PureProperRegression.v) imports only transformer core
+and lift-law modules, not transformed application-law modules. It checks base
+pure `Proper` resolution from application coherence, option/state/stacked
+resolution from registered source congruence without any application operations
+or laws, pointwise rewriting, and prompt search failure when source congruence
+is missing. The stacked pointwise application selects the search-built `Proper`
+dictionary explicitly rather than relying on `f_equiv` to select its relation.
 
 ## Reading and build membership
 
 Read the application fields in `Arrow.v`, then `WrongIndex`, then
 `GenericResolution`. The regression is listed in
-[_CoqProject](../../_CoqProject), so it belongs to the normal build.
+[_CoqProject](../../_CoqProject), as is `PureProperRegression.v`, so both belong
+to the normal build.
 
 [Taxonomy tests](../../Taxonomy/Arrows/Tests/CONTEXT.md) serve a different scope:
 [ArrowMonadInstances.v](../../Taxonomy/Arrows/Tests/ArrowMonadInstances.v) and

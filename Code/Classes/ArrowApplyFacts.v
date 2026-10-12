@@ -3,6 +3,7 @@
     These algebraic facts derive extensionality from the arrow and
     application laws, without assuming functional extensionality. *)
 
+From Coq Require Import Morphisms.
 From Incorrectness.Classes Require Import Arrow.
 
 Section StaticApplicationFacts.
@@ -114,10 +115,11 @@ Section ArrowApplyFacts.
 
   (** Pure extensionality follows from application coherence as well;
       the derivation does not need functional extensionality as an axiom. *)
-  Lemma pure_ext {A B} (f g : A -> B) :
-    (forall x, f x = g x) -> eqA (pure f) (pure g).
+  #[global] Instance pure_proper {A B} :
+    Proper (pointwise_relation A (@eq B) ==> @arrow_eq arr HE A B)
+      (@arr_pure arr HA A B).
   Proof.
-    intro H. apply arrow_ext. intro a.
+    intros f g H. apply arrow_ext. intro a.
     etransitivity. { apply pcomp. }
     symmetry. etransitivity. { apply pcomp. }
     cbn. rewrite H. reflexivity.
@@ -132,7 +134,7 @@ Section ArrowApplyFacts.
     set (eval := fun '(a, b) => f a b).
     assert (Hstored : forall a, eqA (pure (f a)) (pair a >>> pure eval)).
     { intro a. symmetry.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@pure_ext)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL (@pure_proper)).
       intro b. reflexivity. }
     assert (Hinputs :
       eqA (@arr_first arr HA _ _ B (pure (fun a => pure (f a))) >>> app)

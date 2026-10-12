@@ -28,7 +28,8 @@ dynamic application also reuses `app_postcompose_pure`. These lift contracts
 are separate from the transformed-arrow law packages and morphism transport.
 
 Application-law construction now imports `TransformerLaws` (which depends
-only on Core/ArrowLaws) to obtain pure congruence via `lift_pure_congr`.
+only on Core/ArrowLaws) to obtain pure congruence via `lift_pure_proper`,
+with explicit source and lift dictionaries rather than target application laws.
 Constant-second reasoning uses the transformed core laws' shared
 `second_constant`; choice reassociation uses shared `left_assoc_inverse` and
 `left_context_iso`. Private copies are removed. `option_arr_ext` and

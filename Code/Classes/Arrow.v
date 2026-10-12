@@ -417,16 +417,18 @@ Class ArrowChoiceTLaw
 
 (** Congruence of transformed pure arrows follows from the lift contract
     and source pure congruence, without transformed application laws. *)
-Lemma lift_pure_congr
+#[global] Instance lift_pure_proper
   (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
   (arr : Type -> Type -> Type) (SA : Arrow arr) (SE : ArrowEq arr)
   (DA : Arrow (T arr)) (DE : ArrowEq (T arr))
   (L : ArrowTLaw T HT arr SA SE DA DE)
-  (pure_congr : forall X Y (u v : X -> Y), (forall x, u x = v x) ->
-    @arrow_eq arr SE X Y (@arr_pure arr SA X Y u) (@arr_pure arr SA X Y v))
-  {X Y} (u v : X -> Y) (H : forall x, u x = v x) :
-  @arrow_eq (T arr) DE X Y (@arr_pure (T arr) DA X Y u) (@arr_pure (T arr) DA X Y v).
+  (pure_congr : forall X Y,
+    Proper (pointwise_relation X (@eq Y) ==> @arrow_eq arr SE X Y)
+      (@arr_pure arr SA X Y)) {X Y} :
+  Proper (pointwise_relation X (@eq Y) ==> @arrow_eq (T arr) DE X Y)
+    (@arr_pure (T arr) DA X Y).
 Proof.
+  intros u v H.
   transitivity (@arrowT_lift T HT arr SA X Y (@arr_pure arr SA X Y u)).
   - symmetry. exact (@lift_pure T HT arr SA SE DA DE L X Y u).
   - transitivity (@arrowT_lift T HT arr SA X Y (@arr_pure arr SA X Y v)).

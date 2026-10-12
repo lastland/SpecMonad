@@ -128,12 +128,12 @@ Section StateApplyLift.
           (arr_pure (fun p : arr A B * A => (p, s)))).
         2: reflexivity. symmetry. apply (@pure_comp arr HA HE HL). }
       rewrite (@comp_assoc arr HA HE HL).
-      rewrite (@first_constant arr HA HE HL (@pure_ext arr HA HX HE HL HXL)).
+      rewrite (@first_constant arr HA HE HL (@pure_proper arr HA HX HE HL HXL)).
       rewrite <- (@comp_assoc arr HA HE HL).
       rewrite (@app_constant arr HA HX HE HL _ _ _ f a
         (@app_law arr HA HX HE HXL _ _ f)).
       rewrite (@comp_assoc arr HA HE HL).
-      rewrite <- (@first_constant arr HA HE HL (@pure_ext arr HA HX HE HL HXL) A B S f s).
+      rewrite <- (@first_constant arr HA HE HL (@pure_proper arr HA HX HE HL HXL) A B S f s).
       rewrite <- (@comp_assoc arr HA HE HL).
       apply (@comp_proper arr HA HE HL). 2: reflexivity.
       apply (@pure_comp arr HA HE HL). }

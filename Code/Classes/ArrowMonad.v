@@ -71,7 +71,7 @@ Section ArrowMonadLaws.
     { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply fpure. }
     etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
     apply (@pure_comp_ext arr HA HE HL
-      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL)).
+      (@ArrowApplyFacts.pure_proper arr HA HAA HE HL HAL)).
     intros [b a]. reflexivity.
   Qed.
 
@@ -104,7 +104,7 @@ Section ArrowMonadLaws.
     etransitivity.
     { apply cprop. 1: reflexivity.
       apply (@Arrow.first_constant arr HA HE HL
-        (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL)). }
+        (@ArrowApplyFacts.pure_proper arr HA HAA HE HL HAL)). }
     symmetry. apply cassoc.
   Qed.
 

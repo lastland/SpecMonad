@@ -29,9 +29,9 @@ Section GenericOptionArrTApplyLaws.
 
   (** Use the core lift contract, not the application instance under construction. *)
   Local Notation opure_congr :=
-    (@lift_pure_congr optionArrT ArrowT_optionArrT arr HA HE OA OE
+    (@lift_pure_proper optionArrT ArrowT_optionArrT arr HA HE OA OE
       (@ArrowTLaw_optionArrT arr HA HC HE HL HCL)
-      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAAL)).
+      (@ArrowApplyFacts.pure_proper arr HA HAA HE HL HAAL)).
 
   (** This ranges over all option arrows, not just arrows in the lift's
       image. It bootstraps application coherence using base extensionality. *)

@@ -1,6 +1,6 @@
 (** * Public regressions for the arrow-derived monad. *)
 
-From Coq Require Import FunctionalExtensionality RelationClasses.
+From Coq Require Import FunctionalExtensionality RelationClasses Morphisms.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts ArrowMonad.
 From Incorrectness.Classes Require Import StateArrowT.
@@ -162,12 +162,18 @@ Section LiftPureCongruenceDependencies.
     (arr : Type -> Type -> Type) (SA : Arrow arr) (SE : ArrowEq arr)
     (DA : Arrow (T arr)) (DE : ArrowEq (T arr))
     (L : ArrowTLaw T HT arr SA SE DA DE).
-  Variable pure_congr : forall X Y (u v : X -> Y), (forall x, u x = v x) ->
-    @arrow_eq arr SE X Y (@arr_pure arr SA X Y u) (@arr_pure arr SA X Y v).
+  Variable pure_congr : forall X Y,
+    Proper (pointwise_relation X (@eq Y) ==> @arrow_eq arr SE X Y)
+      (@arr_pure arr SA X Y).
+  Local Existing Instance pure_congr.
+
+  Definition lifted_pure_proper {X Y} :
+    Proper (pointwise_relation X (@eq Y) ==> @arrow_eq (T arr) DE X Y)
+      (@arr_pure (T arr) DA X Y) := _.
 
   Definition lifted_pure_congruence {X Y} (u v : X -> Y) (H : forall x, u x = v x) :
     @arrow_eq (T arr) DE X Y (@arr_pure (T arr) DA X Y u) (@arr_pure (T arr) DA X Y v) :=
-    @lift_pure_congr T HT arr SA SE DA DE L pure_congr X Y u v H.
+    @lift_pure_proper T HT arr SA SE DA DE L pure_congr X Y u v H.
 End LiftPureCongruenceDependencies.
 
 (** No choice or application dictionary is in scope for this core lift. *)

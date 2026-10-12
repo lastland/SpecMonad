@@ -278,7 +278,7 @@ Section LiftMorphism.
       pose proof (@pure_comp dst DA DE DL) as Hpure.
       rewrite <- !Hassoc, !Hpure.
       apply (@comp_proper dst DA DE DL); [|reflexivity].
-      apply (@ArrowApplyFacts.pure_ext dst DA DX DE DL DXL).
+      apply (@ArrowApplyFacts.pure_proper dst DA DX DE DL DXL).
       intros [[f a] s]. reflexivity.
   Qed.
 

@@ -1,4 +1,5 @@
 (** Preservation laws for the option lift. *)
+From Coq Require Import Morphisms.
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
 From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
 
@@ -80,7 +81,7 @@ Section OptionLift.
     assert (Hmap : eqA
       (pure (fun p : arr A B * A => let '(f, a) := p in (f >>> pure (@Some B), a)))
       (pure (fun p : arr A B * A => (fst p >>> pure (@Some B), snd p)))).
-    { apply (@pure_ext arr HA HX HE HL HXL). intros [f a]. reflexivity. }
+    { f_equiv. intros [f a]. reflexivity. }
     rewrite Hmap.
     etransitivity.
     { exact (@app_postcompose_pure arr HA HX HE HL HXL
@@ -88,7 +89,7 @@ Section OptionLift.
     apply (@comp_proper arr HA HE HL). 2: reflexivity.
     assert (Hid : eqA (pure (fun p : arr A B * A => (fst p, snd p)))
       (@arr_id arr HA _)).
-    { apply (@pure_ext arr HA HX HE HL HXL). intros [f a]. reflexivity. }
+    { unfold arr_id. f_equiv. intros [f a]. reflexivity. }
     rewrite Hid. apply (@comp_id_l arr HA HE HL).
   Qed.
 End OptionLift.
