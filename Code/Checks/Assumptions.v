@@ -2,14 +2,18 @@
 From Incorrectness.Classes Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Taxonomy.Arrows Require Import
-  SPostArr RelSPostArr SPostArrEquiv GaloisArr.
+  SPostArr RelSPostArr SPostArrEquiv GaloisArr Rel PrePostArr RelPrePostArr WPArr.
+From Incorrectness.Classes.Tests Require Import ArrowMonadRegression.
 From Incorrectness.Taxonomy.BaseSpecMonads Require ASPMonad DSLPMonad DSPMonad
   ASLPMonad BaseGaloisConnections.
 From Incorrectness.Taxonomy.ComputationMonads Require Import DivNonDetNE.
 
-(** Shared algebraic helpers take their congruence/application premises
-    explicitly. Generic monad laws derive pure congruence constructively;
-    transformer law packages retain their existing extensionality dependency. *)
+(** Core laws now supply pointwise pure congruence. The lift helper still
+    takes source congruence independently of target core laws. Option law
+    packages use the selected base field; state core laws retain their existing
+    extensionality uses. These reports are conditional on their dictionaries. *)
+Print Assumptions Arrow.pure_proper.
+Print Assumptions Arrow.lift_pure_proper.
 Print Assumptions Arrow.first_constant.
 Print Assumptions Arrow.pure_comp_ext.
 Print Assumptions ArrowApplyFacts.app_constant.
@@ -20,6 +24,12 @@ Print Assumptions ArrowApplyLaws_optionArrT.
 Print Assumptions ArrowLaws_stateArrT.
 Print Assumptions ArrowChoiceLaws_stateArrT.
 Print Assumptions ArrowApplyLaws_stateArrT.
+Print Assumptions RelArrowCoherence.rel_arrow_laws.
+Print Assumptions RelArrowCoherence.rel_arrow_laws_leibniz.
+Print Assumptions PrePostArr.ArrowLaws_PrePost.
+Print Assumptions RelPrePostArr.ArrowLaws_RelPrePost.
+Print Assumptions WPArr.ArrowLaws_WPArr.
+Print Assumptions WrongIndex.arrow_laws.
 
 (** Computation-owned outcome laws use pointwise equivalence and are
     closed under the global context. *)

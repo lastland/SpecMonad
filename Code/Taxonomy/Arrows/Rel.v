@@ -316,6 +316,8 @@ Proof.
       inversion Heq; subst. exists (a, g c). cbn. auto.
     + intros [[a' d'] [Heq [Hf Hd]]]. inversion Heq; subst.
       exists (b, c). cbn. auto.
+  - (* pure_proper *)
+    intros f g H a b. cbn. rewrite (H a). reflexivity.
 Qed.
 
 #[global]

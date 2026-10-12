@@ -6,36 +6,32 @@ From Incorrectness.Classes Require Import Arrow ArrowApplyFacts ArrowMonad.
 From Incorrectness.Classes Require Import StateArrowT.
 
 (** These checks guard the helpers' dependency boundary: core facts need
-    ordinary pure congruence, and static application needs its fixed-arrow
+    only core laws, and static application needs its fixed-arrow
     equation. Neither check has an application-law dictionary available. *)
 Section CoreFactDependencies.
   Context {arr : Type -> Type -> Type}
     {HA : Arrow arr} {HE : ArrowEq arr} {HL : @ArrowLaws arr HA HE}.
-
-  Variable pure_congr : forall X Y (u v : X -> Y),
-    (forall x, u x = v x) ->
-    @arrow_eq arr HE X Y (@arr_pure arr HA X Y u) (@arr_pure arr HA X Y v).
 
   Definition first_constant_core_only {A B C} (f : arr A B) (c : C) :
     @arrow_eq arr HE A (B * C)%type
       (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun a => (a, c)))
         (@arr_first arr HA A B C f))
       (@arr_comp arr HA _ _ _ f (@arr_pure arr HA _ _ (fun b => (b, c)))) :=
-    @Arrow.first_constant arr HA HE HL pure_congr A B C f c.
+    @Arrow.first_constant arr HA HE HL A B C f c.
 
   Definition pure_comp_ext_core_only {A B C}
     (f : A -> B) (g : B -> C) (h : A -> C) (H : forall x, g (f x) = h x) :
     @arrow_eq arr HE A C
       (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g))
       (@arr_pure arr HA _ _ h) :=
-    @Arrow.pure_comp_ext arr HA HE HL pure_congr A B C f g h H.
+    @Arrow.pure_comp_ext arr HA HE HL A B C f g h H.
 
   Definition second_constant_core_only {A B C} (f : arr A B) (c : C) :
     @arrow_eq arr HE A (C * B)%type
       (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun a => (c, a)))
         (@arr_second arr HA A B C f))
       (@arr_comp arr HA _ _ _ f (@arr_pure arr HA _ _ (fun b => (c, b)))) :=
-    @Arrow.second_constant arr HA HE HL pure_congr A B C f c.
+    @Arrow.second_constant arr HA HE HL A B C f c.
 End CoreFactDependencies.
 
 Section StaticApplicationDependencies.
@@ -95,6 +91,7 @@ Module WrongIndex.
                   (fun j => fst (let '(a, c) := xs j in (a, g c)))).
       { extensionality j. destruct (xs j); reflexivity. }
       rewrite E. destruct (xs i); reflexivity.
+    - intros X Y f g H. cbn. extensionality xs. extensionality i. apply H.
   Qed.
 
   Definition application : @ArrowApply t arrow :=
@@ -174,6 +171,11 @@ Section LiftPureCongruenceDependencies.
   Definition lifted_pure_congruence {X Y} (u v : X -> Y) (H : forall x, u x = v x) :
     @arrow_eq (T arr) DE X Y (@arr_pure (T arr) DA X Y u) (@arr_pure (T arr) DA X Y v) :=
     @lift_pure_proper T HT arr SA SE DA DE L pure_congr X Y u v H.
+
+  Lemma lifted_pure_rewrite {X Y} (u v : X -> Y) (H : forall x, u x = v x) :
+    @arrow_eq (T arr) DE X Y
+      (@arr_pure (T arr) DA X Y u) (@arr_pure (T arr) DA X Y v).
+  Proof. f_equiv. exact H. Qed.
 End LiftPureCongruenceDependencies.
 
 (** No choice or application dictionary is in scope for this core lift. *)
@@ -184,6 +186,11 @@ Section StateCoreLiftResolution.
   Definition state_core_lift :
     ArrowTLaw (stateArrT S) (ArrowT_stateArrT S) arr HA HE
       (@Arrow_stateArrT S arr HA) (@ArrowEq_stateArrT S arr HE) := _.
+
+  Definition state_core_pure_proper {A B} :
+    Proper (pointwise_relation A (@eq B) ==>
+      @arrow_eq (stateArrT S arr) (@ArrowEq_stateArrT S arr HE) A B)
+      (@arr_pure (stateArrT S arr) (@Arrow_stateArrT S arr HA) A B) := _.
 
   Definition state_first_lift {A B C} (f : arr A B) :
     @arrow_eq (stateArrT S arr) (@ArrowEq_stateArrT S arr HE) _ _

@@ -7,16 +7,17 @@ Parent: [Code](../CONTEXT.md). Conventions: [CLAUDE.md](../../CLAUDE.md).
 [Arrow.v](Arrow.v) defines pure, sequential composition (first argument runs
 first), and `first`; `second`, split, and fanout are derived. `ArrowEq` selects
 an equivalence, not necessarily Leibniz equality. `ArrowLaws` includes product
-naturality and proper composition/first. Choice has sum laws and proper left.
-The core helpers `first_constant` and `pure_comp_ext` take ordinary pure-function
-congruence explicitly, so callers can supply congruence independently of
-application laws. `arr_pure_ext` supplies the functional-extensionality-based
-form; the global `ArrowApplyFacts.pure_proper` instance derives pointwise
-pure congruence constructively from application coherence.
+naturality, proper composition/first, and registered pointwise pure congruence
+through `pure_proper`. Choice has sum laws and proper left.
+The core helpers `first_constant` and `pure_comp_ext` obtain pure congruence
+from their selected core-law dictionary, independently of application laws.
+`arr_pure_ext` remains a separate functional-extensionality-based lemma without
+core-law premises. There is no separate application-derived pure instance:
+pure congruence is now a core premise, not an independent application consequence.
 `second_constant` derives the companion law for the derived second operation
 from these core facts. `left_assoc_inverse` and `left_context_iso` derive
 inverse-associator and untouched-branch conjugation equations from core/choice
-laws with supplied pure congruence, independently of application.
+laws, independently of application.
 
 `ArrowApplyLaws` has static application, `app_unit`, `app_precompose`,
 `app_postcompose`, and pair-valued `app_ext`, a registered `Proper` field for
@@ -69,7 +70,7 @@ source congruence hypotheses for search.
     uses `app_ext` to replace equivalent embedded arrows.
   - `option_arrow_morphism` requires destination core/choice laws.
   - `state_arrow_morphism` requires destination core/application laws,
-    including the law-derived `pure_proper`.
+    including the core `pure_proper` field.
   - `state_option_arrow_morphism` requires all three destination law packages.
 
   `ArrowEq_leibniz` remains an ordinary definition for independent consumers;

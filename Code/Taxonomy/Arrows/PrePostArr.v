@@ -210,6 +210,10 @@ Proof.
         inversion Heq; subst. exists (a, g c). cbn. auto.
       * intros [[a' d'] [Heq [Hf Hd]]]. cbn in *.
         inversion Heq; subst. exists (b, c). cbn. auto.
+  - (* pure_proper *)
+    intros f g H. split; cbn.
+    + intro a. reflexivity.
+    + intros a b. rewrite (H a). reflexivity.
 Qed.
 
 (* ================================================================= *)

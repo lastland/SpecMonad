@@ -1,5 +1,5 @@
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
-From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws TransformerLaws.
+From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
 
 (* ================================================================= *)
 (** ** Generic [ArrowApplyLaws] for [optionArrT]                      *)
@@ -26,12 +26,6 @@ Section GenericOptionArrTApplyLaws.
   Local Notation opcomp := (@pure_comp _ OA OE OL).
   Local Notation ocprop := (@comp_proper _ OA OE OL).
   Local Notation ofpure := (@first_pure _ OA OE OL).
-
-  (** Use the core lift contract, not the application instance under construction. *)
-  Local Notation opure_congr :=
-    (@lift_pure_proper optionArrT ArrowT_optionArrT arr HA HE OA OE
-      (@ArrowTLaw_optionArrT arr HA HC HE HL HCL)
-      (@ArrowApplyFacts.pure_proper arr HA HAA HE HL HAAL)).
 
   (** This ranges over all option arrows, not just arrows in the lift's
       image. It bootstraps application coherence using base extensionality. *)
@@ -99,7 +93,7 @@ Section GenericOptionArrTApplyLaws.
         etransitivity. { apply ocprop. 2: reflexivity. exact Hpair. }
         etransitivity. { apply ocassoc. }
         apply ocprop. 1: reflexivity.
-        apply (@Arrow.second_constant _ OA OE OL (@opure_congr)). }
+        apply (@Arrow.second_constant _ OA OE OL). }
       etransitivity. { apply ocassoc. }
       apply ocprop. 1: reflexivity.
       etransitivity. { apply ocassoc. }

@@ -14,12 +14,13 @@ and Coq equality infrastructure, without importing Taxonomy carriers.
 ## What the regression establishes
 
 - `CoreFactDependencies` checks `first_constant` and `pure_comp_ext` with
-  core laws and explicit pure congruence, without application operations or
+  core laws alone, without application operations or
   laws. `StaticApplicationDependencies` checks constant application with
   only its fixed-arrow equation and core laws, without application laws.
 - `WrongIndex.t A B := (bool -> A) -> bool -> B` supplies an arrow with
   proved core laws and an application operation that selects the stored
-  arrow at `negb i`.
+  arrow at `negb i`. Its exact-equality core laws, including pure congruence,
+  use functional extensionality.
 - `fixed_application` shows that this operation satisfies fixed-arrow
   application. `right_identity_fails` shows that this alone does not make
   the derived bind lawful.
@@ -28,22 +29,24 @@ and Coq equality infrastructure, without importing Taxonomy carriers.
 - `GenericResolution` checks `MonadLawsE` and `Eq1Equivalence` resolution for
   the exact `Monad_Arrow` operations and explicit `Eq1_Arrow`, for every
   fixed input type `I`.
-- `StateCoreLiftResolution` resolves and uses `ArrowTLaw` with no choice or
-  application dictionaries. `StateApplyLiftResolution` resolves and uses the
+- `StateCoreLiftResolution` resolves pure `Proper` through core laws and separately
+  uses `ArrowTLaw`, with no choice or application dictionaries.
+  `StateApplyLiftResolution` resolves and uses the
   embedded-arrow application equation with no choice dictionary. These tests
   import the public state-transformer reexport, not a concrete carrier.
 - Core-only tests also check `second_constant`; generic application checks
   pure-function evaluation without choice. `LiftPureCongruenceDependencies`
-  checks pure congruence and `Proper` search from the lift contract and supplied
-  source congruence with no source/target arrow-law dictionaries.
+  checks pure congruence, `Proper` search, and pointwise automation from the lift
+  contract and supplied source congruence with no source/target arrow-law dictionaries.
 
 [PureProperRegression.v](PureProperRegression.v) imports only transformer core
-and lift-law modules, not transformed application-law modules. It checks base
-pure `Proper` resolution from application coherence, option/state/stacked
-resolution from registered source congruence without any application operations
+and core-law modules, not application- or lift-law modules. It checks base
+pure `Proper` resolution from core laws alone and option/state/stacked
+resolution through transformed core laws without any application operations
 or laws, pointwise rewriting, and prompt search failure when source congruence
-is missing. The stacked pointwise application selects the search-built `Proper`
-dictionary explicitly rather than relying on `f_equiv` to select its relation.
+and core-law dictionaries are missing. The stacked pointwise application selects
+the search-built `Proper` dictionary explicitly rather than relying on `f_equiv`
+to select its relation.
 
 ## Reading and build membership
 

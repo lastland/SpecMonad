@@ -106,6 +106,9 @@ Proof.
     cbv [arrow_eq ArrowEq_WPArr] in *. subst. reflexivity.
   - (* first_natural *)
     apply functional_extensionality; intros [a c]. reflexivity.
+  - (* pure_proper *)
+    intros f g H. apply functional_extensionality. intro a.
+    cbn. rewrite (H a). reflexivity.
 Qed.
 
 #[global]

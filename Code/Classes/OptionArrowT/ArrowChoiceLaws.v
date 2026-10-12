@@ -30,7 +30,7 @@ Section GenericOptionArrTChoiceLaws.
     collapse sequence_option sum_prod_dist rev_assoc : opt_choice_ops.
 
   Local Ltac solve_pure_eq :=
-    apply (@Arrow.arr_pure_ext arr HA HE); intro x;
+    apply (@Arrow.pure_proper arr HA HE HL); intro x;
     repeat match goal with
     | [ x : (_ + _)%type |- _ ] => destruct x
     | [ x : option _ |- _ ] => destruct x
@@ -109,14 +109,14 @@ Section GenericOptionArrTChoiceLaws.
       apply cprop. 2: reflexivity.
       etransitivity.
       { apply (@Arrow.left_assoc_inverse arr HA HC HE HL HCL
-          (@Arrow.arr_pure_ext arr HA HE) B (option C) unit D g
+          B (option C) unit D g
           (@rev_assoc (option C) unit D)).
         intros [[c|[]]|d]; reflexivity. }
       apply cprop. 1: reflexivity.
       etransitivity.
       { apply cprop. 2: reflexivity.
         apply (@Arrow.left_context_iso arr HA HC HE HL HCL
-          (@Arrow.arr_pure_ext arr HA HE) B (option C) (unit + D)%type (D + unit)%type
+          B (option C) (unit + D)%type (D + unit)%type
           g (@swap_sum unit D) (@swap_sum D unit)).
         intros [[]|d]; reflexivity. }
       etransitivity. { apply cassoc. }
@@ -159,7 +159,7 @@ Section GenericOptionArrTChoiceLaws.
       (* L_1(L_D(g)) >>> [sbm rr id] >>> [c] *)
       apply cprop. 2: reflexivity.
       apply (@Arrow.left_assoc_inverse arr HA HC HE HL HCL
-        (@Arrow.arr_pure_ext arr HA HE) B (option C) D unit g
+        B (option C) D unit g
         (@rev_assoc (option C) D unit)).
       intros [[c|d]|[]]; reflexivity. }
 
@@ -243,7 +243,7 @@ Section GenericOptionArrTChoiceLaws.
 
     - (* 1. left_pure *)
       setoid_rewrite lpure.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [a|c]; reflexivity.
 
     - (* 2. left_comp *)
@@ -264,7 +264,7 @@ Section GenericOptionArrTChoiceLaws.
           (@arr_pure arr HA _ _ (@inl (option B) C))
           (@arr_pure arr HA _ _ (@opt_rearrange B C)))
         (@arr_pure arr HA _ _ (option_map (@inl B C)))).
-      { apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      { apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [?|]; reflexivity. }
       etransitivity. { symmetry. apply cassoc. }
       etransitivity. { apply cprop. 2: reflexivity. symmetry. apply linl. }
@@ -295,7 +295,7 @@ Section GenericOptionArrTChoiceLaws.
         etransitivity.
         { apply pcomp. }
         symmetry.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[[?|]|?]|?]; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 2: reflexivity. apply lcomp. }
@@ -324,7 +324,7 @@ Section GenericOptionArrTChoiceLaws.
           (@arr_pure arr HA _ _ (@opt_rearrange B D)))).
       { etransitivity. { apply pcomp. }
         symmetry.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[?|]|?]; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hfused. }
@@ -360,7 +360,7 @@ Section GenericOptionArrTChoiceLaws.
         etransitivity. { apply pcomp. }
         symmetry.
         etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[[?|]|?] ?]; reflexivity. }
       (* L(Ff >>> [seq]) = L(Ff) >>> [sbm seq id] *)
       assert (Hl : @arrow_eq arr HE _ _

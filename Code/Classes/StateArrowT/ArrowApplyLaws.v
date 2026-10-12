@@ -56,7 +56,7 @@ Section StateArrowTApplyLaws.
     cbn [arr_pure arr_app Arrow_stateArrT ArrowApply_stateArrT].
     etransitivity. { symmetry. apply cassoc. }
     apply cprop. 2: reflexivity.
-    apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+    apply (@Arrow.pure_comp_ext arr HA HE HL).
     intros [x s]. destruct (u x). reflexivity.
   Qed.
 
@@ -74,7 +74,7 @@ Section StateArrowTApplyLaws.
       apply cprop. 2: reflexivity. apply fpure. }
     etransitivity. { symmetry. apply cassoc. }
     apply cprop. 2: reflexivity.
-    apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+    apply (@Arrow.pure_comp_ext arr HA HE HL).
     intros [[a b] s]. reflexivity.
   Qed.
 
@@ -90,7 +90,7 @@ Section StateArrowTApplyLaws.
     { cbn [arr_pure Arrow_stateArrT].
       etransitivity. { apply pcomp. }
       symmetry.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [[c a] s]. reflexivity. }
     assert (Htail :
       eqA (pure (@state_shuffle_out S B C) >>>
@@ -99,7 +99,7 @@ Section StateArrowTApplyLaws.
     { cbn [arr_pure Arrow_stateArrT].
       etransitivity.
       { apply cprop. 1: reflexivity. apply pcomp. }
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [[b s] c]. reflexivity. }
     change (eqA
       ((spure (@swap C A) >>>
@@ -137,7 +137,7 @@ Section StateArrowTApplyLaws.
       etransitivity. { apply state_pure_app. }
       transitivity (pure (fun p : A * S => (f, p)) >>> app).
       + apply cprop. 2: reflexivity.
-        apply (@Arrow.arr_pure_ext arr HA HE). intros [a s]. reflexivity.
+        apply (@Arrow.pure_proper arr HA HE HL). intros [a s]. reflexivity.
       + apply alaw.
     - (* app_unit *)
       intros A B.
@@ -149,7 +149,7 @@ Section StateArrowTApplyLaws.
        { apply cprop. 1: reflexivity.
          apply (@ArrowApplyFacts.app_pure arr HA HAA HE HL HAAL). }
       unfold arr_pure, Arrow_stateArrT.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [[a b] s]. reflexivity.
     - (* app_precompose *)
       intros A B C g.

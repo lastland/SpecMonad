@@ -110,19 +110,16 @@ Class ArrowLaws (arr : Type -> Type -> Type)
       (arr_comp (arr_first f)
         (arr_pure (fun '(b, c) => (b, g c))))
       (arr_comp (arr_pure (fun '(a, c) => (a, g c)))
-        (arr_first f))
+        (arr_first f)) ;
+  pure_proper :: forall X Y,
+    Proper (pointwise_relation X (@eq Y) ==> @arrow_eq arr Heq X Y)
+      (@arr_pure arr Harr X Y)
 }.
 
 Section ArrowCoreFacts.
   Context {arr : Type -> Type -> Type}
     `{HA : Arrow arr} `{HE : ArrowEq arr}
     `{HL : @ArrowLaws arr HA HE}.
-
-  (** Ordinary pointwise congruence is supplied explicitly so these facts
-      can use either constructive application coherence or another proof. *)
-  Variable pure_congr : forall X Y (u v : X -> Y),
-    (forall x, u x = v x) ->
-    @arrow_eq arr HE X Y (@arr_pure arr HA X Y u) (@arr_pure arr HA X Y v).
 
   Local Notation "f >>> g" := (@arr_comp arr HA _ _ _ f g)
     (at level 50, left associativity).
@@ -134,11 +131,10 @@ Section ArrowCoreFacts.
     (forall x, g (f x) = h x) -> eqA (pure f >>> pure g) (pure h).
   Proof.
     intro H. etransitivity. { apply pure_comp. }
-    apply pure_congr. exact H.
+    apply (@pure_proper arr HA HE HL). exact H.
   Qed.
 
-  (** A constant companion commutes with [first], using only core laws
-      and the supplied ordinary pure-function congruence. *)
+  (** A constant companion commutes with [first], using only core laws. *)
   Lemma first_constant {A B C} (f : arr A B) (c : C) :
     eqA (pure (fun a => (a, c)) >>> first f)
         (f >>> pure (fun b => (b, c))).
@@ -237,8 +233,6 @@ Section ArrowChoiceCoreFacts.
   Context {arr : Type -> Type -> Type}
     {HA : Arrow arr} {HC : @ArrowChoice arr HA} {HE : ArrowEq arr}
     {HL : @ArrowLaws arr HA HE} {HCL : @ArrowChoiceLaws arr HA HC HE}.
-  Variable pure_congr : forall X Y (u v : X -> Y), (forall x, u x = v x) ->
-    @arrow_eq arr HE X Y (@arr_pure arr HA X Y u) (@arr_pure arr HA X Y v).
   Local Existing Instance HL.
 
   (** Remove the output associator using an explicitly supplied inverse. *)
@@ -253,7 +247,7 @@ Section ArrowChoiceCoreFacts.
     etransitivity. { symmetry. apply (@comp_id_r arr HA HE HL). }
     etransitivity.
     { apply (@comp_proper arr HA HE HL). 1: reflexivity.
-      symmetry. apply (@pure_comp_ext arr HA HE HL pure_congr).
+      symmetry. apply (@pure_comp_ext arr HA HE HL).
       exact Hback. }
     etransitivity. { symmetry. apply (@comp_assoc arr HA HE HL). }
     etransitivity.
@@ -273,7 +267,7 @@ Section ArrowChoiceCoreFacts.
     etransitivity. { symmetry. apply (@comp_id_r arr HA HE HL). }
     etransitivity.
     { apply (@comp_proper arr HA HE HL). 1: reflexivity.
-      symmetry. apply (@pure_comp_ext arr HA HE HL pure_congr
+      symmetry. apply (@pure_comp_ext arr HA HE HL
         (B + C)%type (B + D)%type (B + C)%type
         (sum_bimap (fun b : B => b) to) (sum_bimap (fun b : B => b) back)
         (fun x => x)).
@@ -501,7 +495,7 @@ Section ArrowApplyDerived.
       symmetry.
       etransitivity; [ apply comp_proper; [ reflexivity | apply first_pure ] |].
       etransitivity; [ apply pure_comp |].
-      apply arr_pure_ext. intro x. reflexivity.
+      apply (@pure_proper arr HA HE HL). intro x. reflexivity.
     - etransitivity; [ apply comp_assoc |].
       etransitivity; [ apply comp_proper; [ reflexivity | apply app_pair ] |].
       apply comp_id_r.
@@ -521,7 +515,7 @@ Section ArrowApplyDerived.
       symmetry.
       etransitivity; [ apply comp_proper; [ reflexivity | apply first_pure ] |].
       etransitivity; [ apply pure_comp |].
-      apply arr_pure_ext. intro x. reflexivity.
+      apply (@pure_proper arr HA HE HL). intro x. reflexivity.
     - etransitivity; [ apply comp_assoc |].
       etransitivity; [ apply comp_proper; [ reflexivity | apply app_post ] |].
       symmetry. apply comp_assoc.

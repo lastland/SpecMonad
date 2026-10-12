@@ -28,7 +28,7 @@ Section StateLift.
       (pure (@assoc_prod A C S) >>> pure (fun '(a, cs) => (a, swap cs)))
       (pure (@state_shuffle_in S A C) >>> pure (@assoc_prod A S C))).
     { etransitivity. { apply pure_comp. }
-      symmetry. apply (@pure_comp_ext arr HA HE HL (@arr_pure_ext arr HA HE)).
+      symmetry. apply (@pure_comp_ext arr HA HE HL).
       intros [[a c] s]. reflexivity. }
     assert (Hmid : eqA
       (first (@arr_first arr HA A B C f) >>>
@@ -49,7 +49,7 @@ Section StateLift.
     { etransitivity. { apply comp_proper. 2: reflexivity.
         apply comp_proper. 2: reflexivity. apply pure_comp. }
       etransitivity. { apply comp_proper. 2: reflexivity. apply pure_comp. }
-      apply (@pure_comp_ext arr HA HE HL (@arr_pure_ext arr HA HE)).
+      apply (@pure_comp_ext arr HA HE HL).
       intros [[b c] s]. reflexivity. }
     transitivity ((first (@arr_first arr HA A B C f) >>>
       pure (@assoc_prod B C S) >>> pure (fun '(b, cs) => (b, swap cs))) >>>
@@ -65,7 +65,7 @@ Section StateLift.
         etransitivity. { apply comp_proper. 2: reflexivity.
           transitivity (@arr_id arr HA ((B * S) * C)%type).
           2: reflexivity.
-          apply (@pure_comp_ext arr HA HE HL (@arr_pure_ext arr HA HE)).
+          apply (@pure_comp_ext arr HA HE HL).
           intros [[b s] c]. reflexivity. }
         apply comp_id_l. }
       reflexivity.
@@ -92,7 +92,7 @@ Section StateChoiceLift.
     assert (Hcancel : @arrow_eq arr HE _ _
       (arr_comp (arr_pure (@sum_distribute B C S))
         (arr_pure (@sum_undistribute B C S))) (@arr_id arr HA _)).
-    { apply (@pure_comp_ext arr HA HE HL (@arr_pure_ext arr HA HE)).
+    { apply (@pure_comp_ext arr HA HE HL).
       intros [[b|c] s]; reflexivity. }
     transitivity (arr_comp
       (arr_comp (arr_first (arr_left f)) (arr_pure (@sum_distribute B C S)))
@@ -128,12 +128,12 @@ Section StateApplyLift.
           (arr_pure (fun p : arr A B * A => (p, s)))).
         2: reflexivity. symmetry. apply (@pure_comp arr HA HE HL). }
       rewrite (@comp_assoc arr HA HE HL).
-      rewrite (@first_constant arr HA HE HL (@pure_proper arr HA HX HE HL HXL)).
+      rewrite (@first_constant arr HA HE HL).
       rewrite <- (@comp_assoc arr HA HE HL).
       rewrite (@app_constant arr HA HX HE HL _ _ _ f a
         (@app_law arr HA HX HE HXL _ _ f)).
       rewrite (@comp_assoc arr HA HE HL).
-      rewrite <- (@first_constant arr HA HE HL (@pure_proper arr HA HX HE HL HXL) A B S f s).
+      rewrite <- (@first_constant arr HA HE HL A B S f s).
       rewrite <- (@comp_assoc arr HA HE HL).
       apply (@comp_proper arr HA HE HL). 2: reflexivity.
       apply (@pure_comp arr HA HE HL). }

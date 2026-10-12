@@ -16,7 +16,7 @@ base application. [ArrowLaws.v](ArrowLaws.v) and
 including dynamic precomposition, from base arrow/choice/application laws.
 These proofs inspect no concrete carrier; use explicit base dictionaries.
 The law proofs reuse core pure-map fusion. Fixed-companion and constant
-application steps reuse shared helpers with base-derived congruence and
+application steps reuse shared helpers with core pure congruence and
 application equations while constructing the transformed application laws.
 There is no generic loop lift. `None`'s exception/divergence interpretation
 belongs to a computation or observation, not this transformer.
@@ -27,9 +27,11 @@ base application laws. Composition/application reuse `optionArrT_comp_pure_l`;
 dynamic application also reuses `app_postcompose_pure`. These lift contracts
 are separate from the transformed-arrow law packages and morphism transport.
 
-Application-law construction now imports `TransformerLaws` (which depends
-only on Core/ArrowLaws) to obtain pure congruence via `lift_pure_proper`,
-with explicit source and lift dictionaries rather than target application laws.
+Application-law construction uses the already-established transformed core
+dictionary, including its `pure_proper` field; it does not import
+`TransformerLaws` or require target application laws for pure congruence.
+The core pure field maps pointwise equality through `Some` using only the
+selected base pure field, without functional extensionality.
 Constant-second reasoning uses the transformed core laws' shared
 `second_constant`; choice reassociation uses shared `left_assoc_inverse` and
 `left_context_iso`. Private copies are removed. `option_arr_ext` and

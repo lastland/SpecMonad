@@ -1,15 +1,15 @@
-(** * Pure congruence search without transformed application laws.
+(** * Pure congruence search from core laws alone.
 
-    Deliberately import only core and lift contracts for the transformers. *)
+    Deliberately omit application and lift-law modules for the transformers.
+    Abstract lift-only resolution is checked in [ArrowMonadRegression.v]. *)
 From Coq Require Import Morphisms.
-From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
-From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws TransformerLaws.
-From Incorrectness.Classes.StateArrowT Require Import Core TransformerLaws.
+From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
+From Incorrectness.Classes.StateArrowT Require Import Core.
 
 Section BaseResolution.
   Context {arr : Type -> Type -> Type}
-    {HA : Arrow arr} {HX : @ArrowApply arr HA} {HE : ArrowEq arr}
-    {HL : @ArrowLaws arr HA HE} {HXL : @ArrowApplyLaws arr HA HX HE}.
+    {HA : Arrow arr} {HE : ArrowEq arr} {HL : @ArrowLaws arr HA HE}.
 
   Definition base_pure_proper {A B} :
     Proper (pointwise_relation A (@eq B) ==> @arrow_eq arr HE A B)
@@ -20,15 +20,11 @@ Section BaseResolution.
   Proof. f_equiv. exact H. Qed.
 End BaseResolution.
 
-(** Source congruence suffices: no application operations or laws at all. *)
-Section LiftResolution.
+(** Search may use transformed core laws, but no application or lift laws. *)
+Section TransformerCoreResolution.
   Context (S : Type) {arr : Type -> Type -> Type}
     {HA : Arrow arr} {HC : @ArrowChoice arr HA} {HE : ArrowEq arr}
     {HL : @ArrowLaws arr HA HE} {HCL : @ArrowChoiceLaws arr HA HC HE}.
-  Variable pure_congr : forall A B,
-    Proper (pointwise_relation A (@eq B) ==> @arrow_eq arr HE A B)
-      (@arr_pure arr HA A B).
-  Local Existing Instance pure_congr.
 
   Definition option_pure_proper {A B} :
     Proper (pointwise_relation A (@eq B) ==>
@@ -59,7 +55,7 @@ Section LiftResolution.
       (@arr_pure _ (@Arrow_stateArrT S (optionArrT arr) (@Arrow_optionArrT arr HA HC)) A B f)
       (@arr_pure _ (@Arrow_stateArrT S (optionArrT arr) (@Arrow_optionArrT arr HA HC)) A B g).
   Proof. apply state_option_pure_proper. exact H. Qed.
-End LiftResolution.
+End TransformerCoreResolution.
 
 (** Search must not manufacture a congruence premise. *)
 Section MissingPremise.

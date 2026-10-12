@@ -94,8 +94,8 @@ and `ArrowApplyLaws` by instantiating the shared semantic packages in
 `RelArrowEq` connects the chosen equality to pointwise relation equivalence.
 The ASP/DSLP compatibility interface exposes `ASP_rel` / `DSLP_rel`, with
 operation facts phrased using the existing operators in `Rel.v`. Shared proofs supply
-composition/first/choice congruence and `app_ext`, including replacement of
-semantically equivalent arrows stored in inputs.
+pointwise pure congruence, composition/first/choice congruence, and `app_ext`,
+including replacement of semantically equivalent arrows stored in inputs.
 Relational-only helpers remain independent of equality reflection.
 
 The relational presentation reuses `Arrow_Rel`, `ArrowChoice_Rel`,

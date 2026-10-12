@@ -1208,6 +1208,8 @@ Section SemanticLaws.
       split; intros [H1 H2]; (split; [apply H_rel, H1 | exact H2]).
     - apply rel_arrow_eq. intros [a c] [b d].
       apply (rel_first_natural_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+    - intros f g H. apply (@rel_arrow_eq arr HA HE HRA HRE).
+      intros a b. rewrite !(@rel_pure arr HA HRA), (H a). reflexivity.
   Qed.
 
   Section SemanticChoiceLaws.
@@ -1298,6 +1300,7 @@ Section LeibnizBridge.
     - intros x y -> z w ->. reflexivity.
     - intros x y ->. reflexivity.
     - apply rel_ext. apply (@first_natural arr HA HE HL).
+    - intros f g H. apply rel_ext. exact (@pure_proper arr HA HE HL _ _ f g H).
   Qed.
 
   Lemma rel_arrow_choice_laws_leibniz

@@ -43,7 +43,7 @@ Section OptionLift.
       symmetry. etransitivity.
       { apply (@comp_proper arr HA HE HL). 2: reflexivity.
         apply (@first_pure arr HA HE HL). }
-      apply (@pure_comp_ext arr HA HE HL (@arr_pure_ext arr HA HE)).
+      apply (@pure_comp_ext arr HA HE HL).
       intros [b c]. reflexivity.
   Qed.
 
@@ -61,7 +61,7 @@ Section OptionLift.
     symmetry. etransitivity.
     { apply (@comp_proper arr HA HE HL). 2: reflexivity.
       apply (@left_pure arr HA HC HE HCL). }
-    apply (@pure_comp_ext arr HA HE HL (@arr_pure_ext arr HA HE)).
+    apply (@pure_comp_ext arr HA HE HL).
     intros [b|c]; reflexivity.
   Qed.
 

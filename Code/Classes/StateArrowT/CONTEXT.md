@@ -13,8 +13,11 @@ Core derives arrow laws from base arrow laws. Choice laws additionally use
 base choice/laws. [ArrowApplyLaws.v](ArrowApplyLaws.v) lifts all five
 application fields from the base contract without requiring choice.
 Keep explicit dictionaries to avoid recursive option/state instance search.
-Pure-map fusion and shuffle cancellation reuse core facts with explicit base
-pure-function congruence.
+Pure-map fusion and shuffle cancellation reuse core facts with selected base
+law dictionaries. The proof of the core `pure_proper` field maps pointwise
+equality through the state-preserving pair using the base pure field, without
+invoking functional extensionality. The complete opaque core-law dictionary,
+including projections from it, retains the other fields' extensionality dependency.
 No loop lifting is supplied.
 
 [TransformerLaws.v](TransformerLaws.v) proves the three lift contracts.

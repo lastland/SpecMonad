@@ -382,6 +382,8 @@ Proof.
     rewrite !project_wp_arr_comp, project_wp_arr_first.
     setoid_rewrite project_wp_arr_pure.
     rewrite project_wp_arr_first. reflexivity.
+  - (* pure_proper *)
+    intros f g H a Q. rewrite !project_wp_arr_pure, (H a). reflexivity.
 Qed.
 
 #[global]
