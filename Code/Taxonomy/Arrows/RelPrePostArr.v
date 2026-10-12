@@ -482,7 +482,7 @@ Instance ArrowApplyLaws_RelPrePost
   : @ArrowApplyLaws RelPrePostArr Arrow_RelPrePost
       ArrowApply_RelPrePost ArrowEq_RelPrePost.
 Proof.
-  constructor; intros.
+  constructor; [intros | intros | intros | intros | intros X A B u v H].
   - (* app_law *)
     intros a Q.
     rewrite project_wp_arr_comp, project_wp_arr_pure.
@@ -515,7 +515,7 @@ Proof.
     rewrite !project_wp_arr_app.
     specialize (H x).
     destruct (u x) as [r a], (v x) as [s a']; cbn in *.
-    destruct H as [Hrs Ha]. subst a'. apply Hrs.
+    destruct H as [Hrs Ha]. change (a = a') in Ha. subst a'. apply Hrs.
 Qed.
 
 (* ================================================================= *)

@@ -1243,7 +1243,7 @@ Section SemanticLaws.
 
     #[global] Instance rel_arrow_apply_laws : ArrowApplyLaws arr.
     Proof.
-      constructor; intros.
+      constructor; [intros | intros | intros | intros | intros X A B u v H].
       - apply rel_arrow_eq. intros a b.
         apply (rel_app_law_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_app arr HA HAA HRA HRAA)).
       - apply rel_arrow_eq. intros [a b] q.
@@ -1257,6 +1257,7 @@ Section SemanticLaws.
         destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
         destruct (H x) as [Harr Hsnd].
         rewrite Hu, Hv in Harr, Hsnd. cbn in Harr, Hsnd.
+        change (au = av) in Hsnd.
         subst av.
         split; intros [y [Hp Ha]].
         + apply rel_pure in Hp. rewrite Hu in Hp. subst y.

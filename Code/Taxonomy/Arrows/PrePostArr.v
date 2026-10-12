@@ -306,7 +306,7 @@ Qed.
 Instance ArrowApplyLaws_PrePost
   : @ArrowApplyLaws PrePostArr Arrow_PrePost ArrowApply_PrePost ArrowEq_PrePost.
 Proof.
-  constructor; intros.
+  constructor; [intros | intros | intros | intros | intros X A B u v H].
   - (* app_law *) split; cbn; sauto limit: 200.
   - (* app_unit *)
     split; cbn.
@@ -371,13 +371,13 @@ Proof.
     split; cbn.
     + intros x. specialize (H x).
       destruct (u x) as [f a], (v x) as [g a']; cbn in *.
-      destruct H as [[HP HR] Ha]. subst a'.
+      destruct H as [[HP HR] Ha]. change (a = a') in Ha. subst a'.
       split; intros [_ Hpre]; split; [exact I| |exact I|]; intros p <-.
       * apply HP. exact (Hpre (f, a) eq_refl).
       * apply HP. exact (Hpre (g, a) eq_refl).
     + intros x b. specialize (H x).
       destruct (u x) as [f a], (v x) as [g a']; cbn in *.
-      destruct H as [[HP HR] Ha]. subst a'.
+      destruct H as [[HP HR] Ha]. change (a = a') in Ha. subst a'.
       split; intros [p [<- Hout]]; cbn in Hout.
       * exists (g, a). split; [reflexivity|]. apply HR. exact Hout.
       * exists (f, a). split; [reflexivity|]. apply HR. exact Hout.

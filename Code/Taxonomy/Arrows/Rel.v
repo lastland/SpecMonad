@@ -412,7 +412,7 @@ Qed.
 Instance ArrowApplyLaws_Rel
   : @ArrowApplyLaws Rel Arrow_Rel ArrowApply_Rel ArrowEq_Rel.
 Proof.
-  constructor; intros.
+  constructor; [intros | intros | intros | intros | intros X A B u v H].
   - (* app_law *)
     intros a b; unfold_Rel_full. sauto limit: 200.
   - (* app_unit *)
@@ -446,7 +446,7 @@ Proof.
   - (* app_ext *)
     intros x b. cbn. specialize (H x).
     destruct (u x) as [f a], (v x) as [g a']; cbn in H.
-    destruct H as [Hfg Ha]. subst a'.
+    destruct H as [Hfg Ha]. change (a = a') in Ha. subst a'.
     change ((exists p, (f, a) = p /\ (let '(k, a0) := p in k a0 b)) <->
             (exists p, (g, a) = p /\ (let '(k, a0) := p in k a0 b))).
     split; intros [p [<- Hout]].

@@ -5,7 +5,7 @@
     instance [Pred A B := A -> B -> Prop] lives in [Taxonomy/Pred.v];
     its law instances live in [Taxonomy/PredFacts.v]. *)
 
-From Coq Require Import Morphisms FunctionalExtensionality.
+From Coq Require Import Morphisms FunctionalExtensionality RelationPairs.
 
 (* ================================================================= *)
 (** ** Helper functions for products and sums                         *)
@@ -250,13 +250,15 @@ Class ArrowApplyLaws (arr : Type -> Type -> Type)
       (arr_comp (arr_first (arr_pure (fun f : arr A B => arr_comp f h)))
         arr_app)
       (arr_comp arr_app h) ;
-  (** Application respects the arrow equality inside ordinary input
-      values.  This supplies continuation congruence for derived bind. *)
-  app_ext : forall {X A B} (u v : X -> arr A B * A),
-    (forall x, arrow_eq (fst (u x)) (fst (v x)) /\
-               snd (u x) = snd (v x)) ->
-    arrow_eq (arr_comp (arr_pure u) arr_app)
-             (arr_comp (arr_pure v) arr_app)
+  (** Pure pair-building followed by application is proper in the stored
+      arrow and argument. This supplies continuation congruence for derived bind. *)
+  app_ext :: forall {X A B : Type},
+    Proper
+      (pointwise_relation X
+         (RelProd (@arrow_eq arr _ A B) (@eq A)) ==>
+       @arrow_eq arr _ X B)
+      (fun u : X -> (arr A B * A)%type =>
+         arr_comp (arr_pure u) arr_app)
 }.
 
 (* ================================================================= *)

@@ -15,7 +15,8 @@ form; `ArrowApplyFacts.pure_ext` derives the same congruence constructively
 from application coherence.
 
 `ArrowApplyLaws` has static application, `app_unit`, `app_precompose`,
-`app_postcompose`, and pair-valued `app_ext`: both the stored arrow's selected
+`app_postcompose`, and pair-valued `app_ext`, a registered `Proper` field for
+pure pair-building followed by application: both the stored arrow's selected
 equality and equality of its argument matter. Main compatibility corollaries
 `app_pair`, `app_post`, and the curried `app_*_at` forms remain available.
 The option and state transformers lift this full contract algebraically.

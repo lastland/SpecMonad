@@ -215,6 +215,7 @@ Section StateArrowTApplyLaws.
       specialize (Huv x).
       destruct (u x) as [f a], (v x) as [g b].
       destruct Huv as [Hfg Hab]. cbn in Hfg, Hab |- *.
+      change (a = b) in Hab.
       subst b. split.
       + symmetry. exact Hfg.
       + reflexivity.
