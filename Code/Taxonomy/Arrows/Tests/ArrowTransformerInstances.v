@@ -8,6 +8,7 @@ From ExtLib Require Import StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowMonad.
 From Incorrectness.Classes Require Import OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import ArrowMorphism.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 From Incorrectness.Taxonomy.Arrows Require Import Rel SPostArr.
 
@@ -164,6 +165,112 @@ Proof.
       SPostArr.ArrowApplyLaws_optionASPArr)
     A B f).
 Qed.
+
+(** Selected dictionaries are explicit even in nested resolution checks. *)
+Module LiftLaws.
+  Definition option_core : ArrowTLaw optionArrT ArrowT_optionArrT Rel
+    Arrow_Rel ArrowEq_Rel (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowEq_optionArrT Rel ArrowEq_Rel) := _.
+  Definition option_choice : ArrowChoiceTLaw optionArrT ArrowT_optionArrT Rel
+    Arrow_Rel ArrowChoice_Rel ArrowEq_Rel (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowChoice_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowEq_optionArrT Rel ArrowEq_Rel) := _.
+  Definition option_apply : ArrowApplyTLaw optionArrT ArrowT_optionArrT Rel
+    Arrow_Rel ArrowApply_Rel ArrowEq_Rel (@Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel)
+    (@ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel)
+    (@ArrowEq_optionArrT Rel ArrowEq_Rel) := _.
+
+  Definition OA := @Arrow_optionArrT Rel Arrow_Rel ArrowChoice_Rel.
+  Definition OC := @ArrowChoice_optionArrT Rel Arrow_Rel ArrowChoice_Rel.
+  Definition OX := @ArrowApply_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowApply_Rel.
+  Definition OE := @ArrowEq_optionArrT Rel ArrowEq_Rel.
+
+  Definition double_option_core : ArrowTLaw optionArrT ArrowT_optionArrT
+    optionRel OA OE (@Arrow_optionArrT optionRel OA OC)
+    (@ArrowEq_optionArrT optionRel OE) := _.
+  Definition double_option_choice : ArrowChoiceTLaw optionArrT ArrowT_optionArrT
+    optionRel OA OC OE (@Arrow_optionArrT optionRel OA OC)
+    (@ArrowChoice_optionArrT optionRel OA OC) (@ArrowEq_optionArrT optionRel OE) := _.
+  Definition double_option_apply : ArrowApplyTLaw optionArrT ArrowT_optionArrT
+    optionRel OA OX OE (@Arrow_optionArrT optionRel OA OC)
+    (@ArrowApply_optionArrT optionRel OA OC OX) (@ArrowEq_optionArrT optionRel OE) := _.
+
+  Section StateOption.
+    Variable S : Type.
+    Definition state_option_core : ArrowTLaw (stateArrT S) (ArrowT_stateArrT S)
+      optionRel OA OE (@Arrow_stateArrT S optionRel OA)
+      (@ArrowEq_stateArrT S optionRel OE) := _.
+    Definition state_option_choice : ArrowChoiceTLaw (stateArrT S) (ArrowT_stateArrT S)
+      optionRel OA OC OE (@Arrow_stateArrT S optionRel OA)
+      (@ArrowChoice_stateArrT S optionRel OA OC) (@ArrowEq_stateArrT S optionRel OE) := _.
+    Definition state_option_apply : ArrowApplyTLaw (stateArrT S) (ArrowT_stateArrT S)
+      optionRel OA OX OE (@Arrow_stateArrT S optionRel OA)
+      (@ArrowApply_stateArrT S optionRel OA OX) (@ArrowEq_stateArrT S optionRel OE) := _.
+
+    Definition state_option_morphism : ArrowMorphism OA OC OX OE
+      (@Arrow_stateArrT S optionRel OA) (@ArrowChoice_stateArrT S optionRel OA OC)
+      (@ArrowApply_stateArrT S optionRel OA OX) (@ArrowEq_stateArrT S optionRel OE)
+      (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) optionRel OA) :=
+      arrowT_lift_morphism _ _ _ _ _ _ _ _ _ _ _
+        state_option_core state_option_choice state_option_apply.
+
+    Example state_option_lift_rewrite {A B C} (f g : optionRel A B)
+      (h : optionRel B C) (H : forall a ob, f a ob <-> g a ob) :
+      @arrow_eq (stateArrT S optionRel) (@ArrowEq_stateArrT S optionRel OE) A C
+        (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) optionRel OA A C
+          (@arr_comp optionRel OA A B C f h))
+        (@arr_comp (stateArrT S optionRel) (@Arrow_stateArrT S optionRel OA) A B C
+          (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) optionRel OA A B g)
+          (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) optionRel OA B C h)).
+    Proof.
+      rewrite (@lift_comp _ _ _ _ _ _ _ state_option_core A B C f h).
+      apply (@comp_proper _ _ _
+        (@ArrowLaws_stateArrT S optionRel OA OE
+          (@ArrowLaws_optionArrT Rel Arrow_Rel ArrowChoice_Rel ArrowEq_Rel
+            ArrowLaws_Rel ArrowChoiceLaws_Rel))).
+      - exact (@lift_proper _ _ _ _ _ _ _ state_option_core A B f g H).
+      - reflexivity.
+    Qed.
+  End StateOption.
+
+  Definition asp_option_core : ArrowTLaw optionArrT ArrowT_optionArrT PureASPostArr
+    Arrow_PureASPostArr ArrowEq_PureASPostArr
+    (@Arrow_optionArrT PureASPostArr Arrow_PureASPostArr ArrowChoice_PureASPostArr)
+    (@ArrowEq_optionArrT PureASPostArr ArrowEq_PureASPostArr) := _.
+  Definition dslp_option_core : ArrowTLaw optionArrT ArrowT_optionArrT PureDSLPostArr
+    Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr
+    (@Arrow_optionArrT PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr)
+    (@ArrowEq_optionArrT PureDSLPostArr ArrowEq_PureDSLPostArr) := _.
+
+  (** No reflection to ordinary equality: use the semantic hypothesis directly. *)
+  Example asp_lift_proper {A B} (f g : PureASPostArr A B)
+    (H : forall P b, getASP f P b <-> getASP g P b) :
+    @arrow_eq (optionArrT PureASPostArr)
+      (@ArrowEq_optionArrT PureASPostArr ArrowEq_PureASPostArr) A B
+      (@arrowT_lift optionArrT ArrowT_optionArrT PureASPostArr Arrow_PureASPostArr A B f)
+      (@arrowT_lift optionArrT ArrowT_optionArrT PureASPostArr Arrow_PureASPostArr A B g).
+  Proof. exact (@lift_proper _ _ _ _ _ _ _ asp_option_core A B f g H). Qed.
+
+  Example dslp_lift_comp_semantic {A B C} (f g : PureDSLPostArr A B)
+    (h : PureDSLPostArr B C)
+    (H : forall P b, getDSLP f P b <-> getDSLP g P b) :
+    @arrow_eq (optionArrT PureDSLPostArr)
+      (@ArrowEq_optionArrT PureDSLPostArr ArrowEq_PureDSLPostArr) A C
+      (@arrowT_lift optionArrT ArrowT_optionArrT PureDSLPostArr Arrow_PureDSLPostArr A C
+        (compDSLP f h))
+      (@arr_comp (optionArrT PureDSLPostArr)
+        (@Arrow_optionArrT PureDSLPostArr Arrow_PureDSLPostArr ArrowChoice_PureDSLPostArr) A B C
+        (@arrowT_lift optionArrT ArrowT_optionArrT PureDSLPostArr Arrow_PureDSLPostArr A B g)
+        (@arrowT_lift optionArrT ArrowT_optionArrT PureDSLPostArr Arrow_PureDSLPostArr B C h)).
+  Proof.
+    transitivity (@arrowT_lift optionArrT ArrowT_optionArrT
+      PureDSLPostArr Arrow_PureDSLPostArr A C (compDSLP g h)).
+    - apply (@lift_proper _ _ _ _ _ _ _ dslp_option_core).
+      apply (@comp_proper PureDSLPostArr Arrow_PureDSLPostArr ArrowEq_PureDSLPostArr
+        ArrowLaws_PureDSLPostArr); [exact H | reflexivity].
+    - exact (@lift_comp _ _ _ _ _ _ _ dslp_option_core A B C g h).
+  Qed.
+End LiftLaws.
 
 Example nested_optionDSLP_apply_law {A B}
   (f : optionArrT SPostArr.optionDSLPArr A B) :

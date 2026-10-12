@@ -28,6 +28,14 @@ and Coq equality infrastructure, without importing Taxonomy carriers.
 - `GenericResolution` checks `MonadLawsE` and `Eq1Equivalence` resolution for
   the exact `Monad_Arrow` operations and explicit `Eq1_Arrow`, for every
   fixed input type `I`.
+- `StateCoreLiftResolution` resolves and uses `ArrowTLaw` with no choice or
+  application dictionaries. `StateApplyLiftResolution` resolves and uses the
+  embedded-arrow application equation with no choice dictionary. These tests
+  import the public state-transformer reexport, not a concrete carrier.
+- Core-only tests also check `second_constant`; generic application checks
+  pure-function evaluation without choice. `LiftPureCongruenceDependencies`
+  checks pure congruence from the lift contract and supplied source congruence
+  with no source/target arrow-law dictionaries.
 
 ## Reading and build membership
 

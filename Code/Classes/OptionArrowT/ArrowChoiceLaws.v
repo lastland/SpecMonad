@@ -10,13 +10,10 @@ Section GenericOptionArrTChoiceLaws.
           `{HCL : @ArrowChoiceLaws arr HA HC HE}.
 
   Local Notation cassoc := (@comp_assoc arr HA HE HL).
-  Local Notation cidl   := (@comp_id_l arr HA HE HL).
-  Local Notation cidr   := (@comp_id_r arr HA HE HL).
   Local Notation pcomp  := (@pure_comp arr HA HE HL).
   Local Notation cprop  := (@comp_proper arr HA HE HL).
   Local Notation fpure  := (@first_pure arr HA HE HL).
   Local Notation fcomp  := (@first_comp arr HA HE HL).
-  Local Notation fprop  := (@first_proper arr HA HE HL).
   Local Notation lpure  := (@left_pure arr HA HC HE HCL).
   Local Notation lcomp  := (@left_comp arr HA HC HE HCL).
   Local Notation linl   := (@left_inl arr HA HC HE HCL).
@@ -43,90 +40,8 @@ Section GenericOptionArrTChoiceLaws.
     autounfold with opt_choice_ops;
     try reflexivity.
 
-  (* Helper: decompose L_D(L_1(g)) via lassoc_law + lnat *)
-  Local Lemma ll_decompose {B C D} (g : arr B (option C)) :
-    @arrow_eq arr HE _ _
-      (@arr_left arr HA HC _ _ D (@arr_left arr HA HC _ _ unit g))
-      (@arr_comp arr HA _ _ _
-        (@arr_pure arr HA _ _ (@assoc_sum B unit D))
-        (@arr_comp arr HA _ _ _
-          (@arr_pure arr HA _ _ (fun x : B + (unit + D) =>
-            sum_bimap (fun b : B => b)
-              (fun y : unit + D => match y with inl u => @inr D unit u | inr d => @inl D unit d end) x))
-          (@arr_comp arr HA _ _ _
-            (@arr_left arr HA HC _ _ (D + unit) g)
-            (@arr_comp arr HA _ _ _
-              (@arr_pure arr HA _ _ (fun x : option C + (D + unit) =>
-                sum_bimap (fun c0 : option C => c0)
-                  (fun y : D + unit => match y with inl d => @inr unit D d | inr u => @inl unit D u end) x))
-              (@arr_pure arr HA _ _ (@rev_assoc (option C) unit D)))))).
-  Proof.
-    etransitivity. { symmetry. apply cidr. }
-    etransitivity.
-    { apply cprop. 1: reflexivity.
-      symmetry. unfold arr_id.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
-          ((option C + unit) + D)%type
-          (option C + (unit + D))%type
-          ((option C + unit) + D)%type
-          (@assoc_sum (option C) unit D) (@rev_assoc (option C) unit D) _).
-      intros [[?|[]]|?]; reflexivity. }
-    etransitivity. { symmetry. apply cassoc. }
-    etransitivity. { apply cprop. 2: reflexivity. apply lassoc_law. }
-    etransitivity. { apply cassoc. }
-    etransitivity.
-    { apply cprop. 1: reflexivity.
-      etransitivity.
-      { apply cprop. 2: reflexivity.
-        etransitivity. { symmetry. apply cidr. }
-        apply cprop. 1: reflexivity.
-        symmetry. unfold arr_id.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
-            (option C + (unit + D))%type
-            (option C + (D + unit))%type
-            (option C + (unit + D))%type
-            (fun x : option C + (unit + D) =>
-              sum_bimap (fun c0 : option C => c0)
-                (fun y : unit + D => match y with inl u => @inr D unit u | inr d => @inl D unit d end) x)
-            (fun x : option C + (D + unit) =>
-              sum_bimap (fun c0 : option C => c0)
-                (fun y : D + unit => match y with inl d => @inr unit D d | inr u => @inl unit D u end) x) _).
-        intros [?|[[]|?]]; reflexivity. }
-      etransitivity.
-      { apply cprop. 2: reflexivity. symmetry. apply cassoc. }
-      etransitivity. { apply cassoc. }
-      etransitivity.
-      { apply cprop. 2: reflexivity.
-        apply (lnat g (fun x : unit + D => match x with inl u => @inr D unit u | inr d => @inl D unit d end)). }
-      apply cassoc. }
-    reflexivity.
-  Qed.
-
-  (* Similar decomposition for L_1(L_D(g)) *)
-  Local Lemma ll_decompose2 {B C D} (g : arr B (option C)) :
-    @arrow_eq arr HE _ _
-      (@arr_left arr HA HC _ _ unit (@arr_left arr HA HC _ _ D g))
-      (@arr_comp arr HA _ _ _
-        (@arr_pure arr HA _ _ (@assoc_sum B D unit))
-        (@arr_comp arr HA _ _ _
-          (@arr_left arr HA HC _ _ (D + unit) g)
-          (@arr_pure arr HA _ _ (@rev_assoc (option C) D unit)))).
-  Proof.
-    etransitivity. { symmetry. apply cidr. }
-    etransitivity.
-    { apply cprop. 1: reflexivity.
-      symmetry. unfold arr_id.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
-          ((option C + D) + unit)%type
-          (option C + (D + unit))%type
-          ((option C + D) + unit)%type
-          (@assoc_sum (option C) D unit) (@rev_assoc (option C) D unit) _).
-      intros [[?|?]|[]]; reflexivity. }
-    etransitivity. { symmetry. apply cassoc. }
-    etransitivity. { apply cprop. 2: reflexivity. apply lassoc_law. }
-    apply cassoc.
-  Qed.
-
+  (** Option/sum routing for arbitrary transformed arrows, used to establish
+      transformed [left_comp]. The lift law only covers lifted base arrows. *)
   Local Lemma core_opt_left {B C D} (g : arr B (option C)) :
     @arrow_eq arr HE (option B + D) (option (C + D))
       (@arr_comp arr HA _ _ _
@@ -148,7 +63,7 @@ Section GenericOptionArrTChoiceLaws.
             (@arr_pure arr HA _ _ (@collapse (C + D)))))).
   Proof.
     (* Both sides reduce to [p]>>>L_{D+1}(g)>>>[q] using lcomp, lpure,
-       ll_decompose/ll_decompose2, and pcomp fusions. *)
+       generic left associativity/context-isomorphism facts, and pure fusions. *)
 
     (* LHS: L_D([ts]>>>L_1(g)>>>[c]) >>> [rr] *)
     (* = [sbm ts id] >>> L_D(L_1 g) >>> [sbm c id] >>> [rr]  by lcomp+lpure *)
@@ -192,7 +107,20 @@ Section GenericOptionArrTChoiceLaws.
       etransitivity. { apply cprop. 1: reflexivity. apply cassoc. }
       apply cprop. 1: reflexivity.
       apply cprop. 2: reflexivity.
-      apply (ll_decompose g). }
+      etransitivity.
+      { apply (@Arrow.left_assoc_inverse arr HA HC HE HL HCL
+          (@Arrow.arr_pure_ext arr HA HE) B (option C) unit D g
+          (@rev_assoc (option C) unit D)).
+        intros [[c|[]]|d]; reflexivity. }
+      apply cprop. 1: reflexivity.
+      etransitivity.
+      { apply cprop. 2: reflexivity.
+        apply (@Arrow.left_context_iso arr HA HC HE HL HCL
+          (@Arrow.arr_pure_ext arr HA HE) B (option C) (unit + D)%type (D + unit)%type
+          g (@swap_sum unit D) (@swap_sum D unit)).
+        intros [[]|d]; reflexivity. }
+      etransitivity. { apply cassoc. }
+      apply cprop. 1: reflexivity. apply cassoc. }
 
     (* Assert RHS = [head_R] >>> L_{D+1}(g) >>> [tail_R] *)
     assert (HRHS : @arrow_eq arr HE (option B + D) (option (C + D))
@@ -230,7 +158,10 @@ Section GenericOptionArrTChoiceLaws.
       etransitivity. { apply cassoc. }
       (* L_1(L_D(g)) >>> [sbm rr id] >>> [c] *)
       apply cprop. 2: reflexivity.
-      apply (ll_decompose2 g). }
+      apply (@Arrow.left_assoc_inverse arr HA HC HE HL HCL
+        (@Arrow.arr_pure_ext arr HA HE) B (option C) D unit g
+        (@rev_assoc (option C) D unit)).
+      intros [[c|d]|[]]; reflexivity. }
 
     etransitivity. { exact HLHS. }
     symmetry. etransitivity. { exact HRHS. } symmetry.

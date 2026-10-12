@@ -17,6 +17,18 @@ Pure-map fusion and shuffle cancellation reuse core facts with explicit base
 pure-function congruence.
 No loop lifting is supplied.
 
+[TransformerLaws.v](TransformerLaws.v) proves the three lift contracts.
+Core lift preservation needs only base core laws; choice additionally needs
+base choice laws. Application uses base application laws without choice,
+reusing `arrow_ext`, `app_constant`, and `first_constant`.
+
+The private `lift_first_state` wrapper is removed; its algebra establishes
+the instance's `lift_first` field directly. Shuffle cancellation uses
+`pure_comp_ext` at its sole call site. Application construction reuses shared
+`ArrowApplyFacts.app_pure`. Its three remaining routing helpers concern
+arbitrary state arrows and establish transformed application laws; they are
+not consequences of lift preservation for base arrows.
+
 Over option the carrier becomes `arr (A * S) (option (B * S))`: failure has
 no final state. Transformer order matters. Read Core, law modules, then
 [concrete tests](../../Taxonomy/Arrows/Tests/CONTEXT.md). Generic proofs are

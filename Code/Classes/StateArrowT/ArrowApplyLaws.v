@@ -1,4 +1,4 @@
-From Incorrectness.Classes Require Import Arrow.
+From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
 From Incorrectness.Classes.StateArrowT Require Import Core.
 
 (* ================================================================= *)
@@ -45,45 +45,9 @@ Section StateArrowTApplyLaws.
     (@first_pure (stateArrT S arr) (@Arrow_stateArrT S arr HA)
       (@ArrowEq_stateArrT S arr HE) (@ArrowLaws_stateArrT S arr HA HE HL)).
 
-  (** Pure application follows from pairing and postcomposition.  The
-      stored pure arrow is replaced using [app_ext], not Coq equality. *)
-  Local Lemma app_pure {A B C} (f : A -> B -> C) :
-    eqA (first (pure (fun a => pure (f a))) >>> app)
-        (pure (fun '(a, b) => f a b)).
-  Proof.
-    set (pair := fun a : A => pure (fun b : B => (a, b))).
-    set (eval := fun '(a, b) => f a b).
-    assert (Hstored : forall a,
-      eqA (pure (f a)) (pair a >>> pure eval)).
-    { intro a. symmetry.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
-      intro b. reflexivity. }
-    assert (Hinputs :
-      eqA (first (pure (fun a => pure (f a))) >>> app)
-          (first (pure (fun a => pair a >>> pure eval)) >>> app)).
-    { etransitivity.
-      { apply cprop. 2: reflexivity. apply fpure. }
-      symmetry. etransitivity.
-      { apply cprop. 2: reflexivity. apply fpure. }
-      apply aext. intros [a b]. split.
-      - symmetry. apply Hstored.
-      - reflexivity. }
-    etransitivity. { exact Hinputs. }
-    transitivity ((first (pure pair) >>> app) >>> pure eval).
-    - symmetry. etransitivity. { apply cassoc. }
-      etransitivity.
-      { apply cprop. 1: reflexivity. symmetry. apply apost. }
-      etransitivity. { symmetry. apply cassoc. }
-      apply cprop. 2: reflexivity.
-      etransitivity. { symmetry. apply fcomp. }
-      apply fprop. apply pcomp.
-    - etransitivity.
-      { apply cprop. 2: reflexivity. apply aunit. }
-      apply cidl.
-  Qed.
-
   (** State application only reassociates the selected arrow, argument,
-      and state before invoking base application. *)
+       and state before invoking base application. This normalization is for
+       arbitrary transformed arrows, not merely arrows lifted from the base. *)
   Local Lemma state_pure_app {X A B}
     (u : X -> stateArrT S arr A B * A) :
     eqA (spure u >>> sapp)
@@ -96,6 +60,7 @@ Section StateArrowTApplyLaws.
     intros [x s]. destruct (u x). reflexivity.
   Qed.
 
+  (** Combine transformed [first_pure] with carrier-level application routing. *)
   Local Lemma state_first_pure_app {A B C}
     (f : A -> stateArrT S arr B C) :
     eqA (sfirst (spure f) >>> sapp)
@@ -113,7 +78,8 @@ Section StateArrowTApplyLaws.
     intros [[a b] s]. reflexivity.
   Qed.
 
-  (** Moving the state beside the argument commutes with [second]. *)
+  (** Moving state beside the argument commutes with [second] on arbitrary
+      transformed arrows. This is carrier reassociation, not lift preservation. *)
   Local Lemma state_second_assoc {A B C} (g : stateArrT S arr A B) :
     eqA (ssecond g >>> pure (@assoc_prod C B S))
         (pure (@assoc_prod C A S) >>> @arr_second arr HA _ _ C g).
@@ -180,7 +146,8 @@ Section StateArrowTApplyLaws.
         (spure (fun p : A * B => p))).
       etransitivity. { apply state_first_pure_app. }
       etransitivity.
-      { apply cprop. 1: reflexivity. apply app_pure. }
+       { apply cprop. 1: reflexivity.
+         apply (@ArrowApplyFacts.app_pure arr HA HAA HE HL HAAL). }
       unfold arr_pure, Arrow_stateArrT.
       apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
       intros [[a b] s]. reflexivity.

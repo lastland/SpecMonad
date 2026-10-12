@@ -73,18 +73,6 @@ Section StateArrowTEqLaws.
     arrow_eq_equiv := fun A B => @arrow_eq_equiv arr _ (A * S) (B * S)
   }.
 
-  (** The state shuffles compose to identity (out then in). *)
-  Local Lemma shuffle_cancel (A C : Type) :
-    @arrow_eq arr _ ((A * S) * C) ((A * S) * C)
-      (@arr_comp arr _ _ _ _
-        (@arr_pure arr _ _ _ (@state_shuffle_out S A C))
-        (@arr_pure arr _ _ _ (@state_shuffle_in S A C)))
-      (@arr_id arr _ _).
-  Proof.
-    apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
-    intros [[a s0] c]. reflexivity.
-  Qed.
-
   #[global]
   Instance ArrowLaws_stateArrT : ArrowLaws (stateArrT S arr).
   Proof.
@@ -126,7 +114,9 @@ Section StateArrowTEqLaws.
         apply comp_proper. 1: reflexivity.
         etransitivity. { symmetry. apply comp_assoc. }
         apply comp_proper. 2: reflexivity.
-        apply shuffle_cancel. }
+        transitivity (@arr_id arr Harr ((B * S) * D)%type). 2: reflexivity.
+        apply (@Arrow.pure_comp_ext arr Harr Heq HL (@Arrow.arr_pure_ext arr Harr Heq)).
+        intros [[a s0] c]. reflexivity. }
       etransitivity.
       { apply comp_proper. 1: reflexivity.
         apply comp_proper. 1: reflexivity.

@@ -75,6 +75,26 @@ Arguments morphism_first {src dst SA SC SX SE DA DC DX DE map} _ {A B C} _.
 Arguments morphism_left {src dst SA SC SX SE DA DC DX DE map} _ {A B C} _.
 Arguments morphism_app {src dst SA SC SX SE DA DC DX DE map} _ {A B}.
 
+(** Explicit packaging only: transformer lift laws do not depend on this
+    record or on the separate transport of morphisms through transformers. *)
+Definition arrowT_lift_morphism
+  (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+  (arr : Type -> Type -> Type)
+  (SA : Arrow arr) (SC : @ArrowChoice arr SA) (SX : @ArrowApply arr SA)
+  (SE : ArrowEq arr)
+  (DA : Arrow (T arr)) (DC : @ArrowChoice (T arr) DA)
+  (DX : @ArrowApply (T arr) DA) (DE : ArrowEq (T arr))
+  (L : ArrowTLaw T HT arr SA SE DA DE)
+  (CL : ArrowChoiceTLaw T HT arr SA SC SE DA DC DE)
+  (XL : ArrowApplyTLaw T HT arr SA SX SE DA DX DE) :
+  ArrowMorphism SA SC SX SE DA DC DX DE (@arrowT_lift T HT arr SA) :=
+  {| morphism_proper := @lift_proper T HT arr SA SE DA DE L;
+     morphism_pure := @lift_pure T HT arr SA SE DA DE L;
+     morphism_comp := @lift_comp T HT arr SA SE DA DE L;
+     morphism_first := @lift_first T HT arr SA SE DA DE L;
+     morphism_left := @lift_left T HT arr SA SC SE DA DC DE CL;
+     morphism_app := @lift_app T HT arr SA SX SE DA DX DE XL |}.
+
 (** An independent Leibniz dictionary, never a global instance. *)
 Definition ArrowEq_leibniz (arr : Type -> Type -> Type) : ArrowEq arr :=
   {| arrow_eq := fun A B => @eq (arr A B);

@@ -42,7 +42,10 @@ Section GenericOptionArrTLaws.
     fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
          (@arr_left arr HA HC) (@arrow_eq arr HE) (@arrow_eq_equiv arr HE).
 
-  (** Composition with a pure arrow reduces to ordinary base composition. *)
+  (** Composition with a pure arrow reduces to ordinary base composition.
+      These cross-carrier normalizations cover arbitrary option arrows and
+      establish the transformed core laws; lift preservation cannot replace
+      them, since it concerns only the image of the base lift. *)
   Lemma optionArrT_comp_pure_l {A B C} (u : A -> B)
     (f : optionArrT arr B C) :
     @arrow_eq arr HE _ _

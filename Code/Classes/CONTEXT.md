@@ -13,6 +13,10 @@ congruence explicitly, so callers can supply congruence independently of
 application laws. `arr_pure_ext` supplies the functional-extensionality-based
 form; `ArrowApplyFacts.pure_ext` derives the same congruence constructively
 from application coherence.
+`second_constant` derives the companion law for the derived second operation
+from these core facts. `left_assoc_inverse` and `left_context_iso` derive
+inverse-associator and untouched-branch conjugation equations from core/choice
+laws with supplied pure congruence, independently of application.
 
 `ArrowApplyLaws` has static application, `app_unit`, `app_precompose`,
 `app_postcompose`, and pair-valued `app_ext`, a registered `Proper` field for
@@ -23,6 +27,8 @@ The option and state transformers lift this full contract algebraically.
 [ArrowApplyFacts.v](ArrowApplyFacts.v) derives extensional reasoning;
 its `app_constant` needs only the fixed-arrow application equation alongside
 core laws. The dynamic-pure fact `app_constant_unit` uses application coherence.
+`app_pure` derives dynamic pure-function evaluation from the same contract;
+state application laws reuse it rather than proving a private copy.
 [ArrowMonad.v](ArrowMonad.v) defines operations and laws at every fixed input
 `I`, with explicit `Eq1_Arrow HE I`. `bind_arrow_unit` remains a corollary.
 
@@ -33,6 +39,17 @@ arrow-derived monads at any fixed input.
 bind semantics from faithful relational presentations; it does not add
 well-formedness fields to concrete carriers. Loop has its own laws; neither
 transformer supplies loop lifting. `ArrowT` alone asserts no preservation laws.
+
+`ArrowTLaw` asserts lift properness and preservation of pure, composition,
+and first under explicit source/target Arrow and ArrowEq dictionaries.
+`ArrowChoiceTLaw` and `ArrowApplyTLaw` are independent Prop classes; the
+application equation converts the embedded source arrow with the same lift.
+These contracts neither imply transformed-arrow laws nor include morphism
+transport. Both transformers export instances from `TransformerLaws.v`.
+`arrowT_lift_morphism` explicitly packages the three contracts as an
+`ArrowMorphism`; it is not a global instance.
+`lift_pure_congr` derives target pure congruence from `ArrowTLaw` and explicit
+source pure congruence, with no source/target arrow-law premises.
 
 - [ArrowMorphism.v](ArrowMorphism.v) uses an ordinary `ArrowMorphism` record
   with explicit operation and equality dictionaries:

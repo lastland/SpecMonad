@@ -40,6 +40,12 @@ exercise the direct-Rel conversions and their higher-order application behavior.
 Plain definitions register no helper instances: `:= _` checks automatic
 resolution; explicit generic applications check specialization.
 
+`LiftLaws` resolves all three lift contracts for option over Rel, double
+option, and state over option, with selected dictionaries. It checks the
+explicit lift-to-morphism bridge and rewrites with lift composition under
+pointwise Rel equality. ASP/DSLP clients use pointwise transformer iff for
+lift properness/composition without reflecting it into ordinary equality.
+
 The generic contract is tested in
 [ArrowMonadRegression.v](../../../Classes/Tests/ArrowMonadRegression.v), including
 an application satisfying the fixed-arrow law but breaking monad right identity.

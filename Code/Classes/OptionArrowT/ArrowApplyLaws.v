@@ -1,5 +1,5 @@
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts.
-From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws.
+From Incorrectness.Classes.OptionArrowT Require Import Core ArrowLaws TransformerLaws.
 
 (* ================================================================= *)
 (** ** Generic [ArrowApplyLaws] for [optionArrT]                      *)
@@ -27,17 +27,14 @@ Section GenericOptionArrTApplyLaws.
   Local Notation ocprop := (@comp_proper _ OA OE OL).
   Local Notation ofpure := (@first_pure _ OA OE OL).
 
-  (** Lift constructive base congruence through [Some], independently of
-      the transformed application laws being proved below. *)
-  Local Lemma option_pure_ext {X Y} (u v : X -> Y)
-    (H : forall x, u x = v x) :
-    @arrow_eq _ OE X Y (@arr_pure _ OA X Y u) (@arr_pure _ OA X Y v).
-  Proof.
-    exact (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAAL X (option Y)
-      (fun x => Some (u x)) (fun x => Some (v x))
-      (fun x => f_equal (@Some Y) (H x))).
-  Qed.
+  (** Use the core lift contract, not the application instance under construction. *)
+  Local Notation opure_congr :=
+    (@lift_pure_congr optionArrT ArrowT_optionArrT arr HA HE OA OE
+      (@ArrowTLaw_optionArrT arr HA HC HE HL HCL)
+      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAAL)).
 
+  (** This ranges over all option arrows, not just arrows in the lift's
+      image. It bootstraps application coherence using base extensionality. *)
   Local Lemma option_arr_ext {A B} (f g : optionArrT arr A B) :
     (forall a : A, @arrow_eq _ OE _ _
       (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun _ : unit => a)) f)
@@ -50,6 +47,8 @@ Section GenericOptionArrTApplyLaws.
     apply optionArrT_comp_pure_l.
   Qed.
 
+  (** The static equation is needed before the complete transformed law
+      dictionary exists; later fields use it through [app_constant]. *)
   Local Lemma option_app_law {A B} (f : optionArrT arr A B) :
     @arrow_eq _ OE _ _
       (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun a => (f, a)))
@@ -57,28 +56,6 @@ Section GenericOptionArrTApplyLaws.
   Proof.
     etransitivity. { apply optionArrT_comp_pure_l. }
     apply alaw.
-  Qed.
-
-  (** Naturality and [first_fst] allow a fixed value to pass beside an
-      arbitrary effectful arrow. *)
-  Local Lemma option_second_const {A B C}
-    (f : optionArrT arr A B) (c : C) :
-    @arrow_eq _ OE _ _
-      (@arr_comp _ OA _ _ _ (@arr_pure _ OA _ _ (fun a => (c, a)))
-        (@arr_second _ OA _ _ _ f))
-      (@arr_comp _ OA _ _ _ f (@arr_pure _ OA _ _ (fun b => (c, b)))).
-  Proof.
-    unfold arr_second.
-    etransitivity. { symmetry. apply ocassoc. }
-    etransitivity. { apply ocprop. 2: reflexivity. apply opcomp. }
-    etransitivity. { symmetry. apply ocassoc. }
-    etransitivity.
-    { apply ocprop. 2: reflexivity.
-      apply (@Arrow.first_constant _ OA OE OL (@option_pure_ext)). }
-    etransitivity. { apply ocassoc. }
-    apply ocprop. 1: reflexivity.
-    apply (@pure_comp_ext _ OA OE OL (@option_pure_ext)).
-    intro b. reflexivity.
   Qed.
 
   #[global]
@@ -121,7 +98,8 @@ Section GenericOptionArrTApplyLaws.
       { apply ocprop. 2: reflexivity.
         etransitivity. { apply ocprop. 2: reflexivity. exact Hpair. }
         etransitivity. { apply ocassoc. }
-        apply ocprop. 1: reflexivity. apply option_second_const. }
+        apply ocprop. 1: reflexivity.
+        apply (@Arrow.second_constant _ OA OE OL (@opure_congr)). }
       etransitivity. { apply ocassoc. }
       apply ocprop. 1: reflexivity.
       etransitivity. { apply ocassoc. }

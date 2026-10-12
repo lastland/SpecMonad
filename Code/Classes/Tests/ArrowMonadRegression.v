@@ -3,6 +3,7 @@
 From Coq Require Import FunctionalExtensionality RelationClasses.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Classes Require Import Arrow ArrowApplyFacts ArrowMonad.
+From Incorrectness.Classes Require Import StateArrowT.
 
 (** These checks guard the helpers' dependency boundary: core facts need
     ordinary pure congruence, and static application needs its fixed-arrow
@@ -28,6 +29,13 @@ Section CoreFactDependencies.
       (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ f) (@arr_pure arr HA _ _ g))
       (@arr_pure arr HA _ _ h) :=
     @Arrow.pure_comp_ext arr HA HE HL pure_congr A B C f g h H.
+
+  Definition second_constant_core_only {A B C} (f : arr A B) (c : C) :
+    @arrow_eq arr HE A (C * B)%type
+      (@arr_comp arr HA _ _ _ (@arr_pure arr HA _ _ (fun a => (c, a)))
+        (@arr_second arr HA A B C f))
+      (@arr_comp arr HA _ _ _ f (@arr_pure arr HA _ _ (fun b => (c, b)))) :=
+    @Arrow.second_constant arr HA HE HL pure_congr A B C f c.
 End CoreFactDependencies.
 
 Section StaticApplicationDependencies.
@@ -136,4 +144,70 @@ Section GenericResolution.
   Definition generic_equality_equivalence (I : Type) :
     @Eq1Equivalence (arr I) (@Monad_Arrow arr HA HAA I)
       (@Eq1_Arrow arr HE I) := _.
+
+  Definition generic_pure_application {A B C} (f : A -> B -> C) :
+    @arrow_eq arr HE (A * B)%type C
+      (@arr_comp arr HA _ _ _
+        (@arr_first arr HA A (arr B C) B
+          (@arr_pure arr HA _ _ (fun a => @arr_pure arr HA B C (f a))))
+        (@arr_app arr HA HAA B C))
+      (@arr_pure arr HA _ _ (fun '(a, b) => f a b)) :=
+    @ArrowApplyFacts.app_pure arr HA HAA HE HL HAL A B C f.
 End GenericResolution.
+
+(** Neither source nor target law dictionaries are needed beyond the
+    lift contract and explicit source pure congruence. *)
+Section LiftPureCongruenceDependencies.
+  Context (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+    (arr : Type -> Type -> Type) (SA : Arrow arr) (SE : ArrowEq arr)
+    (DA : Arrow (T arr)) (DE : ArrowEq (T arr))
+    (L : ArrowTLaw T HT arr SA SE DA DE).
+  Variable pure_congr : forall X Y (u v : X -> Y), (forall x, u x = v x) ->
+    @arrow_eq arr SE X Y (@arr_pure arr SA X Y u) (@arr_pure arr SA X Y v).
+
+  Definition lifted_pure_congruence {X Y} (u v : X -> Y) (H : forall x, u x = v x) :
+    @arrow_eq (T arr) DE X Y (@arr_pure (T arr) DA X Y u) (@arr_pure (T arr) DA X Y v) :=
+    @lift_pure_congr T HT arr SA SE DA DE L pure_congr X Y u v H.
+End LiftPureCongruenceDependencies.
+
+(** No choice or application dictionary is in scope for this core lift. *)
+Section StateCoreLiftResolution.
+  Context (S : Type) {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HE : ArrowEq arr} {HL : @ArrowLaws arr HA HE}.
+
+  Definition state_core_lift :
+    ArrowTLaw (stateArrT S) (ArrowT_stateArrT S) arr HA HE
+      (@Arrow_stateArrT S arr HA) (@ArrowEq_stateArrT S arr HE) := _.
+
+  Definition state_first_lift {A B C} (f : arr A B) :
+    @arrow_eq (stateArrT S arr) (@ArrowEq_stateArrT S arr HE) _ _
+      (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) arr HA _ _
+        (@arr_first arr HA A B C f))
+      (@arr_first (stateArrT S arr) (@Arrow_stateArrT S arr HA) A B C
+        (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) arr HA A B f)) :=
+    @lift_first _ _ _ _ _ _ _ state_core_lift A B C f.
+End StateCoreLiftResolution.
+
+(** Application preservation must resolve without choice operations/laws. *)
+Section StateApplyLiftResolution.
+  Context (S : Type) {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HX : @ArrowApply arr HA} {HE : ArrowEq arr}
+    {HL : @ArrowLaws arr HA HE} {HXL : @ArrowApplyLaws arr HA HX HE}.
+
+  Definition state_apply_lift :
+    ArrowApplyTLaw (stateArrT S) (ArrowT_stateArrT S) arr HA HX HE
+      (@Arrow_stateArrT S arr HA) (@ArrowApply_stateArrT S arr HA HX)
+      (@ArrowEq_stateArrT S arr HE) := _.
+
+  Definition state_app_lift (A B : Type) :
+    @arrow_eq (stateArrT S arr) (@ArrowEq_stateArrT S arr HE) _ _
+      (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S) arr HA _ _
+        (@arr_app arr HA HX A B))
+      (@arr_comp (stateArrT S arr) (@Arrow_stateArrT S arr HA) _ _ _
+        (@arr_pure (stateArrT S arr) (@Arrow_stateArrT S arr HA) _ _
+          (fun '(f, a) => (@arrowT_lift (stateArrT S) (ArrowT_stateArrT S)
+            arr HA A B f, a)))
+        (@arr_app (stateArrT S arr) (@Arrow_stateArrT S arr HA)
+          (@ArrowApply_stateArrT S arr HA HX) A B)) :=
+    @lift_app _ _ _ _ _ _ _ _ _ state_apply_lift A B.
+End StateApplyLiftResolution.

@@ -21,5 +21,21 @@ application equations while constructing the transformed application laws.
 There is no generic loop lift. `None`'s exception/divergence interpretation
 belongs to a computation or observation, not this transformer.
 
+[TransformerLaws.v](TransformerLaws.v) proves core and choice lift preservation
+from base core/choice laws, and application preservation additionally from
+base application laws. Composition/application reuse `optionArrT_comp_pure_l`;
+dynamic application also reuses `app_postcompose_pure`. These lift contracts
+are separate from the transformed-arrow law packages and morphism transport.
+
+Application-law construction now imports `TransformerLaws` (which depends
+only on Core/ArrowLaws) to obtain pure congruence via `lift_pure_congr`.
+Constant-second reasoning uses the transformed core laws' shared
+`second_constant`; choice reassociation uses shared `left_assoc_inverse` and
+`left_context_iso`. Private copies are removed. `option_arr_ext` and
+`option_app_law` remain bootstrap facts: the full transformed application
+dictionary is not yet available. The pure-composition normalizations and
+`core_opt_left` concern arbitrary option arrows and their carrier routing,
+not just the image of lift; they establish transformed core/choice laws.
+
 Read Core → relevant law module → [concrete tests](../../Taxonomy/Arrows/Tests/CONTEXT.md).
 For state over option, continue to [StateArrowT](../StateArrowT/CONTEXT.md).

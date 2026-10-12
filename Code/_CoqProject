@@ -10,10 +10,12 @@ Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
 Classes/OptionArrowT/ArrowChoiceLaws.v
 Classes/OptionArrowT/ArrowApplyLaws.v
+Classes/OptionArrowT/TransformerLaws.v
 Classes/OptionArrowT.v
 Classes/StateArrowT/Core.v
 Classes/StateArrowT/ArrowChoiceLaws.v
 Classes/StateArrowT/ArrowApplyLaws.v
+Classes/StateArrowT/TransformerLaws.v
 Classes/StateArrowT.v
 Classes/ArrowMorphism.v
 Classes/RelArrowCoherence.v
