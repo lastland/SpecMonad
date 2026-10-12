@@ -30,7 +30,6 @@ Section GenericOptionArrTLaws.
   Local Notation lcomp    := (@left_comp arr HA HC HE HCL).
   Local Notation linl     := (@left_inl arr HA HC HE HCL).
   Local Notation lassoc   := (@left_assoc arr HA HC HE HCL).
-  Local Notation linr     := (@left_inr arr HA HC HE HCL).
   Local Notation lnat     := (@left_natural arr HA HC HE HCL).
   Local Notation lprop    := (@left_proper arr HA HC HE HCL).
 
@@ -43,7 +42,10 @@ Section GenericOptionArrTLaws.
     fold (@arr_comp arr HA) (@arr_pure arr HA) (@arr_first arr HA)
          (@arr_left arr HA HC) (@arrow_eq arr HE) (@arrow_eq_equiv arr HE).
 
-  (** Composition with a pure arrow reduces to ordinary base composition. *)
+  (** Composition with a pure arrow reduces to ordinary base composition.
+      These cross-carrier normalizations cover arbitrary option arrows and
+      establish the transformed core laws; lift preservation cannot replace
+      them, since it concerns only the image of the base lift. *)
   Lemma optionArrT_comp_pure_l {A B C} (u : A -> B)
     (f : optionArrT arr B C) :
     @arrow_eq arr HE _ _
@@ -84,7 +86,7 @@ Section GenericOptionArrTLaws.
     etransitivity.
     { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply lpure. }
     etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-    apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+    apply (@Arrow.pure_comp_ext arr HA HE HL).
     intros [b|]; reflexivity.
   Qed.
 
@@ -101,7 +103,7 @@ Section GenericOptionArrTLaws.
       assert (Hid : @arrow_eq arr HE _ _
         (@arr_pure arr HA _ _ (@option_map B B (fun x : B => x)))
         (@arr_pure arr HA _ _ (fun x => x))).
-      { apply (@Arrow.arr_pure_ext arr HA HE). intros [?|]; reflexivity. }
+      { apply (@Arrow.pure_proper arr HA HE HL). intros [?|]; reflexivity. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hid. }
       apply cidr.
     - (* comp_assoc *)
@@ -152,7 +154,7 @@ Section GenericOptionArrTLaws.
               (@arr_pure arr HA _ _ (sum_bimap (fun c0 : C => c0) (fun _ : unit + unit => tt)))))).
         { symmetry.
           etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[c0|]|[]]; reflexivity. }
 
         (* E12: [sbm id ctt] >>> Lh = L'h >>> [sbm id ctt]   (from lnat symmetry) *)
@@ -186,7 +188,7 @@ Section GenericOptionArrTLaws.
         { etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
           etransitivity. { apply pcomp. }
           symmetry.
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[od|]|[]]; reflexivity. }
 
         (* E45a: [sbm ts id] = L[ts] *)
@@ -365,7 +367,7 @@ Section GenericOptionArrTLaws.
       exact H.
     - (* first_pure *)
       etransitivity. { apply cprop. 2: reflexivity. apply fpure. }
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [a c]. reflexivity.
     - (* first_comp *)
       (* Distribute arr_first over base composition, then move the carried
@@ -438,7 +440,7 @@ Section GenericOptionArrTLaws.
         (* [sbm seq id] >>> [sbm id g] >>> [c] *)
         etransitivity. { symmetry. apply cassoc. }
         etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[oc d]|[[] d]]; [destruct oc|]; reflexivity. }
 
       (* Prove the tail: [Fts] >>> F(Lg) >>> [Fc] >>> [seq]
@@ -478,7 +480,7 @@ Section GenericOptionArrTLaws.
         { apply cprop. 1: reflexivity.
           apply cprop. 1: reflexivity.
           symmetry.
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
+          apply (@Arrow.pure_comp_ext arr HA HE HL
               ((option C + unit) * D)%type
               ((option C * D) + (unit * D))%type
               (option (C * D))
@@ -537,7 +539,7 @@ Section GenericOptionArrTLaws.
         etransitivity.
         { apply cprop. 2: reflexivity.
           symmetry.
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
+          apply (@Arrow.pure_comp_ext arr HA HE HL
               (option B * D)%type
               (option (B * D))
               ((B * D) + unit)%type
@@ -564,7 +566,7 @@ Section GenericOptionArrTLaws.
           (@arr_pure arr HA _ _ (@sequence_option B C))
           (@arr_pure arr HA _ _ (option_map (@fst B C))))
         (@arr_pure arr HA _ _ (@fst (option B) C))).
-      { apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      { apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [ob c0]; destruct ob; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hfused. }
@@ -593,7 +595,7 @@ Section GenericOptionArrTLaws.
         etransitivity.
         { apply pcomp. }
         symmetry.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[ob c0] d0]; destruct ob; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 2: reflexivity. apply fcomp. }
@@ -627,13 +629,17 @@ Section GenericOptionArrTLaws.
           (@arr_pure arr HA _ _ (@sequence_option B D)))).
       { etransitivity. { apply pcomp. }
         symmetry.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[b|] c]; reflexivity. }
       etransitivity. { apply cassoc. }
       etransitivity. { apply cprop. 1: reflexivity. exact Hsequence. }
       etransitivity. { symmetry. apply cassoc. }
       etransitivity. { apply cprop. 2: reflexivity. apply fnat. }
       apply cassoc.
+    - (* pure_proper: only the selected base pure field is needed. *)
+      intros f g H.
+      apply (@Arrow.pure_proper arr HA HE HL).
+      intro x. rewrite (H x). reflexivity.
   Qed.
 
 End GenericOptionArrTLaws.

@@ -14,8 +14,11 @@ The selected reports cover:
 - Core algebraic arrow helpers in [Arrow.v](../../../Code/Lib/Arrow/Arrow.v) and
   [ArrowApplyFacts.v](../../../Code/Lib/Arrow/ArrowApplyFacts.v), the fixed-input monad laws,
   and the option/state core, choice, and application law packages. The helpers
-  take congruence or fixed-arrow application equations explicitly; the monad
-  derives congruence from application coherence.
+  obtain pure congruence from their core laws or take a fixed-arrow application
+  equation explicitly. `lift_pure_proper` retains its separate source congruence
+  premise without target laws. The audit also reports the shared relational
+  core laws and equality-reflection transport, PrePost/RelPrePost/WP core laws,
+  and the exact-equality `WrongIndex` regression's core laws.
 - The outcome laws of
   [Computation.v](../../../Code/Verification/DivNonDet/Computation.v): bind on
   `divnd`, absorption of divergence, blocking of the empty prefix, and bind

@@ -4,13 +4,14 @@ From Incorrectness.Lib.Arrow Require Import
 From Incorrectness.SP Require Import
   SPostArr DSPASLPArr.
 From Incorrectness.Relational Require Import
-  RelSPostArr.
+  RelSPostArr Rel.
 From Incorrectness.SP Require Import
   SPostArrEquiv.
 From Incorrectness.PTMonadTaxonomy Require Import
   TransformerRelations.
 From Incorrectness.GaloisConnections Require Import
-  GaloisArr.
+  GaloisArr PrePostArr RelPrePostArr WPArr.
+From Incorrectness.Tests Require Import ArrowMonadRegression.
 From Incorrectness.SP Require
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.GaloisConnections Require
@@ -19,9 +20,12 @@ From Incorrectness.Verification.DivNonDet Require Import Computation.
 From Incorrectness.Verification.DivNonDetSt Require Import Computation.
 From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
 
-(** Shared algebraic helpers take their congruence/application premises
-    explicitly. Generic monad laws derive pure congruence constructively;
-    transformer law packages retain their existing extensionality dependency. *)
+(** Core laws now supply pointwise pure congruence. The lift helper still
+    takes source congruence independently of target core laws. Option law
+    packages use the selected base field; state core laws retain their existing
+    extensionality uses. These reports are conditional on their dictionaries. *)
+Print Assumptions Arrow.pure_proper.
+Print Assumptions Arrow.lift_pure_proper.
 Print Assumptions Arrow.first_constant.
 Print Assumptions Arrow.pure_comp_ext.
 Print Assumptions ArrowApplyFacts.app_constant.
@@ -32,6 +36,12 @@ Print Assumptions ArrowApplyLaws_optionArrT.
 Print Assumptions ArrowLaws_stateArrT.
 Print Assumptions ArrowChoiceLaws_stateArrT.
 Print Assumptions ArrowApplyLaws_stateArrT.
+Print Assumptions RelArrowCoherence.rel_arrow_laws.
+Print Assumptions RelArrowCoherence.rel_arrow_laws_leibniz.
+Print Assumptions PrePostArr.ArrowLaws_PrePost.
+Print Assumptions RelPrePostArr.ArrowLaws_RelPrePost.
+Print Assumptions WPArr.ArrowLaws_WPArr.
+Print Assumptions WrongIndex.arrow_laws.
 
 (** Computation-owned outcome laws use pointwise equivalence and are
     closed under the global context. *)

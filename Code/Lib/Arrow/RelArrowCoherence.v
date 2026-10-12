@@ -1208,6 +1208,8 @@ Section SemanticLaws.
       split; intros [H1 H2]; (split; [apply H_rel, H1 | exact H2]).
     - apply rel_arrow_eq. intros [a c] [b d].
       apply (rel_first_natural_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_first arr HA HRA)).
+    - intros f g H. apply (@rel_arrow_eq arr HA HE HRA HRE).
+      intros a b. rewrite !(@rel_pure arr HA HRA), (H a). reflexivity.
   Qed.
 
   Section SemanticChoiceLaws.
@@ -1224,8 +1226,6 @@ Section SemanticLaws.
         apply (rel_left_inl_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
       - apply rel_arrow_eq. intros x y.
         apply (rel_left_assoc_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
-      - apply rel_arrow_eq. intros c y.
-        apply (rel_left_inr_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
       - apply rel_arrow_eq. intros x y.
         apply (rel_left_natural_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
       - apply rel_arrow_eq. intros [ac d] q.
@@ -1243,7 +1243,7 @@ Section SemanticLaws.
 
     #[global] Instance rel_arrow_apply_laws : ArrowApplyLaws arr.
     Proof.
-      constructor; intros.
+      constructor; [intros | intros | intros | intros | intros X A B u v H].
       - apply rel_arrow_eq. intros a b.
         apply (rel_app_law_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_app arr HA HAA HRA HRAA)).
       - apply rel_arrow_eq. intros [a b] q.
@@ -1257,6 +1257,7 @@ Section SemanticLaws.
         destruct (u x) as [fu au] eqn:Hu, (v x) as [fv av] eqn:Hv.
         destruct (H x) as [Harr Hsnd].
         rewrite Hu, Hv in Harr, Hsnd. cbn in Harr, Hsnd.
+        change (au = av) in Hsnd.
         subst av.
         split; intros [y [Hp Ha]].
         + apply rel_pure in Hp. rewrite Hu in Hp. subst y.
@@ -1299,6 +1300,7 @@ Section LeibnizBridge.
     - intros x y -> z w ->. reflexivity.
     - intros x y ->. reflexivity.
     - apply rel_ext. apply (@first_natural arr HA HE HL).
+    - intros f g H. apply rel_ext. exact (@pure_proper arr HA HE HL _ _ f g H).
   Qed.
 
   Lemma rel_arrow_choice_laws_leibniz
@@ -1311,7 +1313,6 @@ Section LeibnizBridge.
     - apply rel_ext. apply (@left_comp arr HA HC HE HCL).
     - apply rel_ext. apply (@left_inl arr HA HC HE HCL).
     - apply rel_ext. apply (@left_assoc arr HA HC HE HCL).
-    - apply rel_ext. apply (@left_inr arr HA HC HE HCL).
     - apply rel_ext. apply (@left_natural arr HA HC HE HCL).
     - apply rel_ext. apply (@first_left_dist arr HA HC HE HCL).
     - intros x y ->. reflexivity.

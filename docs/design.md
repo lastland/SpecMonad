@@ -752,7 +752,7 @@ and `state_arrow_morphism` directly.
 
 Inverse and lift proofs use the existing core/choice/application laws under
 the selected equality dictionaries. Inverse application uses `app_ext`; state
-lifting uses the law-derived `pure_ext`. See the
+lifting uses the core `pure_proper` field. See the
 [Lib contract](agents/context/Lib.md#contracts)
 for each generic theorem's law requirements. The direct-Rel equivalences do
 not reflect `Rel_eq` into ordinary equality or use Leibniz law dictionaries.

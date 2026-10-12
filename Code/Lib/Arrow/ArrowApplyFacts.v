@@ -112,14 +112,32 @@ Section ArrowApplyFacts.
     apply app_eta.
   Qed.
 
-  (** Pure extensionality follows from application coherence as well;
-      the derivation does not need functional extensionality as an axiom. *)
-  Lemma pure_ext {A B} (f g : A -> B) :
-    (forall x, f x = g x) -> eqA (pure f) (pure g).
+  (** Dynamic application of a pure function is evaluation. *)
+  Lemma app_pure {A B C} (f : A -> B -> C) :
+    eqA (@arr_first arr HA _ _ B (pure (fun a => pure (f a))) >>> app)
+        (pure (fun '(a, b) => f a b)).
   Proof.
-    intro H. apply arrow_ext. intro a.
-    etransitivity. { apply pcomp. }
-    symmetry. etransitivity. { apply pcomp. }
-    cbn. rewrite H. reflexivity.
+    set (pair := fun a : A => pure (fun b : B => (a, b))).
+    set (eval := fun '(a, b) => f a b).
+    assert (Hstored : forall a, eqA (pure (f a)) (pair a >>> pure eval)).
+    { intro a. symmetry.
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
+      intro b. reflexivity. }
+    assert (Hinputs :
+      eqA (@arr_first arr HA _ _ B (pure (fun a => pure (f a))) >>> app)
+          (@arr_first arr HA _ _ B (pure (fun a => pair a >>> pure eval)) >>> app)).
+    { etransitivity. { apply cprop. 2: reflexivity. apply fpure. }
+      symmetry. etransitivity. { apply cprop. 2: reflexivity. apply fpure. }
+      apply aext. intros [a b]. split; [symmetry; apply Hstored | reflexivity]. }
+    etransitivity. { exact Hinputs. }
+    transitivity ((@arr_first arr HA _ _ B (pure pair) >>> app) >>> pure eval).
+    - symmetry. etransitivity. { apply cassoc. }
+      etransitivity. { apply cprop. 1: reflexivity. symmetry. apply apost. }
+      etransitivity. { symmetry. apply cassoc. }
+      apply cprop. 2: reflexivity.
+      etransitivity. { symmetry. apply (@first_comp arr HA HE HL). }
+      apply (@first_proper arr HA HE HL). apply pcomp.
+    - etransitivity. { apply cprop. 2: reflexivity. apply aunit. }
+      apply cidl.
   Qed.
 End ArrowApplyFacts.

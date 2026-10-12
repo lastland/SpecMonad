@@ -316,6 +316,8 @@ Proof.
       inversion Heq; subst. exists (a, g c). cbn. auto.
     + intros [[a' d'] [Heq [Hf Hd]]]. inversion Heq; subst.
       exists (b, c). cbn. auto.
+  - (* pure_proper *)
+    intros f g H a b. cbn. rewrite (H a). reflexivity.
 Qed.
 
 #[global]
@@ -359,11 +361,6 @@ Proof.
     all: first [ exists (inl a) | exists (inl (inl b))
                 | exists (inr (inl c')) | exists (inl (inr c'))
                 | exists (inr (inr d')) | exists (inr d') ]; eauto.
-  - (* left_inr *)
-    intros c y; unfold_Rel_full. split.
-    + intros [x [Hinr Hleft]]. subst x.
-      destruct y as [b|c']; simpl in Hleft; [contradiction | f_equal; exact Hleft].
-    + intros Heq. subst y. exists (inr c). simpl. auto.
   - (* left_natural *)
     intros x y.
     destruct x as [a0|c0]; destruct y as [b0|d0]; unfold_Rel_full;
@@ -412,7 +409,7 @@ Qed.
 Instance ArrowApplyLaws_Rel
   : @ArrowApplyLaws Rel Arrow_Rel ArrowApply_Rel ArrowEq_Rel.
 Proof.
-  constructor; intros.
+  constructor; [intros | intros | intros | intros | intros X A B u v H].
   - (* app_law *)
     intros a b; unfold_Rel_full. sauto limit: 200.
   - (* app_unit *)
@@ -446,7 +443,7 @@ Proof.
   - (* app_ext *)
     intros x b. cbn. specialize (H x).
     destruct (u x) as [f a], (v x) as [g a']; cbn in H.
-    destruct H as [Hfg Ha]. subst a'.
+    destruct H as [Hfg Ha]. change (a = a') in Ha. subst a'.
     change ((exists p, (f, a) = p /\ (let '(k, a0) := p in k a0 b)) <->
             (exists p, (g, a) = p /\ (let '(k, a0) := p in k a0 b))).
     split; intros [p [<- Hout]].

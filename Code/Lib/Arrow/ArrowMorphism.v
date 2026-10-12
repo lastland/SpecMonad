@@ -10,15 +10,38 @@
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
-From Incorrectness.Lib.Arrow Require Import Arrow ArrowApplyFacts OptionArrowT StateArrowT.
+From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Arrow Require Import ArrowMonad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 
 (** ** An ordinary record for all five preservation equations
 
-    The [morphism_app] field changes the type of the embedded arrow in
-    the input.  Treating [app] as a nullary operation with unchanged
-    input would omit this essential part of the equivalence. *)
+    [morphism_pure], [morphism_comp], and [morphism_first] follow the
+    arrow-morphism equations in Atkey's Definition 4.4:
+    [F(arr h) = arr h], [F(f >>> g) = F f >>> F g], and
+    [F(first f) = first (F f)], where [F] is [map].
+    Our fields use the selected destination [arrow_eq] instead of
+    ordinary equality; [≈] below denotes that equivalence.
+
+    This development extends Definition 4.4 with three requirements:
+    - [morphism_proper] maps source-equivalent arrows to
+      destination-equivalent arrows, so [map] respects the selected
+      equivalences.
+    - [morphism_left] preserves [ArrowChoice]'s [arr_left], so the map
+      also preserves branching.
+    - [morphism_app] preserves [ArrowApply] application, converting
+      the embedded arrow in the input:
+      [F(app_src) ≈ arr_dst (fun '(f, a) => (F f, a)) >>> app_dst].
+
+    Source application consumes a source arrow; destination application
+    consumes a destination arrow. The input conversion therefore maps
+    the stored arrow with [F]. Treating [app] as a nullary operation
+    with unchanged input would omit this essential conversion.
+
+    Reference: Robert Atkey, "What is a Categorical Model of Arrows?",
+    MSFP 2008; ENTCS 229 (2011), pp. 19-37, Definition 4.4.
+    Author manuscript (p. 11): https://bentnib.org/arrows.pdf
+    Published version: https://doi.org/10.1016/j.entcs.2011.02.014 *)
 
 Record ArrowMorphism {src dst : Type -> Type -> Type}
   (SA : Arrow src) (SC : @ArrowChoice src SA) (SX : @ArrowApply src SA)
@@ -52,6 +75,26 @@ Arguments morphism_comp {src dst SA SC SX SE DA DC DX DE map} _ {A B C} _ _.
 Arguments morphism_first {src dst SA SC SX SE DA DC DX DE map} _ {A B C} _.
 Arguments morphism_left {src dst SA SC SX SE DA DC DX DE map} _ {A B C} _.
 Arguments morphism_app {src dst SA SC SX SE DA DC DX DE map} _ {A B}.
+
+(** Explicit packaging only: transformer lift laws do not depend on this
+    record or on the separate transport of morphisms through transformers. *)
+Definition arrowT_lift_morphism
+  (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+  (arr : Type -> Type -> Type)
+  (SA : Arrow arr) (SC : @ArrowChoice arr SA) (SX : @ArrowApply arr SA)
+  (SE : ArrowEq arr)
+  (DA : Arrow (T arr)) (DC : @ArrowChoice (T arr) DA)
+  (DX : @ArrowApply (T arr) DA) (DE : ArrowEq (T arr))
+  (L : ArrowTLaw T HT arr SA SE DA DE)
+  (CL : ArrowChoiceTLaw T HT arr SA SC SE DA DC DE)
+  (XL : ArrowApplyTLaw T HT arr SA SX SE DA DX DE) :
+  ArrowMorphism SA SC SX SE DA DC DX DE (@arrowT_lift T HT arr SA) :=
+  {| morphism_proper := @lift_proper T HT arr SA SE DA DE L;
+     morphism_pure := @lift_pure T HT arr SA SE DA DE L;
+     morphism_comp := @lift_comp T HT arr SA SE DA DE L;
+     morphism_first := @lift_first T HT arr SA SE DA DE L;
+     morphism_left := @lift_left T HT arr SA SC SE DA DC DE CL;
+     morphism_app := @lift_app T HT arr SA SX SE DA DX DE XL |}.
 
 (** An independent Leibniz dictionary, never a global instance. *)
 Definition ArrowEq_leibniz (arr : Type -> Type -> Type) : ArrowEq arr :=
@@ -236,7 +279,7 @@ Section LiftMorphism.
       pose proof (@pure_comp dst DA DE DL) as Hpure.
       rewrite <- !Hassoc, !Hpure.
       apply (@comp_proper dst DA DE DL); [|reflexivity].
-      apply (@ArrowApplyFacts.pure_ext dst DA DX DE DL DXL).
+      apply (@Arrow.pure_proper dst DA DE DL).
       intros [[f a] s]. reflexivity.
   Qed.
 

@@ -49,6 +49,9 @@ def declarations(files):
         glob = CODE / (f[:-2] + ".glob")
         if not glob.exists():
             sys.exit(f"missing {glob}: run make first")
+        # `Fail Definition x` is recorded in the .glob but defines nothing.
+        failed = set(re.findall(r"^\s*Fail\s+(?:#\[[^\]]*\]\s*)?\w+\s+([\w']+)",
+                                (CODE / f).read_text(), re.M))
         logical = None
         for line in glob.read_text().splitlines():
             if line.startswith("F"):
@@ -58,6 +61,8 @@ def declarations(files):
             if not m or (m.group(1) not in CHECKABLE and m.group(1) not in OTHER):
                 continue
             kind, mpath, name = m.groups()
+            if name in failed:
+                continue
             mpath = "" if mpath == "<>" else mpath
             decls.append({"file": f, "logical": logical, "kind": kind, "mod": mpath, "name": name})
     return decls

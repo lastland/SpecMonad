@@ -30,7 +30,6 @@ Section StateArrowTChoiceLaws.
   Local Notation lcomp  := (@left_comp arr HA HC HE HCL).
   Local Notation linl   := (@left_inl arr HA HC HE HCL).
   Local Notation lassoc := (@left_assoc arr HA HC HE HCL).
-  Local Notation linr   := (@left_inr arr HA HC HE HCL).
   Local Notation lnat   := (@left_natural arr HA HC HE HCL).
   Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
   Local Notation lprop  := (@left_proper arr HA HC HE HCL).
@@ -56,7 +55,7 @@ Section StateArrowTChoiceLaws.
       etransitivity.
       { etransitivity. { symmetry. apply cassoc. }
         apply cprop. 2: reflexivity. apply pcomp. }
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [[a|c] s]; reflexivity.
     - (* left_comp *)
       set (Lf := @arr_left arr HA HC (A*S) (B*S) (D*S) f).
@@ -80,7 +79,7 @@ Section StateArrowTChoiceLaws.
       assert (Hcancel : @arrow_eq arr HE _ _
         (@arr_comp arr HA _ _ _ su_B sd_B)
         (@arr_id arr HA _)).
-      { apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)
+      { apply (@Arrow.pure_comp_ext arr HA HE HL
           _ _ _ (@sum_undistribute B D S) (@sum_distribute B D S) _).
         intros [(b,s0)|(d,s0)]; reflexivity. }
       assert (Hrhs : @arrow_eq arr HE _ _
@@ -107,14 +106,14 @@ Section StateArrowTChoiceLaws.
       { etransitivity. { symmetry. apply cassoc. }
         etransitivity. { symmetry. apply cassoc. }
         apply cprop. 2: reflexivity. apply cprop. 2: reflexivity.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros (a0, s0); reflexivity. }
       etransitivity.
       { apply cprop. 2: reflexivity.
         symmetry. apply linl. }
       etransitivity. { apply cassoc. }
       apply cprop. 1: reflexivity.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [b s]; reflexivity.
     - (* left_assoc *)
       set (Lf := @arr_left arr HA HC _ _ (C*S) f).
@@ -179,7 +178,7 @@ Section StateArrowTChoiceLaws.
         { subst sbm_su su_D assoc_s.
           etransitivity. { symmetry. apply cassoc. }
           etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[[b s]|[c s]]|[d s]]; reflexivity. }
         assert (Hrhs : @arrow_eq arr HE _ _
           (@arr_comp arr HA _ _ _ assoc_base (@arr_comp arr HA _ _ _ sbm_su_inner su_CD))
@@ -193,7 +192,7 @@ Section StateArrowTChoiceLaws.
         { subst assoc_base sbm_su_inner su_CD.
           etransitivity. { symmetry. apply cassoc. }
           etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[[b s]|[c s]]|[d s]]; reflexivity. }
         etransitivity. { exact Hlhs. }
         symmetry. exact Hrhs. }
@@ -222,7 +221,7 @@ Section StateArrowTChoiceLaws.
           etransitivity. { apply cprop. 2: reflexivity.
             etransitivity. { apply cprop. 2: reflexivity. apply pcomp. }
             apply pcomp. }
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[[a|c]|d] s]; reflexivity. }
         assert (Hrhs : @arrow_eq arr HE _ _
           (@arr_comp arr HA _ _ _ assoc_s_in sd_CD)
@@ -234,7 +233,7 @@ Section StateArrowTChoiceLaws.
               | (inr d, s0) => @inr (A*S) ((C+D)*S) (inr d, s0)
               end))).
         { subst assoc_s_in sd_CD.
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[[a|c]|d] s]; reflexivity. }
         etransitivity. { exact Hlhs. }
         symmetry. exact Hrhs. }
@@ -288,23 +287,6 @@ Section StateArrowTChoiceLaws.
       subst Lf_CD assoc_s_in sd_CD su_CD.
       etransitivity. { apply cassoc. }
       apply cprop. 1: reflexivity. reflexivity.
-    - (* left_inr *)
-      (* [inr_s] >>> [sd] >>> Lf >>> [su] ≃ [inr_s] *)
-      (* Right-associate then collapse [inr_s]>>>[sd] = [inr] *)
-      etransitivity. { symmetry. apply cassoc. }
-      etransitivity. { symmetry. apply cassoc. }
-      etransitivity.
-      { apply cprop. 2: reflexivity.
-        apply cprop. 2: reflexivity.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
-        intros (c0, s0); reflexivity. }
-      (* [inr] >>> Lf >>> [su] *)
-      etransitivity.
-      { apply cprop. 2: reflexivity.
-        apply linr. }
-      (* [inr] >>> [su] *)
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
-      intros [c s]; reflexivity.
     - (* left_natural *)
       (* LHS: ([sd] >>> Lf >>> [su]) >>> [ps (sbm id g)]
          RHS: [ps (sbm id g)] >>> ([sd'] >>> Lf' >>> [su']) *)
@@ -323,7 +305,7 @@ Section StateArrowTChoiceLaws.
       etransitivity.
       { apply cprop. 1: reflexivity. apply cprop. 1: reflexivity.
         symmetry.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE) _ _ _
+        apply (@Arrow.pure_comp_ext arr HA HE HL _ _ _
             (fun x => @sum_bimap (B*S) (C*S) (B*S) (D*S) (fun b => b) h x)
             (@sum_undistribute B D S) _).
         intros [(b0,s0)|(c0,s0)]; reflexivity. }
@@ -349,7 +331,7 @@ Section StateArrowTChoiceLaws.
       etransitivity. { symmetry. apply cassoc. }
       (* ([ps_sbm] >>> [sd']) >>> (Lf' >>> [su']) *)
       apply cprop. 2: reflexivity.
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      apply (@Arrow.pure_comp_ext arr HA HE HL).
       intros [[a0|c0] s0]; reflexivity.
 
     - (* first_left_dist *)
@@ -372,7 +354,7 @@ Section StateArrowTChoiceLaws.
               | ((inr c, d), s0) => ((inr (c, s0), d) : ((A*S + C*S) * D)%type)
               end))).
       { etransitivity. { apply cprop. 1: reflexivity. apply fpure. }
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[[a|c] d] s]; reflexivity. }
 
       (* LHS tail: F[su] >>> so >>> spd_s into single pure *)
@@ -423,9 +405,9 @@ Section StateArrowTChoiceLaws.
               (@arr_pure arr HA _ _
                 (fun x : (((B+C)*D)*S)%type =>
                   (sum_prod_dist (fst x), snd x)))).
-          { apply cprop. 1: reflexivity. apply (@Arrow.arr_pure_ext arr HA HE).
+          { apply cprop. 1: reflexivity. apply (@Arrow.pure_proper arr HA HE HL).
             intros ((bc, d), s0); reflexivity. }
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[[b s]|[c s]] d]; reflexivity. }
         exact Hfused. }
 
@@ -447,7 +429,7 @@ Section StateArrowTChoiceLaws.
                 | inr ((c, s0), d) => ((inr (c, d), s0) : (((B*D)+(C*D))*S)%type)
                 end)))).
       { symmetry.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[[b s]|[c s]] d]; reflexivity. }
 
       (* Fused LHS head with spd_base *)
@@ -467,7 +449,7 @@ Section StateArrowTChoiceLaws.
               | ((inl a, d), s0) => (inl ((a, s0), d) : ((A*S*D)+(C*S*D))%type)
               | ((inr c, d), s0) => (inr ((c, s0), d) : ((A*S*D)+(C*S*D))%type)
               end))).
-      { apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+      { apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[[a|c] d] s]; reflexivity. }
 
       (* === Assemble LHS === *)
@@ -560,9 +542,9 @@ Section StateArrowTChoiceLaws.
                 (fun p : (((A+C)*D)*S)%type => (sum_prod_dist (fst p), snd p)))
               (@arr_pure arr HA _ _ (@sum_distribute (A*D) (C*D) S))).
           { apply cprop. 2: reflexivity.
-            apply (@Arrow.arr_pure_ext arr HA HE). intros ((ac, d), s0); reflexivity. }
+            apply (@Arrow.pure_proper arr HA HE HL). intros ((ac, d), s0); reflexivity. }
           apply pcomp. }
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+        apply (@Arrow.pure_comp_ext arr HA HE HL).
         intros [[[a|c] d] s]; reflexivity. }
       etransitivity.
       { apply cprop. 2: reflexivity. apply cprop. 2: reflexivity.
@@ -594,7 +576,7 @@ Section StateArrowTChoiceLaws.
                 | inr ((c, s0), d) => ((inr (c, d), s0) : (((B*D)+(C*D))*S)%type)
                 end))).
         { symmetry.
-          apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
+          apply (@Arrow.pure_comp_ext arr HA HE HL).
           intros [[[b s] d]|[[c s] d]]; reflexivity. }
         reflexivity. }
 
@@ -624,7 +606,7 @@ Section StateArrowTChoiceLaws.
 
       (* Now both sides: (_ >>> L(Ff)_{CSD}) >>> [t_{CSD}] *)
       apply cprop. 2: reflexivity. apply cprop. 2: reflexivity.
-      apply (@Arrow.arr_pure_ext arr HA HE). intros [[[a|c] d] s]; reflexivity.
+      apply (@Arrow.pure_proper arr HA HE HL). intros [[[a|c] d] s]; reflexivity.
     - (* left_proper *)
       unfold Proper, respectful; intros.
       apply cprop. 1: reflexivity.

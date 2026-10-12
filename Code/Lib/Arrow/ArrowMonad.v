@@ -70,8 +70,7 @@ Section ArrowMonadLaws.
     etransitivity.
     { apply cprop. 1: reflexivity. apply cprop. 2: reflexivity. apply fpure. }
     etransitivity. { apply cprop. 1: reflexivity. apply pcomp. }
-    apply (@pure_comp_ext arr HA HE HL
-      (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL)).
+    apply (@pure_comp_ext arr HA HE HL).
     intros [b a]. reflexivity.
   Qed.
 
@@ -103,8 +102,7 @@ Section ArrowMonadLaws.
        projection. This step preserves the fixed monad input. *)
     etransitivity.
     { apply cprop. 1: reflexivity.
-      apply (@Arrow.first_constant arr HA HE HL
-        (@ArrowApplyFacts.pure_ext arr HA HAA HE HL HAL)). }
+      apply (@Arrow.first_constant arr HA HE HL). }
     symmetry. apply cassoc.
   Qed.
 

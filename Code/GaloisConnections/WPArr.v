@@ -106,6 +106,9 @@ Proof.
     cbv [arrow_eq ArrowEq_WPArr] in *. subst. reflexivity.
   - (* first_natural *)
     apply functional_extensionality; intros [a c]. reflexivity.
+  - (* pure_proper *)
+    intros f g H. apply functional_extensionality. intro a.
+    cbn. rewrite (H a). reflexivity.
 Qed.
 
 #[global]
@@ -124,9 +127,6 @@ Proof.
   - (* left_assoc *)
     apply functional_extensionality; intros [[a|c]|d];
     apply functional_extensionality; intros Q; reflexivity.
-  - (* left_inr *)
-    apply functional_extensionality; intros c;
-    apply functional_extensionality; intros Q; reflexivity.
   - (* left_natural *)
     apply functional_extensionality; intros [a|c];
     apply functional_extensionality; intros Q; reflexivity.
@@ -142,7 +142,7 @@ Qed.
 Instance ArrowApplyLaws_WPArr
   : @ArrowApplyLaws WPArr Arrow_WPArr ArrowApply_WPArr ArrowEq_WPArr.
 Proof.
-  constructor; intros.
+  constructor; [intros | intros | intros | intros | intros X A B u v H].
   - (* app_law *) reflexivity.
   - (* app_unit *)
     apply functional_extensionality; intros [a b]. reflexivity.
@@ -155,6 +155,7 @@ Proof.
     specialize (H x).
     cbv [arrow_eq ArrowEq_WPArr] in H.
     destruct (u x) as [f a], (v x) as [g a'].
-    cbn in H. destruct H as [Hfg Ha]. subst g a'.
+    cbn in H. destruct H as [Hfg Ha].
+    change (f = g) in Hfg. change (a = a') in Ha. subst g a'.
     reflexivity.
 Qed.

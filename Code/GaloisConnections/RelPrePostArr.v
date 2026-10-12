@@ -382,6 +382,8 @@ Proof.
     rewrite !project_wp_arr_comp, project_wp_arr_first.
     setoid_rewrite project_wp_arr_pure.
     rewrite project_wp_arr_first. reflexivity.
+  - (* pure_proper *)
+    intros f g H a Q. rewrite !project_wp_arr_pure, (H a). reflexivity.
 Qed.
 
 #[global]
@@ -431,13 +433,6 @@ Proof.
       unfold assoc_sum; cbv iota.
       rewrite project_wp_arr_left_inr.
       reflexivity.
-  - (* left_inr *)
-    intros c Q.
-    rewrite project_wp_arr_comp.
-    setoid_rewrite project_wp_arr_pure.
-    cbv beta.
-    rewrite project_wp_arr_left_inr.
-    reflexivity.
   - (* left_natural *)
     intros x Q.
     rewrite !project_wp_arr_comp.
@@ -482,7 +477,7 @@ Instance ArrowApplyLaws_RelPrePost
   : @ArrowApplyLaws RelPrePostArr Arrow_RelPrePost
       ArrowApply_RelPrePost ArrowEq_RelPrePost.
 Proof.
-  constructor; intros.
+  constructor; [intros | intros | intros | intros | intros X A B u v H].
   - (* app_law *)
     intros a Q.
     rewrite project_wp_arr_comp, project_wp_arr_pure.
@@ -515,7 +510,7 @@ Proof.
     rewrite !project_wp_arr_app.
     specialize (H x).
     destruct (u x) as [r a], (v x) as [s a']; cbn in *.
-    destruct H as [Hrs Ha]. subst a'. apply Hrs.
+    destruct H as [Hrs Ha]. change (a = a') in Ha. subst a'. apply Hrs.
 Qed.
 
 (* ================================================================= *)

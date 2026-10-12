@@ -16,10 +16,29 @@ base application. [ArrowLaws.v](../../../../../Code/Lib/Arrow/OptionArrowT/Arrow
 including dynamic precomposition, from base arrow/choice/application laws.
 These proofs inspect no concrete carrier; use explicit base dictionaries.
 The law proofs reuse core pure-map fusion. Fixed-companion and constant
-application steps reuse shared helpers with base-derived congruence and
+application steps reuse shared helpers with core pure congruence and
 application equations while constructing the transformed application laws.
 There is no generic loop lift. `None`'s exception/divergence interpretation
 belongs to a computation or observation, not this transformer.
+
+[TransformerLaws.v](../../../../../Code/Lib/Arrow/OptionArrowT/TransformerLaws.v) proves core and choice lift preservation
+from base core/choice laws, and application preservation additionally from
+base application laws. Composition/application reuse `optionArrT_comp_pure_l`;
+dynamic application also reuses `app_postcompose_pure`. These lift contracts
+are separate from the transformed-arrow law packages and morphism transport.
+
+Application-law construction uses the already-established transformed core
+dictionary, including its `pure_proper` field; it does not import
+`TransformerLaws` or require target application laws for pure congruence.
+The core pure field maps pointwise equality through `Some` using only the
+selected base pure field, without functional extensionality.
+Constant-second reasoning uses the transformed core laws' shared
+`second_constant`; choice reassociation uses shared `left_assoc_inverse` and
+`left_context_iso`. Private copies are removed. `option_arr_ext` and
+`option_app_law` remain bootstrap facts: the full transformed application
+dictionary is not yet available. The pure-composition normalizations and
+`core_opt_left` concern arbitrary option arrows and their carrier routing,
+not just the image of lift; they establish transformed core/choice laws.
 
 Read Core → relevant law module → [concrete tests](../../Tests.md#concrete-arrow-instance-checks).
 For state over option, continue to [StateArrowT](StateArrowT.md).

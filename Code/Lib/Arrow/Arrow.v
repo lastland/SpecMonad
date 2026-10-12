@@ -5,7 +5,7 @@
     instance [Rel A B := A -> B -> Prop] and its law instances live in
     [Relational/Rel.v]. *)
 
-From Coq Require Import Morphisms FunctionalExtensionality.
+From Coq Require Import Morphisms FunctionalExtensionality RelationPairs.
 
 (* ================================================================= *)
 (** ** Helper functions for products and sums                         *)
@@ -110,19 +110,16 @@ Class ArrowLaws (arr : Type -> Type -> Type)
       (arr_comp (arr_first f)
         (arr_pure (fun '(b, c) => (b, g c))))
       (arr_comp (arr_pure (fun '(a, c) => (a, g c)))
-        (arr_first f))
+        (arr_first f)) ;
+  pure_proper :: forall X Y,
+    Proper (pointwise_relation X (@eq Y) ==> @arrow_eq arr Heq X Y)
+      (@arr_pure arr Harr X Y)
 }.
 
 Section ArrowCoreFacts.
   Context {arr : Type -> Type -> Type}
     `{HA : Arrow arr} `{HE : ArrowEq arr}
     `{HL : @ArrowLaws arr HA HE}.
-
-  (** Ordinary pointwise congruence is supplied explicitly so these facts
-      can use either constructive application coherence or another proof. *)
-  Variable pure_congr : forall X Y (u v : X -> Y),
-    (forall x, u x = v x) ->
-    @arrow_eq arr HE X Y (@arr_pure arr HA X Y u) (@arr_pure arr HA X Y v).
 
   Local Notation "f >>> g" := (@arr_comp arr HA _ _ _ f g)
     (at level 50, left associativity).
@@ -134,11 +131,10 @@ Section ArrowCoreFacts.
     (forall x, g (f x) = h x) -> eqA (pure f >>> pure g) (pure h).
   Proof.
     intro H. etransitivity. { apply pure_comp. }
-    apply pure_congr. exact H.
+    apply (@pure_proper arr HA HE HL). exact H.
   Qed.
 
-  (** A constant companion commutes with [first], using only core laws
-      and the supplied ordinary pure-function congruence. *)
+  (** A constant companion commutes with [first], using only core laws. *)
   Lemma first_constant {A B C} (f : arr A B) (c : C) :
     eqA (pure (fun a => (a, c)) >>> first f)
         (f >>> pure (fun b => (b, c))).
@@ -164,6 +160,21 @@ Section ArrowCoreFacts.
     etransitivity. { symmetry. apply comp_assoc. }
     etransitivity. { apply comp_proper. 2: reflexivity. apply pure_comp. }
     apply comp_id_l.
+  Qed.
+  (** The derived second operation has the same fixed-companion law. *)
+  Lemma second_constant {A B C} (f : arr A B) (c : C) :
+    eqA (pure (fun a => (c, a)) >>> arr_second f)
+        (f >>> pure (fun b => (c, b))).
+  Proof.
+    unfold arr_second.
+    etransitivity. { symmetry. apply comp_assoc. }
+    etransitivity. { apply comp_proper. 2: reflexivity. apply pure_comp. }
+    etransitivity. { symmetry. apply comp_assoc. }
+    etransitivity.
+    { apply comp_proper. 2: reflexivity. apply first_constant. }
+    etransitivity. { apply comp_assoc. }
+    apply comp_proper. 1: reflexivity.
+    apply pure_comp_ext. intro b. reflexivity.
   Qed.
 End ArrowCoreFacts.
 
@@ -198,9 +209,6 @@ Class ArrowChoiceLaws (arr : Type -> Type -> Type)
       (arr_comp (@arr_left _ _ _ _ _ D (@arr_left _ _ _ A B C f))
                 (arr_pure assoc_sum))
       (arr_comp (arr_pure assoc_sum) (@arr_left _ _ _ A B (C + D) f)) ;
-  left_inr : forall {A B C} (f : arr A B),
-    arrow_eq (arr_comp (arr_pure (@inr A C)) (@arr_left _ _ _ A B C f))
-             (arr_pure (@inr B C)) ;
   left_natural : forall {A B C D} (f : arr A B) (g : C -> D),
     arrow_eq (arr_comp (@arr_left _ _ _ A B C f)
                        (arr_pure (fun x => sum_bimap (fun b : B => b) g x)))
@@ -216,6 +224,61 @@ Class ArrowChoiceLaws (arr : Type -> Type -> Type)
     Proper (@arrow_eq arr _ A B ==> @arrow_eq arr _ (A + C)%type (B + C)%type)
            (@arr_left _ _ _ A B C)
 }.
+
+(* ================================================================= *)
+(** ** ArrowChoice consequences                                      *)
+(* ================================================================= *)
+
+Section ArrowChoiceCoreFacts.
+  Context {arr : Type -> Type -> Type}
+    {HA : Arrow arr} {HC : @ArrowChoice arr HA} {HE : ArrowEq arr}
+    {HL : @ArrowLaws arr HA HE} {HCL : @ArrowChoiceLaws arr HA HC HE}.
+  Local Existing Instance HL.
+
+  (** Remove the output associator using an explicitly supplied inverse. *)
+  Lemma left_assoc_inverse {A B C D} (f : arr A B)
+    (back : B + (C + D) -> (B + C) + D)
+    (Hback : forall x, back (assoc_sum x) = x) :
+    @arrow_eq arr HE _ _
+      (@arr_left arr HA HC _ _ D (@arr_left arr HA HC A B C f))
+      (arr_comp (arr_pure (@assoc_sum A C D))
+        (arr_comp (@arr_left arr HA HC A B (C + D) f) (arr_pure back))).
+  Proof.
+    etransitivity. { symmetry. apply (@comp_id_r arr HA HE HL). }
+    etransitivity.
+    { apply (@comp_proper arr HA HE HL). 1: reflexivity.
+      symmetry. apply (@pure_comp_ext arr HA HE HL).
+      exact Hback. }
+    etransitivity. { symmetry. apply (@comp_assoc arr HA HE HL). }
+    etransitivity.
+    { apply (@comp_proper arr HA HE HL). 2: reflexivity.
+      apply (@left_assoc arr HA HC HE HCL). }
+    apply (@comp_assoc arr HA HE HL).
+  Qed.
+
+  (** Changing the untouched branch along an isomorphism is conjugation. *)
+  Lemma left_context_iso {A B C D} (f : arr A B) (to : C -> D) (back : D -> C)
+    (Hback : forall c, back (to c) = c) :
+    @arrow_eq arr HE _ _ (@arr_left arr HA HC A B C f)
+      (arr_comp (arr_pure (sum_bimap (fun a : A => a) to))
+        (arr_comp (@arr_left arr HA HC A B D f)
+          (arr_pure (sum_bimap (fun b : B => b) back)))).
+  Proof.
+    etransitivity. { symmetry. apply (@comp_id_r arr HA HE HL). }
+    etransitivity.
+    { apply (@comp_proper arr HA HE HL). 1: reflexivity.
+      symmetry. apply (@pure_comp_ext arr HA HE HL
+        (B + C)%type (B + D)%type (B + C)%type
+        (sum_bimap (fun b : B => b) to) (sum_bimap (fun b : B => b) back)
+        (fun x => x)).
+      intros [b|c]; cbn; [reflexivity | rewrite Hback; reflexivity]. }
+    etransitivity. { symmetry. apply (@comp_assoc arr HA HE HL). }
+    etransitivity.
+    { apply (@comp_proper arr HA HE HL). 2: reflexivity.
+      apply (@left_natural arr HA HC HE HCL). }
+    apply (@comp_assoc arr HA HE HL).
+  Qed.
+End ArrowChoiceCoreFacts.
 
 (* ================================================================= *)
 (** ** ArrowApply                                                     *)
@@ -250,13 +313,15 @@ Class ArrowApplyLaws (arr : Type -> Type -> Type)
       (arr_comp (arr_first (arr_pure (fun f : arr A B => arr_comp f h)))
         arr_app)
       (arr_comp arr_app h) ;
-  (** Application respects the arrow equality inside ordinary input
-      values.  This supplies continuation congruence for derived bind. *)
-  app_ext : forall {X A B} (u v : X -> arr A B * A),
-    (forall x, arrow_eq (fst (u x)) (fst (v x)) /\
-               snd (u x) = snd (v x)) ->
-    arrow_eq (arr_comp (arr_pure u) arr_app)
-             (arr_comp (arr_pure v) arr_app)
+  (** Pure pair-building followed by application is proper in the stored
+      arrow and argument. This supplies continuation congruence for derived bind. *)
+  app_ext :: forall {X A B : Type},
+    Proper
+      (pointwise_relation X
+         (RelProd (@arrow_eq arr _ A B) (@eq A)) ==>
+       @arrow_eq arr _ X B)
+      (fun u : X -> (arr A B * A)%type =>
+         arr_comp (arr_pure u) arr_app)
 }.
 
 (* ================================================================= *)
@@ -304,6 +369,81 @@ Class ArrowLoopLaws (arr : Type -> Type -> Type)
 Class ArrowT (T : (Type -> Type -> Type) -> Type -> Type -> Type) := {
   arrowT_lift : forall {arr : Type -> Type -> Type} `{Arrow arr} {A B},
     arr A B -> T arr A B
+}.
+
+(** Lift laws use selected source and target dictionaries. They neither
+    assert transformed-arrow laws nor require morphism transport. *)
+Class ArrowTLaw
+  (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+  (arr : Type -> Type -> Type)
+  (SA : Arrow arr) (SE : ArrowEq arr)
+  (DA : Arrow (T arr)) (DE : ArrowEq (T arr)) : Prop := {
+  lift_proper : forall A B,
+    Proper (@arrow_eq arr SE A B ==> @arrow_eq (T arr) DE A B)
+      (@arrowT_lift T HT arr SA A B);
+  lift_pure : forall A B (f : A -> B),
+    @arrow_eq (T arr) DE A B
+      (@arrowT_lift T HT arr SA A B (@arr_pure arr SA A B f))
+      (@arr_pure (T arr) DA A B f);
+  lift_comp : forall A B C (f : arr A B) (g : arr B C),
+    @arrow_eq (T arr) DE A C
+      (@arrowT_lift T HT arr SA A C (@arr_comp arr SA A B C f g))
+      (@arr_comp (T arr) DA A B C
+        (@arrowT_lift T HT arr SA A B f) (@arrowT_lift T HT arr SA B C g));
+  lift_first : forall A B C (f : arr A B),
+    @arrow_eq (T arr) DE (A * C)%type (B * C)%type
+      (@arrowT_lift T HT arr SA _ _ (@arr_first arr SA A B C f))
+      (@arr_first (T arr) DA A B C (@arrowT_lift T HT arr SA A B f))
+}.
+
+Class ArrowChoiceTLaw
+  (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+  (arr : Type -> Type -> Type)
+  (SA : Arrow arr) (SC : @ArrowChoice arr SA)
+  (SE : ArrowEq arr)
+  (DA : Arrow (T arr)) (DC : @ArrowChoice (T arr) DA)
+  (DE : ArrowEq (T arr)) : Prop := {
+  lift_left : forall A B C (f : arr A B),
+    @arrow_eq (T arr) DE (A + C)%type (B + C)%type
+      (@arrowT_lift T HT arr SA _ _ (@arr_left arr SA SC A B C f))
+      (@arr_left (T arr) DA DC A B C (@arrowT_lift T HT arr SA A B f))
+}.
+
+(** Congruence of transformed pure arrows follows from the lift contract
+    and source pure congruence, without transformed application laws. *)
+#[global] Instance lift_pure_proper
+  (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+  (arr : Type -> Type -> Type) (SA : Arrow arr) (SE : ArrowEq arr)
+  (DA : Arrow (T arr)) (DE : ArrowEq (T arr))
+  (L : ArrowTLaw T HT arr SA SE DA DE)
+  (pure_congr : forall X Y,
+    Proper (pointwise_relation X (@eq Y) ==> @arrow_eq arr SE X Y)
+      (@arr_pure arr SA X Y)) {X Y} :
+  Proper (pointwise_relation X (@eq Y) ==> @arrow_eq (T arr) DE X Y)
+    (@arr_pure (T arr) DA X Y).
+Proof.
+  intros u v H.
+  transitivity (@arrowT_lift T HT arr SA X Y (@arr_pure arr SA X Y u)).
+  - symmetry. exact (@lift_pure T HT arr SA SE DA DE L X Y u).
+  - transitivity (@arrowT_lift T HT arr SA X Y (@arr_pure arr SA X Y v)).
+    + apply (@lift_proper T HT arr SA SE DA DE L). apply pure_congr. exact H.
+    + exact (@lift_pure T HT arr SA SE DA DE L X Y v).
+Qed.
+
+Class ArrowApplyTLaw
+  (T : (Type -> Type -> Type) -> Type -> Type -> Type) (HT : ArrowT T)
+  (arr : Type -> Type -> Type)
+  (SA : Arrow arr) (SX : @ArrowApply arr SA)
+  (SE : ArrowEq arr)
+  (DA : Arrow (T arr)) (DX : @ArrowApply (T arr) DA)
+  (DE : ArrowEq (T arr)) : Prop := {
+  lift_app : forall A B,
+    @arrow_eq (T arr) DE (arr A B * A)%type B
+      (@arrowT_lift T HT arr SA _ _ (@arr_app arr SA SX A B))
+      (@arr_comp (T arr) DA _ _ _
+        (@arr_pure (T arr) DA _ _
+          (fun '(f, a) => (@arrowT_lift T HT arr SA A B f, a)))
+        (@arr_app (T arr) DA DX A B))
 }.
 
 (* ================================================================= *)
@@ -355,7 +495,7 @@ Section ArrowApplyDerived.
       symmetry.
       etransitivity; [ apply comp_proper; [ reflexivity | apply first_pure ] |].
       etransitivity; [ apply pure_comp |].
-      apply arr_pure_ext. intro x. reflexivity.
+      apply (@pure_proper arr HA HE HL). intro x. reflexivity.
     - etransitivity; [ apply comp_assoc |].
       etransitivity; [ apply comp_proper; [ reflexivity | apply app_pair ] |].
       apply comp_id_r.
@@ -375,7 +515,7 @@ Section ArrowApplyDerived.
       symmetry.
       etransitivity; [ apply comp_proper; [ reflexivity | apply first_pure ] |].
       etransitivity; [ apply pure_comp |].
-      apply arr_pure_ext. intro x. reflexivity.
+      apply (@pure_proper arr HA HE HL). intro x. reflexivity.
     - etransitivity; [ apply comp_assoc |].
       etransitivity; [ apply comp_proper; [ reflexivity | apply app_post ] |].
       symmetry. apply comp_assoc.

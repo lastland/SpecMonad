@@ -269,6 +269,14 @@ Departures from the plan:
   the first two with a strict body comparison.
 - Split importers: SP files may only import `RawSP.v`; files that imported a
   whole split file outside SP keep importing every part they use.
+- Merged `main` at `8e2fccb` (six arrow-law commits: core `pure_proper`,
+  transformer lift laws, `PureProperRegression.v`). New files went to
+  `Lib/Arrow/{OptionArrowT,StateArrowT}/TransformerLaws.v` and `Tests/`;
+  their context edits to `Tests.md`, `Lib.md` and `Lib/Arrow/*.md`. Checked
+  against `8e2fccb` as for the steps: same assumption reports (plus the
+  branch's 27 extra, all closed), the same 41 additions and nothing else, and
+  every renamed file with `main`'s body. `inventory.py` now skips
+  `Fail Definition` names, which the `.glob` records.
 
 Directory graph after the reorganization (transitively reduced; was 6
 directories with an `Arrows` <-> `BaseSpecMonads` cycle): see

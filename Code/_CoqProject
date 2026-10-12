@@ -33,14 +33,17 @@ Lib/Arrow/Arrow.v
 Lib/Arrow/ArrowApplyFacts.v
 Lib/Arrow/ArrowMonad.v
 Tests/ArrowMonadRegression.v
+Tests/PureProperRegression.v
 Lib/Arrow/OptionArrowT/Core.v
 Lib/Arrow/OptionArrowT/ArrowLaws.v
 Lib/Arrow/OptionArrowT/ArrowChoiceLaws.v
 Lib/Arrow/OptionArrowT/ArrowApplyLaws.v
+Lib/Arrow/OptionArrowT/TransformerLaws.v
 Lib/Arrow/OptionArrowT.v
 Lib/Arrow/StateArrowT/Core.v
 Lib/Arrow/StateArrowT/ArrowChoiceLaws.v
 Lib/Arrow/StateArrowT/ArrowApplyLaws.v
+Lib/Arrow/StateArrowT/TransformerLaws.v
 Lib/Arrow/StateArrowT.v
 Lib/Arrow/ArrowMorphism.v
 Lib/Arrow/RelArrowCoherence.v
