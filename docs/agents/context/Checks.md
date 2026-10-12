@@ -7,7 +7,10 @@ Parent: [Code context](Code.md). Shared proof conventions:
 
 [Assumptions.v](../../../Code/Checks/Assumptions.v) is a console audit of selected proof
 dependencies. It imports existing theorems and uses `Print Assumptions`
-and `Check`; its output concerns only the named declarations.
+and `Check`; its output concerns only the named declarations. The audit
+selects production declarations only: it imports no test or regression
+module and reports no test or regression lemma, including regression lemmas
+colocated with production code.
 
 The selected reports cover:
 
@@ -17,12 +20,10 @@ The selected reports cover:
   obtain pure congruence from their core laws or take a fixed-arrow application
   equation explicitly. `lift_pure_proper` retains its separate source congruence
   premise without target laws. The audit also reports the shared relational
-  core laws and equality-reflection transport, PrePost/RelPrePost/WP core laws,
-  and the exact-equality `WrongIndex` regression's core laws.
+  core laws and equality-reflection transport, PrePost/RelPrePost/WP core laws.
 - The outcome laws of
   [Computation.v](../../../Code/Verification/DivNonDet/Computation.v): bind on
-  `divnd`, absorption of divergence, blocking of the empty prefix, and bind
-  on the two stacks.
+  `divnd`, absorption of divergence, and bind on the two stacks.
 - Shared structural equations in
   [RelArrowCoherence.v](../../../Code/Lib/Arrow/RelArrowCoherence.v), concrete property-only
   SP law packages in [SPostArr.v](../../../Code/SP/SPostArr.v) and
@@ -31,11 +32,7 @@ The selected reports cover:
   readings reuse those `Rel` laws, rather than contributing duplicate packages.
 - Constructive canonical ASP/DSLP normal forms and all four canonical SP law
   packages in [SPostArr.v](../../../Code/SP/SPostArr.v) and
-  [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v), plus selected
-  `CanonicalSP` interoperability clients in
-  [ArrowMonadInstances.v](../../../Code/Tests/ArrowMonadInstances.v).
-  The clients exercise canonical/compatibility application, bind dictionary
-  identity, and state update followed by propagated failure. DSP/ASLP law
+  [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v). DSP/ASLP law
   packages retain classical relation recovery.
 - `rel_state_option_bind` in
   [RelArrowCoherence.v](../../../Code/Lib/Arrow/RelArrowCoherence.v).
@@ -73,13 +70,15 @@ and the generic option-order lift.
 The semantic regressions `empty_prefix_blocks` and `diverge_survives_empty`
 live beside the computation laws in
 [Computation.v](../../../Code/Verification/DivNonDet/Computation.v). They are proofs
-in the normal build; the audit also reports the first.
+in the normal build; the audit excludes both, and colocation with production
+code does not bring a regression lemma into the audit.
 
 [SPostArrInfrastructure.v](../../../Code/Tests/SPostArrInfrastructure.v)
 checks core, choice, and application laws for all four property-only flavours
 without importing the SP monad files. Its semantic regressions distinguish DSP
 composition from raw transformer composition and exercise non-unit
-state-over-option bind. These checks are separate from the assumption reports.
+state-over-option bind. These checks belong to the normal build and are
+excluded from the assumption reports.
 
 ## Build boundary and reading
 
@@ -108,4 +107,5 @@ are reported and what assumptions they use.
 Related contexts: [Lib](Lib.md),
 [generic regressions](Tests.md), and
 [concrete instance tests](Tests.md#concrete-arrow-instance-checks).
-Those regression/instance checks belong to the normal build, unlike this audit.
+Those regression/instance checks belong to the normal build and are excluded
+from this audit.

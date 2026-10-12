@@ -1,4 +1,6 @@
-(** Console assumption reports, compiled explicitly by [make check]. *)
+(** Console assumption reports, compiled explicitly by [make check].
+    Do not import test or regression modules or report test or regression
+    declarations, including regression lemmas colocated with production code. *)
 From Incorrectness.Lib.Arrow Require Import
   Arrow ArrowApplyFacts ArrowMonad OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.SP Require Import
@@ -11,7 +13,6 @@ From Incorrectness.PTMonadTaxonomy Require Import
   TransformerRelations.
 From Incorrectness.GaloisConnections Require Import
   GaloisArr PrePostArr RelPrePostArr WPArr.
-From Incorrectness.Tests Require Import ArrowMonadRegression.
 From Incorrectness.SP Require
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.GaloisConnections Require
@@ -41,13 +42,12 @@ Print Assumptions RelArrowCoherence.rel_arrow_laws_leibniz.
 Print Assumptions PrePostArr.ArrowLaws_PrePost.
 Print Assumptions RelPrePostArr.ArrowLaws_RelPrePost.
 Print Assumptions WPArr.ArrowLaws_WPArr.
-Print Assumptions WrongIndex.arrow_laws.
 
 (** Computation-owned outcome laws use pointwise equivalence and are
-    closed under the global context. *)
+    closed under the global context. Colocated empty-prefix regressions
+    remain outside this audit. *)
 Print Assumptions Computation.outcomes_bind.
 Print Assumptions Computation.diverge_absorbing.
-Print Assumptions Computation.empty_prefix_blocks.
 Print Assumptions Computation.outSt_bind.
 Print Assumptions Computation.outStExc_bind.
 
@@ -153,9 +153,7 @@ Print Assumptions TransformerLaws.bind_optionT_mono.
 
 (** Canonical carriers share law dictionaries with their compatibility names.
     ASP/DSLP normal forms and base laws are constructive; DSP/ASLP recovery
-    retains excluded middle. Cross-API clients check the selected dictionaries
-    without reflecting pointwise equivalence into bundled equality. *)
-From Incorrectness.Tests Require Import ArrowMonadInstances.
+    retains excluded middle. Cross-API test clients remain outside this audit. *)
 Print Assumptions SPostArr.ASP_normal_form.
 Print Assumptions SPostArr.DSLP_normal_form.
 Print Assumptions SPostArr.ArrowLaws_ASPArr.
@@ -188,12 +186,6 @@ Print Assumptions SPostArr.dslpRelO_first.
 Print Assumptions SPostArr.dslpRelE_first.
 Print Assumptions SPostArr.dslpRelE_app.
 Print Assumptions SPostArr.dslpRelE_bind.
-
-Print Assumptions CanonicalSP.asp_mixed_application.
-Print Assumptions CanonicalSP.dslp_mixed_application.
-Print Assumptions CanonicalSP.asp_mixed_bind_identity.
-Print Assumptions CanonicalSP.dslp_mixed_bind_identity.
-Print Assumptions CanonicalSP.mixed_update_failure.
 
 (** Generic base/state bind normalization uses only the semantic dictionaries
     and is closed under the global context. *)
