@@ -30,7 +30,6 @@ Section GenericOptionArrTLaws.
   Local Notation lcomp    := (@left_comp arr HA HC HE HCL).
   Local Notation linl     := (@left_inl arr HA HC HE HCL).
   Local Notation lassoc   := (@left_assoc arr HA HC HE HCL).
-  Local Notation linr     := (@left_inr arr HA HC HE HCL).
   Local Notation lnat     := (@left_natural arr HA HC HE HCL).
   Local Notation lprop    := (@left_proper arr HA HC HE HCL).
 

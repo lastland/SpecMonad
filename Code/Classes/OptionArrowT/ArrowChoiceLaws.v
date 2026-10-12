@@ -21,7 +21,6 @@ Section GenericOptionArrTChoiceLaws.
   Local Notation lcomp  := (@left_comp arr HA HC HE HCL).
   Local Notation linl   := (@left_inl arr HA HC HE HCL).
   Local Notation lassoc_law := (@left_assoc arr HA HC HE HCL).
-  Local Notation linr   := (@left_inr arr HA HC HE HCL).
   Local Notation lnat   := (@left_natural arr HA HC HE HCL).
   Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
   Local Notation lprop  := (@left_proper arr HA HC HE HCL).
@@ -375,16 +374,7 @@ Section GenericOptionArrTChoiceLaws.
       etransitivity. { apply cprop. 2: reflexivity. apply lassoc_law. }
       apply cassoc.
 
-    - (* 5. left_inr *)
-      (* Reduce to base composition, then [inr] >>> L f >>> [rr]
-         collapses via linr and pcomp. *)
-      etransitivity. { apply optionArrT_comp_pure_l. }
-      etransitivity. { symmetry. apply cassoc. }
-      etransitivity. { apply cprop. 2: reflexivity. apply linr. }
-      exact (@pure_comp arr HA HE HL C ((option B + C)%type) (option (B + C))
-               (@inr (option B) C) (@opt_rearrange B C)).
-
-    - (* 6. left_natural *)
+    - (* 5. left_natural *)
       (* Both opt-level compositions with a pure reduce to base
          compositions via optionArrT_comp_pure_r/l; the tail
          [rr] >>> [option_map (sbm id g)] fuses into [sbm id g] >>> [rr],
@@ -411,7 +401,7 @@ Section GenericOptionArrTChoiceLaws.
       etransitivity. { apply cprop. 2: reflexivity. apply lnat. }
       apply cassoc.
 
-    - (* 7. first_left_dist *)
+    - (* 6. first_left_dist *)
       (* Both opt-level compositions with a pure reduce to base
          compositions via optionArrT_comp_pure_r/l.  The LHS tail
          F_D [rr] >>> [seq] >>> [option_map spd] collapses to

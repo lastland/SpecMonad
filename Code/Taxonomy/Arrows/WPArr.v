@@ -124,9 +124,6 @@ Proof.
   - (* left_assoc *)
     apply functional_extensionality; intros [[a|c]|d];
     apply functional_extensionality; intros Q; reflexivity.
-  - (* left_inr *)
-    apply functional_extensionality; intros c;
-    apply functional_extensionality; intros Q; reflexivity.
   - (* left_natural *)
     apply functional_extensionality; intros [a|c];
     apply functional_extensionality; intros Q; reflexivity.

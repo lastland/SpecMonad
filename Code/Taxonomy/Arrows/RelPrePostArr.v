@@ -431,13 +431,6 @@ Proof.
       unfold assoc_sum; cbv iota.
       rewrite project_wp_arr_left_inr.
       reflexivity.
-  - (* left_inr *)
-    intros c Q.
-    rewrite project_wp_arr_comp.
-    setoid_rewrite project_wp_arr_pure.
-    cbv beta.
-    rewrite project_wp_arr_left_inr.
-    reflexivity.
   - (* left_natural *)
     intros x Q.
     rewrite !project_wp_arr_comp.

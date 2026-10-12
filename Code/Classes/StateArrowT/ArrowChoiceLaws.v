@@ -30,7 +30,6 @@ Section StateArrowTChoiceLaws.
   Local Notation lcomp  := (@left_comp arr HA HC HE HCL).
   Local Notation linl   := (@left_inl arr HA HC HE HCL).
   Local Notation lassoc := (@left_assoc arr HA HC HE HCL).
-  Local Notation linr   := (@left_inr arr HA HC HE HCL).
   Local Notation lnat   := (@left_natural arr HA HC HE HCL).
   Local Notation fldist := (@first_left_dist arr HA HC HE HCL).
   Local Notation lprop  := (@left_proper arr HA HC HE HCL).
@@ -288,23 +287,6 @@ Section StateArrowTChoiceLaws.
       subst Lf_CD assoc_s_in sd_CD su_CD.
       etransitivity. { apply cassoc. }
       apply cprop. 1: reflexivity. reflexivity.
-    - (* left_inr *)
-      (* [inr_s] >>> [sd] >>> Lf >>> [su] ≃ [inr_s] *)
-      (* Right-associate then collapse [inr_s]>>>[sd] = [inr] *)
-      etransitivity. { symmetry. apply cassoc. }
-      etransitivity. { symmetry. apply cassoc. }
-      etransitivity.
-      { apply cprop. 2: reflexivity.
-        apply cprop. 2: reflexivity.
-        apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
-        intros (c0, s0); reflexivity. }
-      (* [inr] >>> Lf >>> [su] *)
-      etransitivity.
-      { apply cprop. 2: reflexivity.
-        apply linr. }
-      (* [inr] >>> [su] *)
-      apply (@Arrow.pure_comp_ext arr HA HE HL (@Arrow.arr_pure_ext arr HA HE)).
-      intros [c s]; reflexivity.
     - (* left_natural *)
       (* LHS: ([sd] >>> Lf >>> [su]) >>> [ps (sbm id g)]
          RHS: [ps (sbm id g)] >>> ([sd'] >>> Lf' >>> [su']) *)

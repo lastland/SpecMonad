@@ -198,9 +198,6 @@ Class ArrowChoiceLaws (arr : Type -> Type -> Type)
       (arr_comp (@arr_left _ _ _ _ _ D (@arr_left _ _ _ A B C f))
                 (arr_pure assoc_sum))
       (arr_comp (arr_pure assoc_sum) (@arr_left _ _ _ A B (C + D) f)) ;
-  left_inr : forall {A B C} (f : arr A B),
-    arrow_eq (arr_comp (arr_pure (@inr A C)) (@arr_left _ _ _ A B C f))
-             (arr_pure (@inr B C)) ;
   left_natural : forall {A B C D} (f : arr A B) (g : C -> D),
     arrow_eq (arr_comp (@arr_left _ _ _ A B C f)
                        (arr_pure (fun x => sum_bimap (fun b : B => b) g x)))

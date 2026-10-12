@@ -359,11 +359,6 @@ Proof.
     all: first [ exists (inl a) | exists (inl (inl b))
                 | exists (inr (inl c')) | exists (inl (inr c'))
                 | exists (inr (inr d')) | exists (inr d') ]; eauto.
-  - (* left_inr *)
-    intros c y; unfold_Rel_full. split.
-    + intros [x [Hinr Hleft]]. subst x.
-      destruct y as [b|c']; simpl in Hleft; [contradiction | f_equal; exact Hleft].
-    + intros Heq. subst y. exists (inr c). simpl. auto.
   - (* left_natural *)
     intros x y.
     destruct x as [a0|c0]; destruct y as [b0|d0]; unfold_Rel_full;

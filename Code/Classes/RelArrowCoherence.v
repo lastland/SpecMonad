@@ -1224,8 +1224,6 @@ Section SemanticLaws.
         apply (rel_left_inl_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
       - apply rel_arrow_eq. intros x y.
         apply (rel_left_assoc_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
-      - apply rel_arrow_eq. intros c y.
-        apply (rel_left_inr_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
       - apply rel_arrow_eq. intros x y.
         apply (rel_left_natural_iff _ (@rel_pure arr HA HRA) (@rel_comp arr HA HRA) (@rel_left arr HA HC HRA HRAC)).
       - apply rel_arrow_eq. intros [ac d] q.
@@ -1312,7 +1310,6 @@ Section LeibnizBridge.
     - apply rel_ext. apply (@left_comp arr HA HC HE HCL).
     - apply rel_ext. apply (@left_inl arr HA HC HE HCL).
     - apply rel_ext. apply (@left_assoc arr HA HC HE HCL).
-    - apply rel_ext. apply (@left_inr arr HA HC HE HCL).
     - apply rel_ext. apply (@left_natural arr HA HC HE HCL).
     - apply rel_ext. apply (@first_left_dist arr HA HC HE HCL).
     - intros x y ->. reflexivity.

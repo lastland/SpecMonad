@@ -261,8 +261,6 @@ Proof.
         -- exists (inl (inl b)). cbn. split; [exact Hr | reflexivity].
         -- inversion Hr. subst. exists (inl (inr c')). cbn. split; reflexivity.
         -- inversion Hr. subst. exists (inr d'). cbn. split; reflexivity.
-  - (* left_inr *)
-    split; cbn; sauto limit: 200.
   - (* left_natural *)
     split.
     + intros [a|c]; cbn; sauto limit: 200.
