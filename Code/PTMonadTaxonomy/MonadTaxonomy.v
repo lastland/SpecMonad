@@ -867,24 +867,24 @@ Section GaloisMonads.
       + exact (contraWSt_sym _ _ (contra_dualWP w)).
   Qed.
 
-  Theorem Radj_dual_iff_Ladj_contra {A} (m1 m2 : SPStMon S A) (w1 w2 : WSt S A) :
+  Theorem Ladj_iff_Radj {A} (m1 m2 : SPStMon S A) (w1 w2 : WSt S A) :
     contraSPSt m1 m2 -> contraWSt w1 w2 ->
-    DemonicMonotone.Radj m1 w1 <-> AngelicMonotone.Ladj m2 w2.
+    AngelicMonotone.Ladj m1 w1 <-> DemonicMonotone.Radj m2 w2.
   Proof.
     intros hS hW.
     split.
     - intro H.
-      apply (proj2 (Ladj_GaloisSPWP m2 w2)).
-      eapply GaloisWPSP_contra.
-      + exact (proj1 (Radj_GaloisWPSP m1 w1) H).
-      + exact (contraWSt_sym _ _ hW).
-      + exact (contraSPSt_sym _ _ hS).
-    - intro H.
-      apply (proj2 (Radj_GaloisWPSP m1 w1)).
+      apply (proj2 (Radj_GaloisWPSP m2 w2)).
       eapply GaloisSPWP_contra.
-      + exact (proj1 (Ladj_GaloisSPWP m2 w2) H).
-      + exact hS.
+      + exact (proj1 (Ladj_GaloisSPWP m1 w1) H).
+      + exact (contraSPSt_sym _ _ hS).
+      + exact (contraWSt_sym _ _ hW).
+    - intro H.
+      apply (proj2 (Ladj_GaloisSPWP m1 w1)).
+      eapply GaloisWPSP_contra.
+      + exact (proj1 (Radj_GaloisWPSP m2 w2) H).
       + exact hW.
+      + exact hS.
   Qed.
 
 End GaloisMonads.
