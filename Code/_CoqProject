@@ -80,6 +80,7 @@ SP/ASLPMonad.v
 Tests/ArrowMonadInstances.v
 Tests/ArrowTransformerInstances.v
 Tests/SPostArrInfrastructure.v
+Tests/SPostArrMonotoneFirstFst.v
 GaloisConnections/BaseGaloisConnections.v
 PTMonadTaxonomy/SPStBindComparisons.v
 PTMonadTaxonomy/MonadTaxonomy.v

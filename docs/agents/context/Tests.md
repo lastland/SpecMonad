@@ -73,6 +73,16 @@ DSP composition from raw forward transformer composition and exercise binary
 state-over-option bind at a non-unit input, retaining that input, threading
 the intermediate state, and propagating `None` without a final state.
 
+[SPostArrMonotoneFirstFst.v](../../../Code/Tests/SPostArrMonotoneFirstFst.v) gives
+interactive counterexamples to `first_fst` when ASP/DSLP operations require only
+monotonicity. It reuses `MonoPT` from
+[TransformerRelations.v](../../../Code/PTMonadTaxonomy/TransformerRelations.v)
+and pointwise-iff equality, proves that the operations preserve monotonicity,
+and compares the two composites on the Boolean diagonal predicate. In
+`MonotoneFirstFst.ASP` and `MonotoneFirstFst.DSLP`, the acceptance/rejection
+lemmas lead to `first_fst_fails` and `no_arrow_laws` for the specified operation
+dictionaries.
+
 [ArrowMonadInstances.v](../../../Code/Tests/ArrowMonadInstances.v) checks named `Monad`,
 `Eq1Equivalence`, and `MonadLawsE` dictionaries that specialize
 [ArrowMonad.v](../../../Code/Lib/Arrow/ArrowMonad.v). Agreement lemmas compare compact
