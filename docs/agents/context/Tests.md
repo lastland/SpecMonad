@@ -73,15 +73,19 @@ DSP composition from raw forward transformer composition and exercise binary
 state-over-option bind at a non-unit input, retaining that input, threading
 the intermediate state, and propagating `None` without a final state.
 
-[SPostArrMonotoneFirstFst.v](../../../Code/Tests/SPostArrMonotoneFirstFst.v) gives
-interactive counterexamples to `first_fst` when ASP/DSLP operations require only
-monotonicity. It reuses `MonoPT` from
+[SPostArrMonotoneLaws.v](../../../Code/Tests/SPostArrMonotoneLaws.v) checks every
+field of `ArrowLaws` and `ArrowApplyLaws` for the production ASP/DSLP operation
+bodies on a carrier requiring only monotonicity. It reuses `MonoPT` from
 [TransformerRelations.v](../../../Code/PTMonadTaxonomy/TransformerRelations.v)
-and pointwise-iff equality, proves that the operations preserve monotonicity,
-and compares the two composites on the Boolean diagonal predicate. In
-`MonotoneFirstFst.ASP` and `MonotoneFirstFst.DSLP`, the acceptance/rejection
-lemmas lead to `first_fst_fails` and `no_arrow_laws` for the specified operation
-dictionaries.
+and pointwise-iff equality and proves closure of the selected operations.
+Application retains the production singleton/recovered-relation formulas.
+In both `MonotoneLaws.ASP` and `MonotoneLaws.DSLP`, `first_fst`, `first_natural`,
+`app_law`, `app_precompose`, and `app_postcompose` fail. Each failed field has
+explicit composites, a Boolean counterexample, separate acceptance/rejection
+lemmas, and a pointwise-inequivalence theorem. The remaining ten core fields,
+`app_unit`, and `app_ext` have generic proofs. Each law has its own labelled
+block; `no_arrow_laws` and `no_arrow_apply_laws` refute the two packages for the
+selected plain dictionaries. The file registers no instances.
 
 [ArrowMonadInstances.v](../../../Code/Tests/ArrowMonadInstances.v) checks named `Monad`,
 `Eq1Equivalence`, and `MonadLawsE` dictionaries that specialize
