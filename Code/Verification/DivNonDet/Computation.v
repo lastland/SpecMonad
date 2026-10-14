@@ -1,21 +1,52 @@
-(** * The base computation monad: non-empty nondeterminism with divergence
+(** * The base computation monad: programs and their outcomes
 
-    The base monad is built in three steps:
+    Programs are interaction trees [itree E A], over any events [E], read as
+    nondeterministic: an event may get any of its answers.  What a program
+    can do is a non-empty set of outcomes, built in three steps:
 
       [SetM A  = A -> Prop]          a set of outcomes
       [divnd A = optionT SetM A]     a set of outcomes, [None] being divergence
       [divndNE A]                    the elements of [divnd A] with an outcome
 
-    The two other settings are monad transformers applied to it:
+    and [denote : itree E A -> divndNE A] maps a program to its outcomes: the
+    values it may return, and divergence if some path is infinite.  It needs
+    every event to have an answer ([HasAnswers]), as ITree's
+    nondeterministic choice [nondetE] has.  [denote] is a monad morphism up
+    to [eutt] ([denote_morphism]).
+
+    The two other settings are monad transformers applied to [divndNE]:
     [stdivndNE S = stateT S divndNE] ([DivNonDetSt/Computation.v]) and
     [stdivexcndNE S = stateT S (optionT divndNE)]
     ([DivNonDetStExc/Computation.v]). *)
 
 From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From Paco Require Import paco.
+From ITree Require Import Basics.Monad Core.ITreeDefinition Core.ITreeMonad Core.Subevent
+  Indexed.Sum Eq.Eqit Eq.Shallow Props.Leaf Props.Infinite.
+From ITree Require Events.Nondeterminism.
 From Hammer Require Import Tactics.
-From Incorrectness.Lib.Monad Require Import TransformerLaws.
+From Incorrectness.Lib.Monad Require Import TransformerLaws OrderedMonad.
+From Incorrectness.Lib Require Import ITreeFacts.
+
+(* ================================================================= *)
+(** * Programs                                                        *)
+(* ================================================================= *)
+
+(** A program is an interaction tree [itree E A].  An event may get any of
+    its answers; for every program to have an outcome, every event must have
+    one ([HasAnswers]).  ITree's nondeterministic choice [nondetE] has: its
+    one event [Or] answers a [bool]. *)
+
+Class HasAnswers (E : Type -> Type) : Prop :=
+  has_answer : forall X (e : E X), inhabited X.
+
+#[global] Instance HasAnswers_nondetE : HasAnswers Nondeterminism.nondetE.
+Proof. intros X []. exact (inhabits true). Qed.
+
+#[global] Instance HasAnswers_sum {E F} `{HasAnswers E} `{HasAnswers F} :
+  HasAnswers (E +' F).
+Proof. intros X [e | f]; [ exact (has_answer X e) | exact (has_answer X f) ]. Qed.
 
 (* ================================================================= *)
 (** * Sets of outcomes: [SetM]                                        *)
@@ -317,3 +348,122 @@ Proof.
   intros H oa. change (unOptionT (getNE x) = unOptionT (getNE y)) in H.
   rewrite H. reflexivity.
 Qed.
+
+(* ================================================================= *)
+(** * [denote]                                                        *)
+(* ================================================================= *)
+
+Section Denote.
+  Context {E : Type -> Type} `{HE : HasAnswers E}.
+
+Definition denoteD {A} (t : itree E A) : divnd A :=
+  @mkOptionT SetM _ (fun o => match o with
+                              | Some a => Leaf a t
+                              | None => any_infinite t
+                              end).
+
+#[program] Definition denote {A} (t : itree E A) : divndNE A := denoteD t.
+Next Obligation.
+  destruct (leaf_or_infinite has_answer t) as [[a Ha] | Hinf];
+    [ exists (Some a); exact Ha | exists None; exact Hinf ].
+Qed.
+
+Lemma outcomes_denote {A} (t : itree E A) (o : option A) :
+  unOptionT (getNE (denote t)) o
+  <-> match o with Some a => Leaf a t | None => any_infinite t end.
+Proof. reflexivity. Qed.
+
+(** Two computations with the same outcomes are equal. *)
+Lemma divndNE_eq1 {A} (x y : divndNE A) :
+  (forall o, unOptionT (getNE x) o <-> unOptionT (getNE y) o) -> eq1 x y.
+Proof.
+  intro H. change (unOptionT (getNE x) = unOptionT (getNE y)).
+  apply functional_extensionality. intro o.
+  apply propositional_extensionality. exact (H o).
+Qed.
+
+Lemma denote_ret {A} (a : A) (o : option A) :
+  unOptionT (getNE (denote (Ret a))) o <-> o = Some a.
+Proof.
+  rewrite outcomes_denote. destruct o as [b|]; split.
+  - intro H. f_equal. exact (Leaf_Ret_inv _ _ _ _ H).
+  - intro H. injection H as ->. apply Leaf_Ret.
+  - intro H. destruct (any_infinite_ret a H).
+  - discriminate.
+Qed.
+
+Lemma denote_bind {A B} (t : itree E A) (k : A -> itree E B) (o : option B) :
+  unOptionT (getNE (denote (ITree.bind t k))) o
+  <-> exists oa, unOptionT (getNE (denote t)) oa /\
+        match oa with
+        | Some a => unOptionT (getNE (denote (k a))) o
+        | None => o = None
+        end.
+Proof.
+  rewrite outcomes_denote. destruct o as [b|]; split.
+  - intro H. destruct (Leaf_bind_inv _ _ _ H) as [a [Ha Hb]].
+    exists (Some a). exact (conj Ha Hb).
+  - intros [[a|] [Ha Hb]]; [ exact (Leaf_bind _ _ _ _ Ha Hb) | discriminate ].
+  - intro H. destruct (any_infinite_bind_inv _ _ H) as [Hinf | [a [Ha Hinf]]].
+    + exists None. exact (conj Hinf eq_refl).
+    + exists (Some a). exact (conj Ha Hinf).
+  - intros [[a|] [Ha Hb]].
+    + exact (any_infinite_bind_leaf _ _ _ Ha Hb).
+    + exact (any_infinite_bind_l _ k Ha).
+Qed.
+
+Theorem denote_morphism :
+  @MonadMorphism (itree E) divndNE Monad_itree Monad__divndNE
+    Eq1_ITree Eq1__divndNE (@denote).
+Proof.
+  constructor.
+  - intros A x y Hxy. unfold eq1, Eq1_ITree in Hxy. apply divndNE_eq1.
+    intros o. rewrite !outcomes_denote. destruct o as [a|].
+    + rewrite Hxy. reflexivity.
+    + rewrite Hxy. reflexivity.
+  - intros A a. apply divndNE_eq1. intro o. exact (denote_ret a o).
+  - intros A B x k. apply divndNE_eq1. intro o.
+    etransitivity; [ exact (denote_bind x k o) |].
+    symmetry. exact (outcomes_bind (getNE (denote x)) (fun a => getNE (denote (k a))) o).
+Qed.
+
+#[global] Instance IsMonadMorphism_denote : IsMonadMorphism (@denote) :=
+  @Build_IsMonadMorphism _ _ _ _ _ _ _ denote_morphism.
+
+(** The operations. *)
+
+Lemma denote_vis {X A} (e : E X) (k : X -> itree E A) (o : option A) :
+  unOptionT (getNE (denote (Vis e k))) o
+  <-> exists x, unOptionT (getNE (denote (k x))) o.
+Proof.
+  rewrite outcomes_denote. destruct o as [a|]; split.
+  - intro H. exact (Leaf_Vis_inv _ _ _ _ _ _ H).
+  - intros [x Hx]. exact (Leaf_Vis _ _ _ e k a x Hx).
+  - intro H. punfold H. red in H. cbn in H.
+    destruct (any_infiniteF_vis_inv _ _ _ H) as [x Hx]. pclearbot. exists x. exact Hx.
+  - intros [x Hx]. pfold. red. cbn. apply (DivVis _ _ e x). left. exact Hx.
+Qed.
+
+(** ITree's nondeterministic choice is the union of the outcomes. *)
+Lemma denote_or `{Nondeterminism.nondetE -< E} {A} (t1 t2 : itree E A) (o : option A) :
+  unOptionT (getNE (denote (Nondeterminism.or t1 t2))) o
+  <-> unOptionT (getNE (denote t1)) o \/ unOptionT (getNE (denote t2)) o.
+Proof.
+  unfold Nondeterminism.or. rewrite denote_vis. split.
+  - intros [[] Ho]; [ left | right ]; exact Ho.
+  - intros [Ho | Ho]; [ exists true | exists false ]; exact Ho.
+Qed.
+
+Lemma denote_spin {A} (o : option A) :
+  unOptionT (getNE (denote ITree.spin)) o <-> o = None.
+Proof.
+  rewrite outcomes_denote. destruct o as [a|]; split.
+  - intro H. exfalso. remember ITree.spin as t eqn:Et.
+    induction H as [t Ht | t u Ht _ IH | Y e t h y Ht _ IH];
+      subst t; cbn in Ht; try discriminate.
+    injection Ht as <-. exact (IH eq_refl).
+  - discriminate.
+  - intros _. reflexivity.
+  - intros _. exact spin_infinite.
+Qed.
+End Denote.

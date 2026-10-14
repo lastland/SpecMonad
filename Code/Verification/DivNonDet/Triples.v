@@ -3,7 +3,8 @@
     How each specification monad of the base setting is read
     ([SpecReading] for [WPure], [ASP], [DSLP], [DSP], [ASLP]), and the SP
     triples of the base morphisms as one judgement on the base arrow
-    ([triple_aspPure] &c.). *)
+    ([triple_aspPure] &c.), and each reading in terms of the outcomes
+    ([dwpPure_read] &c.). *)
 
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.
@@ -79,3 +80,64 @@ Theorem triple_aslpPure {A} (d : divndNE A) (k : approxKind)
   triple (@aslpPure) d k P Q
   <-> aslpHolds (fun (_ : unit) a => unOptionT (getNE d) (Some a)) k P Q.
 Proof. destruct k; reflexivity. Qed.
+
+(* ================================================================= *)
+(** * The eight readings, in terms of the outcomes                    *)
+(* ================================================================= *)
+
+(** The only start point is [tt], so an SP precondition is the
+    proposition [P tt]. *)
+
+Section Readings.
+  Context {A : Type}.
+
+  Lemma dwpPure_read (d : divndNE A) (Q : A -> Prop) :
+    getWPure (dwpPure d) Q
+    <-> forall o, unOptionT (getNE d) o -> match o with Some a => Q a | None => False end.
+  Proof. reflexivity. Qed.
+
+  Lemma dwlpPure_read (d : divndNE A) (Q : A -> Prop) :
+    getWPure (dwlpPure d) Q
+    <-> forall o, unOptionT (getNE d) o -> match o with Some a => Q a | None => True end.
+  Proof. reflexivity. Qed.
+
+  Lemma awpPure_read (d : divndNE A) (Q : A -> Prop) :
+    getWPure (awpPure d) Q
+    <-> exists o, unOptionT (getNE d) o /\ match o with Some a => Q a | None => False end.
+  Proof. reflexivity. Qed.
+
+  Lemma awlpPure_read (d : divndNE A) (Q : A -> Prop) :
+    getWPure (awlpPure d) Q
+    <-> exists o, unOptionT (getNE d) o /\ match o with Some a => Q a | None => True end.
+  Proof. reflexivity. Qed.
+
+  Lemma aspPure_read (d : divndNE A) (P : unit -> Prop) (a : A) :
+    getASPArr (aspPure d) P a <-> P tt /\ unOptionT (getNE d) (Some a).
+  Proof.
+    split; [ intros [[] H]; exact H | intro H; exists tt; exact H ].
+  Qed.
+
+  Lemma dslpPure_read (d : divndNE A) (P : unit -> Prop) (a : A) :
+    getDSLPArr (dslpPure d) P a <-> (unOptionT (getNE d) (Some a) -> P tt).
+  Proof.
+    split; [ intros H Ho; exact (H tt Ho) | intros H [] Ho; exact (H Ho) ].
+  Qed.
+
+  Lemma dspPure_read (d : divndNE A) (P : unit -> Prop) (a : A) :
+    getDSP (dspPure d) P a
+    <-> (P tt /\ unOptionT (getNE d) (Some a)) /\ (unOptionT (getNE d) (Some a) -> P tt).
+  Proof.
+    split.
+    - intros [[[] H] H']. exact (conj H (fun Ho => H' tt Ho)).
+    - intros [H H']. split; [ exists tt; exact H | intros [] Ho; exact (H' Ho) ].
+  Qed.
+
+  Lemma aslpPure_read (d : divndNE A) (P : unit -> Prop) (a : A) :
+    getASLP (aslpPure d) P a
+    <-> (P tt /\ unOptionT (getNE d) (Some a)) \/ (unOptionT (getNE d) (Some a) -> P tt).
+  Proof.
+    split.
+    - intros [[[] H] | H']; [ left; exact H | right; exact (fun Ho => H' tt Ho) ].
+    - intros [H | H']; [ left; exists tt; exact H | right; intros [] Ho; exact (H' Ho) ].
+  Qed.
+End Readings.

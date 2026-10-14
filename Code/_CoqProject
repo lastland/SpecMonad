@@ -13,6 +13,7 @@ Verification/DivNonDet/TriplesTaxonomy.v
 Verification/DivNonDet/DijkstraMonads.v
 Verification/DivNonDet/Typings.v
 Verification/DivNonDet/InCorrectnessPrinciples.v
+Verification/DivNonDet/TriplesExamples/ITreePrograms.v
 Verification/DivNonDetSt/Computation.v
 Verification/DivNonDetSt/Morphisms.v
 Verification/DivNonDetSt/Triples.v
@@ -57,6 +58,7 @@ Lib/Arrow/RelArrowCoherence.v
 Lib/Galois.v
 Lib/Monad/OrderedMonad.v
 Lib/Monad/MonadRelation.v
+Lib/ITreeFacts.v
 Relational/PredMonad.v
 GaloisConnections/PrePostMonad.v
 SP/SPostMonad.v

@@ -236,3 +236,23 @@ Class IsMonadMorphism {M W : Type -> Type} (θ : forall A, M A -> W A) : Type :=
   mor_laws :
     @MonadMorphism M W mor_monad_src mor_monad_tgt mor_eq1_src mor_eq1_tgt θ
 }.
+
+(** Composition of maps between monads, and the morphism of a composition.
+    There is no general instance for [τ ∘ₘₘ σ]: the structures are fields, so
+    those of [σ]'s target and [τ]'s source cannot be shown to agree. *)
+Definition mcomp {M V W : Type -> Type} (τ : forall A, V A -> W A)
+  (σ : forall A, M A -> V A) : forall A, M A -> W A :=
+  fun A x => τ A (σ A x).
+
+Infix "∘ₘₘ" := mcomp (at level 40, left associativity).
+
+Definition IsMonadMorphism_comp {M V W : Type -> Type}
+  {MonadM : Monad M} {MonadV : Monad V} {MonadW : Monad W}
+  {Eq1M : Eq1 M} {Eq1V : Eq1 V} {Eq1W : Eq1 W}
+  {EqW : @Eq1Equivalence W MonadW Eq1W}
+  {σ : forall A, M A -> V A} {τ : forall A, V A -> W A}
+  (Hσ : @MonadMorphism M V MonadM MonadV Eq1M Eq1V σ)
+  (Hτ : @MonadMorphism V W MonadV MonadW Eq1V Eq1W τ) :
+  IsMonadMorphism (τ ∘ₘₘ σ) :=
+  @Build_IsMonadMorphism M W (τ ∘ₘₘ σ) MonadM MonadW Eq1M Eq1W
+    (MonadMorphism_comp σ τ Hσ Hτ).

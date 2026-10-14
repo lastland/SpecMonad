@@ -2,7 +2,12 @@
 
 Parent: [Verification](../Verification.md). The base setting: `divndNE`.
 
-- [Computation.v](../../../../Code/Verification/DivNonDet/Computation.v) builds the base monad in three steps.
+- [Computation.v](../../../../Code/Verification/DivNonDet/Computation.v) starts with the programs: ITrees
+  `itree E A` over any events, read as nondeterministic: an event may get
+  any of its answers. `HasAnswers E` (every event has an answer) holds for
+  ITree's `nondetE` and is closed under `+'`; the facts about the paths of
+  a tree are in [Lib/ITreeFacts.v](../../../../Code/Lib/ITreeFacts.v). It then builds the base monad of
+  outcomes in three steps.
   `SetM A := A -> Prop` is a set of outcomes; `divnd` is `optionT SetM`,
   with `None` divergence and `divergeD`, and no `MonadExc` instance; its
   outcome law `outcomes_bind` is a constructive pointwise `<->`, not an
@@ -11,7 +16,13 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   blocking, neither a return nor divergence: `divndNE` excludes it, it does
   not require termination (`empty_prefix_blocks`, `diverge_survives_empty`
   check this on `divnd`). The equality is Leibniz equality of outcome sets,
-  so the laws use functional and propositional extensionality.
+  so the laws use functional and propositional extensionality. Last,
+  `denote : itree E A -> divndNE A` maps a program to the values it may
+  return (`Leaf`) and divergence if it has an infinite path
+  (`any_infinite`): a monad morphism up to `eutt` (`denote_morphism`);
+  `denote_vis` reads an event, `denote_or` ITree's `Nondeterminism.or`,
+  `denote_spin` the silent loop. Every tree has an outcome by excluded
+  middle (`leaf_or_infinite`); ITree's `eutt` lemmas add `eq_rect_eq`.
 - [Morphisms.v](../../../../Code/Verification/DivNonDet/Morphisms.v): the eight readings, each
   defined once here. WP: `dwpPure`, `dwlpPure`, `awpPure`, `awlpPure :
   divndNE A -> WPure A`, from `demonicWP` / `angelicWP`; they land in
@@ -21,10 +32,13 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   `aspPure` &c. are its four instances. Each SP morphism has two proofs:
   `x_morphism` by the lifts, `x_morphism_rel` through the relations denoted
   (closed for ASP and DSLP, excluded middle for DSP and ASLP); the
-  `IsMonadMorphism` instances use the `_rel` proofs.
+  `IsMonadMorphism` instances use the `_rel` proofs. The reading of a
+  program is the reading of its denotation, `dwpPure ∘ₘₘ denote` &c., a
+  monad morphism by `IsMonadMorphism_comp`.
 - [Triples.v](../../../../Code/Verification/DivNonDet/Triples.v): `SpecReading` of `WPure`, `ASP`,
   `DSLP`, `DSP`, `ASLP`; `triple_aspPure` &c., the SP triple at indices
-  `(unit, A)`.
+  `(unit, A)`; and each reading in terms of the outcomes (`dwpPure_read`
+  &c.), an SP precondition being the proposition `P tt`.
 - [TriplesTaxonomy.v](../../../../Code/Verification/DivNonDet/TriplesTaxonomy.v): the WP edges between
   the base readings of one computation, and the Galois edges with the
   terminating outcomes (`galois_slice_dwlpPure`, `galois_awpPure_slice`).
@@ -40,3 +54,6 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   O'Hearn's rules for the `aspPure` triples (`first_symmetry_rule_aspPure`,
   ..., `principle_of_denial_aspPure`), and their `dwlpPure` variants through
   that edge.
+- [TriplesExamples/ITreePrograms.v](../../../../Code/Verification/DivNonDet/TriplesExamples/ITreePrograms.v):
+  programs with ITree's definitions over `nondetE`: `oneOrTwoIT` (a choice
+  by `Nondeterminism.or`) and `ITree.spin` (DWLP accepts it, DWP rejects it).

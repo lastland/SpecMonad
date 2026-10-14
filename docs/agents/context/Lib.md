@@ -108,8 +108,11 @@ The same file defines monad morphisms. `MonadMorphism` is a record of
 properness and `ret` / `bind` preservation over explicit dictionaries;
 `MonadMorphism_of_laws` builds one for the finest source equality.
 `IsMonadMorphism θ` bundles a map with the structures it is a morphism for,
-so that the morphism is found from the map alone. The general triple over
-such a map is not here: it is in
+so that the morphism is found from the map alone. `τ ∘ₘₘ σ` (`mcomp`)
+composes two maps, and `IsMonadMorphism_comp` builds its instance from the
+two morphism proofs; there is no general instance, since the structures of
+`σ`'s target and `τ`'s source cannot be shown to agree. The general triple
+over such a map is not here: it is in
 [Verification/Generic/Triple.v](../../../Code/Verification/Generic/Triple.v).
 
 [MonadRelation.v](../../../Code/Lib/Monad/MonadRelation.v) states DM4All's monadic relation for any two
@@ -128,6 +131,13 @@ depending on a computation. Its `ord_optionT` and `bind_optionT_mono`
 separately lift an explicit reflexive order and simultaneous bind
 monotonicity through `optionT`. `optionT_map` and `stateT_map` lift a map
 between monads; `MonadMorphism_optionT` / `_stateT` lift its morphism laws.
+
+[ITreeFacts.v](../../../Code/Lib/ITreeFacts.v) complements ITree's `Leaf` and `any_infinite`:
+one-step inversions of `any_infinite` without dependent elimination axioms,
+the infinite paths of a `bind` (`any_infinite_bind_l`, `_leaf`, and
+`any_infinite_bind_inv`, the last by excluded middle), and `leaf_or_infinite`:
+if every event has an answer, every tree has a leaf or an infinite path (by
+excluded middle). The base computation's `denote` is built on it.
 
 ## Boundaries and tests
 

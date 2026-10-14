@@ -11,7 +11,9 @@
            [dspPure], [aslpPure].  An arrow morphism is a monad morphism at
            each fixed input ([arrow_morphism_monad]).
 
-    Each has an [IsMonadMorphism] instance.  Their lifts are in
+    Each has an [IsMonadMorphism] instance, and so does each reading of
+    programs, the reading after [denote] ([dwpPure ∘ₘₘ denote] &c.).  Their
+    lifts are in
     [DivNonDetSt/Morphisms.v] and [DivNonDetStExc/Morphisms.v].  At the input
     [unit] DSP coincides with ASP and ASLP with DSLP ([DSPMonad.v],
     [ASLPMonad.v]); what tells the four apart is the base arrow at an
@@ -19,7 +21,7 @@
 
 From Coq Require Import Morphisms RelationClasses.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From ITree Require Import Basics.Monad Core.ITreeDefinition Core.ITreeMonad.
 From Incorrectness.Lib.Arrow Require Import
   Arrow OptionArrowT StateArrowT RelArrowCoherence.
 From Incorrectness.Lib.Monad Require Import
@@ -493,3 +495,48 @@ Qed.
 
 #[global] Instance IsMonadMorphism_aslpPure : IsMonadMorphism (@aslpPure) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ aslpPure_morphism_rel.
+
+(* ================================================================= *)
+(** * The readings of programs                                        *)
+(* ================================================================= *)
+
+(** A reading of a program is the reading of its denotation, [θ ∘ₘₘ denote]:
+    a monad morphism by composition, for any events [E] with answers.  The
+    triple of a reading [θ] of a program [t] is
+    [triple (θ ∘ₘₘ @denote _ _) t k P Q]. *)
+
+Section ProgramReadings.
+  Context {E : Type -> Type} `{HE : HasAnswers E}.
+
+  #[global] Instance IsMonadMorphism_dwpPure_denote :
+    IsMonadMorphism (@dwpPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp denote_morphism dwpPure_morphism.
+
+  #[global] Instance IsMonadMorphism_dwlpPure_denote :
+    IsMonadMorphism (@dwlpPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp denote_morphism dwlpPure_morphism.
+
+  #[global] Instance IsMonadMorphism_awpPure_denote :
+    IsMonadMorphism (@awpPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp denote_morphism awpPure_morphism.
+
+  #[global] Instance IsMonadMorphism_awlpPure_denote :
+    IsMonadMorphism (@awlpPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp denote_morphism awlpPure_morphism.
+
+  #[global] Instance IsMonadMorphism_aspPure_denote :
+    IsMonadMorphism (@aspPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp denote_morphism aspPure_morphism.
+
+  #[global] Instance IsMonadMorphism_dslpPure_denote :
+    IsMonadMorphism (@dslpPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp denote_morphism dslpPure_morphism.
+
+  #[global] Instance IsMonadMorphism_dspPure_denote :
+    IsMonadMorphism (@dspPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence_DSP) denote_morphism dspPure_morphism.
+
+  #[global] Instance IsMonadMorphism_aslpPure_denote :
+    IsMonadMorphism (@aslpPure ∘ₘₘ @denote E HE) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence_ASLP) denote_morphism aslpPure_morphism.
+End ProgramReadings.
