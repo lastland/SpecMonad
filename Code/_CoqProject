@@ -13,6 +13,8 @@ Verification/DivNonDet/TriplesTaxonomy.v
 Verification/DivNonDet/DijkstraMonads.v
 Verification/DivNonDet/Typings.v
 Verification/DivNonDet/InCorrectnessPrinciples.v
+Verification/DivNonDet/TriplesExamples/Loops.v
+Verification/DivNonDet/TriplesExamples/Countdown.v
 Verification/DivNonDet/TriplesExamples/ITreePrograms.v
 Verification/DivNonDetSt/Computation.v
 Verification/DivNonDetSt/Morphisms.v

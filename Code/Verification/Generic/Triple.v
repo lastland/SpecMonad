@@ -165,6 +165,18 @@ Section PTHolds.
     - intros Hi H x Ht. exact (H x (Hi Q x Ht)).
   Qed.
 
+  (** Two readings that include each other give the same triples. *)
+  Lemma pt_holds_same (r1 r2 : PTReading X Y) (k : approxKind)
+    (P : X -> Prop) (Q : Y -> Prop) :
+    pt_incl r1 r2 -> pt_incl r2 r1 -> pt_holds r1 k P Q <-> pt_holds r2 k P Q.
+  Proof.
+    intros H12 H21. destruct k; split.
+    - exact (pt_holds_incl_under r1 r2 P Q H12).
+    - exact (pt_holds_incl_under r2 r1 P Q H21).
+    - exact (pt_holds_incl_over r2 r1 P Q H21).
+    - exact (pt_holds_incl_over r1 r2 P Q H12).
+  Qed.
+
   (** The first is the contrapositive of the second. *)
   Definition pt_contra (r1 r2 : PTReading X Y) : Prop :=
     match r1, r2 with

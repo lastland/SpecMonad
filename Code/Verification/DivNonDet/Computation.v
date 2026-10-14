@@ -12,17 +12,20 @@
     values it may return, and divergence if some path is infinite.  It needs
     every event to have an answer ([HasAnswers]), as ITree's
     nondeterministic choice [nondetE] has.  [denote] is a monad morphism up
-    to [eutt] ([denote_morphism]).
+    to [eutt] ([denote_morphism]) and maps [ITree.iter] to the loop of the
+    outcome monad ([denote_iter]), whose loop rules ([iterOut_invariant]
+    &c.) are stated on outcomes.
 
     The two other settings are monad transformers applied to [divndNE]:
     [stdivndNE S = stateT S divndNE] ([DivNonDetSt/Computation.v]) and
     [stdivexcndNE S = stateT S (optionT divndNE)]
     ([DivNonDetStExc/Computation.v]). *)
 
-From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
+From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality
+  Classical_Prop Wf_nat.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
 From Paco Require Import paco.
-From ITree Require Import Basics.Monad Core.ITreeDefinition Core.ITreeMonad Core.Subevent
+From ITree Require Import Basics.Basics Basics.Monad Core.ITreeDefinition Core.ITreeMonad Core.Subevent
   Indexed.Sum Eq.Eqit Eq.Shallow Props.Leaf Props.Infinite.
 From ITree Require Events.Nondeterminism.
 From Hammer Require Import Tactics.
@@ -352,6 +355,199 @@ Proof.
 Qed.
 
 (* ================================================================= *)
+(** * Iteration                                                       *)
+(* ================================================================= *)
+
+(** A loop runs a body [I -> M (I + R)] from an accumulator: [inl i']
+    continues with [i'], [inr r] exits with [r].  Its outcomes are of two
+    kinds:
+
+      finite runs     [iterOut]: after finitely many iterations the body
+                      exits, or the body itself diverges (inductive);
+      infinite runs   [loopsForever]: the body continues forever
+                      (coinductive), read as divergence.
+
+    Both are stated on the body's outcome relation [step].  ITree's
+    [iter_Prop] (the [MonadIter] of [_ -> Prop]) is the inductive part
+    alone: an infinite loop would have no outcome, so it would leave
+    [divndNE] and every demonic reading would accept it. *)
+
+Section Iteration.
+  Context {I R : Type} (step : I -> option (I + R) -> Prop).
+
+  Inductive iterOut : I -> option R -> Prop :=
+  | iterOut_exit i r : step i (Some (inr r)) -> iterOut i (Some r)
+  | iterOut_div i : step i None -> iterOut i None
+  | iterOut_next i i' o : step i (Some (inl i')) -> iterOut i' o -> iterOut i o.
+
+  CoInductive loopsForever : I -> Prop :=
+  | loopsForever_next i i' : step i (Some (inl i')) -> loopsForever i' -> loopsForever i.
+
+  (** The outcomes of the loop from [i]. *)
+  Definition iterOutcomes (i : I) (o : option R) : Prop :=
+    iterOut i o \/ (o = None /\ loopsForever i).
+
+  (** A loop whose body always has an outcome has one: if no finite run
+      ends, every run continues, so one runs forever (excluded middle). *)
+  Lemma iterOutcomes_nonEmpty :
+    (forall i, exists o, step i o) -> forall i, exists o, iterOutcomes i o.
+  Proof.
+    intros Hstep i.
+    destruct (classic (exists o, iterOut i o)) as [[o Ho] | Hnone].
+    - exists o. left. exact Ho.
+    - exists None. right. split; [ reflexivity |].
+      revert i Hnone. cofix CIH. intros i Hnone.
+      destruct (Hstep i) as [[[i'|r]|] Ho].
+      + refine (loopsForever_next i i' Ho (CIH i' _)).
+        intros [o Ho']. exact (Hnone (ex_intro _ o (iterOut_next i i' o Ho Ho'))).
+      + exfalso. exact (Hnone (ex_intro _ _ (iterOut_exit i r Ho))).
+      + exfalso. exact (Hnone (ex_intro _ _ (iterOut_div i Ho))).
+  Qed.
+
+  (** The loop is a fixed point: one run of the body, then the loop again
+      or the exit. *)
+  Lemma iterOutcomes_unfold (i : I) (o : option R) :
+    iterOutcomes i o
+    <-> exists o1, step i o1 /\
+          match o1 with
+          | Some (inl i') => iterOutcomes i' o
+          | Some (inr r) => o = Some r
+          | None => o = None
+          end.
+  Proof.
+    split.
+    - intros [Ho | [-> Hloop]].
+      + destruct Ho as [i r Hs | i Hs | i i' o Hs Ho].
+        * exists (Some (inr r)). split; [ exact Hs | reflexivity ].
+        * exists None. split; [ exact Hs | reflexivity ].
+        * exists (Some (inl i')). split; [ exact Hs | left; exact Ho ].
+      + destruct Hloop as [i i' Hs Hloop].
+        exists (Some (inl i')). split; [ exact Hs | right; split; [ reflexivity | exact Hloop ] ].
+    - intros [[[i'|r]|] [Hs Ho]].
+      + destruct Ho as [Ho | [-> Hloop]].
+        * left. exact (iterOut_next i i' o Hs Ho).
+        * right. split; [ reflexivity | exact (loopsForever_next i i' Hs Hloop) ].
+      + subst o. left. exact (iterOut_exit i r Hs).
+      + subst o. left. exact (iterOut_div i Hs).
+  Qed.
+
+  (** ** Loop rules, on the outcomes
+
+      Each reading of a loop needs one of these:
+        invariant   every finite run ends in [Q] (DWLP, ASP Over);
+        variant     no run is infinite (DWP);
+        reach       some finite run ends in [Q] (AWP, ASP Under);
+        recurrence  some run is infinite (AWLP, and the [Over] triples). *)
+
+  (** An invariant: every finite run from an [Inv] start ends in [Q]. *)
+  Lemma iterOut_invariant (Inv : I -> Prop) (Q : option R -> Prop) :
+    (forall i o, Inv i -> step i o ->
+       match o with
+       | Some (inl i') => Inv i'
+       | Some (inr r) => Q (Some r)
+       | None => Q None
+       end) ->
+    forall i o, Inv i -> iterOut i o -> Q o.
+  Proof.
+    intros Hstep i o Hi Ho.
+    induction Ho as [i r Hs | i Hs | i i' o Hs _ IH].
+    - exact (Hstep i _ Hi Hs).
+    - exact (Hstep i _ Hi Hs).
+    - exact (IH (Hstep i _ Hi Hs)).
+  Qed.
+
+  (** A variant: if every continuing step from an [Inv] start decreases [V]
+      and keeps [Inv], no run from an [Inv] start is infinite. *)
+  Lemma loopsForever_variant (Inv : I -> Prop) (V : I -> nat) :
+    (forall i i', Inv i -> step i (Some (inl i')) -> Inv i' /\ V i' < V i) ->
+    forall i, Inv i -> ~ loopsForever i.
+  Proof.
+    intros Hstep i. remember (V i) as n eqn:Hn. revert i Hn.
+    induction n as [n IH] using lt_wf_ind. intros i Hn Hi Hloop.
+    destruct Hloop as [i i' Hs Hloop].
+    destruct (Hstep i i' Hi Hs) as [Hi' Hlt]. subst n.
+    exact (IH (V i') Hlt i' eq_refl Hi' Hloop).
+  Qed.
+
+  (** Reaching: if from every [Inv] start some step exits in [Q], or
+      continues to an [Inv] start with a smaller [V], then some finite run
+      from an [Inv] start ends in [Q]. *)
+  Lemma iterOut_reach (Inv : I -> Prop) (V : I -> nat) (Q : option R -> Prop) :
+    (forall i, Inv i -> exists o, step i o /\
+       match o with
+       | Some (inl i') => Inv i' /\ V i' < V i
+       | Some (inr r) => Q (Some r)
+       | None => Q None
+       end) ->
+    forall i, Inv i -> exists o, Q o /\ iterOut i o.
+  Proof.
+    intros Hstep i. remember (V i) as n eqn:Hn. revert i Hn.
+    induction n as [n IH] using lt_wf_ind. intros i Hn Hi.
+    destruct (Hstep i Hi) as [[[i'|r]|] [Hs Ho]].
+    - destruct Ho as [Hi' Hlt]. subst n.
+      destruct (IH (V i') Hlt i' eq_refl Hi') as [o [Hq Ho]].
+      exists o. split; [ exact Hq | exact (iterOut_next i i' o Hs Ho) ].
+    - exists (Some r). split; [ exact Ho | exact (iterOut_exit i r Hs) ].
+    - exists None. split; [ exact Ho | exact (iterOut_div i Hs) ].
+  Qed.
+
+  (** Recurrence: if from every [Inv] start some step continues to an
+      [Inv] start, some run from an [Inv] start is infinite. *)
+  Lemma loopsForever_recurrence (Inv : I -> Prop) :
+    (forall i, Inv i -> exists i', step i (Some (inl i')) /\ Inv i') ->
+    forall i, Inv i -> loopsForever i.
+  Proof.
+    intro Hstep. cofix CIH. intros i Hi.
+    destruct (Hstep i Hi) as [i' [Hs Hi']].
+    exact (loopsForever_next i i' Hs (CIH i' Hi')).
+  Qed.
+End Iteration.
+
+(** Equivalent outcome relations give the same loop outcomes. *)
+Lemma iterOutcomes_ext {I R} (step1 step2 : I -> option (I + R) -> Prop) :
+  (forall i o, step1 i o <-> step2 i o) ->
+  forall i o, iterOutcomes step1 i o <-> iterOutcomes step2 i o.
+Proof.
+  intro Heq.
+  assert (Hout : forall s1 s2 : I -> option (I + R) -> Prop,
+             (forall i o, s1 i o -> s2 i o) -> forall i o, iterOut s1 i o -> iterOut s2 i o).
+  { intros s1 s2 H i o Ho. induction Ho as [i r Hs | i Hs | i i' o Hs _ IH].
+    - exact (iterOut_exit s2 i r (H _ _ Hs)).
+    - exact (iterOut_div s2 i (H _ _ Hs)).
+    - exact (iterOut_next s2 i i' o (H _ _ Hs) IH). }
+  assert (Hloop : forall s1 s2 : I -> option (I + R) -> Prop,
+             (forall i o, s1 i o -> s2 i o) -> forall i, loopsForever s1 i -> loopsForever s2 i).
+  { intros s1 s2 H. cofix CIH. intros i [i0 i' Hs Hl].
+    exact (loopsForever_next s2 i0 i' (H _ _ Hs) (CIH i' Hl)). }
+  intros i o. unfold iterOutcomes.
+  split; intros [Ho | [Hn Hl]];
+    [ left; exact (Hout step1 step2 (fun i o => proj1 (Heq i o)) i o Ho)
+    | right; exact (conj Hn (Hloop step1 step2 (fun i o => proj1 (Heq i o)) i Hl))
+    | left; exact (Hout step2 step1 (fun i o => proj2 (Heq i o)) i o Ho)
+    | right; exact (conj Hn (Hloop step2 step1 (fun i o => proj2 (Heq i o)) i Hl)) ].
+Qed.
+
+(** The loop of the base monad, and its [MonadIter] instance. *)
+
+Definition iterD {I R} (body : I -> divnd (I + R)) (i : I) : divnd R :=
+  @mkOptionT SetM _ (iterOutcomes (fun j => unOptionT (body j)) i).
+
+#[program] Definition iterNE {I R} (body : I -> divndNE (I + R)) (i : I) : divndNE R :=
+  iterD (fun j => getNE (body j)) i.
+Next Obligation.
+  exact (iterOutcomes_nonEmpty _ (fun j => getNE_nonEmpty (body j)) i).
+Qed.
+
+#[global]
+  Instance MonadIter__divndNE : MonadIter divndNE :=
+  fun R I body i => iterNE body i.
+
+Lemma outcomes_iter {I R} (body : I -> divndNE (I + R)) (i : I) (o : option R) :
+  unOptionT (getNE (iter body i)) o
+  <-> iterOutcomes (fun j => unOptionT (getNE (body j))) i o.
+Proof. reflexivity. Qed.
+
+(* ================================================================= *)
 (** * [denote]                                                        *)
 (* ================================================================= *)
 
@@ -467,5 +663,92 @@ Proof.
   - discriminate.
   - intros _. reflexivity.
   - intros _. exact spin_infinite.
+Qed.
+
+(* ================================================================= *)
+(** * [denote] and loops                                              *)
+(* ================================================================= *)
+
+Section Loops.
+  Context {I R : Type} (body : I -> itree E (I + R)).
+
+  (** The body's outcomes, from each accumulator. *)
+  Let step (j : I) (o : option (I + R)) : Prop := unOptionT (getNE (denote (body j))) o.
+
+  Let next (lr : I + R) : itree E R :=
+    match lr with inl l => Tau (ITree.iter body l) | inr r => Ret r end.
+
+  Lemma observe_iter (i : I) :
+    observe (ITree.iter body i) = observe (ITree.bind (body i) next).
+  Proof. reflexivity. Qed.
+
+  (** A result of the tree is a result of a finite run. *)
+  Lemma leaf_iter_iterOut (i : I) (r : R) :
+    Leaf r (ITree.iter body i) -> iterOut step i (Some r).
+  Proof.
+    apply (Leaf_iter_inv body i (fun j => forall r, iterOut step j (Some r) -> iterOut step i (Some r))
+             (fun r => iterOut step i (Some r))); [| intros r' H; exact H ].
+    intros j [j'|r'] Hj Hx; cbn.
+    - intros r' Hr. apply Hj. exact (iterOut_next step j j' _ Hx Hr).
+    - apply Hj. exact (iterOut_exit step j r' Hx).
+  Qed.
+
+  (** A finite run is a result of the tree, or one of its infinite paths if
+      the body diverges. *)
+  Lemma iterOut_tree (i : I) (o : option R) :
+    iterOut step i o ->
+    match o with Some r => Leaf r (ITree.iter body i) | None => any_infinite (ITree.iter body i) end.
+  Proof.
+    intro H. induction H as [i r Hs | i Hs | i i' o Hs _ IH].
+    - cbv beta iota. rewrite unfold_iter. exact (Leaf_bind _ _ _ _ Hs (Leaf_Ret _ _ r)).
+    - cbv beta iota. rewrite unfold_iter. exact (any_infinite_bind_l _ _ Hs).
+    - destruct o as [r|]; rewrite unfold_iter.
+      + refine (Leaf_bind _ _ _ _ Hs _). econstructor 2; [ reflexivity | exact IH ].
+      + refine (any_infinite_bind_leaf _ _ _ Hs _). pfold. red. cbn. constructor. left. exact IH.
+  Qed.
+
+  (** An infinite run gives an infinite path. *)
+  Lemma loopsForever_infinite (i : I) :
+    loopsForever step i -> any_infinite (ITree.iter body i).
+  Proof.
+    revert i. pcofix CIH. intros i Hl. pfold. red. rewrite observe_iter.
+    destruct Hl as [i i' Hs Hl].
+    assert (Hup : upaco1 any_infinite_ r (ITree.iter body i')) by (right; exact (CIH i' Hl)).
+    clear Hl. change (Leaf (inl i') (body i)) in Hs.
+    induction Hs as [u Hu | u u' Hu _ IH | Y e u h y Hu _ IH];
+      rewrite observe_bind, Hu; cbn.
+    - constructor. exact Hup.
+    - constructor. left. pfold. exact IH.
+    - apply (DivVis _ _ e y). left. pfold. exact IH.
+  Qed.
+
+  (** An infinite path is an infinite run, or a finite run on which the
+      body diverges. *)
+  Lemma infinite_iter_inv (i : I) :
+    any_infinite (ITree.iter body i) -> iterOut step i None \/ loopsForever step i.
+  Proof.
+    intro H. destruct (classic (iterOut step i None)) as [Hd | Hn]; [ left; exact Hd | right ].
+    revert i H Hn. cofix CIH. intros i H Hn.
+    rewrite unfold_iter in H.
+    destruct (any_infinite_bind_inv _ _ H) as [Hb | [[i'|r] [Hx Hk]]].
+    - exfalso. exact (Hn (iterOut_div step i Hb)).
+    - cbn in Hk. rewrite Eqit.tau_eutt in Hk.
+      refine (loopsForever_next step i i' Hx (CIH i' Hk _)).
+      intro Hd. exact (Hn (iterOut_next step i i' None Hx Hd)).
+    - destruct (any_infinite_ret r Hk).
+  Qed.
+End Loops.
+
+(** [denote] maps a loop of trees to the loop of their outcomes. *)
+Theorem denote_iter {I R} (body : I -> itree E (I + R)) (i : I) (o : option R) :
+  unOptionT (getNE (denote (ITree.iter body i))) o
+  <-> unOptionT (getNE (Basics.iter (fun j => denote (body j)) i)) o.
+Proof.
+  rewrite outcomes_iter, outcomes_denote. unfold iterOutcomes. destruct o as [r|]; split.
+  - intro H. left. exact (leaf_iter_iterOut body i r H).
+  - intros [H | [H _]]; [ exact (iterOut_tree body i _ H) | discriminate ].
+  - intro H. destruct (infinite_iter_inv body i H) as [Hd | Hl];
+      [ left; exact Hd | right; exact (conj eq_refl Hl) ].
+  - intros [H | [_ H]]; [ exact (iterOut_tree body i _ H) | exact (loopsForever_infinite body i H) ].
 Qed.
 End Denote.

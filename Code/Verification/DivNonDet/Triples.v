@@ -141,3 +141,108 @@ Section Readings.
     - intros [H | H']; [ left; exists tt; exact H | right; intros [] Ho; exact (H' Ho) ].
   Qed.
 End Readings.
+
+(* ================================================================= *)
+(** * Same outcomes, same triples                                     *)
+(* ================================================================= *)
+
+(** Each reading depends only on the outcomes, so two computations with
+    the same outcomes satisfy the same triples ([triple_dwpPure_same]
+    &c.), by [pt_holds_same]. *)
+
+Section SameOutcomes.
+  Context {A : Type} (d1 d2 : divndNE A).
+  Hypothesis Hout : forall o, unOptionT (getNE d1) o <-> unOptionT (getNE d2) o.
+
+  Lemma triple_dwpPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@dwpPure) d1 k P Q <-> triple (@dwpPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros Q' _ H;
+      apply dwpPure_read;
+      intros o Ho;
+      exact (proj1 (dwpPure_read _ _) H o (proj2 (Hout' o) Ho)).
+  Qed.
+
+  Lemma triple_dwlpPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@dwlpPure) d1 k P Q <-> triple (@dwlpPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros Q' _ H;
+      apply dwlpPure_read;
+      intros o Ho;
+      exact (proj1 (dwlpPure_read _ _) H o (proj2 (Hout' o) Ho)).
+  Qed.
+
+  Lemma triple_awpPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@awpPure) d1 k P Q <-> triple (@awpPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros Q' _ H;
+      apply awpPure_read;
+      destruct (proj1 (awpPure_read _ _) H) as [o [Ho Hq]];
+      exists o;
+      exact (conj (proj1 (Hout' o) Ho) Hq).
+  Qed.
+
+  Lemma triple_awlpPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@awlpPure) d1 k P Q <-> triple (@awlpPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros Q' _ H;
+      apply awlpPure_read;
+      destruct (proj1 (awlpPure_read _ _) H) as [o [Ho Hq]];
+      exists o;
+      exact (conj (proj1 (Hout' o) Ho) Hq).
+  Qed.
+
+  Lemma triple_aspPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@aspPure) d1 k P Q <-> triple (@aspPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros P' a H;
+      apply aspPure_read;
+      destruct (proj1 (aspPure_read _ _ _) H) as [Hp Ho];
+      exact (conj Hp (proj1 (Hout' _) Ho)).
+  Qed.
+
+  Lemma triple_dslpPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@dslpPure) d1 k P Q <-> triple (@dslpPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros P' a H;
+      apply dslpPure_read;
+      intro Ho;
+      exact (proj1 (dslpPure_read _ _ _) H (proj2 (Hout' _) Ho)).
+  Qed.
+
+  Lemma triple_dspPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@dspPure) d1 k P Q <-> triple (@dspPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros P' a H;
+      apply dspPure_read;
+      destruct (proj1 (dspPure_read _ _ _) H) as [[Hp Ho] Hall];
+      split;
+      [ exact (conj Hp (proj1 (Hout' _) Ho)) | intro Ho'; exact (Hall (proj2 (Hout' _) Ho')) ].
+  Qed.
+
+  Lemma triple_aslpPure_same (k : approxKind) (P : unit -> Prop) (Q : A -> Prop) :
+    triple (@aslpPure) d1 k P Q <-> triple (@aslpPure) d2 k P Q.
+  Proof.
+    apply pt_holds_same; cbn;
+      [ pose proof Hout as Hout' | pose proof (fun o => iff_sym (Hout o)) as Hout' ].
+    all: intros P' a H;
+      apply aslpPure_read;
+      destruct (proj1 (aslpPure_read _ _ _) H) as [[Hp Ho] | Hall];
+      [ left; exact (conj Hp (proj1 (Hout' _) Ho))
+      | right; intro Ho'; exact (Hall (proj2 (Hout' _) Ho')) ].
+  Qed.
+End SameOutcomes.
