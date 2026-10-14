@@ -47,3 +47,18 @@ Parent: [Verification](../Verification.md). The state setting:
   ITree's `Or`): its tree is a choice between the two results
   (`progA_IT_tree`, up to `eutt`), hence its outcomes (`progA_IT_out`) and
   its DWP and ASP `Under` triples.
+- [TriplesExamples/IncorrectnessLogic.v](../../../../Code/Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v):
+  the sequential examples of O'Hearn's *Incorrectness Logic* (POPL 2020),
+  with each triple the paper states proved, or refuted when the paper calls
+  it wrong. First the language: `prog S = optionT (stateT S (itree ILE))`,
+  so an `error()` keeps its state (the state-and-exceptions setting drops
+  it, and cannot state `er:` assertions); `assume false` diverges.
+  `IL`/`HL` are the `aspSt` `Under`/`Over` triples of the denotation,
+  `MustIL`/`MayIL` the `dwpSt`/`awpSt` ones (`wp`, `wpp`); `ok q`/`er q` the
+  result assertions. `outIL_*` compute outcomes construct by construct,
+  `il_simpl` chains them for straight-line code, `outIL_iter` reduces a loop
+  to the base loop rules, and `starIL_ok`/`starIL_er` are Iterate zero and
+  non-zero. Then the examples, one module per part of the paper:
+  `UnderApproximation` (§3), `ProofRules` (§4, Fact 9), `Loops`
+  (Figure 5), `Conditionals` (Figures 6, 7), `Flaky` (Figure 8),
+  `Composition` (Figure 9).

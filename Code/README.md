@@ -39,7 +39,7 @@ through ITree and paco.
 | [Verification/](Verification) | §1, §5, §6 | everything that involves the computation monad `divndNE`, by setting; programs are interaction trees, denoted into it; each setting directory has the same files: `Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`, `DijkstraMonads.v`, `Typings.v`, `InCorrectnessPrinciples.v` (O'Hearn's rules), and examples in `TriplesExamples/` |
 | ↳ [Generic/](Verification/Generic) | §5, §6 | what is the same at every setting: the general triple, the Dijkstra construction, triples as typings at any indices |
 | ↳ [DivNonDet/](Verification/DivNonDet) | §1, §5, §6 | base setting: programs `itree E A` and their outcomes `divndNE`, `denote`; the readings defined once (`dwpPure`, `aspPure`, …) |
-| ↳ [DivNonDetSt/](Verification/DivNonDetSt) | §5, §6 | with state, `stateT S divndNE`, programs `stateT S (itree E)` (`denoteSt`); the lifts (`dwpSt`, …); the diagram |
+| ↳ [DivNonDetSt/](Verification/DivNonDetSt) | §5, §6 | with state, `stateT S divndNE`, programs `stateT S (itree E)` (`denoteSt`); the lifts (`dwpSt`, …); the diagram; the examples of O'Hearn's *Incorrectness Logic* ([TriplesExamples/IncorrectnessLogic.v](Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v)) |
 | ↳ [DivNonDetStExc/](Verification/DivNonDetStExc) | §5, §6 | with state and exceptions, `stateT S (optionT divndNE)`, programs `stateT S (optionT (itree E))` (`denoteStExc`); the lifts (`dwpStExc`, …); the diagram; the examples |
 | [GaloisConnections/](GaloisConnections) | §7 | the DM4All specification monads and their adjunctions |
 | [Tests/](Tests) | — | regression and instance checks |

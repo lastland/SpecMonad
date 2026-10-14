@@ -24,6 +24,7 @@ Verification/DivNonDetSt/InCorrectnessPrinciples.v
 Verification/DivNonDetSt/DijkstraMonads.v
 Verification/DivNonDetSt/Typings.v
 Verification/DivNonDetSt/TriplesExamples/ITreePrograms.v
+Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v
 Verification/DivNonDetStExc/Computation.v
 Verification/DivNonDetStExc/Morphisms.v
 Verification/DivNonDetStExc/Triples.v
