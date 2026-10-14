@@ -22,7 +22,7 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   (`any_infinite`): a monad morphism up to `eutt` (`denote_morphism`);
   `denote_vis` reads an event, `denote_or` ITree's `Nondeterminism.or`,
   `denote_spin` the silent loop. Every tree has an outcome by excluded
-  middle (`leaf_or_infinite`); ITree's `eutt` lemmas add `eq_rect_eq`.
+  middle (`leaf_or_infinite`); ITree and paco add `eq_rect_eq`.
 - [Morphisms.v](../../../../Code/Verification/DivNonDet/Morphisms.v): the eight readings, each
   defined once here. WP: `dwpPure`, `dwlpPure`, `awpPure`, `awlpPure :
   divndNE A -> WPure A`, from `demonicWP` / `angelicWP`; they land in

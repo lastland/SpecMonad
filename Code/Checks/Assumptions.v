@@ -509,3 +509,34 @@ Print Assumptions DijkstraExamples.progA_Ddslp.
 Print Assumptions DijkstraExamples.progloom_harder_dslp_over.
 Print Assumptions DijkstraExamples.progloom_harder_not_Ddslp.
 Print Assumptions Typings.oneOrTwo_Dasp_op.
+
+From Incorrectness.Lib Require ITreeFacts.
+From Incorrectness.Verification.DivNonDet Require Morphisms.
+From Incorrectness.Verification.DivNonDetSt Require Morphisms.
+From Incorrectness.Verification.DivNonDetStExc Require Morphisms.
+From Incorrectness.Verification.DivNonDet.TriplesExamples Require ITreePrograms.
+From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require ITreePrograms.
+From Incorrectness.Verification.DivNonDetStExc.TriplesExamples Require ITreePrograms.
+
+(** ITree programs.  The one-step inversions of [any_infinite] are closed;
+    the infinite paths of a [bind] and [leaf_or_infinite] use excluded middle
+    or [eq_rect_eq] (through ITree and paco); [denote] at each setting, the
+    readings of programs and the examples also use functional and
+    propositional extensionality (outcome sets are compared by Leibniz
+    equality). *)
+Print Assumptions ITreeFacts.any_infiniteF_vis_inv.
+Print Assumptions ITreeFacts.any_infinite_ret.
+Print Assumptions ITreeFacts.any_infinite_bind_l.
+Print Assumptions ITreeFacts.any_infinite_bind_leaf.
+Print Assumptions ITreeFacts.any_infinite_bind_inv.
+Print Assumptions ITreeFacts.leaf_or_infinite.
+Print Assumptions DivNonDet.Computation.denote_morphism.
+Print Assumptions DivNonDetSt.Computation.denoteSt_morphism.
+Print Assumptions DivNonDetStExc.Computation.denoteStExc_morphism.
+Print Assumptions DivNonDet.Morphisms.IsMonadMorphism_dwpPure_denote.
+Print Assumptions DivNonDet.Morphisms.IsMonadMorphism_aslpPure_denote.
+Print Assumptions DivNonDetSt.Morphisms.IsMonadMorphism_dspSt_denoteSt.
+Print Assumptions DivNonDetStExc.Morphisms.IsMonadMorphism_aslpStExc_denoteStExc.
+Print Assumptions DivNonDet.TriplesExamples.ITreePrograms.spin_not_dwp.
+Print Assumptions DivNonDetSt.TriplesExamples.ITreePrograms.progA_IT_asp_under.
+Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_under.

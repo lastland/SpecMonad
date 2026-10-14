@@ -264,6 +264,13 @@ Hoare triples over-approximate.
   monotone stateful transformers (`SPStBindComparisons.bindASPSt_angelic`).
 - The four SP healthiness classes are pairwise distinct
   (`DSPASLPArr.no_ASPArr_for_dsp`, `DSPASLPArr.no_DSLPArr_for_aslp`).
+- Programs as interaction trees ([Verification/DivNonDet/Computation.v](Code/Verification/DivNonDet/Computation.v),
+  [Lib/ITreeFacts.v](Code/Lib/ITreeFacts.v)): an `itree E A` over events that all have an answer
+  (`HasAnswers`) is denoted into the computation monad (`denote`; with state
+  `denoteSt`, with state and exceptions `denoteStExc`), a monad morphism up to
+  `eutt`, so the readings of a program are those of its denotation
+  (`dwpPure ∘ₘₘ denote` &c.). Examples in each setting's
+  `TriplesExamples/ITreePrograms.v`.
 
 ## Old paths in the paper's Artifact lists
 

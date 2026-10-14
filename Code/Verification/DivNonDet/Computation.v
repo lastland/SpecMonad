@@ -41,6 +41,8 @@ From Incorrectness.Lib Require Import ITreeFacts.
 Class HasAnswers (E : Type -> Type) : Prop :=
   has_answer : forall X (e : E X), inhabited X.
 
+#[global] Hint Mode HasAnswers ! : typeclass_instances.
+
 #[global] Instance HasAnswers_nondetE : HasAnswers Nondeterminism.nondetE.
 Proof. intros X []. exact (inhabits true). Qed.
 
