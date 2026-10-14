@@ -12,6 +12,16 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   not require termination (`empty_prefix_blocks`, `diverge_survives_empty`
   check this on `divnd`). The equality is Leibniz equality of outcome sets,
   so the laws use functional and propositional extensionality.
+  Iteration: `iterNE` (the `MonadIter divndNE` instance) has the outcomes
+  `iterOutcomes`, the finite runs `iterOut` (inductive: the body exits or
+  diverges after finitely many iterations) and the infinite runs
+  `loopsForever` (coinductive, read as divergence). ITree's `iter_Prop` is
+  the inductive part alone, under which an infinite loop has no outcome.
+  The loop rules are stated on the body's outcome relation:
+  `iterOut_invariant` (DWLP, ASP Over), `loopsForever_variant` (DWP),
+  `iterOut_reach` (AWP, ASP Under), `loopsForever_recurrence` (AWLP). They
+  are closed; non-emptiness of a loop (`iterOutcomes_nonEmpty`) uses
+  excluded middle.
 - [Morphisms.v](../../../../Code/Verification/DivNonDet/Morphisms.v): the eight readings, each
   defined once here. WP: `dwpPure`, `dwlpPure`, `awpPure`, `awlpPure :
   divndNE A -> WPure A`, from `demonicWP` / `angelicWP`; they land in
@@ -24,7 +34,8 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   `IsMonadMorphism` instances use the `_rel` proofs.
 - [Triples.v](../../../../Code/Verification/DivNonDet/Triples.v): `SpecReading` of `WPure`, `ASP`,
   `DSLP`, `DSP`, `ASLP`; `triple_aspPure` &c., the SP triple at indices
-  `(unit, A)`.
+  `(unit, A)`; and each reading in terms of the outcomes (`dwpPure_read`
+  &c.), an SP precondition being the proposition `P tt`.
 - [TriplesTaxonomy.v](../../../../Code/Verification/DivNonDet/TriplesTaxonomy.v): the WP edges between
   the base readings of one computation, and the Galois edges with the
   terminating outcomes (`galois_slice_dwlpPure`, `galois_awpPure_slice`).
@@ -40,3 +51,10 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   O'Hearn's rules for the `aspPure` triples (`first_symmetry_rule_aspPure`,
   ..., `principle_of_denial_aspPure`), and their `dwlpPure` variants through
   that edge.
+- [TriplesExamples/](../../../../Code/Verification/DivNonDet/TriplesExamples): loops.
+  `Loops.v`: `forever m` and `silentLoop` have no finite run, so DWLP accepts
+  them and DWP rejects them; `dwp_no_loops`. `Countdown.v`: `countdown n`
+  terminates from `0`, loops forever from `1`, and may do either from `2`
+  up; its outcomes (`countdown_out`) by the four loop rules, and one triple
+  of each of the sixteen kinds, the input `n` being a parameter since the
+  only start point is `tt`.

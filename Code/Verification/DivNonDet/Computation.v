@@ -11,9 +11,10 @@
     [stdivexcndNE S = stateT S (optionT divndNE)]
     ([DivNonDetStExc/Computation.v]). *)
 
-From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
+From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality
+  Classical_Prop Wf_nat.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From ITree Require Import Basics.Basics Basics.Monad.
 From Hammer Require Import Tactics.
 From Incorrectness.Lib.Monad Require Import TransformerLaws.
 
@@ -317,3 +318,172 @@ Proof.
   intros H oa. change (unOptionT (getNE x) = unOptionT (getNE y)) in H.
   rewrite H. reflexivity.
 Qed.
+
+(* ================================================================= *)
+(** * Iteration                                                       *)
+(* ================================================================= *)
+
+(** A loop runs a body [I -> M (I + R)] from an accumulator: [inl i']
+    continues with [i'], [inr r] exits with [r].  Its outcomes are of two
+    kinds:
+
+      finite runs     [iterOut]: after finitely many iterations the body
+                      exits, or the body itself diverges (inductive);
+      infinite runs   [loopsForever]: the body continues forever
+                      (coinductive), read as divergence.
+
+    Both are stated on the body's outcome relation [step].  ITree's
+    [iter_Prop] (the [MonadIter] of [_ -> Prop]) is the inductive part
+    alone: an infinite loop would have no outcome, so it would leave
+    [divndNE] and every demonic reading would accept it. *)
+
+Section Iteration.
+  Context {I R : Type} (step : I -> option (I + R) -> Prop).
+
+  Inductive iterOut : I -> option R -> Prop :=
+  | iterOut_exit i r : step i (Some (inr r)) -> iterOut i (Some r)
+  | iterOut_div i : step i None -> iterOut i None
+  | iterOut_next i i' o : step i (Some (inl i')) -> iterOut i' o -> iterOut i o.
+
+  CoInductive loopsForever : I -> Prop :=
+  | loopsForever_next i i' : step i (Some (inl i')) -> loopsForever i' -> loopsForever i.
+
+  (** The outcomes of the loop from [i]. *)
+  Definition iterOutcomes (i : I) (o : option R) : Prop :=
+    iterOut i o \/ (o = None /\ loopsForever i).
+
+  (** A loop whose body always has an outcome has one: if no finite run
+      ends, every run continues, so one runs forever (excluded middle). *)
+  Lemma iterOutcomes_nonEmpty :
+    (forall i, exists o, step i o) -> forall i, exists o, iterOutcomes i o.
+  Proof.
+    intros Hstep i.
+    destruct (classic (exists o, iterOut i o)) as [[o Ho] | Hnone].
+    - exists o. left. exact Ho.
+    - exists None. right. split; [ reflexivity |].
+      revert i Hnone. cofix CIH. intros i Hnone.
+      destruct (Hstep i) as [[[i'|r]|] Ho].
+      + refine (loopsForever_next i i' Ho (CIH i' _)).
+        intros [o Ho']. exact (Hnone (ex_intro _ o (iterOut_next i i' o Ho Ho'))).
+      + exfalso. exact (Hnone (ex_intro _ _ (iterOut_exit i r Ho))).
+      + exfalso. exact (Hnone (ex_intro _ _ (iterOut_div i Ho))).
+  Qed.
+
+  (** The loop is a fixed point: one run of the body, then the loop again
+      or the exit. *)
+  Lemma iterOutcomes_unfold (i : I) (o : option R) :
+    iterOutcomes i o
+    <-> exists o1, step i o1 /\
+          match o1 with
+          | Some (inl i') => iterOutcomes i' o
+          | Some (inr r) => o = Some r
+          | None => o = None
+          end.
+  Proof.
+    split.
+    - intros [Ho | [-> Hloop]].
+      + destruct Ho as [i r Hs | i Hs | i i' o Hs Ho].
+        * exists (Some (inr r)). split; [ exact Hs | reflexivity ].
+        * exists None. split; [ exact Hs | reflexivity ].
+        * exists (Some (inl i')). split; [ exact Hs | left; exact Ho ].
+      + destruct Hloop as [i i' Hs Hloop].
+        exists (Some (inl i')). split; [ exact Hs | right; split; [ reflexivity | exact Hloop ] ].
+    - intros [[[i'|r]|] [Hs Ho]].
+      + destruct Ho as [Ho | [-> Hloop]].
+        * left. exact (iterOut_next i i' o Hs Ho).
+        * right. split; [ reflexivity | exact (loopsForever_next i i' Hs Hloop) ].
+      + subst o. left. exact (iterOut_exit i r Hs).
+      + subst o. left. exact (iterOut_div i Hs).
+  Qed.
+
+  (** ** Loop rules, on the outcomes
+
+      Each reading of a loop needs one of these:
+        invariant   every finite run ends in [Q] (DWLP, ASP Over);
+        variant     no run is infinite (DWP);
+        reach       some finite run ends in [Q] (AWP, ASP Under);
+        recurrence  some run is infinite (AWLP, and the [Over] triples). *)
+
+  (** An invariant: every finite run from an [Inv] start ends in [Q]. *)
+  Lemma iterOut_invariant (Inv : I -> Prop) (Q : option R -> Prop) :
+    (forall i o, Inv i -> step i o ->
+       match o with
+       | Some (inl i') => Inv i'
+       | Some (inr r) => Q (Some r)
+       | None => Q None
+       end) ->
+    forall i o, Inv i -> iterOut i o -> Q o.
+  Proof.
+    intros Hstep i o Hi Ho.
+    induction Ho as [i r Hs | i Hs | i i' o Hs _ IH].
+    - exact (Hstep i _ Hi Hs).
+    - exact (Hstep i _ Hi Hs).
+    - exact (IH (Hstep i _ Hi Hs)).
+  Qed.
+
+  (** A variant: if every continuing step from an [Inv] start decreases [V]
+      and keeps [Inv], no run from an [Inv] start is infinite. *)
+  Lemma loopsForever_variant (Inv : I -> Prop) (V : I -> nat) :
+    (forall i i', Inv i -> step i (Some (inl i')) -> Inv i' /\ V i' < V i) ->
+    forall i, Inv i -> ~ loopsForever i.
+  Proof.
+    intros Hstep i. remember (V i) as n eqn:Hn. revert i Hn.
+    induction n as [n IH] using lt_wf_ind. intros i Hn Hi Hloop.
+    destruct Hloop as [i i' Hs Hloop].
+    destruct (Hstep i i' Hi Hs) as [Hi' Hlt]. subst n.
+    exact (IH (V i') Hlt i' eq_refl Hi' Hloop).
+  Qed.
+
+  (** Reaching: if from every [Inv] start some step exits in [Q], or
+      continues to an [Inv] start with a smaller [V], then some finite run
+      from an [Inv] start ends in [Q]. *)
+  Lemma iterOut_reach (Inv : I -> Prop) (V : I -> nat) (Q : option R -> Prop) :
+    (forall i, Inv i -> exists o, step i o /\
+       match o with
+       | Some (inl i') => Inv i' /\ V i' < V i
+       | Some (inr r) => Q (Some r)
+       | None => Q None
+       end) ->
+    forall i, Inv i -> exists o, Q o /\ iterOut i o.
+  Proof.
+    intros Hstep i. remember (V i) as n eqn:Hn. revert i Hn.
+    induction n as [n IH] using lt_wf_ind. intros i Hn Hi.
+    destruct (Hstep i Hi) as [[[i'|r]|] [Hs Ho]].
+    - destruct Ho as [Hi' Hlt]. subst n.
+      destruct (IH (V i') Hlt i' eq_refl Hi') as [o [Hq Ho]].
+      exists o. split; [ exact Hq | exact (iterOut_next i i' o Hs Ho) ].
+    - exists (Some r). split; [ exact Ho | exact (iterOut_exit i r Hs) ].
+    - exists None. split; [ exact Ho | exact (iterOut_div i Hs) ].
+  Qed.
+
+  (** Recurrence: if from every [Inv] start some step continues to an
+      [Inv] start, some run from an [Inv] start is infinite. *)
+  Lemma loopsForever_recurrence (Inv : I -> Prop) :
+    (forall i, Inv i -> exists i', step i (Some (inl i')) /\ Inv i') ->
+    forall i, Inv i -> loopsForever i.
+  Proof.
+    intro Hstep. cofix CIH. intros i Hi.
+    destruct (Hstep i Hi) as [i' [Hs Hi']].
+    exact (loopsForever_next i i' Hs (CIH i' Hi')).
+  Qed.
+End Iteration.
+
+(** The loop of the base monad, and its [MonadIter] instance. *)
+
+Definition iterD {I R} (body : I -> divnd (I + R)) (i : I) : divnd R :=
+  @mkOptionT SetM _ (iterOutcomes (fun j => unOptionT (body j)) i).
+
+#[program] Definition iterNE {I R} (body : I -> divndNE (I + R)) (i : I) : divndNE R :=
+  iterD (fun j => getNE (body j)) i.
+Next Obligation.
+  exact (iterOutcomes_nonEmpty _ (fun j => getNE_nonEmpty (body j)) i).
+Qed.
+
+#[global]
+  Instance MonadIter__divndNE : MonadIter divndNE :=
+  fun R I body i => iterNE body i.
+
+Lemma outcomes_iter {I R} (body : I -> divndNE (I + R)) (i : I) (o : option R) :
+  unOptionT (getNE (iter body i)) o
+  <-> iterOutcomes (fun j => unOptionT (getNE (body j))) i o.
+Proof. reflexivity. Qed.
