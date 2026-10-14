@@ -4,8 +4,9 @@
     proved, or refuted where the paper calls it wrong.  A program is
     [prog S A = optionT (stateT S (itree ILE))]: an [error()] keeps its
     state, so [er:] assertions can talk about it; [assume false] diverges.
-    [IL]/[HL] are O'Hearn's triple and the Hoare triple (ASP [Under]/[Over]),
-    [MustIL]/[MayIL] the [wp]/[wpp] readings. *)
+    Triples are the named logics of [Triples.v] on a program's denotation:
+    [IncorrLogic] is O'Hearn's triple, [PartCorr] the Hoare triple, and
+    [TotalCorr], [LisbonLogic] the [wp], [wpp] readings. *)
 
 From Coq Require Import ZArith Lia Relations.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad MonadTrans.
@@ -83,40 +84,30 @@ Definition ok {S A} (q : S -> Prop) (r : option A * S) : Prop :=
 Definition er {S A} (q : S -> Prop) (r : option A * S) : Prop :=
   match fst r with Some _ => False | None => q (snd r) end.
 
-(** O'Hearn's triple [p]C[q] and the Hoare triple {p}C{q}. *)
-Definition IL {S A} (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) : Prop :=
-  triple (@aspSt S) (denoteIL C) Under p q.
-Definition HL {S A} (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) : Prop :=
-  triple (@aspSt S) (denoteIL C) Over p q.
-
-(** [wp] and Hoare's possible precondition [wpp]. *)
-Definition MustIL {S A} (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) : Prop :=
-  triple (@dwpSt S) (denoteIL C) Under p q.
-Definition MayIL {S A} (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) : Prop :=
-  triple (@awpSt S) (denoteIL C) Under p q.
+(** A program's triples are those of the named logics of [Triples.v] on its
+    denotation: [IncorrLogic p (denoteIL C) q] is O'Hearn's [p]C[q]. *)
 
 Section Readings.
   Context {S A : Type}.
 
-  Lemma IL_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
-    IL p C q <-> forall r, q r -> exists s, p s /\ outIL C s (Some r).
+  Lemma IncorrLogic_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
+    IncorrLogic p (denoteIL C) q <-> forall r, q r -> exists s, p s /\ outIL C s (Some r).
   Proof.
     split.
     - intros H r Hr. exact (proj1 (aspSt_read (denoteIL C) p r) (H r Hr)).
     - intros H r Hr. exact (proj2 (aspSt_read (denoteIL C) p r) (H r Hr)).
   Qed.
 
-  Lemma HL_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
-    HL p C q <-> forall s r, p s -> outIL C s (Some r) -> q r.
+  Lemma PartCorr_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
+    PartCorr p (denoteIL C) q <-> forall s r, p s -> outIL C s (Some r) -> q r.
   Proof.
     split.
-    - intros H s r Hs Ho. apply H. exact (proj2 (aspSt_read (denoteIL C) p r) (ex_intro _ s (conj Hs Ho))).
-    - intros H r Hr. destruct (proj1 (aspSt_read (denoteIL C) p r) Hr) as [s [Hs Ho]].
-      exact (H s r Hs Ho).
+    - intros H s r Hs Ho. exact (proj1 (dwlpSt_read (denoteIL C) s q) (H s Hs) (Some r) Ho).
+    - intros H s Hs. apply dwlpSt_read. intros [r|] Ho; [ exact (H s r Hs Ho) | exact I ].
   Qed.
 
-  Lemma MustIL_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
-    MustIL p C q <-> forall s, p s -> forall o, outIL C s o ->
+  Lemma TotalCorr_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
+    TotalCorr p (denoteIL C) q <-> forall s, p s -> forall o, outIL C s o ->
                        match o with Some r => q r | None => False end.
   Proof.
     split; intros H s Hs.
@@ -124,8 +115,8 @@ Section Readings.
     - exact (proj2 (dwpSt_read (denoteIL C) s q) (H s Hs)).
   Qed.
 
-  Lemma MayIL_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
-    MayIL p C q <-> forall s, p s -> exists o, outIL C s o /\
+  Lemma LisbonLogic_iff (p : S -> Prop) (C : prog S A) (q : option A * S -> Prop) :
+    LisbonLogic p (denoteIL C) q <-> forall s, p s -> exists o, outIL C s o /\
                        match o with Some r => q r | None => False end.
   Proof.
     split; intros H s Hs.
@@ -549,9 +540,9 @@ Qed.
 
 (** [[z == 11] P [ok: z == 42]] is false. *)
 Theorem z42_not_under :
-  ~ IL (fun '(_, _, z) => z = 11) z42 (ok (fun '(_, _, z) => z = 42)).
+  ~ IncorrLogic (fun '(_, _, z) => z = 11) (denoteIL z42) (ok (fun '(_, _, z) => z = 42)).
 Proof.
-  rewrite IL_iff. intro H.
+  rewrite IncorrLogic_iff. intro H.
   destruct (H (Some tt, (1, 2, 42)) eq_refl) as [[[x y] z] [Hz Ho]].
   apply z42_out in Ho. cbn in Hz. injection Ho as Hst.
   destruct (Z.even x) eqn:Hx, (Z.even y); cbn [negb andb] in Hst; injection Hst; intros;
@@ -560,10 +551,10 @@ Qed.
 
 (** [[z == 11] P [ok: z == 42 && x is even && y is odd]]. *)
 Theorem z42_under :
-  IL (fun '(_, _, z) => z = 11) z42
+  IncorrLogic (fun '(_, _, z) => z = 11) (denoteIL z42)
      (ok (fun '(x, y, z) => z = 42 /\ Z.even x = true /\ Z.even y = false)).
 Proof.
-  rewrite IL_iff. intros [[[] | ] [[x y] z]] Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[] | ] [[x y] z]] Hq; [| destruct Hq ].
   cbn in Hq. destruct Hq as [-> [Hx Hy]].
   exists (x, y, 11). split; [ reflexivity |].
   apply z42_out. rewrite Hx, Hy. reflexivity.
@@ -571,9 +562,9 @@ Qed.
 
 (** [[true] P [ok: z == 42]]. *)
 Theorem z42_true_pre :
-  IL (fun _ => True) z42 (ok (fun '(_, _, z) => z = 42)).
+  IncorrLogic (fun _ => True) (denoteIL z42) (ok (fun '(_, _, z) => z = 42)).
 Proof.
-  rewrite IL_iff. intros [[[] | ] [[x y] z]] Hq; [| destruct Hq ]. cbn in Hq. subst z.
+  rewrite IncorrLogic_iff. intros [[[] | ] [[x y] z]] Hq; [| destruct Hq ]. cbn in Hq. subst z.
   destruct (andb (Z.even x) (negb (Z.even y))) eqn:Hc.
   - exists (x, y, 11). split; [ exact I | apply z42_out; rewrite Hc; reflexivity ].
   - exists (x, y, 42). split; [ exact I | apply z42_out; rewrite Hc; reflexivity ].
@@ -587,9 +578,9 @@ Definition foo : prog (list nat) unit :=
   if Nat.ltb 16 (length str) then errorIL else skipIL.
 
 Theorem foo_overflow (s : list nat) :
-  IL (fun str => str = s) foo (er (fun str => str = s /\ (16 < length s)%nat)).
+  IncorrLogic (fun str => str = s) (denoteIL foo) (er (fun str => str = s /\ (16 < length s)%nat)).
 Proof.
-  rewrite IL_iff. intros [[[]|] str] Hq; [ destruct Hq |]. cbn in Hq. destruct Hq as [-> Hlen].
+  rewrite IncorrLogic_iff. intros [[[]|] str] Hq; [ destruct Hq |]. cbn in Hq. destruct Hq as [-> Hlen].
   exists s. split; [ reflexivity |]. unfold foo. apply outIL_bind.
   exists (Some (Some s, s)). split; [ apply outIL_get; reflexivity |]. cbv beta iota.
   rewrite (proj2 (Nat.ltb_lt _ _) Hlen). apply outIL_error. reflexivity.
@@ -615,28 +606,28 @@ Qed.
 
 (** The wrong achieves [ok: x == 2 || x == 4]. *)
 Theorem mkeven_not_under :
-  ~ IL (fun _ => True) mkeven (ok (fun x => x = 2 \/ x = 4)).
+  ~ IncorrLogic (fun _ => True) (denoteIL mkeven) (ok (fun x => x = 2 \/ x = 4)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 4) (or_intror eq_refl)) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 4) (or_intror eq_refl)) as [s [_ Ho]].
   apply outIL_put in Ho. discriminate.
 Qed.
 
-Theorem mkeven_under : IL (fun _ => True) mkeven (ok (fun x => x = 2)).
+Theorem mkeven_under : IncorrLogic (fun _ => True) (denoteIL mkeven) (ok (fun x => x = 2)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; [| destruct Hq ]. cbn in Hq. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; [| destruct Hq ]. cbn in Hq. subst x.
   exists 0. split; [ exact I | apply outIL_put; reflexivity ].
 Qed.
 
 (** No run of [usemkeven] raises: every result is an [ok] exit ... *)
-Theorem usemkeven_no_error : HL (fun _ => True) usemkeven (ok (fun _ => True)).
+Theorem usemkeven_no_error : PartCorr (fun _ => True) (denoteIL usemkeven) (ok (fun _ => True)).
 Proof.
-  rewrite HL_iff. intros s r _ Ho. apply usemkeven_out in Ho. injection Ho as ->. exact I.
+  rewrite PartCorr_iff. intros s r _ Ho. apply usemkeven_out in Ho. injection Ho as ->. exact I.
 Qed.
 
 (** ... so the error the wrong achieves would predict is not reachable. *)
-Theorem usemkeven_not_er : ~ IL (fun _ => True) usemkeven (er (fun x => x = 4)).
+Theorem usemkeven_not_er : ~ IncorrLogic (fun _ => True) (denoteIL usemkeven) (er (fun x => x = 4)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (None, 4) eq_refl) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (None, 4) eq_refl) as [s [_ Ho]].
   apply usemkeven_out in Ho. discriminate.
 Qed.
 
@@ -654,22 +645,24 @@ Proof.
 Qed.
 
 (** [ok: x == 4] over-approximates its (no) results ... *)
-Theorem mkevenDiv_over : HL (fun _ => True) mkevenDiv (ok (fun x => x = 4)).
+Theorem mkevenDiv_over : PartCorr (fun _ => True) (denoteIL mkevenDiv) (ok (fun x => x = 4)).
 Proof.
-  rewrite HL_iff. intros s r _ Ho. apply mkevenDiv_out in Ho. discriminate.
+  rewrite PartCorr_iff. intros s r _ Ho. apply mkevenDiv_out in Ho. discriminate.
 Qed.
 
 (** ... but does not under-approximate them ... *)
-Theorem mkevenDiv_not_under : ~ IL (fun _ => True) mkevenDiv (ok (fun x => x = 4)).
+Theorem mkevenDiv_not_under :
+  ~ IncorrLogic (fun _ => True) (denoteIL mkevenDiv) (ok (fun x => x = 4)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 4) eq_refl) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 4) eq_refl) as [s [_ Ho]].
   apply mkevenDiv_out in Ho. discriminate.
 Qed.
 
 (** ... and the error in [usemkevenDiv] is not reachable. *)
-Theorem usemkevenDiv_not_er : ~ IL (fun _ => True) usemkevenDiv (er (fun x => x = 4)).
+Theorem usemkevenDiv_not_er :
+  ~ IncorrLogic (fun _ => True) (denoteIL usemkevenDiv) (er (fun x => x = 4)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (None, 4) eq_refl) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (None, 4) eq_refl) as [s [_ Ho]].
   unfold usemkevenDiv in Ho. apply outIL_bind in Ho. destruct Ho as [o1 [H1 H2]].
   apply mkevenDiv_out in H1. subst o1. discriminate.
 Qed.
@@ -687,21 +680,21 @@ Definition errSeq : prog Z unit := put 1 ;; (errorIL : prog Z unit) ;; put 42.
 Lemma errSeq_out (s : Z) o : outIL errSeq s o <-> o = Some (None, 1).
 Proof. unfold errSeq. il_simpl. reflexivity. Qed.
 
-Theorem errSeq_er : IL (fun _ => True) errSeq (er (fun x => x = 1)).
+Theorem errSeq_er : IncorrLogic (fun _ => True) (denoteIL errSeq) (er (fun x => x = 1)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
   exists 0. split; [ exact I | apply errSeq_out; reflexivity ].
 Qed.
 
-Theorem errSeq_not_ok : ~ IL (fun _ => True) errSeq (ok (fun x => x = 42)).
+Theorem errSeq_not_ok : ~ IncorrLogic (fun _ => True) (denoteIL errSeq) (ok (fun x => x = 42)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 42) eq_refl) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 42) eq_refl) as [s [_ Ho]].
   apply errSeq_out in Ho. discriminate.
 Qed.
 
-Theorem errSeq_hl : HL (fun _ => True) errSeq (er (fun x => x = 1)).
+Theorem errSeq_hl : PartCorr (fun _ => True) (denoteIL errSeq) (er (fun x => x = 1)).
 Proof.
-  rewrite HL_iff. intros s r _ Ho. apply errSeq_out in Ho. injection Ho as ->. reflexivity.
+  rewrite PartCorr_iff. intros s r _ Ho. apply errSeq_out in Ho. injection Ho as ->. reflexivity.
 Qed.
 
 (** *** Assignment *)
@@ -713,22 +706,22 @@ Lemma assign42_out (x y : Z) o : outIL assign42 (x, y) o <-> o = Some (Some tt, 
 Proof. unfold assign42. il_simpl. reflexivity. Qed.
 
 Theorem hoare_assign_not_under :
-  ~ IL (fun '(_, y) => 42 = y) assign42 (ok (fun '(x, y) => x = y)).
+  ~ IncorrLogic (fun '(_, y) => 42 = y) (denoteIL assign42) (ok (fun '(x, y) => x = y)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, (3, 3)) eq_refl) as [[x y] [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, (3, 3)) eq_refl) as [[x y] [_ Ho]].
   apply assign42_out in Ho. discriminate.
 Qed.
 
 Theorem hoare_assign_over :
-  HL (fun '(_, y) => 42 = y) assign42 (ok (fun '(x, y) => x = y)).
+  PartCorr (fun '(_, y) => 42 = y) (denoteIL assign42) (ok (fun '(x, y) => x = y)).
 Proof.
-  rewrite HL_iff. intros [x y] r Hy Ho. apply assign42_out in Ho. injection Ho as ->. exact Hy.
+  rewrite PartCorr_iff. intros [x y] r Hy Ho. apply assign42_out in Ho. injection Ho as ->. exact Hy.
 Qed.
 
 Theorem floyd_assign :
-  IL (fun '(_, y) => 42 = y) assign42 (ok (fun '(x, y) => x = 42 /\ y = 42)).
+  IncorrLogic (fun '(_, y) => 42 = y) (denoteIL assign42) (ok (fun '(x, y) => x = 42 /\ y = 42)).
 Proof.
-  rewrite IL_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [| destruct Hq ].
   destruct Hq as [-> ->]. exists (0, 42). split; [ reflexivity | apply assign42_out; reflexivity ].
 Qed.
 
@@ -748,27 +741,27 @@ Qed.
 
 (** The two quadruples of the rule for [+] ... *)
 Theorem assert_even :
-  IL (fun x => Z.even x = true) assertEven (ok (fun x => Z.even x = true))
-  /\ IL (fun x => Z.even x = true) assertEven (er (fun _ => False)).
+  IncorrLogic (fun x => Z.even x = true) (denoteIL assertEven) (ok (fun x => Z.even x = true))
+  /\ IncorrLogic (fun x => Z.even x = true) (denoteIL assertEven) (er (fun _ => False)).
 Proof.
-  rewrite !IL_iff. split; intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq | destruct Hq ..].
+  rewrite !IncorrLogic_iff. split; intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq | destruct Hq ..].
   exists x. split; [ exact Hq | apply assertEven_out; auto ].
 Qed.
 
 Theorem assert_odd :
-  IL (fun x => Z.even x = false) assertEven (ok (fun _ => False))
-  /\ IL (fun x => Z.even x = false) assertEven (er (fun x => Z.even x = false)).
+  IncorrLogic (fun x => Z.even x = false) (denoteIL assertEven) (ok (fun _ => False))
+  /\ IncorrLogic (fun x => Z.even x = false) (denoteIL assertEven) (er (fun x => Z.even x = false)).
 Proof.
-  rewrite !IL_iff. split; intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq .. |].
+  rewrite !IncorrLogic_iff. split; intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq .. |].
   exists x. split; [ exact Hq | apply assertEven_out; auto ].
 Qed.
 
 (** ... and the one that postpones the test. *)
 Theorem assert_true :
-  IL (fun _ => True) assertEven (ok (fun x => Z.even x = true))
-  /\ IL (fun _ => True) assertEven (er (fun x => Z.even x = false)).
+  IncorrLogic (fun _ => True) (denoteIL assertEven) (ok (fun x => Z.even x = true))
+  /\ IncorrLogic (fun _ => True) (denoteIL assertEven) (er (fun x => Z.even x = false)).
 Proof.
-  rewrite !IL_iff. split; intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq | destruct Hq |];
+  rewrite !IncorrLogic_iff. split; intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq | destruct Hq |];
     exists x; (split; [ exact I | apply assertEven_out; auto ]).
 Qed.
 
@@ -787,30 +780,30 @@ Proof.
   - intros [[-> | ->] ->]; [ left | right ]; left; auto.
 Qed.
 
-Theorem choice88_one : IL (fun x => x = 1) choice88 (ok (fun x => x = 88)).
+Theorem choice88_one : IncorrLogic (fun x => x = 1) (denoteIL choice88) (ok (fun x => x = 88)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ]. subst x.
   exists 1. split; [ reflexivity | apply choice88_out; auto ].
 Qed.
 
-Theorem choice88_two : IL (fun x => x = 2) choice88 (ok (fun x => x = 88)).
+Theorem choice88_two : IncorrLogic (fun x => x = 2) (denoteIL choice88) (ok (fun x => x = 88)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ]. subst x.
   exists 2. split; [ reflexivity | apply choice88_out; auto ].
 Qed.
 
 Theorem choice88_not_conj :
-  ~ IL (fun x => x = 1 /\ x = 2) choice88 (ok (fun x => x = 88)).
+  ~ IncorrLogic (fun x => x = 1 /\ x = 2) (denoteIL choice88) (ok (fun x => x = 88)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 88) eq_refl) as [s [[H1 H2] _]]. lia.
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 88) eq_refl) as [s [[H1 H2] _]]. lia.
 Qed.
 
 (** *** Fact 9 *)
 
 Theorem no_presumption (p : Z -> Prop) :
-  ~ IL p (put 41 : prog Z unit) (ok (fun _ => True)).
+  ~ IncorrLogic p (denoteIL (put 41 : prog Z unit)) (ok (fun _ => True)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 0) I) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 0) I) as [s [_ Ho]].
   apply outIL_put in Ho. discriminate.
 Qed.
 
@@ -862,15 +855,15 @@ Proof.
     + apply iterOut_exit. apply loop0_step. reflexivity.
 Qed.
 
-Theorem loop0_achieves : IL (fun _ => True) loop0 (ok (fun x => 0 <= x)).
+Theorem loop0_achieves : IncorrLogic (fun _ => True) (denoteIL loop0) (ok (fun x => 0 <= x)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   exists 0. split; [ exact I | apply loop0_reach; exact Hq ].
 Qed.
 
-Theorem loop0_hoare : HL (fun _ => True) loop0 (ok (fun x => 0 <= x)).
+Theorem loop0_hoare : PartCorr (fun _ => True) (denoteIL loop0) (ok (fun x => 0 <= x)).
 Proof.
-  rewrite HL_iff. intros s r _. unfold loop0. il_simpl. intros [n Ho].
+  rewrite PartCorr_iff. intros s r _. unfold loop0. il_simpl. intros [n Ho].
   apply outIL_iter in Ho. destruct Ho as [Ho | [Hc _]]; [| discriminate Hc ].
   refine (iterOut_invariant _ (fun '(_, x) => 0 <= x)
             (fun o => match o with Some r => ok (fun x => 0 <= x) r | None => True end)
@@ -881,9 +874,10 @@ Qed.
 
 Definition client0 : prog Z unit := loop0 ;; errorIfX 2000000.
 
-Theorem client0_achieves : IL (fun _ => True) client0 (er (fun x => x = 2000000)).
+Theorem client0_achieves :
+  IncorrLogic (fun _ => True) (denoteIL client0) (er (fun x => x = 2000000)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
   exists 0. split; [ exact I |].
   apply (outIL_seq _ _ _ tt 2000000); [ apply loop0_reach; lia |].
   apply errorIfX_out. reflexivity.
@@ -910,23 +904,23 @@ Proof.
 Qed.
 
 Theorem loop1_achieves1 :
-  IL (fun _ => True) loop1 (ok (fun x => x = 0 \/ x = 1 \/ x = 2 \/ x = 3)).
+  IncorrLogic (fun _ => True) (denoteIL loop1) (ok (fun x => x = 0 \/ x = 1 \/ x = 2 \/ x = 3)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   exists 0. split; [ exact I | apply loop1_reach; lia ].
 Qed.
 
-Theorem loop1_achieves2 : IL (fun _ => True) loop1 (ok (fun x => 0 <= x)).
+Theorem loop1_achieves2 : IncorrLogic (fun _ => True) (denoteIL loop1) (ok (fun x => 0 <= x)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   exists 0. split; [ exact I | apply loop1_reach; exact Hq ].
 Qed.
 
 (** [achieves1] under-approximates: [x == 4] is reached too. *)
 Theorem loop1_achieves1_not_hoare :
-  ~ HL (fun _ => True) loop1 (ok (fun x => x = 0 \/ x = 1 \/ x = 2 \/ x = 3)).
+  ~ PartCorr (fun _ => True) (denoteIL loop1) (ok (fun x => x = 0 \/ x = 1 \/ x = 2 \/ x = 3)).
 Proof.
-  rewrite HL_iff. intro H. specialize (H 0 (Some tt, 4) I (loop1_reach 0 4 ltac:(lia))).
+  rewrite PartCorr_iff. intro H. specialize (H 0 (Some tt, 4) I (loop1_reach 0 4 ltac:(lia))).
   cbn in H. lia.
 Qed.
 
@@ -941,9 +935,10 @@ Qed.
 
 Definition client1 : prog Z unit := loop1 ;; errorIfX 2000000.
 
-Theorem client1_achieves : IL (fun _ => True) client1 (er (fun x => x = 2000000)).
+Theorem client1_achieves :
+  IncorrLogic (fun _ => True) (denoteIL client1) (er (fun x => x = 2000000)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
   exists 0. split; [ exact I |].
   apply (outIL_seq _ _ _ tt 2000000); [ apply loop1_reach; lia |].
   apply errorIfX_out. reflexivity.
@@ -980,16 +975,16 @@ Proof.
 Qed.
 
 Theorem loop2_frontier :
-  IL (fun x => x = 0) (starIL loop2Body) (ok (fun x => 0 <= x <= 2000000)).
+  IncorrLogic (fun x => x = 0) (denoteIL (starIL loop2Body)) (ok (fun x => 0 <= x <= 2000000)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   exists 0. split; [ reflexivity |]. apply starIL_ok.
   replace x with (0 + Z.of_nat (Z.to_nat x)) by lia. apply loop2Body_steps. lia.
 Qed.
 
-Theorem loop2_achieves : IL (fun _ => True) loop2 (er (fun x => x = 2000000)).
+Theorem loop2_achieves : IncorrLogic (fun _ => True) (denoteIL loop2) (er (fun x => x = 2000000)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
   exists 0. split; [ exact I |]. unfold loop2. il_simpl.
   apply (starIL_er _ _ 2000000).
   - replace 2000000 with (0 + Z.of_nat (Z.to_nat 2000000)) by lia. apply loop2Body_steps. lia.
@@ -1020,18 +1015,18 @@ Proof.
 Qed.
 
 Theorem client_achieves1 :
-  IL (fun _ => True) client (ok (fun '(x, y) => y = 49 /\ x = 1)).
+  IncorrLogic (fun _ => True) (denoteIL client) (ok (fun '(x, y) => y = 49 /\ x = 1)).
 Proof.
-  rewrite IL_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [| destruct Hq ].
   destruct Hq as [-> ->]. exists (0, 49). split; [ exact I |].
   apply client_out. exists 7. left. split; reflexivity.
 Qed.
 
 Theorem client_achieves2 :
-  IL (fun _ => True) client
+  IncorrLogic (fun _ => True) (denoteIL client)
      (ok (fun '(x, y) => exists z, (y = difficult z /\ x = 1) \/ (y <> difficult z /\ x = 2))).
 Proof.
-  rewrite IL_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [| destruct Hq ].
   exists (0, y). split; [ exact I |]. apply client_out.
   destruct Hq as [z [[Hy ->] | [Hy ->]]]; exists z; [ left | right ]; auto.
 Qed.
@@ -1046,17 +1041,17 @@ Proof.
 Qed.
 
 Theorem client_achieves3_not_under :
-  ~ IL (fun _ => True) client (ok (fun '(x, _) => x = 1 \/ x = 2)).
+  ~ IncorrLogic (fun _ => True) (denoteIL client) (ok (fun '(x, _) => x = 1 \/ x = 2)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, (1, 3)) (or_introl eq_refl)) as [[x y] [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, (1, 3)) (or_introl eq_refl)) as [[x y] [_ Ho]].
   apply client_out in Ho. destruct Ho as [z [[Hy Hr] | [_ Hr]]]; [| discriminate Hr ].
   injection Hr as <-. exact (not_square_3 z Hy).
 Qed.
 
 Theorem client_achieves3_hoare :
-  HL (fun _ => True) client (ok (fun '(x, _) => x = 1 \/ x = 2)).
+  PartCorr (fun _ => True) (denoteIL client) (ok (fun '(x, _) => x = 1 \/ x = 2)).
 Proof.
-  rewrite HL_iff. intros [x y] r _ Ho. apply client_out in Ho.
+  rewrite PartCorr_iff. intros [x y] r _ Ho. apply client_out in Ho.
   destruct Ho as [z [[_ ->] | [_ ->]]]; cbn; auto.
 Qed.
 
@@ -1079,10 +1074,10 @@ Proof.
 Qed.
 
 Theorem test1_achieves2 :
-  IL (fun _ => True) test1
+  IncorrLogic (fun _ => True) (denoteIL test1)
      (er (fun '(x, y) => exists z, (y = difficult z /\ x = 1) \/ (y <> difficult z /\ x = 2))).
 Proof.
-  rewrite IL_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [ destruct Hq |].
+  rewrite IncorrLogic_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [ destruct Hq |].
   exists (0, y). split; [ exact I |]. apply test1_out.
   destruct Hq as [z [[Hy ->] | [Hy ->]]]; exists z; [ left | right ]; auto.
 Qed.
@@ -1091,9 +1086,9 @@ Qed.
 Definition test2 : prog (Z * Z) unit :=
   client ;; st <- get ;; if fst st =? 2 then errorIL else skipIL.
 
-Theorem test2_achieves : IL (fun _ => True) test2 (er (fun '(x, _) => x = 2)).
+Theorem test2_achieves : IncorrLogic (fun _ => True) (denoteIL test2) (er (fun '(x, _) => x = 2)).
 Proof.
-  rewrite IL_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [ destruct Hq |]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] [x y]] Hq; cbn in Hq; [ destruct Hq |]. subst x.
   exists (0, y). split; [ exact I |]. unfold test2.
   apply (outIL_seq _ _ _ tt (2, y)).
   - apply client_out. exists (if y =? 0 then 1 else 0). right. split; [| reflexivity ].
@@ -1114,15 +1109,16 @@ Proof.
   - intros [-> | ->]; [ exists 1 | exists 0 ]; [ left | right ]; auto.
 Qed.
 
-Theorem maxing_achieves : IL (fun _ => True) maxing (ok (fun l => l = 1)).
+Theorem maxing_achieves : IncorrLogic (fun _ => True) (denoteIL maxing) (ok (fun l => l = 1)).
 Proof.
-  rewrite IL_iff. intros [[[]|] l] Hq; cbn in Hq; [| destruct Hq ]. subst l.
+  rewrite IncorrLogic_iff. intros [[[]|] l] Hq; cbn in Hq; [| destruct Hq ]. subst l.
   exists 0. split; [ exact I | apply maxing_out; auto ].
 Qed.
 
-Theorem maxing_achieves_both : IL (fun _ => True) maxing (ok (fun l => l = 0 \/ l = 1)).
+Theorem maxing_achieves_both :
+  IncorrLogic (fun _ => True) (denoteIL maxing) (ok (fun l => l = 0 \/ l = 1)).
 Proof.
-  rewrite IL_iff. intros [[[]|] l] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] l] Hq; cbn in Hq; [| destruct Hq ].
   exists 0. split; [ exact I | apply maxing_out; destruct Hq as [-> | ->]; auto ].
 Qed.
 
@@ -1137,18 +1133,19 @@ Proof. unfold errorIfUnlocked. il_simpl. destruct (l =? 0); sauto limit: 200. Qe
 Definition false_negative : prog Z unit := maxing ;; errorIfUnlocked.
 
 Theorem false_negative_achieves :
-  IL (fun _ => True) false_negative (er (fun _ => False))
-  /\ IL (fun _ => True) false_negative (ok (fun l => l = 1)).
+  IncorrLogic (fun _ => True) (denoteIL false_negative) (er (fun _ => False))
+  /\ IncorrLogic (fun _ => True) (denoteIL false_negative) (ok (fun l => l = 1)).
 Proof.
-  rewrite !IL_iff. split; intros [[[]|] l] Hq; cbn in Hq; [ destruct Hq | destruct Hq | | destruct Hq ]. subst l.
+  rewrite !IncorrLogic_iff. split; intros [[[]|] l] Hq; cbn in Hq; [ destruct Hq | destruct Hq | | destruct Hq ]. subst l.
   exists 0. split; [ exact I |]. apply (outIL_seq _ _ _ tt 1); [ apply maxing_out; auto |].
   apply errorIfUnlocked_out. reflexivity.
 Qed.
 
 (** The error the summary of [maxing] misses. *)
-Theorem false_negative_bug : IL (fun _ => True) false_negative (er (fun l => l = 0)).
+Theorem false_negative_bug :
+  IncorrLogic (fun _ => True) (denoteIL false_negative) (er (fun l => l = 0)).
 Proof.
-  rewrite IL_iff. intros [[[]|] l] Hq; cbn in Hq; [ destruct Hq |]. subst l.
+  rewrite IncorrLogic_iff. intros [[[]|] l] Hq; cbn in Hq; [ destruct Hq |]. subst l.
   exists 0. split; [ exact I |]. apply (outIL_seq _ _ _ tt 0); [ apply maxing_out; auto |].
   apply errorIfUnlocked_out. reflexivity.
 Qed.
@@ -1157,9 +1154,10 @@ Qed.
 Definition true_positive : prog Z unit :=
   maxing ;; (l <- get ;; if 0 <? l then put (l - 1) else skipIL) ;; errorIfUnlocked.
 
-Theorem true_positive_achieves : IL (fun _ => True) true_positive (er (fun l => l = 0)).
+Theorem true_positive_achieves :
+  IncorrLogic (fun _ => True) (denoteIL true_positive) (er (fun l => l = 0)).
 Proof.
-  rewrite IL_iff. intros [[[]|] l] Hq; cbn in Hq; [ destruct Hq |]. subst l.
+  rewrite IncorrLogic_iff. intros [[[]|] l] Hq; cbn in Hq; [ destruct Hq |]. subst l.
   exists 0. split; [ exact I |]. apply (outIL_seq _ _ _ tt 1); [ apply maxing_out; auto |].
   apply (outIL_seq _ _ _ tt 0); [ il_simpl; auto |].
   apply errorIfUnlocked_out. reflexivity.
@@ -1182,25 +1180,25 @@ Proof. unfold foo. il_simpl. destruct (Z.even x); sauto limit: 200. Qed.
 (** *** Specifications of [foo] *)
 
 Theorem foo_sturdy :
-  IL (fun x => Z.even x = true) foo (er (fun x => Z.even x = true))
-  /\ IL (fun x => Z.even x = true) foo (ok (fun _ => False)).
+  IncorrLogic (fun x => Z.even x = true) (denoteIL foo) (er (fun x => Z.even x = true))
+  /\ IncorrLogic (fun x => Z.even x = true) (denoteIL foo) (ok (fun _ => False)).
 Proof.
-  rewrite !IL_iff. split; intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq | | destruct Hq | destruct Hq ].
+  rewrite !IncorrLogic_iff. split; intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq | | destruct Hq | destruct Hq ].
   exists x. split; [ exact Hq | apply foo_out; rewrite Hq; reflexivity ].
 Qed.
 
 Theorem foo_flaky :
-  IL (fun x => Z.even x = false) foo (er (fun x => Z.even x = false))
-  /\ IL (fun x => Z.even x = false) foo (ok (fun x => Z.even x = false)).
+  IncorrLogic (fun x => Z.even x = false) (denoteIL foo) (er (fun x => Z.even x = false))
+  /\ IncorrLogic (fun x => Z.even x = false) (denoteIL foo) (ok (fun x => Z.even x = false)).
 Proof.
-  rewrite !IL_iff. split; intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq | | | destruct Hq ];
+  rewrite !IncorrLogic_iff. split; intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq | | | destruct Hq ];
     exists x; (split; [ exact Hq | apply foo_out; rewrite Hq; auto ]).
 Qed.
 
 Theorem foo_wp_error (p : Z -> Prop) :
-  MustIL p foo (er (fun _ => True)) <-> forall x, p x -> Z.even x = true.
+  TotalCorr p (denoteIL foo) (er (fun _ => True)) <-> forall x, p x -> Z.even x = true.
 Proof.
-  rewrite MustIL_iff. split.
+  rewrite TotalCorr_iff. split.
   - intros H x Hx. destruct (Z.even x) eqn:He; [ reflexivity |].
     specialize (H x Hx (Some (Some tt, x))). rewrite foo_out, He in H. cbn in H.
     destruct (H (or_introl eq_refl)).
@@ -1208,16 +1206,16 @@ Proof.
 Qed.
 
 Theorem foo_wp_ok (p : Z -> Prop) (x : Z) :
-  MustIL p foo (ok (fun _ => True)) -> ~ p x.
+  TotalCorr p (denoteIL foo) (ok (fun _ => True)) -> ~ p x.
 Proof.
-  rewrite MustIL_iff. intros H Hx. specialize (H x Hx (Some (None, x))).
+  rewrite TotalCorr_iff. intros H Hx. specialize (H x Hx (Some (None, x))).
   rewrite foo_out in H. destruct (Z.even x); cbn in H; auto.
 Qed.
 
 Theorem foo_wpp_ok (p : Z -> Prop) :
-  MayIL p foo (ok (fun _ => True)) <-> forall x, p x -> Z.even x = false.
+  LisbonLogic p (denoteIL foo) (ok (fun _ => True)) <-> forall x, p x -> Z.even x = false.
 Proof.
-  rewrite MayIL_iff. split.
+  rewrite LisbonLogic_iff. split.
   - intros H x Hx. destruct (H x Hx) as [o [Ho Hq]]. rewrite foo_out in Ho.
     destruct (Z.even x); [| reflexivity ]. subst o. destruct Hq.
   - intros H x Hx. exists (Some (Some tt, x)). split; [| exact I ].
@@ -1225,9 +1223,9 @@ Proof.
 Qed.
 
 Theorem foo_true_not_under :
-  ~ IL (fun x => Z.even x = false) foo (ok (fun _ => True)).
+  ~ IncorrLogic (fun x => Z.even x = false) (denoteIL foo) (ok (fun _ => True)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 0) I) as [x [Hx Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 0) I) as [x [Hx Ho]].
   rewrite foo_out, Hx in Ho. destruct Ho as [Ho | Ho]; [ injection Ho as <-; discriminate Hx | discriminate Ho ].
 Qed.
 
@@ -1245,22 +1243,24 @@ Proof.
 Qed.
 
 Theorem flaky_client_achieves :
-  IL (fun _ => True) (flaky_client 4) (er (fun x => x = 3 \/ x = 5)).
+  IncorrLogic (fun _ => True) (denoteIL (flaky_client 4)) (er (fun x => x = 3 \/ x = 5)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |].
   exists 0. split; [ exact I |]. apply flaky_client_out.
   destruct Hq as [-> | ->]; [ left | right; left ]; auto with zarith.
 Qed.
 
-Theorem flaky_client5_not_er5 : ~ IL (fun _ => True) (flaky_client 5) (er (fun x => x = 5)).
+Theorem flaky_client5_not_er5 :
+  ~ IncorrLogic (fun _ => True) (denoteIL (flaky_client 5)) (er (fun x => x = 5)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (None, 5) eq_refl) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (None, 5) eq_refl) as [s [_ Ho]].
   apply flaky_client_out in Ho. sauto limit: 200.
 Qed.
 
-Theorem flaky_client5_er3 : IL (fun _ => True) (flaky_client 5) (er (fun x => x = 3)).
+Theorem flaky_client5_er3 :
+  IncorrLogic (fun _ => True) (denoteIL (flaky_client 5)) (er (fun x => x = 3)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [ destruct Hq |]. subst x.
   exists 0. split; [ exact I | apply flaky_client_out; auto ].
 Qed.
 
@@ -1278,17 +1278,17 @@ Lemma inc_out (x : Z) o :
   <-> (0 <= x /\ o = Some (Some tt, x + 1)) \/ (x < 0 /\ o = Some (None, x)) \/ o = None.
 Proof. unfold inc. il_simpl. rewrite Z.leb_le, Z.leb_gt. reflexivity. Qed.
 
-Theorem inc_spec1 : IL (fun x => 0 <= x) inc (ok (fun x => 0 < x)).
+Theorem inc_spec1 : IncorrLogic (fun x => 0 <= x) (denoteIL inc) (ok (fun x => 0 < x)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   exists (x - 1). split; [ lia |]. apply inc_out. left. split; [ lia |].
   f_equal. f_equal. lia.
 Qed.
 
 Theorem inc_spec2 (m : Z) :
-  IL (fun x => x = m /\ 0 <= m) inc (ok (fun x => x = m + 1 /\ 0 <= m)).
+  IncorrLogic (fun x => x = m /\ 0 <= m) (denoteIL inc) (ok (fun x => x = m + 1 /\ 0 <= m)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   destruct Hq as [-> Hm]. exists m. split; [ auto |]. apply inc_out. auto.
 Qed.
 
@@ -1313,23 +1313,24 @@ Proof.
     + exists (Some (None, x)). split; [ apply inc_out; auto | reflexivity ].
 Qed.
 
-Theorem client_wrong_achieves1 : ~ IL (fun x => 0 <= x) client (ok (fun x => 0 < x)).
+Theorem client_wrong_achieves1 :
+  ~ IncorrLogic (fun x => 0 <= x) (denoteIL client) (ok (fun x => 0 < x)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (Some tt, 1) ltac:(cbn; lia)) as [x [Hx Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (Some tt, 1) ltac:(cbn; lia)) as [x [Hx Ho]].
   apply client_out in Ho. destruct Ho as [[_ Hr] | [? _]]; [| lia ].
   injection Hr as Hr. lia.
 Qed.
 
-Theorem client_hoare : HL (fun x => 0 <= x) client (ok (fun x => 0 < x)).
+Theorem client_hoare : PartCorr (fun x => 0 <= x) (denoteIL client) (ok (fun x => 0 < x)).
 Proof.
-  rewrite HL_iff. intros x r Hx Ho. apply client_out in Ho.
+  rewrite PartCorr_iff. intros x r Hx Ho. apply client_out in Ho.
   destruct Ho as [[_ ->] | [? _]]; [ cbn; lia | exfalso; lia ].
 Qed.
 
 Theorem client_achieves2 (m : Z) :
-  IL (fun x => x = m /\ 0 <= m) client (ok (fun x => x = m + 2 /\ 0 <= m)).
+  IncorrLogic (fun x => x = m /\ 0 <= m) (denoteIL client) (ok (fun x => x = m + 2 /\ 0 <= m)).
 Proof.
-  rewrite IL_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
+  rewrite IncorrLogic_iff. intros [[[]|] x] Hq; cbn in Hq; [| destruct Hq ].
   destruct Hq as [-> Hm]. exists m. split; [ auto |]. apply client_out. auto.
 Qed.
 
@@ -1350,18 +1351,18 @@ Proof.
     il_simpl. auto.
 Qed.
 
-Theorem test_wrong_achieves1 : ~ IL (fun _ => True) test (er (fun x => x = 1)).
+Theorem test_wrong_achieves1 : ~ IncorrLogic (fun _ => True) (denoteIL test) (er (fun x => x = 1)).
 Proof.
-  rewrite IL_iff. intro H. destruct (H (None, 1) eq_refl) as [s [_ Ho]].
+  rewrite IncorrLogic_iff. intro H. destruct (H (None, 1) eq_refl) as [s [_ Ho]].
   apply test_out in Ho. discriminate.
 Qed.
 
-Theorem test_achieves2 : IL (fun _ => True) test (er (fun _ => False)).
-Proof. rewrite IL_iff. intros [[[]|] x] Hq; destruct Hq. Qed.
+Theorem test_achieves2 : IncorrLogic (fun _ => True) (denoteIL test) (er (fun _ => False)).
+Proof. rewrite IncorrLogic_iff. intros [[[]|] x] Hq; destruct Hq. Qed.
 
-Theorem test_hoare : HL (fun _ => True) test (ok (fun x => x = 2)).
+Theorem test_hoare : PartCorr (fun _ => True) (denoteIL test) (ok (fun x => x = 2)).
 Proof.
-  rewrite HL_iff. intros s r _ Ho. apply test_out in Ho. subst r. reflexivity.
+  rewrite PartCorr_iff. intros s r _ Ho. apply test_out in Ho. subst r. reflexivity.
 Qed.
 
 End Composition.

@@ -25,7 +25,7 @@ setting directory has the same files, one per concept:
 |---|---|
 | `Computation.v` | the computation monad (`divndNE`, or its lift) |
 | `Morphisms.v` | the eight readings as monad morphisms (at state: lifts of the base ones) |
-| `Triples.v` | the specification monads' readings and the triples of the morphisms |
+| `Triples.v` | the specification monads' readings, the triples of the morphisms, and the named logics (`TotalCorr`, `IncorrLogic`, …) |
 | `TriplesTaxonomy.v` | Verscht and Kaminski's diagram |
 | `DijkstraMonads.v` | the Dijkstra monads of the morphisms |
 | `Typings.v` | which triples are typings |

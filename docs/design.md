@@ -321,7 +321,7 @@ postcondition on results:
 | Galois (`b ⊆ dwlp(c)` iff `asp(b) ⊆ c`; `awp(c) ⊆ b` iff `c ⊆ dslp(b)`) | 2 | the base Galois relations between the terminating outcomes and a WP reading |
 
 All 26 are proved twice: for `m : stateT S divndNE A` with a postcondition on
-`A * S` (`dwp_under_dwlp_under`, ...), and for
+`A * S` (`TotalCorr_impl_PartCorr`, ...), and for
 `m : stateT S (optionT divndNE) A` with a postcondition on `option (A * S)`
 (the same names with `_exc`). No edge has a side condition.
 

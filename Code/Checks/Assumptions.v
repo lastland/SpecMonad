@@ -332,39 +332,39 @@ Print Assumptions Triples.triple_aslpStExc.
 (** The taxonomy diagram at the state level.
 
     Implications between WP triples: closed. *)
-Print Assumptions TriplesTaxonomy.dwp_under_dwlp_under.
-Print Assumptions TriplesTaxonomy.awp_under_awlp_under.
-Print Assumptions TriplesTaxonomy.dwp_under_awp_under.
-Print Assumptions TriplesTaxonomy.dwlp_under_awlp_under.
-Print Assumptions TriplesTaxonomy.dwlp_over_dwp_over.
-Print Assumptions TriplesTaxonomy.awlp_over_awp_over.
-Print Assumptions TriplesTaxonomy.awp_over_dwp_over.
-Print Assumptions TriplesTaxonomy.awlp_over_dwlp_over.
+Print Assumptions TriplesTaxonomy.TotalCorr_impl_PartCorr.
+Print Assumptions TriplesTaxonomy.LisbonLogic_impl_AngPartCorr.
+Print Assumptions TriplesTaxonomy.TotalCorr_impl_LisbonLogic.
+Print Assumptions TriplesTaxonomy.PartCorr_impl_AngPartCorr.
+Print Assumptions TriplesTaxonomy.dwlp_over_impl_dwp_over.
+Print Assumptions TriplesTaxonomy.awlp_over_impl_awp_over.
+Print Assumptions TriplesTaxonomy.awp_over_impl_dwp_over.
+Print Assumptions TriplesTaxonomy.awlp_over_impl_dwlp_over.
 
 (** Implications between SP triples: excluded middle, from the DSP and ASLP
     carriers. *)
-Print Assumptions TriplesTaxonomy.aslp_over_asp_over.
-Print Assumptions TriplesTaxonomy.aslp_over_dslp_over.
-Print Assumptions TriplesTaxonomy.asp_over_dsp_over.
-Print Assumptions TriplesTaxonomy.dslp_over_dsp_over.
-Print Assumptions TriplesTaxonomy.dsp_under_dslp_under.
-Print Assumptions TriplesTaxonomy.dsp_under_asp_under.
-Print Assumptions TriplesTaxonomy.dslp_under_aslp_under.
-Print Assumptions TriplesTaxonomy.asp_under_aslp_under.
+Print Assumptions TriplesTaxonomy.aslp_over_impl_asp_over.
+Print Assumptions TriplesTaxonomy.aslp_over_impl_dslp_over.
+Print Assumptions TriplesTaxonomy.asp_over_impl_dsp_over.
+Print Assumptions TriplesTaxonomy.dslp_over_impl_dsp_over.
+Print Assumptions TriplesTaxonomy.DemIncorr_impl_PartIncorr.
+Print Assumptions TriplesTaxonomy.DemIncorr_impl_IncorrLogic.
+Print Assumptions TriplesTaxonomy.PartIncorr_impl_AngPartIncorr.
+Print Assumptions TriplesTaxonomy.IncorrLogic_impl_AngPartIncorr.
 
 (** Contrapositives: excluded middle. *)
-Print Assumptions TriplesTaxonomy.awp_under_contra_dwlp_over.
-Print Assumptions TriplesTaxonomy.awlp_under_contra_dwp_over.
-Print Assumptions TriplesTaxonomy.dwp_under_contra_awlp_over.
-Print Assumptions TriplesTaxonomy.dwlp_under_contra_awp_over.
-Print Assumptions TriplesTaxonomy.dsp_under_contra_aslp_over.
-Print Assumptions TriplesTaxonomy.dslp_under_contra_asp_over.
-Print Assumptions TriplesTaxonomy.asp_under_contra_dslp_over.
-Print Assumptions TriplesTaxonomy.aslp_under_contra_dsp_over.
+Print Assumptions TriplesTaxonomy.LisbonLogic_contra_dwlp_over.
+Print Assumptions TriplesTaxonomy.AngPartCorr_contra_dwp_over.
+Print Assumptions TriplesTaxonomy.TotalCorr_contra_awlp_over.
+Print Assumptions TriplesTaxonomy.PartCorr_contra_awp_over.
+Print Assumptions TriplesTaxonomy.DemIncorr_contra_aslp_over.
+Print Assumptions TriplesTaxonomy.PartIncorr_contra_asp_over.
+Print Assumptions TriplesTaxonomy.IncorrLogic_contra_dslp_over.
+Print Assumptions TriplesTaxonomy.AngPartIncorr_contra_dsp_over.
 
 (** The two Galois edges: closed. *)
-Print Assumptions TriplesTaxonomy.dwlp_under_galois_asp_over.
-Print Assumptions TriplesTaxonomy.awp_over_galois_dslp_under.
+Print Assumptions TriplesTaxonomy.PartCorr_galois_asp_over.
+Print Assumptions TriplesTaxonomy.awp_over_galois_PartIncorr.
 
 (** One example per triple kind.  The twelve WP, ASP and DSLP examples are
     closed; the four DSP and ASLP examples use excluded middle. *)
@@ -395,13 +395,13 @@ Print Assumptions DSPASLPArr.no_ASPArr_for_dslp.
 
 (** The diagram with exceptions: the same pattern as at the state level.
     WP implications and Galois edges closed, the rest excluded middle. *)
-Print Assumptions TriplesTaxonomy.dwp_under_dwlp_under_exc.
-Print Assumptions TriplesTaxonomy.awlp_over_dwlp_over_exc.
-Print Assumptions TriplesTaxonomy.dwlp_under_galois_asp_over_exc.
-Print Assumptions TriplesTaxonomy.awp_over_galois_dslp_under_exc.
-Print Assumptions TriplesTaxonomy.dsp_under_asp_under_exc.
-Print Assumptions TriplesTaxonomy.asp_under_contra_dslp_over_exc.
-Print Assumptions TriplesTaxonomy.awp_under_contra_dwlp_over_exc.
+Print Assumptions TriplesTaxonomy.TotalCorr_impl_PartCorr_exc.
+Print Assumptions TriplesTaxonomy.awlp_over_impl_dwlp_over_exc.
+Print Assumptions TriplesTaxonomy.PartCorr_galois_asp_over_exc.
+Print Assumptions TriplesTaxonomy.awp_over_galois_PartIncorr_exc.
+Print Assumptions TriplesTaxonomy.DemIncorr_impl_IncorrLogic_exc.
+Print Assumptions TriplesTaxonomy.IncorrLogic_contra_dslp_over_exc.
+Print Assumptions TriplesTaxonomy.LisbonLogic_contra_dwlp_over_exc.
 
 (** The rewriting rules, for ASP and for the demonic liberal WP: closed. *)
 Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_asp.
@@ -426,7 +426,7 @@ Print Assumptions InCorrectnessPrinciples.first_imp_symmetry_rule.
 Print Assumptions InCorrectnessPrinciples.second_imp_symmetry_rule.
 Print Assumptions InCorrectnessPrinciples.principle_of_agreement.
 Print Assumptions InCorrectnessPrinciples.principle_of_denial.
-Print Assumptions TriplesTaxonomy.dwlp_under_galois_asp_over_pure.
+Print Assumptions TriplesTaxonomy.PartCorr_galois_asp_over_pure.
 Print Assumptions InCorrectnessPrinciples.first_symmetry_rule_aspPure.
 Print Assumptions InCorrectnessPrinciples.second_symmetry_rule_aspPure.
 Print Assumptions InCorrectnessPrinciples.first_imp_symmetry_rule_aspPure.

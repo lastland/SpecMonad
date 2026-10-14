@@ -48,4 +48,4 @@ state. The SP morphisms keep exceptions and omit divergence.
   that is not one; for DSLP `Over`, `progloom_harder_not_Ddslp`.
 - [InCorrectnessPrinciples.v](../../../../Code/Verification/DivNonDetStExc/InCorrectnessPrinciples.v):
   O'Hearn's rules for the `aspStExc` triples (`..._aspStExc`), and their
-  `dwlpStExc` variants through `dwlp_under_galois_asp_over_exc`.
+  `dwlpStExc` variants through `PartCorr_galois_asp_over_exc`.

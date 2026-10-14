@@ -335,12 +335,12 @@ Check Triples.triple_aspSt.
 
 (** The taxonomy diagram on the triples of one stateful program (26 edges;
     again with exceptions, suffix [_exc]). *)
-Check TriplesTaxonomy.dwp_under_dwlp_under.
-Check TriplesTaxonomy.dsp_under_asp_under.
-Check TriplesTaxonomy.awp_under_contra_dwlp_over.
-Check TriplesTaxonomy.asp_under_contra_dslp_over.
-Check TriplesTaxonomy.dwlp_under_galois_asp_over.
-Check TriplesTaxonomy.awp_over_galois_dslp_under.
+Check TriplesTaxonomy.TotalCorr_impl_PartCorr.
+Check TriplesTaxonomy.DemIncorr_impl_IncorrLogic.
+Check TriplesTaxonomy.LisbonLogic_contra_dwlp_over.
+Check TriplesTaxonomy.IncorrLogic_contra_dslp_over.
+Check TriplesTaxonomy.PartCorr_galois_asp_over.
+Check TriplesTaxonomy.awp_over_galois_PartIncorr.
 
 (** Verified programs: one per triple kind (16), and O'Hearn's Example 3.1. *)
 Check ProgA.progA_dwp_under.

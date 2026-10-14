@@ -9,7 +9,11 @@ Parent: [Verification](../Verification.md). What is the same at every setting.
   is `spec_holds (θ _ m) k P Q` for a map with an `IsMonadMorphism` instance.
   `X` and `Y` are resolved from `W` and `A`. The SP judgements `aspHolds`,
   `dslpHolds`, `dspHolds`, `aslpHolds` are stated on a base arrow at
-  arbitrary indices: every SP triple at every setting is one of them.
+  arbitrary indices: every SP triple at every setting is one of them. The
+  header names the `Under` triple of each reading after its logic in Verscht
+  and Kaminski's taxonomy (`TotalCorr`, `PartCorr`, `LisbonLogic`,
+  `AngPartCorr`, `IncorrLogic`, `PartIncorr`, `DemIncorr`, `AngPartIncorr`);
+  each setting's `Triples.v` defines these as notations.
 - [DijkstraMonad.v](../../../../Code/Verification/Generic/DijkstraMonad.v): for a map `θ : M ~> W` and
   an order `le` on `W`, `DM θ le w := { m : M A | le (θ m) w }` and
   `DMop θ le w := DM θ (flip le) w`. The operations `DM_ret`, `DM_bind`,

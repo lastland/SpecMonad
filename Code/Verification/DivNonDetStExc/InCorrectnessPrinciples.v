@@ -6,7 +6,7 @@
     postcondition is on the outcome, an exception being [None].  The
     correctness-side rules also have a variant for the demonic liberal WP
     triples, [triple (@dwlpStExc S)], through the Galois edge
-    [dwlp_under_galois_asp_over_exc]. *)
+    [PartCorr_galois_asp_over_exc]. *)
 
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From Incorrectness.Verification.Generic Require Import Triple InCorrectnessPrinciples.
@@ -114,9 +114,9 @@ Section OHearnRewritingRules.
       triple (@dwlpStExc S) m Under pre (fun r => post1 r /\ post2 r).
   Proof.
     intros A m pre post1 post2 [H1 H2].
-    apply (proj2 (dwlp_under_galois_asp_over_exc m pre _)).
+    apply (proj2 (PartCorr_galois_asp_over_exc m pre _)).
     apply (second_symmetry_rule_aspStExc_1 A m pre post1 post2).
-    split; apply (proj1 (dwlp_under_galois_asp_over_exc m pre _)); assumption.
+    split; apply (proj1 (PartCorr_galois_asp_over_exc m pre _)); assumption.
   Qed.
 
   Theorem second_symmetry_rule_dwlpStExc_2 :
@@ -126,8 +126,8 @@ Section OHearnRewritingRules.
   Proof.
     intros A m pre post1 post2 H.
     destruct (second_symmetry_rule_aspStExc_2 A m pre post1 post2
-                (proj1 (dwlp_under_galois_asp_over_exc m pre _) H)) as [H1 H2].
-    split; apply (proj2 (dwlp_under_galois_asp_over_exc m pre _)); assumption.
+                (proj1 (PartCorr_galois_asp_over_exc m pre _) H)) as [H1 H2].
+    split; apply (proj2 (PartCorr_galois_asp_over_exc m pre _)); assumption.
   Qed.
 
   Theorem second_symmetry_rule_dwlpStExc :
@@ -147,7 +147,7 @@ Section OHearnRewritingRules.
     intros A m pre pre' post post' [Hwp Hcons].
     apply (second_imp_symmetry_rule_aspStExc A m pre pre' post post').
     split; [| exact Hcons ].
-    exact (proj1 (dwlp_under_galois_asp_over_exc m pre post) Hwp).
+    exact (proj1 (PartCorr_galois_asp_over_exc m pre post) Hwp).
   Qed.
 
   Theorem principle_of_agreement_dwlpStExc :
@@ -157,7 +157,7 @@ Section OHearnRewritingRules.
   Proof.
     intros A m u u' o o' [Hinc [Hwp Himp]].
     apply (principle_of_agreement_aspStExc A m u u' o o').
-    exact (conj Hinc (conj (proj1 (dwlp_under_galois_asp_over_exc m o o') Hwp) Himp)).
+    exact (conj Hinc (conj (proj1 (PartCorr_galois_asp_over_exc m o o') Hwp) Himp)).
   Qed.
 
   Theorem principle_of_denial_dwlpStExc :

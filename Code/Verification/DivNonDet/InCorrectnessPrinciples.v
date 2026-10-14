@@ -4,7 +4,7 @@
     the base computations, [triple (@aspPure)]: [Under] is the incorrectness
     triple and [Over] the correctness one.  The correctness-side rules also
     have a variant for the demonic liberal WP triples, [triple (@dwlpPure)],
-    through the Galois edge [dwlp_under_galois_asp_over_pure]. *)
+    through the Galois edge [PartCorr_galois_asp_over_pure]. *)
 
 From ExtLib Require Import Monad OptionMonad.
 From Incorrectness.Verification.Generic Require Import Triple InCorrectnessPrinciples.
@@ -109,9 +109,9 @@ Theorem second_symmetry_rule_dwlpPure_1 :
     triple (@dwlpPure) d Under pre (fun r => post1 r /\ post2 r).
 Proof.
   intros A d pre post1 post2 [H1 H2].
-  apply (proj2 (dwlp_under_galois_asp_over_pure d pre _)).
+  apply (proj2 (PartCorr_galois_asp_over_pure d pre _)).
   apply (second_symmetry_rule_aspPure_1 A d pre post1 post2).
-  split; apply (proj1 (dwlp_under_galois_asp_over_pure d pre _)); assumption.
+  split; apply (proj1 (PartCorr_galois_asp_over_pure d pre _)); assumption.
 Qed.
 
 Theorem second_symmetry_rule_dwlpPure_2 :
@@ -121,8 +121,8 @@ Theorem second_symmetry_rule_dwlpPure_2 :
 Proof.
   intros A d pre post1 post2 H.
   destruct (second_symmetry_rule_aspPure_2 A d pre post1 post2
-              (proj1 (dwlp_under_galois_asp_over_pure d pre _) H)) as [H1 H2].
-  split; apply (proj2 (dwlp_under_galois_asp_over_pure d pre _)); assumption.
+              (proj1 (PartCorr_galois_asp_over_pure d pre _) H)) as [H1 H2].
+  split; apply (proj2 (PartCorr_galois_asp_over_pure d pre _)); assumption.
 Qed.
 
 Theorem second_symmetry_rule_dwlpPure :
@@ -142,7 +142,7 @@ Proof.
   intros A d pre pre' post post' [Hwp Hcons].
   apply (second_imp_symmetry_rule_aspPure A d pre pre' post post').
   split; [| exact Hcons ].
-  exact (proj1 (dwlp_under_galois_asp_over_pure d pre post) Hwp).
+  exact (proj1 (PartCorr_galois_asp_over_pure d pre post) Hwp).
 Qed.
 
 Theorem principle_of_agreement_dwlpPure :
@@ -152,7 +152,7 @@ Theorem principle_of_agreement_dwlpPure :
 Proof.
   intros A d u u' o o' [Hinc [Hwp Himp]].
   apply (principle_of_agreement_aspPure A d u u' o o').
-  exact (conj Hinc (conj (proj1 (dwlp_under_galois_asp_over_pure d o o') Hwp) Himp)).
+  exact (conj Hinc (conj (proj1 (PartCorr_galois_asp_over_pure d o o') Hwp) Himp)).
 Qed.
 
 Theorem principle_of_denial_dwlpPure :

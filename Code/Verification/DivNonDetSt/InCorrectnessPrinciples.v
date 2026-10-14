@@ -9,7 +9,7 @@
     The correctness-side rules also have a variant for the demonic liberal
     WP triples, [triple (@dwlpSt S)].  A [dwlpSt] [Under] triple is the
     [aspSt] [Over] triple with the same pre- and postcondition
-    ([dwlp_under_galois_asp_over]), so each variant follows from its ASP
+    ([PartCorr_galois_asp_over]), so each variant follows from its ASP
     counterpart. *)
 
 From ExtLib Require Import Monad StateMonad.
@@ -120,9 +120,9 @@ Section OHearnRewritingRules.
       triple (@dwlpSt S) m Under pre (fun r => post1 r /\ post2 r).
   Proof.
     intros A m pre post1 post2 [H1 H2].
-    apply (proj2 (dwlp_under_galois_asp_over m pre _)).
+    apply (proj2 (PartCorr_galois_asp_over m pre _)).
     apply (second_symmetry_rule_asp_1 A m pre post1 post2).
-    split; apply (proj1 (dwlp_under_galois_asp_over m pre _)); assumption.
+    split; apply (proj1 (PartCorr_galois_asp_over m pre _)); assumption.
   Qed.
 
   Theorem second_symmetry_rule_dwlp_2 :
@@ -132,8 +132,8 @@ Section OHearnRewritingRules.
   Proof.
     intros A m pre post1 post2 H.
     destruct (second_symmetry_rule_asp_2 A m pre post1 post2
-                (proj1 (dwlp_under_galois_asp_over m pre _) H)) as [H1 H2].
-    split; apply (proj2 (dwlp_under_galois_asp_over m pre _)); assumption.
+                (proj1 (PartCorr_galois_asp_over m pre _) H)) as [H1 H2].
+    split; apply (proj2 (PartCorr_galois_asp_over m pre _)); assumption.
   Qed.
 
   Theorem second_symmetry_rule_dwlp :
@@ -153,7 +153,7 @@ Section OHearnRewritingRules.
     intros A m pre pre' post post' [Hwp Hcons].
     apply (second_imp_symmetry_rule_asp A m pre pre' post post').
     split; [| exact Hcons ].
-    exact (proj1 (dwlp_under_galois_asp_over m pre post) Hwp).
+    exact (proj1 (PartCorr_galois_asp_over m pre post) Hwp).
   Qed.
 
   Theorem principle_of_agreement_dwlp :
@@ -163,7 +163,7 @@ Section OHearnRewritingRules.
   Proof.
     intros A m u u' o o' [Hinc [Hwp Himp]].
     apply (principle_of_agreement_asp A m u u' o o').
-    exact (conj Hinc (conj (proj1 (dwlp_under_galois_asp_over m o o') Hwp) Himp)).
+    exact (conj Hinc (conj (proj1 (PartCorr_galois_asp_over m o o') Hwp) Himp)).
   Qed.
 
   Theorem principle_of_denial_dwlp :

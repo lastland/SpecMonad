@@ -209,3 +209,18 @@ Section Readings.
       + right. intros [[] s'] Hr'. exact (H s' Hr').
   Qed.
 End Readings.
+
+(* ================================================================= *)
+(** * The named logics                                                *)
+(* ================================================================= *)
+
+(** The [Under] triple of each reading, by the name of its logic (see
+    [Generic/Triple.v]). *)
+Notation TotalCorr     P m Q := (triple (@dwpSt _) m Under P Q).
+Notation PartCorr      P m Q := (triple (@dwlpSt _) m Under P Q).
+Notation LisbonLogic   P m Q := (triple (@awpSt _) m Under P Q).
+Notation AngPartCorr   P m Q := (triple (@awlpSt _) m Under P Q).
+Notation IncorrLogic   P m Q := (triple (@aspSt _) m Under P Q).
+Notation PartIncorr    P m Q := (triple (@dslpSt _) m Under P Q).
+Notation DemIncorr     P m Q := (triple (@dspSt _) m Under P Q).
+Notation AngPartIncorr P m Q := (triple (@aslpSt _) m Under P Q).

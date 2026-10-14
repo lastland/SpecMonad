@@ -26,15 +26,15 @@ Parent: [Verification](../Verification.md). The state setting:
   outcomes `outSt`.
 - [TriplesTaxonomy.v](../../../../Code/Verification/DivNonDetSt/TriplesTaxonomy.v): Verscht and Kaminski's
   diagram for one `m : stdivndNE S A`: sixteen implications
-  (`dwp_under_dwlp_under`, ...), eight contrapositives
-  (`awp_under_contra_dwlp_over`, ...), and the Galois edges
-  `dwlp_under_galois_asp_over`, `awp_over_galois_dslp_under`. No edge has a
+  (`TotalCorr_impl_PartCorr`, ...), eight contrapositives
+  (`LisbonLogic_contra_dwlp_over`, ...), and the Galois edges
+  `PartCorr_galois_asp_over`, `awp_over_galois_PartIncorr`. No edge has a
   side condition: non-emptiness is part of `divndNE`.
 - [InCorrectnessPrinciples.v](../../../../Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v): O'Hearn's
   rewriting rules over the `aspSt` triples, instances of the generic ones, (`Under` is the incorrectness
   triple, `Over` the correctness one): symmetry, consequence, agreement and
   denial, with `_dwlp` variants derived through
-  `dwlp_under_galois_asp_over`.
+  `PartCorr_galois_asp_over`.
 - [DijkstraMonads.v](../../../../Code/Verification/DivNonDetSt/DijkstraMonads.v): the `OrderedTarget` instances of
   the lifted morphisms; a typing through a lifted WP morphism is a family of
   base typings (`wpSt_typing_pointwise`).
@@ -53,8 +53,8 @@ Parent: [Verification](../Verification.md). The state setting:
   it wrong. First the language: `prog S = optionT (stateT S (itree ILE))`,
   so an `error()` keeps its state (the state-and-exceptions setting drops
   it, and cannot state `er:` assertions); `assume false` diverges.
-  `IL`/`HL` are the `aspSt` `Under`/`Over` triples of the denotation,
-  `MustIL`/`MayIL` the `dwpSt`/`awpSt` ones (`wp`, `wpp`); `ok q`/`er q` the
+  The triples are the named logics on the denotation `denoteIL C`
+  (`IncorrLogic`, `PartCorr`, `TotalCorr`, `LisbonLogic`); `ok q`/`er q` the
   result assertions. `outIL_*` compute outcomes construct by construct,
   `il_simpl` chains them for straight-line code, `outIL_iter` reduces a loop
   to the base loop rules, and `starIL_ok`/`starIL_er` are Iterate zero and

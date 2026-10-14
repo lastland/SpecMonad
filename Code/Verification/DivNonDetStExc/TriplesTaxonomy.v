@@ -90,56 +90,56 @@ Section DiagramExc.
 
   (** ** WP implications *)
 
-  Theorem dwp_under_dwlp_under_exc :
-    triple (@dwpStExc S) m Under b c -> triple (@dwlpStExc S) m Under b c.
+  Theorem TotalCorr_impl_PartCorr_exc :
+    TotalCorr b m c -> PartCorr b m c.
   Proof.
     exact (wpStExc_under_incl (@dwpPure) (@dwlpPure)
              (fun X d => dwpPure_incl_dwlpPure d) A m b c).
   Qed.
 
-  Theorem awp_under_awlp_under_exc :
-    triple (@awpStExc S) m Under b c -> triple (@awlpStExc S) m Under b c.
+  Theorem LisbonLogic_impl_AngPartCorr_exc :
+    LisbonLogic b m c -> AngPartCorr b m c.
   Proof.
     exact (wpStExc_under_incl (@awpPure) (@awlpPure)
              (fun X d => awpPure_incl_awlpPure d) A m b c).
   Qed.
 
-  Theorem dwp_under_awp_under_exc :
-    triple (@dwpStExc S) m Under b c -> triple (@awpStExc S) m Under b c.
+  Theorem TotalCorr_impl_LisbonLogic_exc :
+    TotalCorr b m c -> LisbonLogic b m c.
   Proof.
     exact (wpStExc_under_incl (@dwpPure) (@awpPure)
              (fun X d => dwpPure_incl_awpPure d) A m b c).
   Qed.
 
-  Theorem dwlp_under_awlp_under_exc :
-    triple (@dwlpStExc S) m Under b c -> triple (@awlpStExc S) m Under b c.
+  Theorem PartCorr_impl_AngPartCorr_exc :
+    PartCorr b m c -> AngPartCorr b m c.
   Proof.
     exact (wpStExc_under_incl (@dwlpPure) (@awlpPure)
              (fun X d => dwlpPure_incl_awlpPure d) A m b c).
   Qed.
 
-  Theorem dwlp_over_dwp_over_exc :
+  Theorem dwlp_over_impl_dwp_over_exc :
     triple (@dwlpStExc S) m Over b c -> triple (@dwpStExc S) m Over b c.
   Proof.
     exact (wpStExc_over_incl (@dwpPure) (@dwlpPure)
              (fun X d => dwpPure_incl_dwlpPure d) A m b c).
   Qed.
 
-  Theorem awlp_over_awp_over_exc :
+  Theorem awlp_over_impl_awp_over_exc :
     triple (@awlpStExc S) m Over b c -> triple (@awpStExc S) m Over b c.
   Proof.
     exact (wpStExc_over_incl (@awpPure) (@awlpPure)
              (fun X d => awpPure_incl_awlpPure d) A m b c).
   Qed.
 
-  Theorem awp_over_dwp_over_exc :
+  Theorem awp_over_impl_dwp_over_exc :
     triple (@awpStExc S) m Over b c -> triple (@dwpStExc S) m Over b c.
   Proof.
     exact (wpStExc_over_incl (@dwpPure) (@awpPure)
              (fun X d => dwpPure_incl_awpPure d) A m b c).
   Qed.
 
-  Theorem awlp_over_dwlp_over_exc :
+  Theorem awlp_over_impl_dwlp_over_exc :
     triple (@awlpStExc S) m Over b c -> triple (@dwlpStExc S) m Over b c.
   Proof.
     exact (wpStExc_over_incl (@dwlpPure) (@awlpPure)
@@ -148,32 +148,32 @@ Section DiagramExc.
 
   (** ** WP contrapositives *)
 
-  Theorem awp_under_contra_dwlp_over_exc :
-    triple (@awpStExc S) m Under b c
+  Theorem LisbonLogic_contra_dwlp_over_exc :
+    LisbonLogic b m c
     <-> triple (@dwlpStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     exact (wpStExc_contra (@awpPure) (@dwlpPure)
              (fun X d => awpPure_contra_dwlpPure d) A m b c).
   Qed.
 
-  Theorem awlp_under_contra_dwp_over_exc :
-    triple (@awlpStExc S) m Under b c
+  Theorem AngPartCorr_contra_dwp_over_exc :
+    AngPartCorr b m c
     <-> triple (@dwpStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     exact (wpStExc_contra (@awlpPure) (@dwpPure)
              (fun X d => awlpPure_contra_dwpPure d) A m b c).
   Qed.
 
-  Theorem dwp_under_contra_awlp_over_exc :
-    triple (@dwpStExc S) m Under b c
+  Theorem TotalCorr_contra_awlp_over_exc :
+    TotalCorr b m c
     <-> triple (@awlpStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     exact (wpStExc_contra (@dwpPure) (@awlpPure)
              (fun X d => dwpPure_contra_awlpPure d) A m b c).
   Qed.
 
-  Theorem dwlp_under_contra_awp_over_exc :
-    triple (@dwlpStExc S) m Under b c
+  Theorem PartCorr_contra_awp_over_exc :
+    PartCorr b m c
     <-> triple (@awpStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     exact (wpStExc_contra (@dwlpPure) (@awpPure)
@@ -182,7 +182,7 @@ Section DiagramExc.
 
   (** ** SP implications *)
 
-  Theorem aslp_over_asp_over_exc :
+  Theorem aslp_over_impl_asp_over_exc :
     triple (@aslpStExc S) m Over b c -> triple (@aspStExc S) m Over b c.
   Proof.
     intro H. apply (proj2 (triple_aspStExc m Over b c)).
@@ -190,7 +190,7 @@ Section DiagramExc.
              (proj1 (triple_aslpStExc m Over b c) H)).
   Qed.
 
-  Theorem aslp_over_dslp_over_exc :
+  Theorem aslp_over_impl_dslp_over_exc :
     triple (@aslpStExc S) m Over b c -> triple (@dslpStExc S) m Over b c.
   Proof.
     intro H. apply (proj2 (triple_dslpStExc m Over b c)).
@@ -198,7 +198,7 @@ Section DiagramExc.
              (proj1 (triple_aslpStExc m Over b c) H)).
   Qed.
 
-  Theorem asp_over_dsp_over_exc :
+  Theorem asp_over_impl_dsp_over_exc :
     triple (@aspStExc S) m Over b c -> triple (@dspStExc S) m Over b c.
   Proof.
     intro H. apply (proj2 (triple_dspStExc m Over b c)).
@@ -206,7 +206,7 @@ Section DiagramExc.
              (proj1 (triple_aspStExc m Over b c) H)).
   Qed.
 
-  Theorem dslp_over_dsp_over_exc :
+  Theorem dslp_over_impl_dsp_over_exc :
     triple (@dslpStExc S) m Over b c -> triple (@dspStExc S) m Over b c.
   Proof.
     intro H. apply (proj2 (triple_dspStExc m Over b c)).
@@ -214,32 +214,32 @@ Section DiagramExc.
              (proj1 (triple_dslpStExc m Over b c) H)).
   Qed.
 
-  Theorem dsp_under_dslp_under_exc :
-    triple (@dspStExc S) m Under b c -> triple (@dslpStExc S) m Under b c.
+  Theorem DemIncorr_impl_PartIncorr_exc :
+    DemIncorr b m c -> PartIncorr b m c.
   Proof.
     intro H. apply (proj2 (triple_dslpStExc m Under b c)).
     exact (pt_holds_incl_under _ _ _ _ (dsp_incl_dslp R)
              (proj1 (triple_dspStExc m Under b c) H)).
   Qed.
 
-  Theorem dsp_under_asp_under_exc :
-    triple (@dspStExc S) m Under b c -> triple (@aspStExc S) m Under b c.
+  Theorem DemIncorr_impl_IncorrLogic_exc :
+    DemIncorr b m c -> IncorrLogic b m c.
   Proof.
     intro H. apply (proj2 (triple_aspStExc m Under b c)).
     exact (pt_holds_incl_under _ _ _ _ (dsp_incl_asp R)
              (proj1 (triple_dspStExc m Under b c) H)).
   Qed.
 
-  Theorem dslp_under_aslp_under_exc :
-    triple (@dslpStExc S) m Under b c -> triple (@aslpStExc S) m Under b c.
+  Theorem PartIncorr_impl_AngPartIncorr_exc :
+    PartIncorr b m c -> AngPartIncorr b m c.
   Proof.
     intro H. apply (proj2 (triple_aslpStExc m Under b c)).
     exact (pt_holds_incl_under _ _ _ _ (dslp_incl_aslp R)
              (proj1 (triple_dslpStExc m Under b c) H)).
   Qed.
 
-  Theorem asp_under_aslp_under_exc :
-    triple (@aspStExc S) m Under b c -> triple (@aslpStExc S) m Under b c.
+  Theorem IncorrLogic_impl_AngPartIncorr_exc :
+    IncorrLogic b m c -> AngPartIncorr b m c.
   Proof.
     intro H. apply (proj2 (triple_aslpStExc m Under b c)).
     exact (pt_holds_incl_under _ _ _ _ (asp_incl_aslp R)
@@ -248,8 +248,8 @@ Section DiagramExc.
 
   (** ** SP contrapositives *)
 
-  Theorem dsp_under_contra_aslp_over_exc :
-    triple (@dspStExc S) m Under b c
+  Theorem DemIncorr_contra_aslp_over_exc :
+    DemIncorr b m c
     <-> triple (@aslpStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     etransitivity; [ exact (triple_dspStExc m Under b c) |].
@@ -259,8 +259,8 @@ Section DiagramExc.
     exact (pt_holds_contra _ _ _ _ (dsp_contra_aslp R)).
   Qed.
 
-  Theorem dslp_under_contra_asp_over_exc :
-    triple (@dslpStExc S) m Under b c
+  Theorem PartIncorr_contra_asp_over_exc :
+    PartIncorr b m c
     <-> triple (@aspStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     etransitivity; [ exact (triple_dslpStExc m Under b c) |].
@@ -270,8 +270,8 @@ Section DiagramExc.
     exact (pt_holds_contra _ _ _ _ (dslp_contra_asp R)).
   Qed.
 
-  Theorem asp_under_contra_dslp_over_exc :
-    triple (@aspStExc S) m Under b c
+  Theorem IncorrLogic_contra_dslp_over_exc :
+    IncorrLogic b m c
     <-> triple (@dslpStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     etransitivity; [ exact (triple_aspStExc m Under b c) |].
@@ -281,8 +281,8 @@ Section DiagramExc.
     exact (pt_holds_contra _ _ _ _ (asp_contra_dslp R)).
   Qed.
 
-  Theorem aslp_under_contra_dsp_over_exc :
-    triple (@aslpStExc S) m Under b c
+  Theorem AngPartIncorr_contra_dsp_over_exc :
+    AngPartIncorr b m c
     <-> triple (@dspStExc S) m Over (fun s => ~ b s) (fun r => ~ c r).
   Proof.
     etransitivity; [ exact (triple_aslpStExc m Under b c) |].
@@ -294,8 +294,8 @@ Section DiagramExc.
 
   (** ** Galois connections *)
 
-  Theorem dwlp_under_galois_asp_over_exc :
-    triple (@dwlpStExc S) m Under b c <-> triple (@aspStExc S) m Over b c.
+  Theorem PartCorr_galois_asp_over_exc :
+    PartCorr b m c <-> triple (@aspStExc S) m Over b c.
   Proof.
     symmetry.
     refine (proj2 (galois_asp_rel (aspStExc m)
@@ -307,8 +307,8 @@ Section DiagramExc.
     - intros H a Ha. exact (H a (proj2 (aspRel_ofRel _ (tt, s) a) Ha)).
   Qed.
 
-  Theorem awp_over_galois_dslp_under_exc :
-    triple (@awpStExc S) m Over b c <-> triple (@dslpStExc S) m Under b c.
+  Theorem awp_over_galois_PartIncorr_exc :
+    triple (@awpStExc S) m Over b c <-> PartIncorr b m c.
   Proof.
     refine (proj2 (galois_dslp_rel
                      (fun s Q => getWPure (unOptionT (runStateT (awpStExc m) s)) Q)

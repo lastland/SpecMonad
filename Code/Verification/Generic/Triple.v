@@ -13,7 +13,23 @@
     The SP judgements [aspHolds], [dslpHolds], [dspHolds], [aslpHolds] are
     stated on a base arrow at arbitrary indices: the triple of an SP morphism
     at every setting is one of them, re-indexed.  Monad morphisms are in
-    [Lib/Monad/OrderedMonad.v]. *)
+    [Lib/Monad/OrderedMonad.v].
+
+    The [Under] triple of each reading is a logic of Verscht and Kaminski's
+    taxonomy (POPL 2025), and each setting's [Triples.v] names it:
+
+      [TotalCorr]      total correctness              dwp    demonic, total
+      [PartCorr]       partial correctness            dwlp   demonic, partial
+      [LisbonLogic]    Lisbon logic                   awp    angelic, total
+      [AngPartCorr]    angelic partial correctness    awlp   angelic, partial
+      [IncorrLogic]    incorrectness logic            asp    angelic, total
+      [PartIncorr]     partial incorrectness          dslp   demonic, partial
+      [DemIncorr]      demonic incorrectness          dsp    demonic, total
+      [AngPartIncorr]  angelic partial incorrectness  aslp   angelic, partial
+
+    Correctness bounds the start states (pre included in wp post),
+    incorrectness the final ones (post included in sp pre).  The [Over]
+    triples are their contrapositives. *)
 
 From ExtLib Require Import Monad.
 From ITree Require Import Basics.Monad.

@@ -141,7 +141,7 @@ Hoare triples over-approximate.
 | Morphisms into the four *sp* monads | `Morphisms.aspPure_morphism_rel`, `Morphisms.dslpPure_morphism_rel`, `Morphisms.dspPure_morphism_rel`, `Morphisms.aslpPure_morphism_rel` | [Verification/DivNonDet/Morphisms.v](Code/Verification/DivNonDet/Morphisms.v) | proved |
 | Lifted to state and exceptions "for free" | `Morphisms.dwpStExc_morphism`, `Morphisms.aspStExc_morphism_rel`, `Morphisms.dspStExc_morphism_rel` | [Verification/DivNonDetStExc/Morphisms.v](Code/Verification/DivNonDetStExc/Morphisms.v) | proved (all eight readings at both levels) |
 | Incorrectness triple `[p]c[q]` as `q => asp [[c]] p` | `Triples.triple_aspSt` | [Verification/DivNonDetSt/Triples.v](Code/Verification/DivNonDetSt/Triples.v) | proved |
-| The triple diagram (Verscht and Kaminski) for monadic programs | `TriplesTaxonomy.dwp_under_dwlp_under`, `TriplesTaxonomy.dsp_under_asp_under`, `TriplesTaxonomy.awp_under_contra_dwlp_over`, `TriplesTaxonomy.asp_under_contra_dslp_over`, `TriplesTaxonomy.dwlp_under_galois_asp_over`, `TriplesTaxonomy.awp_over_galois_dslp_under` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved (26 edges with state, again with exceptions) |
+| The triple diagram (Verscht and Kaminski) for monadic programs | `TriplesTaxonomy.TotalCorr_impl_PartCorr`, `TriplesTaxonomy.DemIncorr_impl_IncorrLogic`, `TriplesTaxonomy.LisbonLogic_contra_dwlp_over`, `TriplesTaxonomy.IncorrLogic_contra_dslp_over`, `TriplesTaxonomy.PartCorr_galois_asp_over`, `TriplesTaxonomy.awp_over_galois_PartIncorr` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved (26 edges with state, again with exceptions) |
 | One verified example per triple kind; O'Hearn's example | `ProgA.progA_dwp_under`, `ProgA.progA_asp_under`, `ProgEx.progEx_dslp_under`, `OHearn.example_incorrect` | [Verification/DivNonDetStExc/TriplesExamples.v](Code/Verification/DivNonDetStExc/TriplesExamples.v) and [TriplesExamples/](Code/Verification/DivNonDetStExc/TriplesExamples) | proved (16 kinds) |
 
 ## Section 6: Dijkstra monads
@@ -254,7 +254,7 @@ Hoare triples over-approximate.
 - `InCorrectnessPrinciples.v` in [Generic/](Code/Verification/Generic/InCorrectnessPrinciples.v) and in each setting ([DivNonDet/](Code/Verification/DivNonDet/InCorrectnessPrinciples.v), [DivNonDetSt/](Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v), [DivNonDetStExc/](Code/Verification/DivNonDetStExc/InCorrectnessPrinciples.v)):
   O'Hearn's rewriting rules (symmetry, consequence, agreement, denial) for
   the ASP triples at each setting, with demonic liberal WP variants (e.g.
-  `InCorrectnessPrinciples.principle_of_denial_asp` with state). The rules are proved once for the ASP reading of any relation and instantiated at each setting; the demonic liberal WP variants go through each setting's Galois edge (without state, `dwlp_under_galois_asp_over_pure` in `DivNonDet/TriplesTaxonomy.v`).
+  `InCorrectnessPrinciples.principle_of_denial_asp` with state). The rules are proved once for the ASP reading of any relation and instantiated at each setting; the demonic liberal WP variants go through each setting's Galois edge (without state, `PartCorr_galois_asp_over_pure` in `DivNonDet/TriplesTaxonomy.v`).
 - [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v):
   Galois connections between binary specification arrows (relations,
   pre/post pairs, monotone SP and WP transformers, relational pre/post

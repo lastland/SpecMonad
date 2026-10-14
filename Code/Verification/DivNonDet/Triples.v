@@ -246,3 +246,18 @@ Section SameOutcomes.
       | right; intro Ho'; exact (Hall (proj2 (Hout' _) Ho')) ].
   Qed.
 End SameOutcomes.
+
+(* ================================================================= *)
+(** * The named logics                                                *)
+(* ================================================================= *)
+
+(** The [Under] triple of each reading, by the name of its logic (see
+    [Generic/Triple.v]). *)
+Notation TotalCorr     P m Q := (triple (@dwpPure) m Under P Q).
+Notation PartCorr      P m Q := (triple (@dwlpPure) m Under P Q).
+Notation LisbonLogic   P m Q := (triple (@awpPure) m Under P Q).
+Notation AngPartCorr   P m Q := (triple (@awlpPure) m Under P Q).
+Notation IncorrLogic   P m Q := (triple (@aspPure) m Under P Q).
+Notation PartIncorr    P m Q := (triple (@dslpPure) m Under P Q).
+Notation DemIncorr     P m Q := (triple (@dspPure) m Under P Q).
+Notation AngPartIncorr P m Q := (triple (@aslpPure) m Under P Q).
