@@ -150,6 +150,33 @@ Print Assumptions ASLPMonad.aslp_to_aslpsp_morphism.
 Print Assumptions ASLPMonad.OrderedMonad_ASLPSP.
 Print Assumptions TransformerLaws.bind_optionT_mono.
 
+(** Maillard's existential monad and the local universal dual are equivalent
+    to healthy ASP and DSLP arrows, respectively, at input [unit], up to
+    pointwise logical equivalence. All original/ASP reports below, including
+    the top counterexample, are closed. The demonic monad laws, healthiness,
+    round trips, both morphisms, and forward order comparison use only
+    [Classical_Prop.classic]. The demonic ordered-monad instance and reverse
+    order comparison are closed. *)
+Print Assumptions ASPMonad.maillard_singleton.
+Print Assumptions ASPMonad.maillard_healthiness.
+Print Assumptions ASPMonad.maillard_to_asp_morphism.
+Print Assumptions ASPMonad.asp_to_maillard_morphism.
+Print Assumptions ASPMonad.maillard_round_trip.
+Print Assumptions ASPMonad.asp_maillard_round_trip.
+Print Assumptions ASPMonad.maillard_to_asp_order.
+Print Assumptions ASPMonad.asp_to_maillard_order.
+Print Assumptions ASPMonad.maillard_ret_true_not_top.
+Print Assumptions ASPMonad.maillard_not_dslp_healthy.
+Print Assumptions DSLPMonad.SPostDem.MonadLawsE_SPost.
+Print Assumptions DSLPMonad.SPostDem.OrderedMonad_SPost.
+Print Assumptions DSLPMonad.maillard_dem_healthiness.
+Print Assumptions DSLPMonad.maillard_dem_to_dslp_morphism.
+Print Assumptions DSLPMonad.dslp_to_maillard_dem_morphism.
+Print Assumptions DSLPMonad.maillard_dem_round_trip.
+Print Assumptions DSLPMonad.dslp_maillard_dem_round_trip.
+Print Assumptions DSLPMonad.maillard_dem_to_dslp_order.
+Print Assumptions DSLPMonad.dslp_to_maillard_dem_order.
+
 
 (** Canonical carriers share law dictionaries with their compatibility names.
     ASP/DSLP normal forms and base laws are constructive; DSP/ASLP recovery

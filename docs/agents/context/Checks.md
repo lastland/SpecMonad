@@ -49,6 +49,11 @@ The selected reports cover:
 - The identification of the four directly defined stateless monads (`ASPSP`,
   `DSLPSP`, `DSPSP`, `ASLPSP`) with the arrow-derived ones: both morphism
   theorems and the ordered-monad instance of each.
+- Maillard's original `SPost` in [ASPMonad.v](../../../Code/SP/ASPMonad.v) and
+  its supplied universal dual in [DSLPMonad.v](../../../Code/SP/DSLPMonad.v):
+  their healthiness, inverse monad morphisms to ASP/DSLP at input `unit`, round
+  trips, order equivalences, the dual's law and order packages, and the
+  original monad's failure to preserve top.
 
 - The triples development: monad morphisms and their transformer lifts,
   `arrow_morphism_monad`, the base arrow morphisms, the morphisms of

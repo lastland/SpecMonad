@@ -9,6 +9,15 @@ types, selected dictionaries and orders. Qualify shared names, especially
 unary accessors such as `ASPMonad.getASP` against the binary
 `SPostArr.getASP` (and likewise for DSLP).
 
+## Terminology
+
+[PROPERTY_TERMINOLOGY.md](../../../Code/SP/PROPERTY_TERMINOLOGY.md#sp-presentation-terminology)
+defines **Maillard's SP monad**, its supplied **demonic variant**
+(`SPost_dem`, the DSLP variant), **monotone SP arrow**, and **healthy SP arrow**.
+The monotone arrow presentations require only monotonicity; the healthy
+ASP/DSLP arrows also bundle their respective class conditions. Healthiness and
+algebraic arrow/monad laws remain distinct.
+
 ## Files in paper order
 
 | Paper | File | Contents |
@@ -20,7 +29,7 @@ unary accessors such as `ASPMonad.getASP` against the binary
 | 3.2, 3.4 | [SPostArr.v](../../../Code/SP/SPostArr.v) | the raw `SPArrT` and its properties; the ASP and DSLP arrows, normal forms, recovered relations, laws, stacks, `asp_to_dslp` |
 | 3.5 | [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v) | the DSP and ASLP arrows, their stacks, and the separation of the four classes |
 | 5 | [SPostArrEquiv.v](../../../Code/SP/SPostArrEquiv.v) | ASP/DSLP/DSP/ASLP arrows as morphisms to and from `Rel`; the transported `ArrowLoop` obstruction |
-| 3.4-3.5 | [ASPMonad.v](../../../Code/SP/ASPMonad.v), [DSLPMonad.v](../../../Code/SP/DSLPMonad.v), [DSPMonad.v](../../../Code/SP/DSPMonad.v), [ASLPMonad.v](../../../Code/SP/ASLPMonad.v) | the four SP monads at input `unit`, with state and with state and exceptions |
+| 3.4-3.5 | [ASPMonad.v](../../../Code/SP/ASPMonad.v), [DSLPMonad.v](../../../Code/SP/DSLPMonad.v), [DSPMonad.v](../../../Code/SP/DSPMonad.v), [ASLPMonad.v](../../../Code/SP/ASLPMonad.v) | the four SP monads at input `unit`, with state and with state and exceptions; `ASPMonad.v` and `DSLPMonad.v` also connect `SPM.SPost` and the universal dual `SPostDem.SPost` to `ASP` and `DSLP` at input `unit`, prove their healthiness, and record the top-preservation counterexample |
 
 ## The arrows
 
@@ -79,8 +88,16 @@ stateless monad defined directly on `SPPure A = Prop -> A -> Prop`: `ASPSP`
 suffixed `SP` (`retASPSP`, `bindASPSP`, `getASPSP`). `aspsp_to_asp` /
 `asp_to_aspsp` and the three analogous pairs show each direct monad is the
 arrow-derived one. There is no direct definition with state.
-`DSLPSP` is the paper's `SPost_dem`; ASP and `SPost_ang` meet through
-`kenji_iff_singleton` and `aspsp_to_asp`.
+`ASPMonad.v` connects the original `SPM.SPost` to `ASP` through `ASPSP`, and
+`DSLPMonad.v` defines the supplied universal carrier `SPostDem.SPost` and
+connects it to `DSLP` through `DSLPSP`. The maps preserve readings, `ret`,
+`bind`, and orders, and their round trips use pointwise iff. Hence neither
+carrier excludes healthy values at input `unit`. The angelic chain is
+constructive; the demonic law and equivalence proofs use excluded middle.
+`SPostDem.OrderedMonad_SPost` itself is constructive.
+`maillard_not_dslp_healthy` shows that the original existential monad does not
+generally preserve top. These base equivalences do not assert an equivalence
+for arbitrary binary inputs or state stacks.
 
 `DSPMonad.v` and `ASLPMonad.v` close with the pure collapse: at input `unit`
 the DSP and ASP conditions coincide, and so do the ASLP and DSLP ones;

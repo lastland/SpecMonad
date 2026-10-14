@@ -20,7 +20,9 @@
     input for unary specifications, runners and refinement orders.
 
     The last part of the file defines the stateless monad directly, with no
-    arrow, as [ASPSP], and shows that it is [ASP]. *)
+    arrow, as [ASPSP], and shows that it is [ASP]. It then connects Maillard's
+    [SPM.SPost] to [ASP], proves its healthiness, and gives a counterexample
+    to top preservation. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad.
@@ -832,3 +834,152 @@ Proof.
                aspsp_to_asp_morphism OrderedMonad_ASP)).
   intros A x y. symmetry. exact (ordASPSP_aspsp_to_asp x y).
 Qed.
+
+(** ** Maillard's existential SP monad
+
+    [SPM.SPost] is equivalent to [ASP]. This equivalence specializes the
+    healthy arrows to input [unit], identifying a proposition with a
+    predicate on [unit]. The maps preserve readings, [ret], and [bind],
+    and preserve and reflect refinement order. They are inverse up to
+    pointwise logical equivalence of readings.
+
+    Maillard et al. present the existential construction in "Dijkstra Monads
+    for All", PACMPL 3 (ICFP 2019), Article 104, section 4.1
+    (https://doi.org/10.1145/3341708).
+
+    All existential/ASP results and the top counterexample are closed under
+    the global context, as checked with [Print Assumptions]. *)
+
+(** *** Connecting [SPM.SPost] to [ASPSP]
+
+    Monotonicity and [SPM.Over] give the [Singleton] form
+    [SPM.app w p a <-> p /\ SPM.app w True a]. The maps through [ASPSP]
+    reuse its equivalence with [ASP]. *)
+
+Lemma maillard_singleton {A} (w : SPM.SPost A) :
+  Singleton (SPM.app w).
+Proof.
+  apply (proj1 (kenji_iff_singleton _)).
+  split; [exact (SPM.app_mono w) | exact (SPM.app_over w)].
+Qed.
+
+#[program] Definition maillard_to_aspsp {A} (w : SPM.SPost A) : ASPSP A :=
+  SPM.app w.
+Next Obligation. exact (maillard_singleton w). Qed.
+
+#[program] Definition aspsp_to_maillard {A} (w : ASPSP A) : SPM.SPost A :=
+  fun p a => SPM.mkOver (getASPSP w p a) _.
+Next Obligation.
+  exact (proj1 (getASPSP_split w p a H)).
+Qed.
+Next Obligation.
+  exact (proj1 (proj2 (kenji_iff_singleton _) (proj2_sig w))).
+Qed.
+
+Theorem maillard_to_aspsp_morphism :
+  @MonadMorphism SPM.SPost ASPSP SPM.Monad_SPost Monad_ASPSP
+    SPM.Eq1_SPost Eq1_ASPSP (fun A => @maillard_to_aspsp A).
+Proof.
+  constructor.
+  - intros A x y H. exact H.
+  - intros A x p a. cbn.
+    split; intros [Hp E]; split;
+      [exact Hp | symmetry; exact E | exact Hp | symmetry; exact E].
+  - intros A B m k p b. reflexivity.
+Qed.
+
+Theorem aspsp_to_maillard_morphism :
+  @MonadMorphism ASPSP SPM.SPost Monad_ASPSP SPM.Monad_SPost
+    Eq1_ASPSP SPM.Eq1_SPost (fun A => @aspsp_to_maillard A).
+Proof.
+  constructor.
+  - intros A x y H. exact H.
+  - intros A x p a. cbn.
+    split; intros [Hp E]; split;
+      [exact Hp | symmetry; exact E | exact Hp | symmetry; exact E].
+  - intros A B m k p b. reflexivity.
+Qed.
+
+Definition maillard_to_asp {A} (w : SPM.SPost A) : ASP A :=
+  aspsp_to_asp (maillard_to_aspsp w).
+
+Definition asp_to_maillard {A} (w : ASP A) : SPM.SPost A :=
+  aspsp_to_maillard (asp_to_aspsp w).
+
+(** *** ASP healthiness and nonempty meet preservation
+
+    At input [unit], each original transformer is monotone, strict, and
+    preserves arbitrary nonempty joins and meets. The original monad need
+    not preserve top: [SPM.retSP true] rejects output [false] even with
+    precondition [True]. *)
+
+Theorem maillard_healthiness {A} (w : SPM.SPost A) :
+  sp_monotone (fun (P : unit -> Prop) a => SPM.app w (P tt) a) /\
+  sp_strict (fun (P : unit -> Prop) a => SPM.app w (P tt) a) /\
+  sp_disjunctive (fun (P : unit -> Prop) a => SPM.app w (P tt) a) /\
+  sp_conjunctive (fun (P : unit -> Prop) a => SPM.app w (P tt) a).
+Proof.
+  destruct (proj2_sig (maillard_to_asp w)) as [Hm [Hs Hd]].
+  split; [exact Hm | split; [exact Hs | split; [exact Hd |]]].
+  intros I [i0] P a.
+  exact (singleton_to_conjunctive _ (maillard_singleton w)
+    I i0 (fun i => P i tt) a).
+Qed.
+
+Lemma maillard_ret_true_not_top : ~ SPM.app (SPM.retSP true) True false.
+Proof. intros [_ E]. discriminate E. Qed.
+
+Theorem maillard_not_dslp_healthy :
+  ~ sp_terminating (fun (P : unit -> Prop) a => SPM.app (SPM.retSP true) (P tt) a).
+Proof. intro H. exact (maillard_ret_true_not_top (H false)). Qed.
+
+(** *** Ordered-monad equivalence with [ASP] at input [unit] *)
+
+Lemma maillard_to_asp_reading {A} (w : SPM.SPost A) P a :
+  getASPArr (maillard_to_asp w) P a <-> SPM.app w (P tt) a.
+Proof. reflexivity. Qed.
+
+Lemma asp_to_maillard_reading {A} (w : ASP A) p a :
+  SPM.app (asp_to_maillard w) p a <-> getASP w p a.
+Proof. reflexivity. Qed.
+
+Lemma maillard_round_trip {A} (w : SPM.SPost A) :
+  @eq1 SPM.SPost SPM.Eq1_SPost A (asp_to_maillard (maillard_to_asp w)) w.
+Proof. intros p a. reflexivity. Qed.
+
+Lemma asp_maillard_round_trip {A} (w : ASP A) :
+  @eq1 ASP Eq1_ASP A (maillard_to_asp (asp_to_maillard w)) w.
+Proof. exact (asp_to_aspsp_to_asp w). Qed.
+
+Theorem maillard_to_asp_morphism :
+  @MonadMorphism SPM.SPost ASP SPM.Monad_SPost Monad_ASP
+    SPM.Eq1_SPost Eq1_ASP (fun A => @maillard_to_asp A).
+Proof.
+  exact (@MonadMorphism_comp SPM.SPost ASPSP ASP
+    SPM.Monad_SPost Monad_ASPSP Monad_ASP
+    SPM.Eq1_SPost Eq1_ASPSP Eq1_ASP Eq1Equivalence_ASP
+    (fun A => @maillard_to_aspsp A) (fun A => @aspsp_to_asp A)
+    maillard_to_aspsp_morphism aspsp_to_asp_morphism).
+Qed.
+
+Theorem asp_to_maillard_morphism :
+  @MonadMorphism ASP SPM.SPost Monad_ASP SPM.Monad_SPost
+    Eq1_ASP SPM.Eq1_SPost (fun A => @asp_to_maillard A).
+Proof.
+  exact (@MonadMorphism_comp ASP ASPSP SPM.SPost
+    Monad_ASP Monad_ASPSP SPM.Monad_SPost
+    Eq1_ASP Eq1_ASPSP SPM.Eq1_SPost SPMFacts.Eq1Equivalence_SPost
+    (fun A => @asp_to_aspsp A) (fun A => @aspsp_to_maillard A)
+    asp_to_aspsp_morphism aspsp_to_maillard_morphism).
+Qed.
+
+Lemma maillard_to_asp_order {A} (w w' : SPM.SPost A) :
+  SP_le w w' <-> ordASP (maillard_to_asp w) (maillard_to_asp w').
+Proof.
+  exact (ordASPSP_aspsp_to_asp
+    (maillard_to_aspsp w) (maillard_to_aspsp w')).
+Qed.
+
+Lemma asp_to_maillard_order {A} (w w' : ASP A) :
+  ordASP w w' <-> SP_le (asp_to_maillard w) (asp_to_maillard w').
+Proof. exact (ordASP_get w w'). Qed.

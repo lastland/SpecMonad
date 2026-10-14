@@ -16,7 +16,21 @@
     input for unary specifications, runners and refinement orders.
 
     The last part of the file defines the stateless monad directly, with no
-    arrow, as [DSLPSP], and shows that it is [DSLP]. *)
+    arrow, as [DSLPSP], and shows that it is [DSLP]. It also supplies the
+    universal demonic variant [SPostDem.SPost] of Maillard's SP monad and
+    proves its equivalence with [DSLP] at input [unit]. The maps preserve
+    readings, [ret], and [bind], preserve and reflect refinement order, and
+    are inverse up to pointwise logical equivalence of readings.
+
+    Maillard et al. present the existential construction in "Dijkstra Monads
+    for All", PACMPL 3 (ICFP 2019), Article 104, section 4.1
+    (https://doi.org/10.1145/3341708).
+
+    For the demonic variant, the [MonadLawsE] instance, healthiness, round
+    trips, both DSLP morphisms, and [maillard_dem_to_dslp_order] use only
+    [Classical_Prop.classic]. Its [Eq1Equivalence] and [OrderedMonad]
+    instances, both reading lemmas, and [dslp_to_maillard_dem_order] are
+    closed under the global context, as checked with [Print Assumptions]. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid Relation_Definitions.
 From Coq Require Import Classical_Prop.
@@ -866,3 +880,181 @@ Proof.
                dslpsp_to_dslp_morphism OrderedMonad_DSLP)).
   intros A x y. symmetry. exact (ordDSLPSP_dslpsp_to_dslp x y).
 Qed.
+
+(** ** Demonic carrier and operations
+
+    The dual retains monotonicity and reverses the codomain implication:
+    [p -> w p a], rather than [w p a -> p]. Its [bind] quantifies universally
+    over intermediate results. *)
+Module SPostDem.
+  Definition SPost (A : Type) : Type := { w : SPPure A | KenjiPureDSLP w }.
+
+  Definition app {A} (w : SPost A) : SPPure A := proj1_sig w.
+
+  #[program] Definition retSP {A} (v : A) : SPost A := fun p a => a = v -> p.
+  Next Obligation.
+    split.
+    - intros p q a Hpq H E. exact (Hpq (H E)).
+    - intros p a Hp _. exact Hp.
+  Qed.
+
+  #[program] Definition bindSP {A B} (m : SPost A) (k : A -> SPost B) : SPost B :=
+    fun p b => forall a, k a (m p a) b.
+  Next Obligation.
+    split.
+    - intros p q b Hpq H a.
+      exact (proj1 (proj2_sig (k a)) _ _ b
+        (proj1 (proj2_sig m) p q a Hpq) (H a)).
+    - intros p b Hp a.
+      exact (proj2 (proj2_sig (k a)) _ b (proj2 (proj2_sig m) p a Hp)).
+  Qed.
+
+  (** ** Pointwise equality, monad laws, and refinement order
+
+      Equality uses pointwise logical equivalence; refinement uses pointwise
+      implication. The monad laws reuse the [DSLPSP] law package. *)
+
+  #[global] Instance Monad_SPost : Monad SPost :=
+    {| ret := @retSP; bind := @bindSP |}.
+
+  #[global] Instance Eq1_SPost : Eq1 SPost :=
+    fun A x y => forall p a, app x p a <-> app y p a.
+
+  #[global] Instance Eq1Equivalence_SPost : @Eq1Equivalence SPost Monad_SPost Eq1_SPost.
+  Proof.
+    intro A. constructor.
+    - intros x p a. reflexivity.
+    - intros x y H p a. symmetry. exact (H p a).
+    - intros x y z H K p a.
+      transitivity (app y p a); [exact (H p a) | exact (K p a)].
+  Qed.
+
+  #[program] Definition to_dslpsp {A} (w : SPost A) : DSLPSP A := app w.
+  Next Obligation.
+    exact (proj1 (kenjidslp_iff_msingleton _) (proj2_sig w)).
+  Qed.
+
+  #[program] Definition from_dslpsp {A} (w : DSLPSP A) : SPost A :=
+    getDSLPSP w.
+  Next Obligation.
+    exact (proj2 (kenjidslp_iff_msingleton _) (proj2_sig w)).
+  Qed.
+
+  #[global] Instance MonadLawsE_SPost : @MonadLawsE SPost Eq1_SPost Monad_SPost.
+  Proof.
+    destruct MonadLawsE_DSLPSP as [Ll Lr La Lp].
+    constructor.
+    - intros A B f x. exact (Ll A B (fun a => to_dslpsp (f a)) x).
+    - intros A x. exact (Lr A (to_dslpsp x)).
+    - intros A B C x f g.
+      exact (La A B C (to_dslpsp x)
+        (fun a => to_dslpsp (f a)) (fun b => to_dslpsp (g b))).
+    - intros A B x y H f g K.
+      exact (Lp A B (to_dslpsp x) (to_dslpsp y) H
+        (fun a => to_dslpsp (f a)) (fun a => to_dslpsp (g a)) K).
+  Qed.
+
+  Definition le {A} (x y : SPost A) : Prop := forall p a, app x p a -> app y p a.
+
+  #[global] Instance OrderedMonad_SPost : @OrderedMonad SPost Monad_SPost Eq1_SPost (@le).
+  Proof.
+    constructor.
+    - intro A. constructor.
+      + intros x p a H. exact H.
+      + intros x y z H K p a V. exact (K p a (H p a V)).
+    - intros A x y H p a. exact (proj1 (H p a)).
+    - intros A B x y H f g K p b V a.
+      apply (K a). exact (proj1 (proj2_sig (f a)) _ _ b (H p a) (V a)).
+  Qed.
+
+  Theorem to_dslpsp_morphism :
+    @MonadMorphism SPost DSLPSP Monad_SPost Monad_DSLPSP
+      Eq1_SPost Eq1_DSLPSP (fun A => @to_dslpsp A).
+  Proof.
+    constructor.
+    - intros A x y H. exact H.
+    - intros A x p a. reflexivity.
+    - intros A B x k p b. reflexivity.
+  Qed.
+
+  Theorem from_dslpsp_morphism :
+    @MonadMorphism DSLPSP SPost Monad_DSLPSP Monad_SPost
+      Eq1_DSLPSP Eq1_SPost (fun A => @from_dslpsp A).
+  Proof.
+    constructor.
+    - intros A x y H. exact H.
+    - intros A x p a. reflexivity.
+    - intros A B x k p b. reflexivity.
+  Qed.
+End SPostDem.
+
+(** ** DSLP healthiness and ordered-monad equivalence at input [unit]
+
+    The demonic transformers are monotone, preserve top, and preserve
+    arbitrary nonempty meets. The maps through [DSLPSP] establish the
+    equivalence with the arrow-derived [DSLP] monad. *)
+
+Definition maillard_dem_to_dslp {A} (w : SPostDem.SPost A) : DSLP A :=
+  dslpsp_to_dslp (SPostDem.to_dslpsp w).
+
+Definition dslp_to_maillard_dem {A} (w : DSLP A) : SPostDem.SPost A :=
+  SPostDem.from_dslpsp (dslp_to_dslpsp w).
+
+Theorem maillard_dem_healthiness {A} (w : SPostDem.SPost A) :
+  sp_monotone (fun (P : unit -> Prop) a => SPostDem.app w (P tt) a) /\
+  sp_terminating (fun (P : unit -> Prop) a => SPostDem.app w (P tt) a) /\
+  sp_conjunctive (fun (P : unit -> Prop) a => SPostDem.app w (P tt) a).
+Proof. exact (proj2_sig (maillard_dem_to_dslp w)). Qed.
+
+Lemma maillard_dem_to_dslp_reading {A} (w : SPostDem.SPost A) P a :
+  getDSLPArr (maillard_dem_to_dslp w) P a <-> SPostDem.app w (P tt) a.
+Proof. reflexivity. Qed.
+
+Lemma dslp_to_maillard_dem_reading {A} (w : DSLP A) p a :
+  SPostDem.app (dslp_to_maillard_dem w) p a <-> getDSLP w p a.
+Proof. reflexivity. Qed.
+
+Lemma maillard_dem_round_trip {A} (w : SPostDem.SPost A) :
+  @eq1 SPostDem.SPost SPostDem.Eq1_SPost A
+    (dslp_to_maillard_dem (maillard_dem_to_dslp w)) w.
+Proof. intros p a. reflexivity. Qed.
+
+Lemma dslp_maillard_dem_round_trip {A} (w : DSLP A) :
+  @eq1 DSLP Eq1_DSLP A
+    (maillard_dem_to_dslp (dslp_to_maillard_dem w)) w.
+Proof. exact (dslp_to_dslpsp_to_dslp w). Qed.
+
+Theorem maillard_dem_to_dslp_morphism :
+  @MonadMorphism SPostDem.SPost DSLP SPostDem.Monad_SPost Monad_DSLP
+    SPostDem.Eq1_SPost Eq1_DSLP (fun A => @maillard_dem_to_dslp A).
+Proof.
+  exact (@MonadMorphism_comp SPostDem.SPost DSLPSP DSLP
+    SPostDem.Monad_SPost Monad_DSLPSP Monad_DSLP
+    SPostDem.Eq1_SPost Eq1_DSLPSP Eq1_DSLP Eq1Equivalence_DSLP
+    (fun A => @SPostDem.to_dslpsp A) (fun A => @dslpsp_to_dslp A)
+    SPostDem.to_dslpsp_morphism dslpsp_to_dslp_morphism).
+Qed.
+
+Theorem dslp_to_maillard_dem_morphism :
+  @MonadMorphism DSLP SPostDem.SPost Monad_DSLP SPostDem.Monad_SPost
+    Eq1_DSLP SPostDem.Eq1_SPost (fun A => @dslp_to_maillard_dem A).
+Proof.
+  exact (@MonadMorphism_comp DSLP DSLPSP SPostDem.SPost
+    Monad_DSLP Monad_DSLPSP SPostDem.Monad_SPost
+    Eq1_DSLP Eq1_DSLPSP SPostDem.Eq1_SPost SPostDem.Eq1Equivalence_SPost
+    (fun A => @dslp_to_dslpsp A) (fun A => @SPostDem.from_dslpsp A)
+    dslp_to_dslpsp_morphism SPostDem.from_dslpsp_morphism).
+Qed.
+
+Lemma maillard_dem_to_dslp_order {A} (w w' : SPostDem.SPost A) :
+  SPostDem.le w w' <->
+  ordDSLP (maillard_dem_to_dslp w) (maillard_dem_to_dslp w').
+Proof.
+  exact (ordDSLPSP_dslpsp_to_dslp
+    (SPostDem.to_dslpsp w) (SPostDem.to_dslpsp w')).
+Qed.
+
+Lemma dslp_to_maillard_dem_order {A} (w w' : DSLP A) :
+  ordDSLP w w' <->
+  SPostDem.le (dslp_to_maillard_dem w) (dslp_to_maillard_dem w').
+Proof. exact (ordDSLP_get w w'). Qed.
