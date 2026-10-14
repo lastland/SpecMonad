@@ -2,13 +2,17 @@
 
     The lift of the base monad [divndNE] by the state transformer, lawful by
     the generic transformer laws, with its operations and the outcome lemmas
-    [outSt_*].  Non-empty from every start state by construction. *)
+    [outSt_*].  Non-empty from every start state by construction.
+
+    Programs with state are [stateT S (itree E)]: ExtLib's state
+    transformer over ITrees.  [denoteSt] is the base [denote] under the
+    transformer, a monad morphism by [MonadMorphism_stateT]. *)
 
 From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
 From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From ITree Require Import Basics.Monad Core.ITreeDefinition Core.ITreeMonad.
 From Hammer Require Import Tactics.
-From Incorrectness.Lib.Monad Require Import TransformerLaws.
+From Incorrectness.Lib.Monad Require Import TransformerLaws OrderedMonad.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
 
 (* ================================================================= *)
@@ -91,3 +95,34 @@ Section Outcomes.
     outSt (divergeSt : stdivndNE S A) s o <-> o = None.
   Proof. reflexivity. Qed.
 End Outcomes.
+
+(* ================================================================= *)
+(** * Programs with state                                             *)
+(* ================================================================= *)
+
+(** The monad of programs with state; [get] and [put] are ExtLib's. *)
+#[global] Instance Monad__stateT_itree {E} (S : Type) : Monad (stateT S (itree E)) :=
+  @Monad_stateT S (itree E) Monad_itree.
+
+Section DenoteSt.
+  Context {E : Type -> Type} `{HE : HasAnswers E} (S : Type).
+
+  Definition denoteSt : forall A, stateT S (itree E) A -> stdivndNE S A :=
+    stateT_map S (@denote E HE).
+
+  Theorem denoteSt_morphism :
+    @MonadMorphism (stateT S (itree E)) (stdivndNE S)
+      (@Monad_stateT S (itree E) Monad_itree) (Monad__stdivndNE S)
+      (@Eq1_stateT S (itree E) Eq1_ITree) (Eq1__stdivndNE S) denoteSt.
+  Proof.
+    exact (@MonadMorphism_stateT (itree E) divndNE Monad_itree Monad__divndNE
+             Eq1_ITree Eq1__divndNE Eq1Equivalence__divndNE MonadLawsE__divndNE
+             S (@denote E HE) denote_morphism).
+  Qed.
+
+  (** The outcomes of a program from a start state are those of its tree from
+      that state. *)
+  Lemma outSt_denoteSt {A} (m : stateT S (itree E) A) (s : S) (o : option (A * S)) :
+    outSt (denoteSt A m) s o <-> unOptionT (getNE (denote (runStateT m s))) o.
+  Proof. reflexivity. Qed.
+End DenoteSt.

@@ -5,13 +5,18 @@
     transformers -- a lift of the base, not of the state setting -- with its
     operations and the outcome lemmas [outStExc_*].  Outer [None] is
     divergence, [Some None] an exception, [Some (Some (a, s))] a normal
-    return. *)
+    return.
+
+    Programs with state and exceptions are [stateT S (optionT (itree E))]:
+    ExtLib's transformers over ITrees.  [denoteStExc] is the base [denote]
+    under the transformers, a monad morphism by [MonadMorphism_optionT] and
+    [MonadMorphism_stateT]. *)
 
 From Coq Require Import Morphisms FunctionalExtensionality PropExtensionality.
-From ExtLib Require Import Monad MonadState StateMonad OptionMonad.
-From ITree Require Import Basics.Monad.
+From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
+From ITree Require Import Basics.Monad Core.ITreeDefinition Core.ITreeMonad.
 From Hammer Require Import Tactics.
-From Incorrectness.Lib.Monad Require Import TransformerLaws.
+From Incorrectness.Lib.Monad Require Import TransformerLaws OrderedMonad.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
 
 Definition stdivexcndNE (S : Type) : Type -> Type := stateT S (optionT divndNE).
@@ -101,3 +106,51 @@ Section Outcomes.
     outStExc pickStExc s o <-> exists n, o = Some (Some (n, s)).
   Proof. reflexivity. Qed.
 End Outcomes.
+
+(* ================================================================= *)
+(** * Programs with state and exceptions                              *)
+(* ================================================================= *)
+
+(** The monad of programs with state and exceptions; [get], [put] and
+    [raise] are ExtLib's. *)
+#[global] Instance Monad__stateT_optionT_itree {E} (S : Type)
+  : Monad (stateT S (optionT (itree E))) :=
+  @Monad_stateT S (optionT (itree E)) (@Monad_optionT (itree E) Monad_itree).
+
+#[global] Instance MonadExc__optionT_itree {E} : MonadExc unit (optionT (itree E)) :=
+  @OptionTError (itree E) Monad_itree.
+
+Section DenoteStExc.
+  Context {E : Type -> Type} `{HE : HasAnswers E} (S : Type).
+
+  Definition denoteStExc : forall A, stateT S (optionT (itree E)) A -> stdivexcndNE S A :=
+    stateT_map S (optionT_map (@denote E HE)).
+
+  Theorem denoteStExc_morphism :
+    @MonadMorphism (stateT S (optionT (itree E))) (stdivexcndNE S)
+      (@Monad_stateT S (optionT (itree E)) (@Monad_optionT (itree E) Monad_itree))
+      (Monad__stdivexcndNE S)
+      (@Eq1_stateT S (optionT (itree E)) (@Eq1_optionT (itree E) Eq1_ITree))
+      (Eq1__stdivexcndNE S) denoteStExc.
+  Proof.
+    exact (@MonadMorphism_stateT (optionT (itree E)) (optionT divndNE)
+             (@Monad_optionT (itree E) Monad_itree)
+             (@Monad_optionT divndNE Monad__divndNE)
+             (@Eq1_optionT (itree E) Eq1_ITree) (@Eq1_optionT divndNE Eq1__divndNE)
+             (@Eq1Equivalence_optionT divndNE Monad__divndNE Eq1__divndNE
+                Eq1Equivalence__divndNE)
+             (@MonadLawsE_optionT divndNE Monad__divndNE Eq1__divndNE
+                Eq1Equivalence__divndNE MonadLawsE__divndNE)
+             S (optionT_map (@denote E HE))
+             (@MonadMorphism_optionT (itree E) divndNE Monad_itree Monad__divndNE
+                Eq1_ITree Eq1__divndNE Eq1Equivalence__divndNE MonadLawsE__divndNE
+                (@denote E HE) denote_morphism)).
+  Qed.
+
+  (** The outcomes of a program from a start state are those of its tree from
+      that state, a result [None] being a raised exception. *)
+  Lemma outStExc_denoteStExc {A} (m : stateT S (optionT (itree E)) A) (s : S)
+    (o : option (option (A * S))) :
+    outStExc (denoteStExc A m) s o <-> unOptionT (getNE (denote (unOptionT (runStateT m s)))) o.
+  Proof. reflexivity. Qed.
+End DenoteStExc.

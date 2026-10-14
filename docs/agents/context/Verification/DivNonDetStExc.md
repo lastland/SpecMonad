@@ -8,9 +8,16 @@ state. The SP morphisms keep exceptions and omit divergence.
 
 - [Computation.v](../../../../Code/Verification/DivNonDetStExc/Computation.v): the stack, with
   `orStExc`, `divergeStExc`, `raiseStExc`, `pickStExc` and `outStExc_*`.
+  Programs with state and exceptions are `stateT S (optionT (itree E))`
+  (ExtLib's `get`, `put` and `raise` over ITrees); `denoteStExc S :=
+  stateT_map S (optionT_map denote)`, a monad morphism by
+  `MonadMorphism_optionT` and `MonadMorphism_stateT`
+  (`denoteStExc_morphism`); `outStExc_denoteStExc` gives its outcomes.
 - [Morphisms.v](../../../../Code/Verification/DivNonDetStExc/Morphisms.v): WP lifts
   `stateT_map S (optionT_map σ)` (`wpStExc_morphism`); SP lifts through
   `state_option_arrow_morphism` (`spStExc F`); `dwpStExc`, `aspStExc` &c.
+  The reading of a program is the reading of its denotation,
+  `dwpStExc S ∘ₘₘ denoteStExc S` &c., by `IsMonadMorphism_comp`.
 - [Triples.v](../../../../Code/Verification/DivNonDetStExc/Triples.v): as with state, at the result
   type `option (A * S)` (`triple_dwpStExc`, `triple_aspStExc`, `xStExc_read`).
 - [TriplesTaxonomy.v](../../../../Code/Verification/DivNonDetStExc/TriplesTaxonomy.v): the same 26
@@ -21,7 +28,9 @@ state. The SP morphisms keep exceptions and omit divergence.
   each holding the program, its outcome lemma and its triples: `ProgA.v`,
   `ProgB.v`, `ProgRet.v`, `ProgEx.v`, `Withdrawal.v` (`progloom`,
   `progloom_harder`: the contrast between angelic WP and ASP `Under`),
-  `OHearn.v` (O'Hearn's Example 3.1), and `Common.v` (`preEq0`, `postEq0`).
+  `OHearn.v` (O'Hearn's Example 3.1), `ITreePrograms.v` (`progA` as an
+  ITree program, `progA_IT`, with the outcomes of `progA` and two of its
+  triples), and `Common.v` (`preEq0`, `postEq0`).
 - [DijkstraMonads.v](../../../../Code/Verification/DivNonDetStExc/DijkstraMonads.v): the `OrderedTarget`
   instances and the twelve named Dijkstra monads `Ddwp`, `Ddwlp`, `Dawp`,
   `Dawlp`, `Dasp`, `Ddslp` and their `_op` variants, with their laws.

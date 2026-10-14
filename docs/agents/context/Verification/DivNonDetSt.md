@@ -6,13 +6,18 @@ Parent: [Verification](../Verification.md). The state setting:
 - [Computation.v](../../../../Code/Verification/DivNonDetSt/Computation.v): the stack (ExtLib's `stateT`,
   not defined by hand), lawful by the generic transformer laws
   (`MonadLawsE__stdivndNE`), with `orSt`, `divergeSt` and the outcome lemmas
-  `outSt_*`.
+  `outSt_*`. Programs with state are `stateT S (itree E)` (ExtLib's `get`
+  and `put` over ITrees); `denoteSt S := stateT_map S denote`, a monad
+  morphism by `MonadMorphism_stateT` (`denoteSt_morphism`), whose outcomes
+  from a state are those of the program's tree from it (`outSt_denoteSt`).
 - [Morphisms.v](../../../../Code/Verification/DivNonDetSt/Morphisms.v): the lifts. WP: a base morphism
   `σ` lifts to `stateT_map S σ` (`wpSt_morphism`, by `MonadMorphism_stateT`);
   `dwpSt` &c. SP: a base arrow morphism lifts through `state_arrow_morphism`
   (`spSt F`; `spSt_morphism` composes the lifts and inherits the functional
   extensionality of the transformer law packages, `spSt_morphism_rel` goes
-  through the relations); `aspSt` &c.
+  through the relations); `aspSt` &c. The reading of a program is the
+  reading of its denotation, `dwpSt S ∘ₘₘ denoteSt S` &c., a monad morphism
+  by `IsMonadMorphism_comp`.
 - [Triples.v](../../../../Code/Verification/DivNonDetSt/Triples.v): WP: the triple of a lifted morphism is
   the base triple at every start state (`spec_holds_wpSt` for any base map,
   `triple_dwpSt` &c.). SP: the judgement on the base arrow at
@@ -37,3 +42,8 @@ Parent: [Verification](../Verification.md). The state setting:
   ASP `Under` triple as its typings (`no_asp_under_index`), nor the DSLP
   `Over` triple (`no_dslp_over_index`); the computations `reach0From0`,
   `reach0From1`, `reachNothing` are built by `progOf`.
+- [TriplesExamples/ITreePrograms.v](../../../../Code/Verification/DivNonDetSt/TriplesExamples/ITreePrograms.v):
+  `progA_IT` (set the state to `42`, then keep it or add `1`, choosing with
+  ITree's `Or`): its tree is a choice between the two results
+  (`progA_IT_tree`, up to `eutt`), hence its outcomes (`progA_IT_out`) and
+  its DWP and ASP `Under` triples.

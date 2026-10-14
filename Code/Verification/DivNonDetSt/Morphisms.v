@@ -385,3 +385,55 @@ Qed.
 #[global] Instance IsMonadMorphism_aslpSt (S : Type) :
   IsMonadMorphism (@aslpSt S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (aslpSt_morphism_rel S).
+
+(* ================================================================= *)
+(** * The readings of programs                                        *)
+(* ================================================================= *)
+
+(** A reading of a program is the reading of its denotation,
+    [θ ∘ₘₘ denoteSt]: a monad morphism by composition, for any events [E]
+    with answers. *)
+
+Section ProgramReadings.
+  Context {E : Type -> Type} `{HE : HasAnswers E} (S : Type).
+
+  #[global] Instance IsMonadMorphism_dwpSt_denoteSt :
+    IsMonadMorphism (@dwpSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence__WSt S)
+      (@denoteSt_morphism E HE S) (dwpSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_dwlpSt_denoteSt :
+    IsMonadMorphism (@dwlpSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence__WSt S)
+      (@denoteSt_morphism E HE S) (dwlpSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_awpSt_denoteSt :
+    IsMonadMorphism (@awpSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence__WSt S)
+      (@denoteSt_morphism E HE S) (awpSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_awlpSt_denoteSt :
+    IsMonadMorphism (@awlpSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence__WSt S)
+      (@denoteSt_morphism E HE S) (awlpSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_aspSt_denoteSt :
+    IsMonadMorphism (@aspSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence_ASPSt S)
+      (@denoteSt_morphism E HE S) (aspSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_dslpSt_denoteSt :
+    IsMonadMorphism (@dslpSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := Eq1Equivalence_DSLPSt S)
+      (@denoteSt_morphism E HE S) (dslpSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_dspSt_denoteSt :
+    IsMonadMorphism (@dspSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := @Eq1Equivalence_Arrow (DSPStArr S) _ _ (ArrowEq_DSPStArr S) unit)
+      (@denoteSt_morphism E HE S) (dspSt_morphism S).
+
+  #[global] Instance IsMonadMorphism_aslpSt_denoteSt :
+    IsMonadMorphism (@aslpSt S ∘ₘₘ @denoteSt E HE S) :=
+    IsMonadMorphism_comp (EqW := @Eq1Equivalence_Arrow (ASLPStArr S) _ _ (ArrowEq_ASLPStArr S) unit)
+      (@denoteSt_morphism E HE S) (aslpSt_morphism S).
+End ProgramReadings.
