@@ -30,7 +30,13 @@ state. The SP morphisms keep exceptions and omit divergence.
   `progloom_harder`: the contrast between angelic WP and ASP `Under`),
   `OHearn.v` (O'Hearn's Example 3.1), `ITreePrograms.v` (`progA` as an
   ITree program, `progA_IT`, with the outcomes of `progA` and two of its
-  triples), and `Common.v` (`preEq0`, `postEq0`).
+  triples), `Counter.v` (`counter N`, an ITree loop that stops or
+  increments and raises on reaching `N`: its outcomes by `denote_iter` and
+  the base loop rules (`counter_out`); a reachable bug, every state below
+  `N` reached, dropping paths, and the principle of denial refuting the
+  correctness triples; incorrectness against Lisbon logic; total
+  correctness below `N` and divergence from `N` on), and `Common.v`
+  (`preEq0`, `postEq0`).
 - [DijkstraMonads.v](../../../../Code/Verification/DivNonDetStExc/DijkstraMonads.v): the `OrderedTarget`
   instances and the twelve named Dijkstra monads `Ddwp`, `Ddwlp`, `Dawp`,
   `Dawlp`, `Dasp`, `Ddslp` and their `_op` variants, with their laws.

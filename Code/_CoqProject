@@ -36,6 +36,7 @@ Verification/DivNonDetStExc/TriplesExamples/ProgEx.v
 Verification/DivNonDetStExc/TriplesExamples/Withdrawal.v
 Verification/DivNonDetStExc/TriplesExamples/OHearn.v
 Verification/DivNonDetStExc/TriplesExamples/ITreePrograms.v
+Verification/DivNonDetStExc/TriplesExamples/Counter.v
 Verification/DivNonDetStExc/TriplesExamples.v
 Verification/DivNonDetStExc/DijkstraMonads.v
 Verification/DivNonDetStExc/Typings.v

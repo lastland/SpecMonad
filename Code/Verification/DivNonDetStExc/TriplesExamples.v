@@ -32,8 +32,11 @@
       [OHearn.v]       [example_state]: Example 3.1 of O'Hearn's
                        "Incorrectness Logic"
       [ITreePrograms.v] [progA] as an ITree program, through [denoteStExc]
+      [Counter.v]      [counter N]: a loop whose bug is reached after many
+                       iterations; the incorrectness-logic triples, and
+                       incorrectness against Lisbon logic
       [Common.v]       the pre- and postcondition [preEq0], [postEq0] *)
 
 From Incorrectness.Verification.DivNonDetStExc.TriplesExamples Require Export
-  Common ProgA ProgB ProgRet ProgEx Withdrawal OHearn ITreePrograms.
+  Common ProgA ProgB ProgRet ProgEx Withdrawal OHearn ITreePrograms Counter.
 
