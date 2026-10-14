@@ -45,10 +45,6 @@ through ITree and paco.
 | [Tests/](Tests) | — | regression and instance checks |
 | [Checks/](Checks) | — | opt-in audits: assumptions and the paper claims |
 
-Each directory has a reading guide in
-[docs/agents/context/](../docs/agents/context/README.md) (`SP/` → `SP.md`,
-`Verification/DivNonDetSt/` → `Verification/DivNonDetSt.md`).
-
 ```mermaid
 flowchart RL
   subgraph Verification[Verification/]
@@ -108,5 +104,4 @@ file-level graph with a directory-only view.
    [Verification/DivNonDetStExc/DijkstraExamples.v](Verification/DivNonDetStExc/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
 
-The [design notes](../docs/design.md) tell the longer story;
 `Backup/` (including the former `ITreeExamples/`) is outside the build.

@@ -10,3 +10,4 @@ Makefile.coq.conf
 .lia.cache
 depgraph.html
 flake.lock
+artifact.tar.gz

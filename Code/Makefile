@@ -12,6 +12,8 @@
 #   make clean               delegate clean and also remove the audit's outputs
 #   make layers              check that imports respect scripts/layers.txt
 #                             (python3; runs as its own CI step)
+#   make package             archive the committed development (HEAD) as
+#                             artifact.tar.gz
 #   make GOAL...             any other goal passes through to Makefile.coq
 #                             (file targets like Lib/Arrow/Arrow.vo, install, ...)
 #
@@ -52,6 +54,15 @@ check: delegate
 layers:
 	python3 scripts/depgraph.py --check-layers
 
+# Package the development from Git (git archive already drops user and host
+# names).  Code/README.md links to ../PAPER.md, so package from the
+# repository root and keep the layout; Backup/ is outside the build, and
+# scripts/ is development tooling.
+.PHONY: package
+package:
+	git -C .. archive --prefix spec-monad/ -o Code/artifact.tar.gz HEAD \
+	  Code PAPER.md ':(exclude)Code/Backup' ':(exclude)Code/scripts'
+
 .PHONY: clean
 clean: regen
 	$(MAKE) -f $(COQMAKEFILE) clean
@@ -63,7 +74,7 @@ clean: regen
 # Share one dependency graph across all/check and explicit file/install goals.
 # The audit requires the whole project even when all was not requested.
 GOALS       := $(if $(MAKECMDGOALS),$(MAKECMDGOALS),all)
-BUILD_GOALS := $(filter-out check clean regen layers,$(GOALS))
+BUILD_GOALS := $(filter-out check clean regen layers package,$(GOALS))
 ifneq ($(filter check,$(GOALS)),)
 ifeq ($(filter all,$(BUILD_GOALS)),)
 BUILD_GOALS := all $(BUILD_GOALS)
