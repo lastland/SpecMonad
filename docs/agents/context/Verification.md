@@ -31,8 +31,9 @@ setting directory has the same files, one per concept:
 | `Typings.v` | which triples are typings |
 
 plus `InCorrectnessPrinciples.v` (O'Hearn's rewriting rules, instances of
-`Generic/InCorrectnessPrinciples.v`) in every setting, and `Examples.v`,
-`DijkstraExamples.v` in `DivNonDetStExc/`. File names repeat across settings;
+`Generic/InCorrectnessPrinciples.v`) in every setting, and the examples
+(`TriplesExamples.v` with one file per example in `TriplesExamples/`, and
+`DijkstraExamples.v`) in `DivNonDetStExc/`. File names repeat across settings;
 declarations do not, so a qualified name such as `Morphisms.dwpSt` is
 unambiguous.
 

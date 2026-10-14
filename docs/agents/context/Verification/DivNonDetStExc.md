@@ -15,10 +15,13 @@ state. The SP morphisms keep exceptions and omit divergence.
   type `option (A * S)` (`triple_dwpStExc`, `triple_aspStExc`, `xStExc_read`).
 - [TriplesTaxonomy.v](../../../../Code/Verification/DivNonDetStExc/TriplesTaxonomy.v): the same 26
   edges for `m : stdivexcndNE S A`, under the same names with `_exc`.
-- [Examples.v](../../../../Code/Verification/DivNonDetStExc/Examples.v): `progA`, `progB`, `progRet`,
-  `progEx`, `example_state`, `progloom`, `progloom_harder`, one verified
-  triple for each of the sixteen kinds, the contrast between angelic WP and
-  ASP `Under`, and O'Hearn's Example 3.1.
+- [TriplesExamples.v](../../../../Code/Verification/DivNonDetStExc/TriplesExamples.v): the index, with
+  the table of one verified triple for each of the sixteen kinds; it exports
+  one file per example in [TriplesExamples/](../../../../Code/Verification/DivNonDetStExc/TriplesExamples),
+  each holding the program, its outcome lemma and its triples: `ProgA.v`,
+  `ProgB.v`, `ProgRet.v`, `ProgEx.v`, `Withdrawal.v` (`progloom`,
+  `progloom_harder`: the contrast between angelic WP and ASP `Under`),
+  `OHearn.v` (O'Hearn's Example 3.1), and `Common.v` (`preEq0`, `postEq0`).
 - [DijkstraMonads.v](../../../../Code/Verification/DivNonDetStExc/DijkstraMonads.v): the `OrderedTarget`
   instances and the twelve named Dijkstra monads `Ddwp`, `Ddwlp`, `Dawp`,
   `Dawlp`, `Dasp`, `Ddslp` and their `_op` variants, with their laws.

@@ -142,7 +142,7 @@ Hoare triples over-approximate.
 | Lifted to state and exceptions "for free" | `Morphisms.dwpStExc_morphism`, `Morphisms.aspStExc_morphism_rel`, `Morphisms.dspStExc_morphism_rel` | [Verification/DivNonDetStExc/Morphisms.v](Code/Verification/DivNonDetStExc/Morphisms.v) | proved (all eight readings at both levels) |
 | Incorrectness triple `[p]c[q]` as `q => asp [[c]] p` | `Triples.triple_aspSt` | [Verification/DivNonDetSt/Triples.v](Code/Verification/DivNonDetSt/Triples.v) | proved |
 | The triple diagram (Verscht and Kaminski) for monadic programs | `TriplesTaxonomy.dwp_under_dwlp_under`, `TriplesTaxonomy.dsp_under_asp_under`, `TriplesTaxonomy.awp_under_contra_dwlp_over`, `TriplesTaxonomy.asp_under_contra_dslp_over`, `TriplesTaxonomy.dwlp_under_galois_asp_over`, `TriplesTaxonomy.awp_over_galois_dslp_under` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved (26 edges with state, again with exceptions) |
-| One verified example per triple kind; O'Hearn's example | `Examples.progA_dwp_under`, `Examples.progA_asp_under`, `Examples.progEx_dslp_under`, `Examples.example_incorrect` | [Verification/DivNonDetStExc/Examples.v](Code/Verification/DivNonDetStExc/Examples.v) | proved (16 kinds) |
+| One verified example per triple kind; O'Hearn's example | `ProgA.progA_dwp_under`, `ProgA.progA_asp_under`, `ProgEx.progEx_dslp_under`, `OHearn.example_incorrect` | [Verification/DivNonDetStExc/TriplesExamples.v](Code/Verification/DivNonDetStExc/TriplesExamples.v) and [TriplesExamples/](Code/Verification/DivNonDetStExc/TriplesExamples) | proved (16 kinds) |
 
 ## Section 6: Dijkstra monads
 
@@ -211,7 +211,7 @@ Hoare triples over-approximate.
   state in the precondition to reach every result in the postcondition. For
   an inhabited precondition it is strictly stronger than the triple
   (`Typings.aspUnder_typing_triple`; strictness by
-  `Examples.progloom_harder_asp_under` with
+  `Withdrawal.progloom_harder_asp_under` with
   `DijkstraExamples.progloom_harder_not_Dasp_op`); for an empty precondition
   it holds of every program, so it is vacuous. Neither "weaker" nor
   "stronger" holds uniformly; what holds for every index is that none has
@@ -279,7 +279,7 @@ Hoare triples over-approximate.
 | `{ASP,DSLP,DSP,ASLP}Monad.v` | [SP/](Code/SP) |
 | `Taxonomy/BaseSpecMonads/MonadTaxonomy.v` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) (Figure 1 edges, `Section Flavours`) and [PTMonadTaxonomy/Carriers.v](Code/PTMonadTaxonomy/Carriers.v) |
 | `Taxonomy/BaseSpecMonads/WPureMonad.v` | [WP/WPure.v](Code/WP/WPure.v) and [WP/WPVariants.v](Code/WP/WPVariants.v) |
-| `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | split by setting under [Verification/](Code/Verification): the morphisms in `DivNonDet/Morphisms.v`, `DivNonDetSt/Morphisms.v`, `DivNonDetStExc/Morphisms.v`; the triples in `Generic/Triple.v` and `*/Triples*.v`; the diagram in `*/TripleTaxonomy*.v`; the examples in `DivNonDetStExc/Examples.v`; the rules in `DivNonDetSt/InCorrectnessPrinciples.v` |
+| `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | split by setting under [Verification/](Code/Verification): the morphisms in `DivNonDet/Morphisms.v`, `DivNonDetSt/Morphisms.v`, `DivNonDetStExc/Morphisms.v`; the triples in `Generic/Triple.v` and `*/Triples*.v`; the diagram in `*/TripleTaxonomy*.v`; the examples in `DivNonDetStExc/TriplesExamples/`; the rules in `DivNonDetSt/InCorrectnessPrinciples.v` |
 | `Taxonomy/DijkstraMonads/*` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v) (the construction) and `Dijkstra*.v` / `Typings*.v` per setting |
 | `Taxonomy/BaseSpecMonads/BaseGaloisConnections.v` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) |
 | `Taxonomy/BaseSpecMonads/NewGaloisConnections.v` | does not exist; see Section 7 |

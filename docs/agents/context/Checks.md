@@ -60,7 +60,7 @@ The selected reports cover:
   [Verification/DivNonDet/Morphisms.v](../../../Code/Verification/DivNonDet/Morphisms.v) at three levels
   with both proofs of each SP morphism, the edges of
   [Verification/DivNonDetSt/TriplesTaxonomy.v](../../../Code/Verification/DivNonDetSt/TriplesTaxonomy.v) with state and with
-  exceptions, the examples of [Verification/DivNonDetStExc/Examples.v](../../../Code/Verification/DivNonDetStExc/Examples.v),
+  exceptions, the examples of [Verification/DivNonDetStExc/TriplesExamples/](../../../Code/Verification/DivNonDetStExc/TriplesExamples),
   the rules of [Verification/DivNonDetSt/InCorrectnessPrinciples.v](../../../Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v),
   and the construction, instances and triple identifications of
   [DijkstraMonad.v](../../../Code/Verification/Generic/DijkstraMonad.v).

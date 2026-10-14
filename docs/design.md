@@ -787,7 +787,8 @@ not convert `Rel_eq` into equality of relation values.
 
 ## 9. Examples, rewriting rules, Dijkstra monads
 
-**Examples.** `Verification/DivNonDetStExc/Examples.v` defines `progA`, `progB`, `progRet`,
+**Examples.** `Verification/DivNonDetStExc/TriplesExamples/` (one file per
+example, indexed by `TriplesExamples.v`) defines `progA`, `progB`, `progRet`,
 `progEx`, `example_state` (Example 3.1 of Peter W. O'Hearn's
 [*Incorrectness Logic*](https://doi.org/10.1145/3371078), POPL 2020),
 `progloom` and `progloom_harder` over `stateT S (optionT divndNE)`, and

@@ -29,7 +29,7 @@ From Incorrectness.Verification.Generic Require Import DijkstraMonad.
 From Incorrectness.Verification.Generic Require Import Typings.
 From Incorrectness.Verification.DivNonDetStExc Require Import Computation.
 From Incorrectness.Verification.DivNonDetStExc Require Import Morphisms.
-From Incorrectness.Verification.DivNonDetStExc Require Import Examples.
+From Incorrectness.Verification.DivNonDetStExc Require Import TriplesExamples.
 From Incorrectness.Verification.DivNonDetStExc Require Import DijkstraMonads.
 From Incorrectness.Verification.DivNonDetStExc Require Import Typings.
 

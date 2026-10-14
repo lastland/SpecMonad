@@ -247,7 +247,7 @@ From Incorrectness.Verification.DivNonDet Require
 From Incorrectness.Verification.DivNonDetSt Require
   TriplesTaxonomy.
 From Incorrectness.Verification.DivNonDetStExc Require
-  TriplesTaxonomy Examples.
+  TriplesTaxonomy TriplesExamples.
 From Incorrectness.Verification.DivNonDetSt Require
   InCorrectnessPrinciples.
 From Incorrectness.Verification.Generic Require DijkstraMonad.
@@ -368,23 +368,23 @@ Print Assumptions TriplesTaxonomy.awp_over_galois_dslp_under.
 
 (** One example per triple kind.  The twelve WP, ASP and DSLP examples are
     closed; the four DSP and ASLP examples use excluded middle. *)
-Print Assumptions Examples.progA_dwp_under.
-Print Assumptions Examples.progRet_dwp_over.
-Print Assumptions Examples.progB_dwlp_under.
-Print Assumptions Examples.progRet_dwlp_over.
-Print Assumptions Examples.progA_awp_under.
-Print Assumptions Examples.progA_awp_over.
-Print Assumptions Examples.progB_awlp_under.
-Print Assumptions Examples.progRet_awlp_over.
-Print Assumptions Examples.progA_asp_over.
-Print Assumptions Examples.progA_asp_under.
-Print Assumptions Examples.progEx_dslp_under.
-Print Assumptions Examples.progA_dslp_over.
-Print Assumptions Examples.progRet_dsp_under.
-Print Assumptions Examples.progRet_dsp_over.
-Print Assumptions Examples.progRet_aslp_under.
-Print Assumptions Examples.progRet_aslp_over.
-Print Assumptions Examples.example_incorrect.
+Print Assumptions ProgA.progA_dwp_under.
+Print Assumptions ProgRet.progRet_dwp_over.
+Print Assumptions ProgB.progB_dwlp_under.
+Print Assumptions ProgRet.progRet_dwlp_over.
+Print Assumptions ProgA.progA_awp_under.
+Print Assumptions ProgA.progA_awp_over.
+Print Assumptions ProgB.progB_awlp_under.
+Print Assumptions ProgRet.progRet_awlp_over.
+Print Assumptions ProgA.progA_asp_over.
+Print Assumptions ProgA.progA_asp_under.
+Print Assumptions ProgEx.progEx_dslp_under.
+Print Assumptions ProgA.progA_dslp_over.
+Print Assumptions ProgRet.progRet_dsp_under.
+Print Assumptions ProgRet.progRet_dsp_over.
+Print Assumptions ProgRet.progRet_aslp_under.
+Print Assumptions ProgRet.progRet_aslp_over.
+Print Assumptions OHearn.example_incorrect.
 
 (** The four healthiness classes are distinct: closed. *)
 Print Assumptions DSPASLPArr.no_ASPArr_for_dsp.

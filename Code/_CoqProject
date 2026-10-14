@@ -24,7 +24,14 @@ Verification/DivNonDetStExc/Computation.v
 Verification/DivNonDetStExc/Morphisms.v
 Verification/DivNonDetStExc/Triples.v
 Verification/DivNonDetStExc/TriplesTaxonomy.v
-Verification/DivNonDetStExc/Examples.v
+Verification/DivNonDetStExc/TriplesExamples/Common.v
+Verification/DivNonDetStExc/TriplesExamples/ProgA.v
+Verification/DivNonDetStExc/TriplesExamples/ProgB.v
+Verification/DivNonDetStExc/TriplesExamples/ProgRet.v
+Verification/DivNonDetStExc/TriplesExamples/ProgEx.v
+Verification/DivNonDetStExc/TriplesExamples/Withdrawal.v
+Verification/DivNonDetStExc/TriplesExamples/OHearn.v
+Verification/DivNonDetStExc/TriplesExamples.v
 Verification/DivNonDetStExc/DijkstraMonads.v
 Verification/DivNonDetStExc/Typings.v
 Verification/DivNonDetStExc/InCorrectnessPrinciples.v

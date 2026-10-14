@@ -62,7 +62,7 @@ From Incorrectness.Verification.DivNonDet Require
 From Incorrectness.Verification.DivNonDetSt Require
   TriplesTaxonomy.
 From Incorrectness.Verification.DivNonDetStExc Require
-  TriplesTaxonomy Examples.
+  TriplesTaxonomy TriplesExamples.
 From Incorrectness.Verification.DivNonDetSt Require
   InCorrectnessPrinciples.
 From Incorrectness.Verification.Generic Require
@@ -343,10 +343,10 @@ Check TriplesTaxonomy.dwlp_under_galois_asp_over.
 Check TriplesTaxonomy.awp_over_galois_dslp_under.
 
 (** Verified programs: one per triple kind (16), and O'Hearn's Example 3.1. *)
-Check Examples.progA_dwp_under.
-Check Examples.progA_asp_under.
-Check Examples.progEx_dslp_under.
-Check Examples.example_incorrect.
+Check ProgA.progA_dwp_under.
+Check ProgA.progA_asp_under.
+Check ProgEx.progEx_dslp_under.
+Check OHearn.example_incorrect.
 
 (* ================================================================= *)
 (** ** Section 6, Dijkstra monads (contribution bullets 4 and 5)     *)
@@ -399,7 +399,7 @@ Check DijkstraExamples.progEx_Ddslp_op.
 Check DijkstraExamples.progloom_harder_not_Dasp_op.
 Check MonadTaxonomy.impliesWPure.
 (* Bullet 5 gap: strictness of the typing and the DSLP Over dual. *)
-Check Examples.progloom_harder_asp_under.
+Check Withdrawal.progloom_harder_asp_under.
 Check Typings.dslpOver_typing_triple.
 Check DijkstraExamples.progloom_harder_dslp_over.
 Check DijkstraExamples.progloom_harder_not_Ddslp.

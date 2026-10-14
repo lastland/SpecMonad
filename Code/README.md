@@ -94,7 +94,8 @@ file-level graph with a directory-only view.
    (their lifts), [Verification/Generic/Triple.v](Verification/Generic/Triple.v),
    [Verification/DivNonDetSt/Triples.v](Verification/DivNonDetSt/Triples.v),
    [Verification/DivNonDetSt/TriplesTaxonomy.v](Verification/DivNonDetSt/TriplesTaxonomy.v),
-   [Verification/DivNonDetStExc/Examples.v](Verification/DivNonDetStExc/Examples.v).
+   [Verification/DivNonDetStExc/TriplesExamples.v](Verification/DivNonDetStExc/TriplesExamples.v)
+   (one file per example in [TriplesExamples/](Verification/DivNonDetStExc/TriplesExamples)).
 7. §6: [Verification/Generic/DijkstraMonad.v](Verification/Generic/DijkstraMonad.v),
    [Verification/Generic/Typings.v](Verification/Generic/Typings.v),
    [Verification/DivNonDetStExc/DijkstraExamples.v](Verification/DivNonDetStExc/DijkstraExamples.v).
