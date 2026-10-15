@@ -247,6 +247,12 @@ Module AngelicMonotone. Section AngelicMonotone.
     intros ?? ** ; eauto.
   Qed.
 
+  Lemma pred2WSt_monotone {A} (p p' : PredSt S A) :
+    ordPredSt p p' -> ordWSt (pred2WSt p) (pred2WSt p').
+  Proof.
+    intros hp ? ? h ? ?%hp; now apply h.
+  Qed.
+
   Lemma pred2WSt_ret {A} (a : A): pred2WSt (ret a) ≈WSt ret a.
   Proof.
     split; intros ??; cbn.
@@ -319,6 +325,54 @@ Module AngelicMonotone. Section AngelicMonotone.
   Qed.
   (* toPred (fromPred p) ≈P p always *)
   (* fromPred (toPred sp) ≈ sp when sp is strict and disjunctive *)
+
+  #[program]
+  Definition WSt2pred {A} (w : WSt S A) : PredSt S A :=
+    {| runStateT s0 r := forall p, runStateT w s0 p -> p r |}.
+
+  Lemma WSt2pred_monotone {A} (w w' : WSt S A) :
+    ordWSt w w' -> ordPredSt (WSt2pred w) (WSt2pred w').
+  Proof.
+    intros hw ? ? h ? ?%hw; now apply h.
+  Qed.
+
+  Lemma WSt2pred_ret {A} (a : A) : WSt2pred (ret a) ≈P ret a.
+  Proof.
+    split; intros ? ?; cbn.
+    - intros h; apply h; reflexivity.
+    - intros ->; easy.
+  Qed.
+
+  (* WSt2pred does not preserve bind, take A = False, wm = fun _ => False *)
+  Lemma WSt2pred_bind_counterexample (s0 : S) :
+    (forall {A B} (wm : WSt S A) (wf : A -> WSt S B), ordPredSt (WSt2pred (bind wm wf)) (bind (WSt2pred wm) (fun a => WSt2pred (wf a)))) -> False.
+  Proof.
+    intros h. unshelve epose proof (r := h False unit _ _ s0 (tt, s0) _).
+    + constructor; intros; exists (fun _ => False); intros ?**; easy.
+    + intros [].
+    + intros ? [].
+    + now destruct r as [[]].
+  Qed.
+
+  Lemma WSt2pred_bind_oplax {A B} (wm : WSt S A) (wf : A -> WSt S B):
+     ordPredSt (bind (WSt2pred wm) (fun a => WSt2pred (wf a))) (WSt2pred (bind wm wf)).
+  Proof.
+    intros ?? ([a s0]&hm&hf) ? hmf; cbn in *.
+    eapply hf; pattern a, s0.
+    change (?f a s0) with ((fun '(a, s0) => f a s0) (a,s0)).
+    apply hm; revert hmf.
+    eapply (getWPure_mono (runStateT _ _)).
+    intros []; easy.
+  Qed.
+
+  Lemma pred2WSt_Wst2pred_adj {A} (p : PredSt S A) (w : WSt S A) :
+    ordPredSt p (WSt2pred w) <-> ordWSt (pred2WSt p) w.
+  Proof.
+    split.
+    - intros h ???? h'%h; now apply h'.
+    - intros h ???? h'%h; now apply h'.
+  Qed.
+
 
   Lemma Ladj_pred {A} (sp : SPStMon A) (w : WSt S A) : Ladj sp w <-> exists p, sp ≈ fromPred p /\ w ≈WSt pred2WSt p.
   Proof.
@@ -568,6 +622,12 @@ Module DemonicMonotone. Section DemonicMonotone.
     intros ??? (?&?&?); eexists; eauto.
   Qed.
 
+  Lemma pred2WSt_antitone {A} {p p' : PredSt S A} :
+    ordPredSt p p' -> ordWSt (pred2WSt p') (pred2WSt p).
+  Proof.
+    intros hp ?? (?&?%hp&?); eexists ; split; eauto.
+  Qed.
+
   Lemma pred2WSt_ret {A} (a : A): pred2WSt (ret a) ≈WSt ret a.
   Proof.
     split; intros ??; cbn.
@@ -581,6 +641,57 @@ Module DemonicMonotone. Section DemonicMonotone.
     split; intros ??; cbn.
     - intros ([]&?&?&?&?). eexists; split; eauto; eexists; split; eauto.
     - intros (?&([]&?&?)&?); eexists; split; eauto. eexists; split; eauto.
+  Qed.
+
+  (* #[program]
+  Definition WSt2pred {A} (w : WSt S A) : PredSt S A :=
+    {|runStateT s0 r := exists post, runStateT w s0 post /\ post r |}. *)
+  #[program]
+  Definition WSt2pred {A} (w : WSt S A) : PredSt S A :=
+    {|runStateT s0 r :=runStateT w s0 (fun r' => r = r') |}.
+
+  Lemma WSt2pred_antitone {A} (w w' : WSt S A) :
+    ordWSt w w' -> ordPredSt (WSt2pred w') (WSt2pred w).
+  Proof.
+    now intros hw ?? ?%hw.
+  Qed.
+
+  Lemma pred2WSt_Wst2pred_adj {A} (p : PredSt S A) (w : WSt S A) :
+    ordWSt w (pred2WSt p) <-> ordPredSt p (WSt2pred w).
+  Proof.
+    split; intros h ??.
+    - intros ?.
+      unshelve eapply (h s (fun r' => r = r') _).
+      exists r; split; easy.
+    - intros (?&h'%h&?). revert h'.
+      eapply (getWPure_mono (runStateT w _)).
+      now intros ? ->.
+  Qed.
+
+  #[local] Notation "m ≈P m'" := (ordPredSt m m' /\ ordPredSt m' m) (at level 70).
+  Lemma WSt2pred_ret {A} (a : A) : WSt2pred (ret a) ≈P ret a.
+  Proof.
+    split; intros ??; easy.
+  Qed.
+
+  (* WSt2pred does not preserve bind, take A = False, wm = fun _ => True *)
+  Lemma WSt2pred_bind_counterexample (s0 : S) :
+    (forall {A B} (wm : WSt S A) (wf : A -> WSt S B), ordPredSt (WSt2pred (bind wm wf)) (bind (WSt2pred wm) (fun a => WSt2pred (wf a)))) -> False.
+  Proof.
+    intros h. unshelve epose proof (r := h False unit _ _ s0 (tt, s0) _).
+    + constructor; intros; exists (fun _ => True); intros ?**; easy.
+    + intros [].
+    + constructor.
+    + now destruct r as [[]].
+  Qed.
+
+  (* This direction should be oplax if I believe definition 2 from the next 700 relational program logics *)
+  Lemma WSt2pred_bind_oplax {A B} (wm : WSt S A) (wf : A -> WSt S B):
+     ordPredSt (bind (WSt2pred wm) (fun a => WSt2pred (wf a))) (WSt2pred (bind wm wf)).
+  Proof.
+    intros ?? ([]&hm&hf); cbn in *.
+    revert hm; eapply (getWPure_mono (runStateT _ _)).
+    now intros ? <-.
   Qed.
 
   Lemma Radj_fromPred {A} (p : PredSt S A) : Radj (fromPred p) (pred2WSt p).
