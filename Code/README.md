@@ -5,12 +5,6 @@ Monadic Programs*. Directories follow the paper; [PAPER.md](../PAPER.md) maps
 each claim to its Rocq name, and [Checks/PaperClaims.v](Checks/PaperClaims.v)
 checks those names when `make check` runs.
 
-> **To look at.** [PTMonadTaxonomy/MonotoneSPSt.v](PTMonadTaxonomy/MonotoneSPSt.v) has one admitted
-> lemma, `SPStMonotone.DemonicMonotone.Radj_bind`: `bind` preserves the right
-> adjunction between demonic monotone SP transformers and `WSt`. Nothing uses
-> it, but `coqchk -o` lists it among the axioms of the build. Prove it or
-> remove it.
-
 ## Build
 
 Rocq/Coq 8.20 with `coq-ext-lib`, `coq-itree` and `coq-hammer-tactics`

@@ -6,7 +6,7 @@
     monotone sps alone are not a lawful monad.  The file also proves the
     adjunctions [Ladj] / [Radj] between these transformers and [WSt], and
     their representability by [PredSt]; [MonadTaxonomy.v] uses them for the
-    Galois edges of the taxonomy.  [Radj_bind] is [Admitted] and unused. *)
+    Galois edges of the taxonomy. *)
 
 From ITree Require Import Basics.Monad.
 Require Import Coq.Logic.PropExtensionality.
@@ -592,29 +592,6 @@ Module DemonicMonotone. Section DemonicMonotone.
     - intros h ??%h; eauto.
   Qed.
 
-  (* There should be a direct way to prove that Radj is compatible with bind
-    but it looks painful, see below for an alternative proof *)
-  (* Lemma Radj_bind {A B} (spm : SPStMon A) (wm : WSt S A) (spf : A -> SPStMon B) (wf : A -> WSt S B) :
-    Radj spm wm -> (forall a, Radj (spf a) (wf a)) -> Radj (bind spm spf) (bind wm wf).
-  Proof.
-    intros hm hf ??; split; cbn.
-    - intros h **. eapply (proj1 (hm _ _)); eauto; cbn.
-      pattern si; apply H0; cbn; eapply (proj1 (hf a _ _)); eauto.
-    - intros h ?; eapply hm; intros [a s1] hwf.
-      assert (exists r, post r /\ (forall prei, proj1_sig (spf a) prei r -> prei s1)).
-      + pattern s1; revert hwf. eapply (proj2 (hf a _ _)).
-        intros ??. admit.
-      + destruct H as [r []]; eauto.
-      intros; eapply h. eauto.
-
-      epose (r := proj2 (hf a _ _)); unfold Radj in r.
-      eapply r.
-     ?; eapply h.
-      1: apply H.
-     eapply (hf a).
-      eapply
-  Qed. *)
-
   #[program]
   Definition pred2WSt {A} (p : PredSt S A) : WSt S A :=
     {| runStateT s0 := fun post => exists r, runStateT p s0 r /\ post r |}.
@@ -730,19 +707,6 @@ Module DemonicMonotone. Section DemonicMonotone.
     - intros hadj. exists (toPred sp); now apply Radj_toPred.
     - intros (?&?&?); eapply Radj_equiv; try eassumption; apply Radj_fromPred.
   Qed.
-
-  Lemma Radj_bind {A B} (spm : SPStMon A) (wm : WSt S A) (spf : A -> SPStMon B) (wf : A -> WSt S B) :
-    Radj spm wm -> (forall a, Radj (spf a) (wf a)) -> Radj (bind spm spf) (bind wm wf).
-  Proof.
-    intros [??]%Radj_toPred hf.
-    assert (forall a, spf a ≈ fromPred (toPred (spf a))).
-    1: intros a; specialize (hf a); apply Radj_toPred in hf; now destruct hf.
-    assert (forall a, wf a ≈WSt pred2WSt (toPred (spf a))).
-    1: intros a; specialize (hf a); apply Radj_toPred in hf; now destruct hf.
-    apply Radj_toPred;split.
-    (* Setoid rewrite material...
-    *)
-  Admitted.
 
 End DemonicMonotone. End DemonicMonotone.
 End SPStMonotone.

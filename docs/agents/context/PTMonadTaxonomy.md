@@ -28,8 +28,7 @@ programs. The relations themselves are monadic relations in the sense of
   `SPStMon` with an angelic and a demonic monad structure, each lawful only up
   to an inequation (`lunitStrictlyLax`: monotone sps alone are not a lawful
   monad, paper Introduction and §3.2). `Ladj` / `Radj` relate them to `WSt`,
-  with representability by `PredSt`. `Radj_bind` is `Admitted` and unused:
-  use the bridge lemmas instead.
+  with representability by `PredSt`.
 - [SPStBindComparisons.v](../../../Code/PTMonadTaxonomy/SPStBindComparisons.v): the state bind of each SP
   monad read as a monotone stateful transformer and compared with the
   `SPStMon` structures. Not in the paper.
@@ -53,7 +52,7 @@ programs. The relations themselves are monadic relations in the sense of
 - DSP and ASLP enter SP implications through one part (`aspOf` / `dslpOf`),
   because their `bind` does not preserve the pointwise orders (paper's
   asterisks in Figure 1).
-- `GaloisSPWP` / `GaloisWPSP` are `Ladj` / `Radj`; never use `Radj_bind`.
+- `GaloisSPWP` / `GaloisWPSP` are `Ladj` / `Radj`.
   Name the angelic or demonic `SPStMon` structure explicitly.
 - Every variant instance that involves an SP monad goes through the relation
   the SP element denotes: implication is inclusion and contrapositive is

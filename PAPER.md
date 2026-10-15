@@ -232,11 +232,6 @@ Hoare triples over-approximate.
   arrow laws for any lawful base arrow, a codomain-only arrow lawful at every
   input would make the Section 3.3 stateful monad lawful, so the Section 3.2
   claim can hold at most at input `unit`.
-- **Admitted.** `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_bind` in
-  [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v) is `Admitted`.
-  Nothing uses it; the Galois edges are proved another way. It is the only
-  `Admitted`, `admit` or `Abort` in the files of `_CoqProject` (an `admit`
-  at line 552 of that file is inside a comment).
 - **Section 3.5.** The paper defines `aspOf` / `dslpOf` on a whole
   precondition. The code first recovers a relation by probing with
   singleton complements (`DSPASLPArr.dspRel` relates `x` to `y` when
