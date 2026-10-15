@@ -2,7 +2,7 @@
 
     For one computation [m : stdivndNE S A], read in the eight ways of
     [Morphisms.v], the sixteen triples stand in the relations of Verscht
-    and Kaminski's diagram (POPL 2025, Figure 10): sixteen implications
+    and Kaminski's diagram (POPL 2025, Figure 5): sixteen implications
     ([TotalCorr_impl_PartCorr] &c.), eight contrapositives
     ([LisbonLogic_contra_dwlp_over] &c., classical) and two Galois connections
     ([PartCorr_galois_asp_over], [awp_over_galois_PartIncorr]).  The WP

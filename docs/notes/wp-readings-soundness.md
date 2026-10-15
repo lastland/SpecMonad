@@ -1,7 +1,7 @@
 # To prove: each WP reading lands in its healthiness class
 
 Status: open. Not needed for anything that builds today; closes the gap
-listed in [PAPER.md](../../PAPER.md#gaps-and-differences-from-the-paper)
+marked *not formalized* in [PAPER.md](../../PAPER.md#section-35-refined-wp-monads)
 against contribution 3 ("monad morphisms from the base computation monad
 into our eight *wp* and *sp* monads").
 

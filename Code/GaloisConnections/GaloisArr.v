@@ -33,8 +33,11 @@
     [gamma_uni], is not monotone.  A second, existential proposal is
     recorded as historical discussion, not as a proved counterexample.
 
-    These connections are not stated in the paper, whose Section 7 works
-    with unary specification monads ([BaseGaloisConnections.v]).  The
+    The paper works with unary specification monads
+    ([BaseGaloisConnections.v], Section 6); [Checks/PaperClaims.v] cites
+    [Galois_Rel_SPost], [Galois_Rel_PrePost] and [Galois_WP_PrePost] as
+    partial evidence for its [SPost] -- [Pred] edge and its stateful
+    pre/post connections.  The
     monotone carrier [MonotoneSPost] and its order are defined in
     [PTMonadTaxonomy/TransformerRelations.v], which reads it as [MonoPT]. *)
 

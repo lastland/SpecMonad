@@ -13,13 +13,16 @@ make check
 
 `make check` also compiles [Code/Checks/PaperClaims.v](Code/Checks/PaperClaims.v),
 which `Check`s every Rocq name in the tables below by its qualified name
-(`File.name`, or `File.Module.name`). If a name is renamed or moved, that
+(`File.name`, `Dir.File.name` where several files share a name, or
+`File.Module.name`). The tables are generated from that file: one row per
+claim, in paper order, with the line of the claim in the paper's source. If a name is renamed or moved, that
 file stops compiling. Unqualified names such as `WPure` or `stateArrT` in
 the text are the paper's notation for the same objects. The axioms each main
 result depends on are printed by
 [Code/Checks/Assumptions.v](Code/Checks/Assumptions.v), which `make check`
 also compiles. The development uses excluded middle, and functional and
-propositional extensionality in places; that file says which results use
+propositional extensionality in places, and the interaction-tree layer
+`eq_rect_eq` (through ITree and paco); that file says which results use
 which.
 
 Status column:
@@ -28,246 +31,247 @@ Status column:
 - **partial**: a weaker, more special, or differently shaped statement is
   proved; the row says how it differs.
 - **not formalized**: no corresponding statement exists.
+- **not checkable**: a claim about the development as a whole (its size,
+  its axioms); the row says how it stands.
 
-The paper's "Artifact:" lists use the file paths from before the
-reorganization. [Old paths](#old-paths-in-the-papers-artifact-lists) at the
-end of this file maps them to the current ones.
+The paper's rendered "Artifact:" note (l.4321-4328) uses file paths from
+before the reorganization. [Old paths](#old-paths-in-the-papers-source) at
+the end of this file maps them to the current ones.
 
-## Section 1: Introduction and contributions
-
-| Paper | Rocq name(s) | File | Status |
-|---|---|---|---|
-| Intro: "monotone *sps* alone do *not* form a lawful monad" | `MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v) | proved, for monotone stateful transformers over an inhabited state type (take `S = unit` for the base case): left unit holds only as an inequation |
-| Intro: the state monad transformer applied to the base *sp* monad has the shape `S -> P -> (A * S -> P)` | none (a statement about types) | | not formalized |
-| Bullet 1: four lawful *sp* monads from arrows with application, extended by arrow transformers; four *wp* monads, all submonads of one | see Sections 3.2 to 3.6 | | proved |
-| Bullet 2: taxonomy of the eight monads; preserved by monad and arrow transformers (state, exceptions) | see Section 4 | | partial: generic for monad transformers; for arrow transformers at the stacks used (base, `stateArrT`, `stateArrT` over `optionArrT`); Section 4.3 not formalized |
-| Bullet 3: triples from monad morphisms out of the computation monad, lifted to state and exceptions; verified examples | `Computation.divndNE`; see Section 5 | [Verification/DivNonDet/Computation.v](Code/Verification/DivNonDet/Computation.v) | proved, except that the *wp* morphisms land in `WPure`, not in the four *wp* variants |
-| Bullet 4: Dijkstra monads indexed by *asp*, *dslp*, and by *wp* with either order | see Section 6 | | proved; the *wp* Dijkstra monads are indexed by `WPure` and its stacks, not by the four variants |
-| Bullet 5: *dsp*, *aslp* are lawful but not specification monads; under-approximate *asp* / over-approximate *dslp* orders differ from the triples; other triples are typings | see Section 6 | | proved; see [Gaps](#gaps-and-differences-from-the-paper) for the direction of "weaker" |
-| Bullet 6: Galois connections with `Pred` and pre/postcondition pairs, the `Pred` ≅ `SPost` isomorphism extended to *asp* and *dslp*, preserved by transformers | see Section 7 | | partial: only the DM4All base adjunctions are proved |
-| Bullet 7: "We mechanize all definitions and proofs in Rocq" | | | partial: see [Gaps](#gaps-and-differences-from-the-paper) |
-
-## Section 2: Background, WP monads
+## Section 1, Introduction
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| `WPure A = (A -> P) -> P`, monotone, with the continuation `ret` / `bind`; monad laws | `WPure.WPure`, `WPure.MonadLawsE_WPure` | [WP/WPure.v](Code/WP/WPure.v) | proved |
-| Pointwise order, `bind` monotone (an ordered monad) | `WPure.OrderedMonad_WPure`, `MonadTaxonomy.impliesWPure` | [WP/WPure.v](Code/WP/WPure.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved; `WP_le` is DM4All's reverse implication (`OrderedMonad_flip` gives the other direction); the paper's forward order is `impliesWPure` |
-| `WSt` by the state monad transformer, monotone, ordered; with exceptions | `WPure.OrderedMonad_WSt`, `WPure.OrderedMonad_WStExc` | [WP/WPure.v](Code/WP/WPure.v) | proved |
+| l.411-423: partial correctness is `p => dwlp c q`, equivalently `asp c p => q`; incorrectness logic is `q => asp c p` (for monadic stateful programs; `PartCorr`, `IncorrLogic` are the named triples). | `DivNonDetSt.TriplesTaxonomy.PartCorr_galois_asp_over`, `DivNonDetSt.Triples.triple_aspSt` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v), [Verification/DivNonDetSt/Triples.v](Code/Verification/DivNonDetSt/Triples.v) | proved |
+| l.453-457: the state transformer on the wp monad. | `WPure.WSt`, `WPure.MonadLawsE__WSt` | [WP/WPure.v](Code/WP/WPure.v) | proved |
+| l.463: "monotone sps alone do not form a lawful monad". | `MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v) | partial: for the angelic structure on monotone stateful transformers, left unit holds only as an inequation; the converse fails for an inhabited state |
+| l.467: Maillard et al.'s `SPost` specifies programs under the angelic, total interpretation: it is isomorphic to `ASP` as a monad. | `ASPMonad.dm4all_to_asp_morphism`, `ASPMonad.asp_to_dm4all_morphism`, `ASPMonad.dm4all_round_trip`, `ASPMonad.asp_dm4all_round_trip` | [SP/ASPMonad.v](Code/SP/ASPMonad.v) | proved |
+| l.474-480: the four homomorphism properties of sps. | `PredicateTransformerProperties.StrictArr`, `PredicateTransformerProperties.TerminatingArr`, `PredicateTransformerProperties.ConjunctiveArr`, `PredicateTransformerProperties.DisjunctiveArr` | [SP/PredicateTransformerProperties.v](Code/SP/PredicateTransformerProperties.v) | proved |
+| l.548-553: a specification monad is a monad ordered so that `bind` is monotone. | `OrderedMonad.OrderedMonad` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v) | proved |
+| l.616: the base computation monad of nondeterminism and nontermination. | `DivNonDet.Computation.divndNE` | [Verification/DivNonDet/Computation.v](Code/Verification/DivNonDet/Computation.v) | proved |
+| l.620-621: state and exceptions on both sides; the morphisms lift for free. | `Monad.TransformerLaws.MonadMorphism_optionT`, `ArrowMorphism.state_option_arrow_morphism`, `DivNonDetStExc.Morphisms.dwpStExc_morphism`, `DivNonDetStExc.Morphisms.aspStExc_morphism_rel`, `DivNonDetStExc.Morphisms.dspStExc_morphism_rel` | [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v), [Lib/Arrow/ArrowMorphism.v](Code/Lib/Arrow/ArrowMorphism.v), [Verification/DivNonDetStExc/Morphisms.v](Code/Verification/DivNonDetStExc/Morphisms.v) | proved |
+| l.627-630: simple programs proved to satisfy correctness and incorrectness triples, and O'Hearn's example (all sixteen kinds: Section 7). | `ProgA.progA_dwp_under`, `ProgA.progA_asp_under`, `ProgEx.progEx_dslp_under`, `OHearn.example_incorrect` | [Verification/DivNonDetStExc/TriplesExamples/ProgA.v](Code/Verification/DivNonDetStExc/TriplesExamples/ProgA.v), [Verification/DivNonDetStExc/TriplesExamples/ProgEx.v](Code/Verification/DivNonDetStExc/TriplesExamples/ProgEx.v), [Verification/DivNonDetStExc/TriplesExamples/OHearn.v](Code/Verification/DivNonDetStExc/TriplesExamples/OHearn.v) | proved |
+| l.632-633: asp, dslp and all wp monads are specification monads, also with exceptions; l.639: flipping the order covers over- and under-approximation. | `ASPMonad.OrderedMonad_ASPStExc`, `DSLPMonad.OrderedMonad_DSLPStExc`, `WPure.OrderedMonad_WStExc`, `OrderedMonad.OrderedMonad_flip` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v), [WP/WPure.v](Code/WP/WPure.v), [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v) | proved |
+| l.645-647: the dsp and aslp binds are not monotone. l.649-656: which triples embed in Dijkstra monads (the bullet swaps asp and dslp; the artifact and Section 5 agree that asp over and dslp under embed, asp under and dslp over do not); backed in Section 5. | `DSPMonad.not_OrderedMonad_DSPSt`, `ASLPMonad.not_OrderedMonad_ASLPSt` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | partial: with state only; without state DSP and ASLP coincide with ASP and DSLP, see Section 4.2 |
+| l.715-719: Galois connections with stateful `Pred` (Section 6) and pre/post specifications. | `GaloisArr.Galois_Rel_PrePost`, `GaloisArr.Galois_WP_PrePost` | [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v) | partial: as Galois connections of binary arrows, at input [S] |
+| l.425, that incorrectness logic has no wp characterization (cited from Verscht and Kaminski); l.494-499, the shape `S -> P -> (A * S -> P)` of the state transformer on `SPost` (no `stateT S SPost` is defined); l.745, "all definitions and proofs are mechanized": not the case, see the Not formalized notes. |  |  | not formalized |
 
-## Section 3: SP monads
-
-### 3.1 SPost: base *sp* monad
-
-| Paper | Rocq name(s) | File | Status |
-|---|---|---|---|
-| `SPost_ang`: Maillard et al.'s `SPost`, carrier `(pre : P) -> A -> {p \| p => pre}`, lawful | `SPostMonad.SPM.SPost`, `SPostMonad.SPMFacts.MonadLawsE_SPost`, `SPostMonad.OrderedMonad_SPost` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) | proved |
-| The same restriction on `P -> A -> P` (monotone + codomain) | `SPostMonad.SPostPure` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) | proved (definition) |
-| `SPost_dem`: universal `bind`, `ret v := a = v => pre`, lawful | `DSLPMonad.DSLPSP`, `DSLPMonad.monotone_codomainDSLP_iff_msingleton`, `DSLPMonad.dslpsp_to_dslp_morphism` | [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved, as `DSLPMonad.DSLPSP` (the direct stateless DSLP monad); there is no separate `SPost_dem` definition |
-
-### 3.2 SPostArr: base *sp* arrow
-
-| Paper | Rocq name(s) | File | Status |
-|---|---|---|---|
-| An arrow with application, input type fixed, is a lawful monad (Lindley et al.) | `ArrowMonad.MonadLawsE_Arrow` | [Lib/Arrow/ArrowMonad.v](Code/Lib/Arrow/ArrowMonad.v) | proved |
-| State arrow transformer `stateArrT`; it and the option transformer preserve the laws | `StateArrowT.Core.stateArrT`, `StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT`, `OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT) | proved |
-| `SPostArr_ang` / `SPostArr_dem`: lawful angelic and demonic arrows | `SPostArr.ASPArr`, `SPostArr.ArrowApplyLaws_ASPArr`, `SPostArr.DSLPArr`, `SPostArr.ArrowApplyLaws_DSLPArr` | [SP/SPostArr.v](Code/SP/SPostArr.v) | partial: the lawful arrows are the Section 3.4 carriers (monotone + strict + disjunctive, monotone + terminating + conjunctive); the arrow restricted only by monotonicity and the codomain condition is not formalized, see [Gaps](#gaps-and-differences-from-the-paper) |
-| "results in a lawful monad that is exactly `SPost_ang`" (resp. `SPost_dem`) | `ASPMonad.ASP`, `ASPMonad.ASPSP`, `ASPMonad.monotone_codomain_iff_singleton`, `ASPMonad.aspsp_to_asp_morphism`, `ASPMonad.asp_to_aspsp_morphism`, `DSLPMonad.dslpsp_to_dslp_morphism`, `DSLPMonad.dslp_to_dslpsp_morphism` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: isomorphic, not equal; goes through the direct monads `ASPMonad.ASPSP` / `DSLPMonad.DSLPSP` on `P -> A -> P`, not through `SPostMonad.SPM.SPost` |
-
-### 3.3 Correcting stateful SPostArr
+## Section 2, Background: weakest precondition monads
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| Stateful angelic carrier (monotone, codomain): unit laws hold | `StatefulSPostCounterexample.SPostStExc`, `StatefulSPostCounterexample.SPostStExc_bind_ret_r`, `StatefulSPostCounterexample.SPostStExc_bind_ret_l` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) | partial: hand-built carrier, see [Gaps](#gaps-and-differences-from-the-paper) |
-| The `m`, `f`, `g` counterexample: `bind` is not associative | `StatefulSPostCounterexample.FailingBind.SPostStExc_bind_bind_fails`, `StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) | partial: angelic only, hand-built carrier |
-| Demonic counterexample ("We can construct a similar counter-example") | none | | not formalized |
-| Fix: universally disjunctive / conjunctive carriers | `SPostArr.asp_join_iff`, `SPostArr.dslp_meet_iff` | [SP/SPostArr.v](Code/SP/SPostArr.v) | proved |
+| l.777-791: the monotone continuation monad on `P`, with its `ret` and `bind`; l.818-844: monotonicity, preserved by `ret` and `bind`. | `WPure.WPure`, `WPure.wpure_mono`, `WPure.retWPure`, `WPure.bindWPure`, `WPure.MonadLawsE_WPure`, `WPVariants.wpure_ret_mono`, `WPVariants.wpure_bind_mono` | [WP/WPure.v](Code/WP/WPure.v), [WP/WPVariants.v](Code/WP/WPVariants.v) | proved |
+| l.846-854: the pointwise order, preserved by `ret` and `bind` (`WP_le` is DM4all's direction, the converse of the paper's). | `WPure.WP_le`, `WPure.OrderedMonad_WPure` | [WP/WPure.v](Code/WP/WPure.v) | proved |
+| l.864-891: the stateful wp monad, ordered, with monotone `bind`. | `WPure.retPs`, `WPure.bindPs`, `WPure.ordWSt`, `WPure.OrderedMonad_WSt` | [WP/WPure.v](Code/WP/WPure.v) | proved |
+| l.774-775, the iso `(A -> P) -> (1 -> P) ~ (A -> P) -> P`; l.794-810, a named order on predicates (inlined). |  |  | not formalized |
 
-### 3.4 Stateful ASP and DSLP
-
-| Paper | Rocq name(s) | File | Status |
-|---|---|---|---|
-| Universal disjunctivity = disjunctivity (inhabited index) + strictness; dually conjunctivity + termination | `PredicateTransformerProperties.strict_disjunctiveArr_full_join`, `PredicateTransformerProperties.terminating_conjunctiveArr_full_meet`, `SPostArr.asp_join_iff`, `SPostArr.dslp_meet_iff` | [SP/PredicateTransformerProperties.v](Code/SP/PredicateTransformerProperties.v), [SP/SPostArr.v](Code/SP/SPostArr.v) | proved |
-| "for stateful monotone, disjunctive *sps*, the codomain condition is equivalent to strictness" (dually termination) | `ASPMonad.strict_to_singleton`, `ASPMonad.monotone_codomain_iff_singleton`, `DSLPMonad.monotone_codomainDSLP_iff_msingleton` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: stateless only |
-| `ASP S A` and `DSLP S A` are lawful monads | `ASPMonad.ASPSt`, `ASPMonad.MonadLawsE_ASPSt`, `DSLPMonad.MonadLawsE_DSLPSt` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved |
-
-### 3.5 Stateful DSP and ASLP
+## Section 3.1, Base sp monads
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| DSP: conjunctive, strict; ASLP: disjunctive, terminating | `DSPASLPArr.DSPArr`, `DSPASLPArr.dsp_hom_iff`, `DSPASLPArr.ASLPArr`, `DSPASLPArr.aslp_hom_iff` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
-| A DSP element is the conjunction of its `aspOf` and `dslpOf` components (ASLP: disjunction); `bind` through the components | `DSPASLPArr.aspPartArr`, `DSPASLPArr.dsp_split`, `DSPASLPArr.aslp_split` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved; the components are computed from a recovered relation, see [Gaps](#gaps-and-differences-from-the-paper) |
-| `DSP S A`, `ASLP S A` are lawful monads | `DSPMonad.MonadLawsE_DSPSt`, `ASLPMonad.MonadLawsE_ASLPSt` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
-| The four classes differ (not stated in the paper) | `DSPASLPArr.no_ASPArr_for_dsp`, `DSPASLPArr.no_DSLPArr_for_aslp` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
-| "`DSP A` is isomorphic to `ASP A` and `ASLP A` to `DSLP A`" | `DSPMonad.dsp_to_asp_morphism`, `DSPMonad.asp_to_dsp_morphism`, `ASLPMonad.aslp_to_dslp_morphism`, `ASLPMonad.dslp_to_aslp_morphism` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
-| "`ASP A` is isomorphic to `SPost_ang A`", "`DSLP A` to `SPost_dem A`" | as in Section 3.2 | | partial, as in Section 3.2 |
+| l.1058-1060: an sp of a pure program, `P -> (A -> P)`. | `RawSP.SPPure` | [SP/RawSP.v](Code/SP/RawSP.v) | proved |
+| l.1066-1086: Maillard et al.'s `SPost` (monotone, postconditions imply the precondition), with (ang) `ret`/`bind`, is lawful. | `SPostMonad.SPM.SPost`, `SPostMonad.SPM.retSP`, `SPostMonad.SPM.bindSP`, `SPostMonad.SPMFacts.MonadLawsE_SPost`, `SPostMonad.SPostPure` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) | proved |
+| l.1086-1088: that carrier is the disjunctive, strict sps. | `ASPMonad.monotone_codomain_iff_singleton`, `ASPMonad.join_iff_singleton` | [SP/ASPMonad.v](Code/SP/ASPMonad.v) | proved |
+| l.1090-1104, l.1142-1152: disjunctivity, strictness, conjunctivity, termination of base sps. | `RawSP.Disjunctive`, `RawSP.Strict`, `RawSP.Conjunctive`, `RawSP.Terminating` | [SP/RawSP.v](Code/SP/RawSP.v) | proved |
+| l.1128-1138: `ASP`, the sps preserving all disjunctions, with (ang) `ret`/`bind`, lawful. | `ASPMonad.ASPSP`, `ASPMonad.retASPSP`, `ASPMonad.bindASPSP`, `ASPMonad.MonadLawsE_ASPSP` | [SP/ASPMonad.v](Code/SP/ASPMonad.v) | proved |
+| l.1178-1182: without disjunctivity (conjunctivity) the arrow laws and the associativity of the stateful bind fail. | `StatefulSPostCounterexample.FailingBind.SPostStExc_bind_bind_fails`, `StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails`, `SPostArrMonotoneLaws.MonotoneLaws.ASP.no_arrow_laws`, `SPostArrMonotoneLaws.MonotoneLaws.ASP.no_arrow_apply_laws`, `SPostArrMonotoneLaws.MonotoneLaws.DSLP.no_arrow_laws`, `SPostArrMonotoneLaws.MonotoneLaws.DSLP.no_arrow_apply_laws` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v), [Tests/SPostArrMonotoneLaws.v](Code/Tests/SPostArrMonotoneLaws.v) | partial: for monotone carriers with these operations |
+| l.1183-1185: each class is exactly the transformers of programs under its interpretation (at the arrow level). | `SPostArr.asp_join_iff`, `SPostArr.dslp_meet_iff`, `DSPASLPArr.dsp_hom_iff`, `DSPASLPArr.aslp_hom_iff` | [SP/SPostArr.v](Code/SP/SPostArr.v), [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
+| l.1187-1195: the (ang) `ret` leaves the conjunctive, terminating carrier. | `ASPMonad.dm4all_not_dslp_healthy` | [SP/ASPMonad.v](Code/SP/ASPMonad.v) | partial: shown for [ret] |
+| l.1195-1208: `DSLP` with (dem) `ret`/`bind` is lawful. | `DSLPMonad.DSLPSP`, `DSLPMonad.retDSLPSP`, `DSLPMonad.bindDSLPSP`, `DSLPMonad.MonadLawsE_DSLPSP`, `DSLPMonad.meet_iff_msingleton` | [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved |
+| l.1221-1300: `DSP` (conjunctive, strict) and `ASLP` (disjunctive, terminating); each element is the meet (join) of its `aspOf` and `dslpOf` parts; both monads are lawful. | `DSPMonad.DSP`, `DSPASLPArr.dspRel`, `DSPASLPArr.aspPartArr`, `DSPASLPArr.dslpPartArr`, `DSPASLPArr.dsp_split`, `DSPMonad.MonadLawsE_DSP`, `ASLPMonad.ASLP`, `DSPASLPArr.aslpRel`, `DSPASLPArr.aspPartAArr`, `DSPASLPArr.dslpPartAArr`, `DSPASLPArr.aslp_split`, `ASLPMonad.MonadLawsE_ASLP` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | partial: the parts are defined through the relation they denote, not by the displayed formulas |
+| l.1296-1298: "its bind is not monotone". |  |  | partial: with state only; see Section 1 above |
+| l.1341: the four pure sp monads. | `ASPMonad.MonadLawsE_ASP`, `DSLPMonad.MonadLawsE_DSLP` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved |
+| l.1344-1350: the state monad transformer on a lawful monad is lawful. | `Monad.TransformerLaws.MonadLawsE_stateT` | [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v) | partial: generic; [stateT S SPost] itself is not defined |
 
-### 3.6 WP monads of interpretations
-
-| Paper | Rocq name(s) | File | Status |
-|---|---|---|---|
-| `bind` of `WPure` preserves strict, terminating, conjunctive, disjunctive (and `ret` has all four) | `WPVariants.wpure_bind_strict`, `WPVariants.wpure_bind_terminating`, `WPVariants.wpure_bind_conjunctive`, `WPVariants.wpure_bind_disjunctive` | [WP/WPVariants.v](Code/WP/WPVariants.v) | proved |
-| Four *wp* monads as submonads of `WPure`, ordered | `WPVariants.OrderedMonad_WPSub`, `OrderedMonad.OrderedMonad_SubMonad`, `WPVariants.OrderedMonad_DWLPSt`, `WPVariants.OrderedMonad_DWLPSt_op` | [WP/WPVariants.v](Code/WP/WPVariants.v), [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v) | proved (DWP, AWP, AWLP likewise, with and without state) |
-
-## Section 4: Taxonomy (Figure 1)
-
-| Paper | Rocq name(s) | File | Status |
-|---|---|---|---|
-| 4.1: implication, contrapositive, Galois connection on bare transformers | `TransformerRelations.pt_le`, `TransformerRelations.Contrapositive`, `TransformerRelations.GaloisPT` | [PTMonadTaxonomy/TransformerRelations.v](Code/PTMonadTaxonomy/TransformerRelations.v) | proved |
-| 4.2: monadic relation (DM4All); an ordered monad's order is one | `MonadRelation.MonadRelation`, `MonadRelation.MonadRelation_OrderedMonad` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v) | proved |
-| Fig. 1b implication edges DWP→DWLP, DWP→AWP, AWP→AWLP, DWLP→AWLP | `MonadTaxonomy.MonadRelation_dwp_implies_dwlp`, `MonadTaxonomy.MonadRelation_dwp_implies_awp`, `MonadTaxonomy.MonadRelation_awp_implies_awlp`, `MonadTaxonomy.MonadRelation_dwlp_implies_awlp` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved (each also with its converse) |
-| Fig. 1b implication edges DSP→ASP, DSP→DSLP, ASP→ASLP, DSLP→ASLP, through `aspOf` / `dslpOf` (the asterisks), each entailing `≤` of the elements | `MonadTaxonomy.MonadRelation_dsp_implies_asp`, `MonadTaxonomy.MonadRelation_dsp_implies_dslp`, `MonadTaxonomy.MonadRelation_asp_implies_aslp`, `MonadTaxonomy.MonadRelation_dslp_implies_aslp`, `MonadTaxonomy.dsp_implies_asp_part`, `MonadTaxonomy.asp_implies_aslp_part` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
-| Fig. 1 contrapositive edges DWLP–AWP, AWLP–DWP, ASP–DSLP, ASLP–DSP | `MonadTaxonomy.MonadRelation_contra_awp_dwlp_one`, `MonadTaxonomy.MonadRelation_contra_dwp_awlp_one`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_one`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_one` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved (each with a `_two` direction) |
-| Fig. 1 Galois edges ASP → DWLP, AWP → DSLP | `MonadTaxonomy.MonadRelation_galois_asp_dwlp`, `MonadTaxonomy.MonadRelation_galois_awp_dslp` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
-| Fig. 1a: without state DSP coincides with ASP, ASLP with DSLP | `MonadTaxonomy.MonadRelation_dsp_asp_pure`, `MonadTaxonomy.MonadRelation_aslp_dslp_pure` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
-| 4.3 Category-theoretic insights | none | | not formalized (the section is empty in the paper) |
-| 4.4 Effect-modularity: monadic relations lift through `stateT` / `optionT` | `MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT`, `MonadTaxonomy.MonadRelation_impliesWPure`, `MonadTaxonomy.MonadRelation_implies_WPSubStExc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
-| 4.4: SP edges at any arrow-transformer stack; Galois edges from one `Pred` / `WPure` relation; instances without state and with exceptions | `MonadRelation.MonadRelation_rel_incl_state_option`, `MonadTaxonomy.MonadRelation_GaloisPredWP`, `MonadTaxonomy.MonadRelation_dsp_implies_asp_exc`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_pure`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_one`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | partial: generic for monad transformers; for arrow transformers proved at the base, `stateArrT`, and `stateArrT` over `optionArrT` stacks, not for an arbitrary arrow transformer |
-
-## Section 5: Triples
-
-`Triple.Under` / `Triple.Over` name where the transformer sits (Section 4.1):
-an `Under` triple puts the transformer's value in the conclusion
-(`pre ⊆ wp post`, `post ⊆ sp pre`). So the Hoare triple `{p}c{q}` is
-`dwlp Under` or, equivalently, `asp Over`, although the introduction calls
-Hoare triples over-approximate.
+## Section 3.2, Base sp arrows
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| Monad morphisms; lifting through monad transformers | `OrderedMonad.MonadMorphism`, `TransformerLaws.MonadMorphism_stateT`, `TransformerLaws.MonadMorphism_optionT` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v), [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v) | proved |
-| Arrow morphisms; lifting through arrow transformers; to monad morphisms; the base arrow morphisms between the SP arrows and `Rel` | `ArrowMorphism.ArrowMorphism`, `ArrowMorphism.state_option_arrow_morphism`, `ArrowMorphism.arrow_morphism_monad`, `SPostArrEquiv.asp_to_rel_morphism`, `SPostArrEquiv.dslp_to_rel_morphism` | [Lib/Arrow/ArrowMorphism.v](Code/Lib/Arrow/ArrowMorphism.v), [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v) | proved |
-| One triple for any monad morphism, under or over | `Triple.triple` | [Verification/Generic/Triple.v](Code/Verification/Generic/Triple.v) | proved (definition) |
-| Morphisms from the computation monad into the four *wp* monads | `Morphisms.dwpPure_morphism`, `Morphisms.dwlpPure_morphism`, `Morphisms.awpPure_morphism`, `Morphisms.awlpPure_morphism` | [Verification/DivNonDet/Morphisms.v](Code/Verification/DivNonDet/Morphisms.v) | partial: they land in `WPure`, see [Gaps](#gaps-and-differences-from-the-paper) |
-| Morphisms into the four *sp* monads | `Morphisms.aspPure_morphism_rel`, `Morphisms.dslpPure_morphism_rel`, `Morphisms.dspPure_morphism_rel`, `Morphisms.aslpPure_morphism_rel` | [Verification/DivNonDet/Morphisms.v](Code/Verification/DivNonDet/Morphisms.v) | proved |
-| Lifted to state and exceptions "for free" | `Morphisms.dwpStExc_morphism`, `Morphisms.aspStExc_morphism_rel`, `Morphisms.dspStExc_morphism_rel` | [Verification/DivNonDetStExc/Morphisms.v](Code/Verification/DivNonDetStExc/Morphisms.v) | proved (all eight readings at both levels) |
-| Incorrectness triple `[p]c[q]` as `q => asp [[c]] p` | `Triples.triple_aspSt` | [Verification/DivNonDetSt/Triples.v](Code/Verification/DivNonDetSt/Triples.v) | proved |
-| The triple diagram (Verscht and Kaminski) for monadic programs | `TriplesTaxonomy.TotalCorr_impl_PartCorr`, `TriplesTaxonomy.DemIncorr_impl_IncorrLogic`, `TriplesTaxonomy.LisbonLogic_contra_dwlp_over`, `TriplesTaxonomy.IncorrLogic_contra_dslp_over`, `TriplesTaxonomy.PartCorr_galois_asp_over`, `TriplesTaxonomy.awp_over_galois_PartIncorr` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved (26 edges with state, again with exceptions) |
-| One verified example per triple kind; O'Hearn's example | `ProgA.progA_dwp_under`, `ProgA.progA_asp_under`, `ProgEx.progEx_dslp_under`, `OHearn.example_incorrect` | [Verification/DivNonDetStExc/TriplesExamples.v](Code/Verification/DivNonDetStExc/TriplesExamples.v) and [TriplesExamples/](Code/Verification/DivNonDetStExc/TriplesExamples) | proved (16 kinds) |
+| l.1369-1427: arrows, application, and the monad of an arrow with application at a fixed input. | `Arrow.Arrow`, `Arrow.ArrowApply`, `ArrowMonad.Monad_Arrow` | [Lib/Arrow/Arrow.v](Code/Lib/Arrow/Arrow.v), [Lib/Arrow/ArrowMonad.v](Code/Lib/Arrow/ArrowMonad.v) | proved |
+| l.1429-1435: sp arrows `(B -> P) -> (A -> P)`, monotone. | `SPostArr.SPArrT`, `SPostArr.sp_monotone` | [SP/SPostArr.v](Code/SP/SPostArr.v) | proved |
+| l.1439-1468: `ASPArr` (strict + disjunctive = all disjunctions), its operations, lawful; at input `unit` it is `ASP`. | `SPostArr.ASPArr`, `PredicateTransformerProperties.strict_disjunctiveArr_full_join`, `SPostArr.ASP_full_join`, `SPostArr.pureASP`, `SPostArr.compASP`, `SPostArr.firstASP`, `SPostArr.appASP`, `SPostArr.ArrowLaws_ASPArr`, `SPostArr.ArrowApplyLaws_ASPArr`, `ASPMonad.ASP`, `ASPMonad.aspsp_to_asp_morphism`, `ASPMonad.asp_to_aspsp_morphism`, `ASPMonad.aspsp_to_asp_to_aspsp`, `ASPMonad.asp_to_aspsp_to_asp` | [SP/SPostArr.v](Code/SP/SPostArr.v), [SP/PredicateTransformerProperties.v](Code/SP/PredicateTransformerProperties.v), [SP/ASPMonad.v](Code/SP/ASPMonad.v) | proved |
+| l.1471-1502: `DSLPArr` (terminating + conjunctive = all conjunctions), its operations, lawful; at input `unit` it is `DSLP`. | `SPostArr.DSLPArr`, `PredicateTransformerProperties.terminating_conjunctiveArr_full_meet`, `SPostArr.DSLP_full_meet`, `SPostArr.pureDSLP`, `SPostArr.compDSLP`, `SPostArr.firstDSLP`, `SPostArr.appDSLP`, `SPostArr.ArrowLaws_DSLPArr`, `SPostArr.ArrowApplyLaws_DSLPArr`, `DSLPMonad.DSLP`, `DSLPMonad.dslpsp_to_dslp_morphism`, `DSLPMonad.dslp_to_dslpsp_morphism`, `DSLPMonad.dslpsp_to_dslp_to_dslpsp`, `DSLPMonad.dslp_to_dslpsp_to_dslp` | [SP/SPostArr.v](Code/SP/SPostArr.v), [SP/PredicateTransformerProperties.v](Code/SP/PredicateTransformerProperties.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved |
+| l.1390-1405, functions and Kleisli arrows as arrows. |  |  | not formalized |
 
-## Section 6: Dijkstra monads
+## Section 3.3, Stateful sp arrows and monads
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| Specification monads stay so with the order flipped | `OrderedMonad.OrderedMonad_flip` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v) | proved |
-| ASP and DSLP are specification monads | `ASPMonad.OrderedMonad_ASPSt`, `ASPMonad.OrderedMonad_ASPStExc`, `DSLPMonad.OrderedMonad_DSLPSt`, `DSLPMonad.OrderedMonad_DSLPStExc` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved (also without state) |
-| DSP and ASLP: `bind` not monotone for the natural order, so not specification monads | `DSPMonad.not_OrderedMonad_DSPSt`, `ASLPMonad.not_OrderedMonad_ASLPSt`, `DSPMonad.dsp_arbitrary_bind_impossible` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved with state (and with exceptions); without state they are specification monads, `DSPMonad.OrderedMonad_DSP` |
-| Dijkstra monad of a monad morphism, laws; eight WP and four SP Dijkstra monads | `DijkstraMonad.DM`, `DijkstraMonad.DMop`, `DijkstraMonad.DM_laws`, `DijkstraMonads.Dasp_laws` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v), [Verification/DivNonDetStExc/DijkstraMonads.v](Code/Verification/DivNonDetStExc/DijkstraMonads.v) | proved |
-| Other triples are typings | `Typings.triple_under_wpStExc`, `Typings.triple_over_wpStExc`, `Typings.triple_over_aspStExc`, `Typings.triple_under_dslpStExc` | [Verification/DivNonDetStExc/Typings.v](Code/Verification/DivNonDetStExc/Typings.v) | proved |
-| Under-approximate *asp* / over-approximate *dslp*: typing differs from the triple; no index characterizes the triple | `Typings.le_aspUnder`, `Typings.aspUnder_typing_triple`, `Typings.no_asp_under_index`, `Typings.no_dslp_over_index` | [Verification/Generic/Typings.v](Code/Verification/Generic/Typings.v), [Verification/DivNonDetSt/Typings.v](Code/Verification/DivNonDetSt/Typings.v) | proved; see [Gaps](#gaps-and-differences-from-the-paper) for "weaker" |
-| Without state, ASP `Triple.Under` is a typing | `Typings.triple_under_aspPure` | [Verification/DivNonDet/Typings.v](Code/Verification/DivNonDet/Typings.v) | proved, for a precondition that holds |
-| Typed example programs; a triple that is not a typing | `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op`, `Typings.oneOrTwo_Dasp_op` | [Verification/DivNonDetStExc/DijkstraExamples.v](Code/Verification/DivNonDetStExc/DijkstraExamples.v), [Verification/DivNonDet/Typings.v](Code/Verification/DivNonDet/Typings.v) | proved |
+| l.1514-1524: a lawful arrow with application gives a lawful monad at a fixed input; the state arrow transformer gives the four stateful sp monads. | `ArrowMonad.MonadLawsE_Arrow`, `StateArrowT.Core.stateArrT`, `ASPMonad.ASPSt`, `ASPMonad.MonadLawsE_ASPSt`, `DSLPMonad.DSLPSt`, `DSLPMonad.MonadLawsE_DSLPSt`, `DSPMonad.DSPSt`, `DSPMonad.MonadLawsE_DSPSt`, `ASLPMonad.ASLPSt`, `ASLPMonad.MonadLawsE_ASLPSt` | [Lib/Arrow/ArrowMonad.v](Code/Lib/Arrow/ArrowMonad.v), [Lib/Arrow/StateArrowT/Core.v](Code/Lib/Arrow/StateArrowT/Core.v), [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v), [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
+| l.1531-1552: the unfolded stateful `ret`/`bind` of ASP and DSLP. | `ASPMonad.getASPSt_ret`, `ASPMonad.getASPSt_bind`, `DSLPMonad.getDSLPSt_ret`, `DSLPMonad.getDSLPSt_bind` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: [bind] in relational form, equivalent by disjunctivity resp. conjunctivity |
+| l.1558-1574: DSP and ASLP through their parts. | `DSPMonad.getDSPSt_rel`, `DSPMonad.dspRelSt_bind_of`, `ASLPMonad.getASLPSt_rel`, `ASLPMonad.aslpRelSt_bind_of` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | partial: relational characterizations |
 
-## Section 7: Galois connections between specification monads
+## Section 3.4, Monads vs. arrows
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| DM4All's Galois connections between `Pred`, `PrePost`, `SPost`, `WPure` | `PredMonad.OrderedMonad_Pred`, `BaseGaloisConnections.pred_pp_adjunction`, `BaseGaloisConnections.wp_pp_under_adjunction`, `BaseGaloisConnections.sp_pp_adjunction` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v), [Relational/PredMonad.v](Code/Relational/PredMonad.v) | proved |
-| Second WP / PrePost connection (paper: `NewGaloisConnections.v`) | `BaseGaloisConnections.wp_pp_over_adjunction` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) | proved (classical) |
-| `Pred` ≅ `SPost` extends to *asp* and *dslp* | nearest: `SPostArrEquiv.asp_to_rel_morphism`, `SPostArrEquiv.dslp_to_rel_morphism`, `SPostArr.asp_to_dslp`, `GaloisArr.Galois_Rel_SPost` | [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v), [SP/SPostArr.v](Code/SP/SPostArr.v), [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v) | not formalized |
-| Galois connections hold after any monad or arrow transformer | nearest: `MonadTaxonomy.MonadRelation_GaloisPredWP` (Section 4) | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | not formalized |
+| l.1585-1592: the monad laws are proved once from the arrow laws; the state and exception arrow transformers preserve the laws, so every stateful sp monad is lawful, also with exceptions. | `StateArrowT.Core.ArrowLaws_stateArrT`, `StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT`, `OptionArrowT.ArrowLaws.ArrowLaws_optionArrT`, `OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT`, `ASPMonad.MonadLawsE_ASPStExc`, `DSLPMonad.MonadLawsE_DSLPStExc`, `DSPMonad.MonadLawsE_DSPStExc`, `ASLPMonad.MonadLawsE_ASLPStExc` | [Lib/Arrow/StateArrowT/Core.v](Code/Lib/Arrow/StateArrowT/Core.v), [Lib/Arrow/StateArrowT/ArrowApplyLaws.v](Code/Lib/Arrow/StateArrowT/ArrowApplyLaws.v), [Lib/Arrow/OptionArrowT/ArrowLaws.v](Code/Lib/Arrow/OptionArrowT/ArrowLaws.v), [Lib/Arrow/OptionArrowT/ArrowApplyLaws.v](Code/Lib/Arrow/OptionArrowT/ArrowApplyLaws.v), [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v), [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
+| l.1593-1595: an arrow morphism gives a monad morphism at a fixed input, and lifts through state and exceptions. | `ArrowMorphism.ArrowMorphism`, `ArrowMorphism.arrow_morphism_monad`, `ArrowMorphism.state_arrow_morphism`, `ArrowMorphism.option_arrow_morphism` | [Lib/Arrow/ArrowMorphism.v](Code/Lib/Arrow/ArrowMorphism.v) | proved |
+| l.1600-1603: sp arrows are isomorphic to relations. | `SPostArrEquiv.asp_to_rel_morphism`, `SPostArrEquiv.asp_from_rel_morphism`, `SPostArrEquiv.dslp_to_rel_morphism`, `SPostArrEquiv.dslp_from_rel_morphism`, `SPostArrEquiv.asp_from_to`, `SPostArrEquiv.asp_to_from`, `SPostArrEquiv.dslp_from_to`, `SPostArrEquiv.dslp_to_from`, `SPostArrEquiv.dsp_to_rel_morphism`, `SPostArrEquiv.dsp_from_rel_morphism`, `DSPASLPArr.dspRel_ofRelArr`, `DSPASLPArr.dspRel_spec`, `SPostArrEquiv.aslp_to_rel_morphism`, `SPostArrEquiv.aslp_from_rel_morphism`, `DSPASLPArr.aslpRel_ofRelArr`, `DSPASLPArr.aslpRel_spec` | [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v), [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | partial: [Rel] is not identified as a Kleisli arrow |
+| l.1605-1647, the state arrow transformer on a Kleisli arrow gives the state monad transformer, and `StT(ASP) ~ StTArr(ASPArr) unit` through `toArrow`/`fromArrow`. |  |  | not formalized |
+
+## Section 3.5, Refined wp monads
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.1662-1671: the healthiness conditions and the four wp monads AWP, DWLP, DWP, AWLP, lawful. | `WPVariants.wpure_strict`, `WPVariants.wpure_terminating`, `WPVariants.wpure_conjunctive`, `WPVariants.wpure_disjunctive`, `WPVariants.awp_health`, `WPVariants.dwlp_health`, `WPVariants.dwp_health`, `WPVariants.awlp_health`, `WPVariants.AWP`, `WPVariants.DWLP`, `WPVariants.DWP`, `WPVariants.AWLP`, `WPVariants.MonadLawsE_AWP`, `WPVariants.MonadLawsE_DWLP`, `WPVariants.MonadLawsE_DWP`, `WPVariants.MonadLawsE_AWLP` | [WP/WPVariants.v](Code/WP/WPVariants.v) | proved |
+| l.1673-1677: they share WP's `ret` and `bind`; `ret` has all four properties and `bind` preserves each, so they are submonads of WP. | `WPVariants.toWPure_ret`, `WPVariants.toWPure_bind`, `WPVariants.wpure_ret_strict`, `WPVariants.wpure_ret_terminating`, `WPVariants.wpure_ret_conjunctive`, `WPVariants.wpure_ret_disjunctive`, `WPVariants.wpure_bind_strict`, `WPVariants.wpure_bind_terminating`, `WPVariants.wpure_bind_conjunctive`, `WPVariants.wpure_bind_disjunctive`, `WPVariants.toWPure_morphism` | [WP/WPVariants.v](Code/WP/WPVariants.v) | proved |
+| l.1662-1664, that the wps of programs under each interpretation land in the matching submonad (the wp morphisms target WP). |  |  | not formalized |
+
+## Section 4.1, Taxonomy of triples
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.2684-2700: implication, contrapositive and Galois connection between transformers, and what each says of triples. | `TransformerRelations.pt_le`, `TransformerRelations.pt_le_under`, `TransformerRelations.pt_le_over`, `TransformerRelations.Contrapositive`, `TransformerRelations.Contrapositive_under_over`, `TransformerRelations.Contrapositive_over_under`, `TransformerRelations.GaloisPT`, `TransformerRelations.GaloisPT_over_under` | [PTMonadTaxonomy/TransformerRelations.v](Code/PTMonadTaxonomy/TransformerRelations.v) | proved |
+| l.2729-2776: Verscht and Kaminski's diagram (their Figure 5) for the triples of one stateful monadic program: every implication edge is two arrows (under, over), every contrapositive edge two, every Galois edge one. The `Under` triples are named after their logics. Implications, correctness side. | `DivNonDetSt.TriplesTaxonomy.TotalCorr_impl_PartCorr`, `DivNonDetSt.TriplesTaxonomy.TotalCorr_impl_LisbonLogic`, `DivNonDetSt.TriplesTaxonomy.LisbonLogic_impl_AngPartCorr`, `DivNonDetSt.TriplesTaxonomy.PartCorr_impl_AngPartCorr`, `DivNonDetSt.TriplesTaxonomy.dwlp_over_impl_dwp_over`, `DivNonDetSt.TriplesTaxonomy.awlp_over_impl_awp_over`, `DivNonDetSt.TriplesTaxonomy.awp_over_impl_dwp_over`, `DivNonDetSt.TriplesTaxonomy.awlp_over_impl_dwlp_over` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved |
+| Implications, incorrectness side. | `DivNonDetSt.TriplesTaxonomy.aslp_over_impl_asp_over`, `DivNonDetSt.TriplesTaxonomy.aslp_over_impl_dslp_over`, `DivNonDetSt.TriplesTaxonomy.asp_over_impl_dsp_over`, `DivNonDetSt.TriplesTaxonomy.dslp_over_impl_dsp_over`, `DivNonDetSt.TriplesTaxonomy.DemIncorr_impl_PartIncorr`, `DivNonDetSt.TriplesTaxonomy.DemIncorr_impl_IncorrLogic`, `DivNonDetSt.TriplesTaxonomy.PartIncorr_impl_AngPartIncorr`, `DivNonDetSt.TriplesTaxonomy.IncorrLogic_impl_AngPartIncorr` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved |
+| Contrapositives. | `DivNonDetSt.TriplesTaxonomy.LisbonLogic_contra_dwlp_over`, `DivNonDetSt.TriplesTaxonomy.AngPartCorr_contra_dwp_over`, `DivNonDetSt.TriplesTaxonomy.TotalCorr_contra_awlp_over`, `DivNonDetSt.TriplesTaxonomy.PartCorr_contra_awp_over`, `DivNonDetSt.TriplesTaxonomy.DemIncorr_contra_aslp_over`, `DivNonDetSt.TriplesTaxonomy.PartIncorr_contra_asp_over`, `DivNonDetSt.TriplesTaxonomy.IncorrLogic_contra_dslp_over`, `DivNonDetSt.TriplesTaxonomy.AngPartIncorr_contra_dsp_over` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved |
+| Galois connections. | `DivNonDetSt.TriplesTaxonomy.PartCorr_galois_asp_over`, `DivNonDetSt.TriplesTaxonomy.awp_over_galois_PartIncorr` | [Verification/DivNonDetSt/TriplesTaxonomy.v](Code/Verification/DivNonDetSt/TriplesTaxonomy.v) | proved |
+
+## Section 4.2, Monadic relations (Figure 1)
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.2786-2801: DM4all's monadic relation. | `MonadRelation.MonadRelation` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v) | proved |
+| l.2818-2827: the stateful wp monads are submonads of `WSt`; the order `⊑` on `WSt` is a monadic relation between any two of them. | `WPVariants.toWSt_ret`, `WPVariants.toWSt_bind`, `MonadTaxonomy.impliesWSt`, `MonadTaxonomy.MonadRelation_implies_toWSt`, `MonadTaxonomy.MonadRelation_impliesWSt` | [WP/WPVariants.v](Code/WP/WPVariants.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.2828-2831: what `⊑` between wps says of their triples. | `TransformerRelations.pt_le_under`, `TransformerRelations.pt_le_over` | [PTMonadTaxonomy/TransformerRelations.v](Code/PTMonadTaxonomy/TransformerRelations.v) | partial: the text states both directions reversed; these are the correct ones |
+| Figure 1(b), wp implication edges (each also with its converse). | `MonadTaxonomy.MonadRelation_dwp_implies_dwlp`, `MonadTaxonomy.MonadRelation_dwp_implies_awp`, `MonadTaxonomy.MonadRelation_awp_implies_awlp`, `MonadTaxonomy.MonadRelation_dwlp_implies_awlp`, `MonadTaxonomy.MonadRelation_dwlp_implies_dwp`, `MonadTaxonomy.MonadRelation_awp_implies_dwp`, `MonadTaxonomy.MonadRelation_awlp_implies_awp`, `MonadTaxonomy.MonadRelation_awlp_implies_dwlp` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.2938-2951: the four stateful sp monads share `SPSt` and its order; `⊑` is not a monadic relation between DSP / ASLP and ASP / DSLP, as their binds are not monotone (Figure 2). | `MonotoneSPSt.SPStMonotone.SPStMon`, `MonadTaxonomy.impliesSPSt`, `DSPMonad.dsp_arbitrary_bind_impossible`, `ASLPMonad.aslp_arbitrary_bind_impossible` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v), [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | partial: shown for the order on DSP and on ASLP themselves: no left-unital monotone bind exists |
+| l.2951-2958, Figure 1(b) sp implication edges: the DSP and ASLP binds are computed through their components, the relations through the components are monadic, and each entails `⊑` of the sps themselves (the asterisks). | `SPStBindComparisons.bindDSPSt_SPStMonotone`, `SPStBindComparisons.bindASLPSt_SPStMonotone`, `MonadTaxonomy.MonadRelation_dsp_implies_asp`, `MonadTaxonomy.MonadRelation_dsp_implies_dslp`, `MonadTaxonomy.MonadRelation_asp_implies_aslp`, `MonadTaxonomy.MonadRelation_dslp_implies_aslp`, `MonadTaxonomy.dsp_implies_asp_part`, `MonadTaxonomy.dsp_implies_dslp_part`, `MonadTaxonomy.asp_implies_aslp_part`, `MonadTaxonomy.dslp_implies_aslp_part` | [PTMonadTaxonomy/SPStBindComparisons.v](Code/PTMonadTaxonomy/SPStBindComparisons.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.2969-2987, Figure 1(b) wp contrapositive edges: `⋈` on `WSt` is monadic between AWP and DWLP, DWP and AWLP, one to one, and symmetric. | `MonadTaxonomy.contraWSt`, `MonadTaxonomy.MonadRelation_contraWSt`, `MonadTaxonomy.MonadRelation_contra_awp_dwlp_one`, `MonadTaxonomy.MonadRelation_contra_awp_dwlp_two`, `MonadTaxonomy.MonadRelation_contra_dwp_awlp_one`, `MonadTaxonomy.MonadRelation_contra_dwp_awlp_two`, `MonadTaxonomy.contra_awp_in_dwlp`, `MonadTaxonomy.contra_dwlp_in_awp`, `MonadTaxonomy.contra_dwp_in_awlp`, `MonadTaxonomy.contra_awlp_in_dwp`, `MonadTaxonomy.contraWSt_sym` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.2989-3009, Figure 1(b) sp contrapositive edges: `⋈` on `SPSt` is monadic between ASP and DSLP, DSP and ASLP, one to one, swapping the components and meets with joins; symmetric. | `MonadTaxonomy.contraSPSt`, `MonadTaxonomy.MonadRelation_contraSPSt`, `MonadTaxonomy.contraSPSt_meet_join`, `MonadTaxonomy.contraSPSt_join_meet`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_one`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_two`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_one`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_two`, `MonadTaxonomy.contra_asp_in_dslp`, `MonadTaxonomy.contra_dslp_in_asp`, `MonadTaxonomy.contra_dsp_in_aslp`, `MonadTaxonomy.contra_aslp_in_dsp`, `MonadTaxonomy.contraSPSt_sym` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.3016-3034, Figure 1(b) Galois edge ASP -> DWLP: `Ladj` is a monadic relation (angelic structure), its sps are disjunctive and strict and its wps conjunctive and terminating, it restricts to ASP and DWLP, one to one. | `MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj`, `MonadTaxonomy.GaloisSPWP`, `MonadTaxonomy.Ladj_GaloisSPWP`, `MonadTaxonomy.MonadRelation_GaloisSPWP`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_colim`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_lim`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp`, `MonadTaxonomy.galois_asp_in_dwlp`, `MonadTaxonomy.galois_dwlp_in_asp` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.3036-3048, Figure 1(b) Galois edge AWP -> DSLP: `Radj`, demonic structure, restricts to AWP and DSLP, one to one. | `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj`, `MonadTaxonomy.GaloisWPSP`, `MonadTaxonomy.Radj_GaloisWPSP`, `MonadTaxonomy.MonadRelation_GaloisWPSP`, `MonadTaxonomy.MonadRelation_galois_awp_dslp`, `MonadTaxonomy.galois_awp_in_dslp`, `MonadTaxonomy.galois_dslp_in_awp` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.3050-3053: contrapositive pairs exchange `Ladj` and `Radj`. | `MonadTaxonomy.Ladj_iff_Radj` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| Figure 1(a), without state: the wp edges (generic in the two conditions), the sp contrapositive and Galois edges, and the collapse of DSP into ASP and of ASLP into DSLP. | `MonadTaxonomy.MonadRelation_implies_toWPure`, `MonadTaxonomy.MonadRelation_contra_toWPure`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_pure`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_pure`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure`, `MonadTaxonomy.MonadRelation_galois_awp_dslp_pure`, `MonadTaxonomy.MonadRelation_dsp_asp_pure`, `MonadTaxonomy.MonadRelation_aslp_dslp_pure`, `DSPMonad.dsp_to_asp_morphism`, `DSPMonad.asp_to_dsp_morphism`, `ASLPMonad.aslp_to_dslp_morphism`, `ASLPMonad.dslp_to_aslp_morphism`, `DSPMonad.asp_to_dsp_to_asp`, `DSPMonad.dsp_to_asp_to_dsp`, `ASLPMonad.dslp_to_aslp_to_dslp`, `ASLPMonad.aslp_to_dslp_to_aslp` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v), [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
+| Figure 1(a), the sp implication edges ASLP -> ASP and DSLP -> DSP without state. |  |  | not formalized |
+
+## Section 4.4, Effect-modularity
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.3063-3077: each wp relation is proved on `WPure` and lifted by `stateT` (giving exactly the relations on `WSt`) and `optionT`. | `MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT`, `MonadTaxonomy.MonadRelation_impliesWPure`, `MonadTaxonomy.MonadRelation_contraWPure`, `MonadTaxonomy.impliesWSt_lift`, `MonadTaxonomy.contraWSt_lift`, `MonadTaxonomy.MonadRelation_impliesWStExc`, `MonadTaxonomy.MonadRelation_contraWStExc`, `MonadTaxonomy.MonadRelation_implies_WPSubStExc`, `MonadTaxonomy.MonadRelation_contra_WPSubStExc` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.3081-3096: the arrow transformers; sp relations are proved once at arbitrary indices, implication as inclusion and contrapositive as equality of the denoted relations, preserved by composition. | `OptionArrowT.Core.optionArrT`, `MonadTaxonomy.dsp_implies_asp_rel`, `MonadTaxonomy.dsp_implies_dslp_rel`, `MonadTaxonomy.asp_implies_aslp_rel`, `MonadTaxonomy.dslp_implies_aslp_rel`, `MonadTaxonomy.contra_asp_dslp_rel`, `MonadTaxonomy.contra_dsp_aslp_rel`, `MonadRelation.MonadRelation_rel_incl`, `MonadRelation.MonadRelation_rel_incl_state`, `MonadRelation.MonadRelation_rel_incl_state_option`, `MonadRelation.MonadRelation_rel_eq`, `MonadRelation.MonadRelation_rel_eq_state`, `MonadRelation.MonadRelation_rel_eq_state_option` | [Lib/Arrow/OptionArrowT/Core.v](Code/Lib/Arrow/OptionArrowT/Core.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v), [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v) | proved |
+| l.3098-3101: DSP and ASP (ASLP and DSLP) are told apart by a result reachable from two inputs. | `DSPASLPArr.no_ASPArr_for_dsp`, `DSPASLPArr.no_DSLPArr_for_aslp` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
+| l.3108-3112: ASP is `SPost_ang`, DSLP is `SPost_dem`. | `DSLPMonad.dm4all_dem_to_dslp_morphism`, `DSLPMonad.dslp_to_dm4all_dem_morphism`, `DSLPMonad.dm4all_dem_round_trip`, `DSLPMonad.dslp_dm4all_dem_round_trip` | [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved |
+| l.3117-3120: the adjunctions are proved at the base between `WPure` and `Pred`, and lifted by `stateT` and `optionT`. | `MonadTaxonomy.MonadRelation_GaloisPredWP`, `MonadTaxonomy.MonadRelation_GaloisWPPred`, `MonadTaxonomy.MonadRelation_rel_pred`, `MonadTaxonomy.MonadRelation_rel_pred_state`, `MonadTaxonomy.MonadRelation_rel_pred_state_option`, `MonadTaxonomy.galois_asp_rel`, `MonadTaxonomy.galois_dslp_rel` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.3122-3125: the diagram again with state and exceptions. | `MonadTaxonomy.MonadRelation_dsp_implies_asp_exc`, `MonadTaxonomy.MonadRelation_dsp_implies_dslp_exc`, `MonadTaxonomy.MonadRelation_asp_implies_aslp_exc`, `MonadTaxonomy.MonadRelation_dslp_implies_aslp_exc`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_one`, `MonadTaxonomy.MonadRelation_contra_asp_dslp_exc_two`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_exc_one`, `MonadTaxonomy.MonadRelation_contra_dsp_aslp_exc_two`, `MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc`, `MonadTaxonomy.MonadRelation_galois_awp_dslp_exc` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v) | proved |
+| l.3103-3106, that the exception arrow transformer alone keeps DSP = ASP and ASLP = DSLP; l.3113-3116, `SPost_ang` and `SPost_dem` isomorphic to `Pred`. |  |  | not formalized |
+
+## Section 5, Specifying monadic programs
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.3172-3218: monad morphisms; triples of a monad morphism, under and over; specification of a computation by an element; specification monads. | `OrderedMonad.MonadMorphism`, `Generic.Triple.triple`, `Generic.Triple.pt_holds`, `Generic.Triple.Under`, `Generic.Triple.Over` | [Lib/Monad/OrderedMonad.v](Code/Lib/Monad/OrderedMonad.v), [Verification/Generic/Triple.v](Code/Verification/Generic/Triple.v) | proved |
+| l.3422-3462: the stateful computation monad and the eight stateful morphisms, with their readings on outcomes. | `DivNonDetSt.Computation.stdivndNE`, `DivNonDetSt.Computation.outSt`, `DivNonDetSt.Morphisms.dwpSt_morphism`, `DivNonDetSt.Morphisms.dwlpSt_morphism`, `DivNonDetSt.Morphisms.awpSt_morphism`, `DivNonDetSt.Morphisms.awlpSt_morphism`, `DivNonDetSt.Morphisms.aspSt_morphism`, `DivNonDetSt.Morphisms.dslpSt_morphism`, `DivNonDetSt.Morphisms.dspSt_morphism`, `DivNonDetSt.Morphisms.aslpSt_morphism`, `DivNonDetSt.Triples.dwpSt_read`, `DivNonDetSt.Triples.dwlpSt_read`, `DivNonDetSt.Triples.awpSt_read`, `DivNonDetSt.Triples.awlpSt_read`, `DivNonDetSt.Triples.aspSt_read`, `DivNonDetSt.Triples.dslpSt_read`, `DivNonDetSt.Triples.dspSt_read`, `DivNonDetSt.Triples.aslpSt_read`, `RelSPostArr.dspOf`, `RelSPostArr.aslpOf` | [Verification/DivNonDetSt/Computation.v](Code/Verification/DivNonDetSt/Computation.v), [Verification/DivNonDetSt/Morphisms.v](Code/Verification/DivNonDetSt/Morphisms.v), [Verification/DivNonDetSt/Triples.v](Code/Verification/DivNonDetSt/Triples.v), [Relational/RelSPostArr.v](Code/Relational/RelSPostArr.v) | proved |
+| l.3466-3488: the base wp morphisms, lifted by `stateT` to the stateful ones. | `DivNonDet.Morphisms.dwpPure_morphism`, `DivNonDet.Morphisms.dwlpPure_morphism`, `DivNonDet.Morphisms.awpPure_morphism`, `DivNonDet.Morphisms.awlpPure_morphism`, `Monad.TransformerLaws.MonadMorphism_stateT`, `DivNonDetSt.Morphisms.wpSt_morphism` | [Verification/DivNonDet/Morphisms.v](Code/Verification/DivNonDet/Morphisms.v), [Lib/Monad/TransformerLaws.v](Code/Lib/Monad/TransformerLaws.v), [Verification/DivNonDetSt/Morphisms.v](Code/Verification/DivNonDetSt/Morphisms.v) | proved |
+| l.3491-3524: arrow morphisms into the four base sp arrows, lifted through state, and the sp monad morphisms they give. | `SPostArrEquiv.asp_from_rel_morphism`, `SPostArrEquiv.dslp_from_rel_morphism`, `SPostArrEquiv.dsp_from_rel_morphism`, `SPostArrEquiv.aslp_from_rel_morphism`, `DivNonDet.Morphisms.termRel_morphism`, `DivNonDetSt.Morphisms.spSt_morphism`, `DivNonDet.Morphisms.aspPure_morphism_rel`, `DivNonDet.Morphisms.dslpPure_morphism_rel`, `DivNonDet.Morphisms.dspPure_morphism_rel`, `DivNonDet.Morphisms.aslpPure_morphism_rel` | [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v), [Verification/DivNonDet/Morphisms.v](Code/Verification/DivNonDet/Morphisms.v), [Verification/DivNonDetSt/Morphisms.v](Code/Verification/DivNonDetSt/Morphisms.v) | partial: from relations, which the computation reaches through [termRel] |
+| l.3539-3578: sp triples; each edge of Figure 1(b) relates the transformers (`_pt`), hence the triples (Section 4.1; examples: ASLP -> ASP, ASP -- DSLP, ASP -> DWLP); incorrectness logic and Lisbon logic. | `MonadTaxonomy.impliesWSt_pt`, `MonadTaxonomy.impliesSPSt_pt`, `MonadTaxonomy.contraWSt_pt`, `MonadTaxonomy.contraSPSt_pt`, `MonadTaxonomy.GaloisSPWP_pt`, `MonadTaxonomy.GaloisWPSP_pt`, `DivNonDetSt.Triples.triple_aspSt`, `DivNonDetSt.Triples.triple_awpSt` | [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v), [Verification/DivNonDetSt/Triples.v](Code/Verification/DivNonDetSt/Triples.v) | proved |
+| l.3582-3620: the two incorrectness logics differ. | `Withdrawal.progloom_harder_not_awp_under`, `Withdrawal.progloom_harder_asp_under` | [Verification/DivNonDetStExc/TriplesExamples/Withdrawal.v](Code/Verification/DivNonDetStExc/TriplesExamples/Withdrawal.v) | partial: shown on a different program, with exceptions: Lisbon logic fails where incorrectness logic holds |
+| l.3722-3737: the comparison rule is the bind typing of the Dijkstra monad of a morphism; ASP, DSLP and the wp monads are specification monads; DSP and ASLP are not (Section 1). | `DijkstraMonad.DM_bind_typing`, `ASPMonad.OrderedMonad_ASP`, `ASPMonad.OrderedMonad_ASPSt`, `DSLPMonad.OrderedMonad_DSLP`, `DSLPMonad.OrderedMonad_DSLPSt`, `WPVariants.OrderedMonad_DWPSt`, `WPVariants.OrderedMonad_AWPSt`, `WPVariants.OrderedMonad_DWLPSt`, `WPVariants.OrderedMonad_AWLPSt` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v), [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v), [WP/WPVariants.v](Code/WP/WPVariants.v) | proved |
+| l.3768-3806: wp triples, ASP over and DSLP under triples embed as specifications (`pp2wp_under`, `pp2wp_over`, `pp2asp_over`, `pp2dslp_under`). | `DivNonDetSt.Typings.wpUnderSt`, `DivNonDetSt.Typings.wpOverSt`, `DivNonDetSt.Typings.triple_under_wpSt`, `DivNonDetSt.Typings.triple_over_wpSt`, `Generic.Typings.aspOver`, `Generic.Typings.dslpUnder`, `Generic.Typings.le_aspOver`, `Generic.Typings.le_dslpUnder`, `DivNonDetSt.Typings.triple_over_aspSt`, `DivNonDetSt.Typings.triple_under_dslpSt` | [Verification/DivNonDetSt/Typings.v](Code/Verification/DivNonDetSt/Typings.v), [Verification/Generic/Typings.v](Code/Verification/Generic/Typings.v) | partial: the wp comparisons are in DM4all's order [WP_le], the converse of the paper's l.846-850 order |
+| l.3808-3842: no specification embeds ASP under (nor DSLP over) triples; an ASP specification may still match a triple, but typing at it is strictly stronger than the triple. | `DivNonDetSt.Typings.no_asp_under_index`, `DivNonDetSt.Typings.no_dslp_over_index`, `Generic.Typings.le_aspUnder`, `Generic.Typings.aspUnder_typing_triple`, `DijkstraExamples.progA_Dasp_op`, `DijkstraExamples.progloom_harder_not_Dasp_op` | [Verification/DivNonDetSt/Typings.v](Code/Verification/DivNonDetSt/Typings.v), [Verification/Generic/Typings.v](Code/Verification/Generic/Typings.v), [Verification/DivNonDetStExc/DijkstraExamples.v](Code/Verification/DivNonDetStExc/DijkstraExamples.v) | proved |
+| l.3867-3897: the Dijkstra monad of a monad morphism, its operations and DM4all's laws; also with the order flipped. | `DijkstraMonad.OrderedTarget`, `DijkstraMonad.DM`, `DijkstraMonad.DM_ret`, `DijkstraMonad.DM_bind`, `DijkstraMonad.DM_wkn`, `DijkstraMonad.DijkstraLaws`, `DijkstraMonad.DM_laws`, `DijkstraMonad.DMop`, `DijkstraMonad.DMop_laws` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v) | proved |
+| l.3897-3916: Dijkstra monads for the four wp monads, ASP and DSLP (with state; with exceptions, with their laws), and the verified examples as their elements. | `DivNonDetSt.DijkstraMonads.OrderedTarget_dwpSt`, `DivNonDetSt.DijkstraMonads.OrderedTarget_dwlpSt`, `DivNonDetSt.DijkstraMonads.OrderedTarget_awpSt`, `DivNonDetSt.DijkstraMonads.OrderedTarget_awlpSt`, `DivNonDetSt.DijkstraMonads.OrderedTarget_aspSt`, `DivNonDetSt.DijkstraMonads.OrderedTarget_dslpSt`, `DivNonDetStExc.DijkstraMonads.Ddwp_laws`, `DivNonDetStExc.DijkstraMonads.Ddwlp_laws`, `DivNonDetStExc.DijkstraMonads.Dawp_laws`, `DivNonDetStExc.DijkstraMonads.Dawlp_laws`, `DivNonDetStExc.DijkstraMonads.Dasp_laws`, `DivNonDetStExc.DijkstraMonads.Ddslp_laws`, `DijkstraExamples.progA_Ddwp`, `DijkstraExamples.progB_Ddwlp`, `DijkstraExamples.progA_Dawp`, `DijkstraExamples.progB_Dawlp`, `DijkstraExamples.progA_Dasp`, `DijkstraExamples.progEx_Ddslp_op` | [Verification/DivNonDetSt/DijkstraMonads.v](Code/Verification/DivNonDetSt/DijkstraMonads.v), [Verification/DivNonDetStExc/DijkstraMonads.v](Code/Verification/DivNonDetStExc/DijkstraMonads.v), [Verification/DivNonDetStExc/DijkstraExamples.v](Code/Verification/DivNonDetStExc/DijkstraExamples.v) | partial: one example per Dijkstra monad |
+| l.3614-3616, that incorrectness logic has no wp characterization (cited); l.3582-3630 and l.3742-3764, the paper's running program on even and odd states, its transformers and specifications; l.3632-3674, the sequencing rules for triples and the failure of over-approximate DSP / under-approximate ASLP triples to compose (Figure 3); l.3424-3425, wp morphisms into the healthy wp monads (they target WP). |  |  | not formalized |
+
+## Section 6, Galois connections between specification monads
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.4022-4043: DM4all's Galois connections between `Pred`, `PrePost` and `WP` (diagram); `Pred` is a specification monad. | `PredMonad.OrderedMonad_Pred`, `BaseGaloisConnections.pred_pp_adjunction`, `BaseGaloisConnections.wp_pp_under_adjunction`, `BaseGaloisConnections.wp_pp_over_adjunction` | [Relational/PredMonad.v](Code/Relational/PredMonad.v), [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) | proved |
+| l.4032-4043, the `SPost` -- `Pred` edge of the diagram. | `GaloisArr.Galois_Rel_SPost` | [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v) | partial: for binary arrows, monotone sps and relations, at input [unit] |
+| l.4053-4057: monotone monad transformers preserve Galois connections. | `MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT` | [Lib/Monad/MonadRelation.v](Code/Lib/Monad/MonadRelation.v) | partial: they preserve monadic relations, which the Galois connections are in Section 4 |
+| l.4185-4239: the stateful `Pred`; `φ` and `ψ` are monad morphisms (angelic structure); `Ladj (φ p) (ψ p)`, and every `Ladj` pair is of this form; `φ ⊣ φ'` and `φ'` preserves the angelic structure (the paper says demonic); the adjoints are colimit/limit preserving; ASP is isomorphic to DWLP. | `PredMonad.PredSt.PredSt`, `PredMonad.PredSt.ordPredSt`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_ret`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_bind`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_ret`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_bind`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_fromPred`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_pred`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_toPred_adj`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred_ret`, `MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred_bind`, `MonadTaxonomy.galois_asp_dwlp_order`, `SPostArrEquiv.asp_to_rel_morphism` | [Relational/PredMonad.v](Code/Relational/PredMonad.v), [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v), [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v) | proved |
+| l.4248-4301: the demonic side: `ξ` (monotone into `Pred^op`), `ζ`, `ξ'`; `ξ' ⊣ ξ`; `ξ` and `ζ` are monad morphisms (demonic structure); the lax demonic bind (footnote); `Radj (ξ p) (ζ p)`, and every `Radj` pair is of this form; nuclei and limits; DSLP is isomorphic to AWP. | `MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_antitone`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.toPred`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_toPred_adj`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_ret`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_bind`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_ret`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_bind`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.bindP`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.lunit`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.runit`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.assoc`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_fromPred`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_pred`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_toPred`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.tPfP_unit`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.tPfP_unit_inv`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_unit`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_unit_inv`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_lim`, `MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_colim`, `MonadTaxonomy.galois_awp_dslp_order`, `SPostArrEquiv.dslp_to_rel_morphism` | [PTMonadTaxonomy/MonotoneSPSt.v](Code/PTMonadTaxonomy/MonotoneSPSt.v), [PTMonadTaxonomy/MonadTaxonomy.v](Code/PTMonadTaxonomy/MonadTaxonomy.v), [SP/SPostArrEquiv.v](Code/SP/SPostArrEquiv.v) | proved |
+| Maillard et al.'s `SPost ~ Pred` (l.4047-4049); the monotonicity of `φ`, `ψ`, `ζ`, `ξ'`, `ζ'` and the naturality of the demonic maps; the stateful `ψ'` and `ψ ⊣ ψ'`, `ζ'` and `ζ' ⊣ ζ`; `ξ'` as a monad morphism; that `ψ'` and `ζ'` do not preserve WP's bind; the nuclei (1)-(3) beyond the cases above; ASP ~ Pred ~ DWLP and DSLP ~ Pred^op ~ AWP as stated isomorphisms; the rendered draft notes (l.4304-4328): Galois connections lifted through monad and arrow transformers, extended to the new specification monads (its "NewGaloisConnections.v" is `wp_pp_over_adjunction` above). |  |  | not formalized |
+
+## Section 7, Formalization in Rocq
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.4349-4351: example programs that together use all sixteen kinds of triples (index: `Verification/DivNonDetStExc/TriplesExamples.v`). | `ProgA.progA_dwp_under`, `ProgRet.progRet_dwp_over`, `ProgB.progB_dwlp_under`, `ProgRet.progRet_dwlp_over`, `ProgA.progA_awp_under`, `ProgA.progA_awp_over`, `ProgB.progB_awlp_under`, `ProgRet.progRet_awlp_over`, `ProgA.progA_asp_under`, `ProgA.progA_asp_over`, `ProgEx.progEx_dslp_under`, `ProgA.progA_dslp_over`, `ProgRet.progRet_dsp_under`, `ProgRet.progRet_dsp_over`, `ProgRet.progRet_aslp_under`, `ProgRet.progRet_aslp_over` | [Verification/DivNonDetStExc/TriplesExamples/ProgA.v](Code/Verification/DivNonDetStExc/TriplesExamples/ProgA.v), [Verification/DivNonDetStExc/TriplesExamples/ProgRet.v](Code/Verification/DivNonDetStExc/TriplesExamples/ProgRet.v), [Verification/DivNonDetStExc/TriplesExamples/ProgB.v](Code/Verification/DivNonDetStExc/TriplesExamples/ProgB.v), [Verification/DivNonDetStExc/TriplesExamples/ProgEx.v](Code/Verification/DivNonDetStExc/TriplesExamples/ProgEx.v) | proved |
+| l.4352-4353: programs written as interaction trees, mapped into the computation monad by a monad morphism. | `DivNonDet.Computation.denote_morphism`, `DivNonDetSt.Computation.denoteSt_morphism`, `DivNonDetStExc.Computation.denoteStExc_morphism` | [Verification/DivNonDet/Computation.v](Code/Verification/DivNonDet/Computation.v), [Verification/DivNonDetSt/Computation.v](Code/Verification/DivNonDetSt/Computation.v), [Verification/DivNonDetStExc/Computation.v](Code/Verification/DivNonDetStExc/Computation.v) | proved |
+| l.4358-4361: all sp arrows are choice arrows, with Hughes's laws and Paterson's distribution law; the transformers preserve them. (The sentence also says loop arrows: not the case, no sp arrow has an `ArrowLoop` instance.) | `Arrow.ArrowChoiceLaws`, `SPostArr.ArrowChoiceLaws_ASPArr`, `SPostArr.ArrowChoiceLaws_DSLPArr`, `DSPASLPArr.ArrowChoiceLaws_DSPArr`, `DSPASLPArr.ArrowChoiceLaws_ASLPArr`, `StateArrowT.ArrowChoiceLaws.ArrowChoiceLaws_stateArrT`, `OptionArrowT.ArrowChoiceLaws.ArrowChoiceLaws_optionArrT` | [Lib/Arrow/Arrow.v](Code/Lib/Arrow/Arrow.v), [SP/SPostArr.v](Code/SP/SPostArr.v), [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v), [Lib/Arrow/StateArrowT/ArrowChoiceLaws.v](Code/Lib/Arrow/StateArrowT/ArrowChoiceLaws.v), [Lib/Arrow/OptionArrowT/ArrowChoiceLaws.v](Code/Lib/Arrow/OptionArrowT/ArrowChoiceLaws.v) | proved |
+| l.4332 and l.4427, "all definitions and results are formalized" (not the case, see the Not formalized notes); l.4333-4334, "about 28k lines", "only funext, propext and excluded middle" (the build has about 35k lines; `Checks/Assumptions.v` reports the axioms, which also include `eq_rect_eq`, through ITree). |  |  | not checkable |
+
+## Appendix A, Arrow laws
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.4453-4473: the twelve laws, with logical equivalence of sp arrows as the equality. | `Arrow.ArrowLaws`, `Arrow.ArrowApplyLaws`, `SPostArr.ASPArr_eq`, `SPostArr.DSLPArr_eq`, `DSPASLPArr.DSPArr_eq`, `DSPASLPArr.ASLPArr_eq` | [Lib/Arrow/Arrow.v](Code/Lib/Arrow/Arrow.v), [SP/SPostArr.v](Code/SP/SPostArr.v), [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
+
+## Appendix B, The DSP and ASLP arrows
+
+| Paper | Rocq name(s) | File | Status |
+|---|---|---|---|
+| l.4477-4561: the two arrows, their parts, operations and laws; direct composition of dsps fails; at input `unit` they give DSP and ASLP. | `DSPASLPArr.DSPArr`, `DSPASLPArr.pure_DSP`, `DSPASLPArr.comp_DSP`, `DSPASLPArr.first_DSP`, `DSPASLPArr.app_DSP`, `DSPASLPArr.ArrowLaws_DSPArr`, `DSPASLPArr.ArrowApplyLaws_DSPArr`, `SPostArrInfrastructure.dsp_naive_transformer_comp_rejects`, `DSPASLPArr.ASLPArr`, `DSPASLPArr.pure_ASLP`, `DSPASLPArr.comp_ASLP`, `DSPASLPArr.first_ASLP`, `DSPASLPArr.app_ASLP`, `DSPASLPArr.ArrowLaws_ASLPArr`, `DSPASLPArr.ArrowApplyLaws_ASLPArr`, `DSPMonad.dspsp_to_dsp_morphism`, `DSPMonad.dsp_to_dspsp_morphism`, `ASLPMonad.aslpsp_to_aslp_morphism`, `ASLPMonad.aslp_to_aslpsp_morphism`, `DSPMonad.dspsp_to_dsp_to_dspsp`, `DSPMonad.dsp_to_dspsp_to_dsp`, `ASLPMonad.aslpsp_to_aslp_to_aslpsp`, `ASLPMonad.aslp_to_aslpsp_to_aslp` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v), [Tests/SPostArrInfrastructure.v](Code/Tests/SPostArrInfrastructure.v), [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | partial: on non-pure arrows |
 
 ## Gaps and differences from the paper
 
-- **Section 7, contribution bullet 6.** Galois connections lifted through
-  monad or arrow transformers are not formalized, and no Galois connection
-  involves the new *sp* monads. The nearest result is the Section 4 one:
-  `MonadTaxonomy.MonadRelation_GaloisPredWP`, the `Pred` / `WPure`
-  adjunction as a monadic relation, lifted by the monad transformers on the
-  WP side. The paper's Artifact list names `NewGaloisConnections.v`, which
-  does not exist; `BaseGaloisConnections.wp_pp_over_adjunction` is in
-  [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v).
-- **No `Pred` ≅ `SPost` / ASP / DSLP isomorphism.** Nearest:
-  `SPostArrEquiv.asp_to_rel_morphism` (ASP arrows are relations, as arrow
-  isomorphisms), `SPostArr.asp_to_dslp` (an ASP arrow to the DSLP arrow of
-  the same relation), and `GaloisArr.Galois_Rel_SPost` (relations and
-  monotone SP transformers). None of these is stated for the unary monad
-  `Pred`.
-- **The WP morphisms land in `WPure`.** `Morphisms.dwpPure_morphism` and
-  the other three map into `WPure`; no lemma shows that their image lies in
-  DWP, DWLP, AWP or AWLP.
-- **Section 3.3.** Only the angelic counterexample is formalized, and for the
-  hand-built carrier `StatefulSPostCounterexample.SPostStExc` (stateful
-  forward transformers restricted by monotonicity and the codomain
-  condition), not literally for `stateArrT` over the angelic arrow at input
-  `unit`. There is no demonic counterexample.
-- **`SPost_ang`, `SPost_dem`.** `SPost_dem` is `DSLPMonad.DSLPSP` in
-  [SP/DSLPMonad.v](Code/SP/DSLPMonad.v); there is no definition under that
-  name. ASP ≅ `SPost_ang` goes through `ASPMonad.monotone_codomain_iff_singleton` (the
-  carrier conditions agree) and `ASPMonad.aspsp_to_asp_morphism` (the direct
-  monad is the arrow-derived one); no map is stated between `SPostMonad.SPM.SPost` and
-  `ASP`.
-- **Section 3.4.** "The codomain condition is equivalent to strictness" for
-  stateful monotone disjunctive *sps* (and the demonic dual) is proved only
-  without state (`ASPMonad.strict_to_singleton`,
-  `ASPMonad.monotone_codomain_iff_singleton`, `DSLPMonad.monotone_codomainDSLP_iff_msingleton`).
-  The stateful carriers are defined directly by strictness and
-  disjunctivity, so the stateful equivalence is not needed by the
-  construction.
+The rows marked *partial* and *not formalized* above say where the
+formalization differs from a claim. The following are places where the
+paper's text and the formalization disagree; the Rocq statements are the
+reference.
+
+- **l.645-647 and l.1296-1298.** The DSP and ASLP `bind`s are not monotone
+  only with state (`DSPMonad.not_OrderedMonad_DSPSt`,
+  `ASLPMonad.not_OrderedMonad_ASLPSt`). Without state DSP and ASLP are
+  ASP and DSLP, hence specification monads (`DSPMonad.OrderedMonad_DSP`,
+  `ASLPMonad.OrderedMonad_ASLP`).
+- **l.649-656.** The introduction swaps *asp* and *dslp*: the triples that
+  embed in Dijkstra monads are ASP over and DSLP under
+  (`DivNonDetSt.Typings.triple_over_aspSt`,
+  `DivNonDetSt.Typings.triple_under_dslpSt`); ASP under and DSLP over have
+  no index (`DivNonDetSt.Typings.no_asp_under_index`,
+  `DivNonDetSt.Typings.no_dslp_over_index`). Section 5 (l.3789-3811) agrees
+  with the code.
+- **l.2828-2831.** The direction of the implication between triples is
+  reversed: `wp1 ⊑ wp2` gives under-approximate triples of `wp1` to `wp2`
+  and over-approximate ones of `wp2` to `wp1`
+  (`TransformerRelations.pt_le_under`, `TransformerRelations.pt_le_over`).
+- **l.2981-2983, l.3005-3007.** The labels are swapped: "over-approximate
+  triple of wp1 / sp1" should read under-approximate, and "under-approximate
+  triple of wp2 / sp2" over-approximate (by the terminology of l.2723).
+- **l.3016-3044.** `Ladj` is used as `Ladj sp wp` but typed `WSt -> SPSt ->
+  P`; in it the sp is the left adjoint (the text says right), and in `Radj`
+  the wp is (the text says sps are left adjoint).
+- **l.3077.** The type of `WStExc` is missing its final `-> P`.
+- **Figure 1(b).** The two ASLP implication edges also go through a
+  component (`MonadTaxonomy.asp_implies_aslp_part`,
+  `MonadTaxonomy.dslp_implies_aslp_part`), as the text says, but carry no
+  asterisk.
+- **l.4226.** `φ'` preserves the angelic structure
+  (`MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred_ret`, `toPred_bind`);
+  the text says demonic.
+- **l.4254.** `ξ` quantifies `∀ s0` (as the calculation at l.4282 uses), not
+  `∃ s0`.
+- **l.4304-4328.** Draft notes ("Section Summary", "Artifact:") are not
+  commented out and name old paths (see the table below).
+- **l.745, l.4332 and l.4427.** "All definitions and results ... are
+  formalized" does not hold: see the *not formalized* rows.
+- **l.3774-3786.** The `pp2wp` comparisons hold in DM4all's order on wps
+  (`WPure.WP_le`), the converse of the paper's pointwise order (l.846-850).
+- **l.4056.** Monad transformers are shown to preserve monadic relations
+  (`MonadRelation.MonadRelation_stateT`, `MonadRelation.MonadRelation_optionT`),
+  which is how Section 4 states the Galois connections; preservation of
+  Galois connections as such is not stated.
+- **Section 7, l.4333.** The build has about 35k lines of Rocq (the files of
+  `_CoqProject`), not 28k. Besides functional and propositional
+  extensionality and excluded middle, the interaction-tree layer uses
+  `eq_rect_eq` (through ITree and paco); `Checks/Assumptions.v` reports
+  them.
+- **Section 7, l.4358.** The sp arrows are not loop arrows: none has an
+  `ArrowLoop` instance, and for the option-stacked arrows none can be
+  lawful (`OptionLoop.optionRel_no_lawful_ArrowLoop`,
+  `SPostArrEquiv.optionASP_no_lawful_ArrowLoop`,
+  `SPostArrEquiv.optionDSLP_no_lawful_ArrowLoop`).
 - **Section 4.3** has no code.
-- **Bullet 5, "weaker".** The paper says the under-approximate order on
-  *asp* (and the over-approximate order on *dslp*) "correspond to strictly
-  weaker specifications than the corresponding triples". In the code, a
-  typing at the natural index (`Typings.le_aspUnder`) asks every start
-  state in the precondition to reach every result in the postcondition. For
-  an inhabited precondition it is strictly stronger than the triple
-  (`Typings.aspUnder_typing_triple`; strictness by
-  `Withdrawal.progloom_harder_asp_under` with
-  `DijkstraExamples.progloom_harder_not_Dasp_op`); for an empty precondition
-  it holds of every program, so it is vacuous. Neither "weaker" nor
-  "stronger" holds uniformly; what holds for every index is that none has
-  exactly the triples as its typings (`Typings.no_asp_under_index`).
-  Dually for *dslp* Over: `Typings.dslpOver_typing_triple`,
-  `DijkstraExamples.progloom_harder_dslp_over`,
-  `DijkstraExamples.progloom_harder_not_Ddslp`,
-  `Typings.no_dslp_over_index`. "Do not correspond to the triples" is
-  the accurate wording.
-- **Section 6 Artifact list: programs typed in the Dijkstra monad that cannot
-  be typed with the triple** (ASP Under, DSLP Over) are not formalized. By
-  `Typings.le_aspUnder` such a program can exist only for an empty
-  precondition.
-- **Section 3.2, `SPostArr_ang` / `SPostArr_dem`.** The arrows restricted only
-  by monotonicity and the codomain condition are not defined; the lawful
-  arrows in the code are the Section 3.4 carriers `SPostArr.ASPArr` and
-  `SPostArr.DSLPArr`. Note for the paper: since `stateArrT` preserves the
-  arrow laws for any lawful base arrow, a codomain-only arrow lawful at every
-  input would make the Section 3.3 stateful monad lawful, so the Section 3.2
-  claim can hold at most at input `unit`.
-- **Section 3.5.** The paper defines `aspOf` / `dslpOf` on a whole
-  precondition. The code first recovers a relation by probing with
-  singleton complements (`DSPASLPArr.dspRel` relates `x` to `y` when
-  `w (fun _ => True) y /\ ~ w (fun z => z <> x) y`, the paper's `aspOf`
-  formula at precondition `x`), then
-  takes its ASP and DSLP readings (`DSPASLPArr.aspPartArr`). The recovery
-  is classical.
 
-## Beyond the paper
+## Old paths in the paper's source
 
-- [Relational/OptionLoop.v](Code/Relational/OptionLoop.v): no lawful
-  `ArrowLoop` for the option-relation arrow
-  (`OptionLoop.optionRel_no_lawful_ArrowLoop`), transported to the option ASP
-  and DSLP arrows (`SPostArrEquiv.optionASP_no_lawful_ArrowLoop`).
-- `InCorrectnessPrinciples.v` in [Generic/](Code/Verification/Generic/InCorrectnessPrinciples.v) and in each setting ([DivNonDet/](Code/Verification/DivNonDet/InCorrectnessPrinciples.v), [DivNonDetSt/](Code/Verification/DivNonDetSt/InCorrectnessPrinciples.v), [DivNonDetStExc/](Code/Verification/DivNonDetStExc/InCorrectnessPrinciples.v)):
-  O'Hearn's rewriting rules (symmetry, consequence, agreement, denial) for
-  the ASP triples at each setting, with demonic liberal WP variants (e.g.
-  `InCorrectnessPrinciples.principle_of_denial_asp` with state). The rules are proved once for the ASP reading of any relation and instantiated at each setting; the demonic liberal WP variants go through each setting's Galois edge (without state, `PartCorr_galois_asp_over_pure` in `DivNonDet/TriplesTaxonomy.v`).
-- [GaloisConnections/GaloisArr.v](Code/GaloisConnections/GaloisArr.v):
-  Galois connections between binary specification arrows (relations,
-  pre/post pairs, monotone SP and WP transformers, relational pre/post
-  validators), e.g. `GaloisArr.Galois_RPP_WP`.
-- [PTMonadTaxonomy/SPStBindComparisons.v](Code/PTMonadTaxonomy/SPStBindComparisons.v):
-  the stateful SP `bind`s compared with the angelic and demonic `bind`s of
-  monotone stateful transformers (`SPStBindComparisons.bindASPSt_angelic`).
-- The four SP healthiness classes are pairwise distinct
-  (`DSPASLPArr.no_ASPArr_for_dsp`, `DSPASLPArr.no_DSLPArr_for_aslp`).
-- Programs as interaction trees ([Verification/DivNonDet/Computation.v](Code/Verification/DivNonDet/Computation.v),
-  [Lib/ITreeFacts.v](Code/Lib/ITreeFacts.v)): an `itree E A` over events that all have an answer
-  (`HasAnswers`) is denoted into the computation monad (`denote`; with state
-  `denoteSt`, with state and exceptions `denoteStExc`), a monad morphism up to
-  `eutt`, so the readings of a program are those of its denotation
-  (`dwpPure ∘ₘₘ denote` &c.). Examples in each setting's
-  `TriplesExamples/ITreePrograms.v`.
-
-## Old paths in the paper's Artifact lists
+The rendered "Artifact:" note (l.4321-4328) names the last two paths below;
+the others appear in commented-out drafts of the source.
 
 | Paper path | Current path |
 |---|---|
@@ -284,4 +288,4 @@ Hoare triples over-approximate.
 | `Taxonomy/Triples/*` (including `MonadMorphism.v`, meaning `MonadMorphisms.v`) | split by setting under [Verification/](Code/Verification): the morphisms in `DivNonDet/Morphisms.v`, `DivNonDetSt/Morphisms.v`, `DivNonDetStExc/Morphisms.v`; the triples in `Generic/Triple.v` and `*/Triples*.v`; the diagram in `*/TripleTaxonomy*.v`; the examples in `DivNonDetStExc/TriplesExamples/`; the rules in `DivNonDetSt/InCorrectnessPrinciples.v` |
 | `Taxonomy/DijkstraMonads/*` | [Verification/Generic/DijkstraMonad.v](Code/Verification/Generic/DijkstraMonad.v) (the construction) and `Dijkstra*.v` / `Typings*.v` per setting |
 | `Taxonomy/BaseSpecMonads/BaseGaloisConnections.v` | [GaloisConnections/BaseGaloisConnections.v](Code/GaloisConnections/BaseGaloisConnections.v) |
-| `Taxonomy/BaseSpecMonads/NewGaloisConnections.v` | does not exist; see Section 7 |
+| `Taxonomy/BaseSpecMonads/NewGaloisConnections.v` | does not exist; its content is `BaseGaloisConnections.wp_pp_over_adjunction` (Section 6) |
