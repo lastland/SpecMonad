@@ -27,9 +27,9 @@
     (https://doi.org/10.1145/3341708).
 
     For the demonic variant, the [MonadLawsE] instance, healthiness, round
-    trips, both DSLP morphisms, and [maillard_dem_to_dslp_order] use only
+    trips, both DSLP morphisms, and [dm4all_dem_to_dslp_order] use only
     [Classical_Prop.classic]. Its [Eq1Equivalence] and [OrderedMonad]
-    instances, both reading lemmas, and [dslp_to_maillard_dem_order] are
+    instances, both reading lemmas, and [dslp_to_dm4all_dem_order] are
     closed under the global context, as checked with [Print Assumptions]. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid Relation_Definitions.
@@ -994,39 +994,39 @@ End SPostDem.
     arbitrary nonempty meets. The maps through [DSLPSP] establish the
     equivalence with the arrow-derived [DSLP] monad. *)
 
-Definition maillard_dem_to_dslp {A} (w : SPostDem.SPost A) : DSLP A :=
+Definition dm4all_dem_to_dslp {A} (w : SPostDem.SPost A) : DSLP A :=
   dslpsp_to_dslp (SPostDem.to_dslpsp w).
 
-Definition dslp_to_maillard_dem {A} (w : DSLP A) : SPostDem.SPost A :=
+Definition dslp_to_dm4all_dem {A} (w : DSLP A) : SPostDem.SPost A :=
   SPostDem.from_dslpsp (dslp_to_dslpsp w).
 
-Theorem maillard_dem_healthiness {A} (w : SPostDem.SPost A) :
+Theorem dm4all_dem_healthiness {A} (w : SPostDem.SPost A) :
   sp_monotone (fun (P : unit -> Prop) a => SPostDem.app w (P tt) a) /\
   sp_terminating (fun (P : unit -> Prop) a => SPostDem.app w (P tt) a) /\
   sp_conjunctive (fun (P : unit -> Prop) a => SPostDem.app w (P tt) a).
-Proof. exact (proj2_sig (maillard_dem_to_dslp w)). Qed.
+Proof. exact (proj2_sig (dm4all_dem_to_dslp w)). Qed.
 
-Lemma maillard_dem_to_dslp_reading {A} (w : SPostDem.SPost A) P a :
-  getDSLPArr (maillard_dem_to_dslp w) P a <-> SPostDem.app w (P tt) a.
+Lemma dm4all_dem_to_dslp_reading {A} (w : SPostDem.SPost A) P a :
+  getDSLPArr (dm4all_dem_to_dslp w) P a <-> SPostDem.app w (P tt) a.
 Proof. reflexivity. Qed.
 
-Lemma dslp_to_maillard_dem_reading {A} (w : DSLP A) p a :
-  SPostDem.app (dslp_to_maillard_dem w) p a <-> getDSLP w p a.
+Lemma dslp_to_dm4all_dem_reading {A} (w : DSLP A) p a :
+  SPostDem.app (dslp_to_dm4all_dem w) p a <-> getDSLP w p a.
 Proof. reflexivity. Qed.
 
-Lemma maillard_dem_round_trip {A} (w : SPostDem.SPost A) :
+Lemma dm4all_dem_round_trip {A} (w : SPostDem.SPost A) :
   @eq1 SPostDem.SPost SPostDem.Eq1_SPost A
-    (dslp_to_maillard_dem (maillard_dem_to_dslp w)) w.
+    (dslp_to_dm4all_dem (dm4all_dem_to_dslp w)) w.
 Proof. intros p a. reflexivity. Qed.
 
-Lemma dslp_maillard_dem_round_trip {A} (w : DSLP A) :
+Lemma dslp_dm4all_dem_round_trip {A} (w : DSLP A) :
   @eq1 DSLP Eq1_DSLP A
-    (maillard_dem_to_dslp (dslp_to_maillard_dem w)) w.
+    (dm4all_dem_to_dslp (dslp_to_dm4all_dem w)) w.
 Proof. exact (dslp_to_dslpsp_to_dslp w). Qed.
 
-Theorem maillard_dem_to_dslp_morphism :
+Theorem dm4all_dem_to_dslp_morphism :
   @MonadMorphism SPostDem.SPost DSLP SPostDem.Monad_SPost Monad_DSLP
-    SPostDem.Eq1_SPost Eq1_DSLP (fun A => @maillard_dem_to_dslp A).
+    SPostDem.Eq1_SPost Eq1_DSLP (fun A => @dm4all_dem_to_dslp A).
 Proof.
   exact (@MonadMorphism_comp SPostDem.SPost DSLPSP DSLP
     SPostDem.Monad_SPost Monad_DSLPSP Monad_DSLP
@@ -1035,9 +1035,9 @@ Proof.
     SPostDem.to_dslpsp_morphism dslpsp_to_dslp_morphism).
 Qed.
 
-Theorem dslp_to_maillard_dem_morphism :
+Theorem dslp_to_dm4all_dem_morphism :
   @MonadMorphism DSLP SPostDem.SPost Monad_DSLP SPostDem.Monad_SPost
-    Eq1_DSLP SPostDem.Eq1_SPost (fun A => @dslp_to_maillard_dem A).
+    Eq1_DSLP SPostDem.Eq1_SPost (fun A => @dslp_to_dm4all_dem A).
 Proof.
   exact (@MonadMorphism_comp DSLP DSLPSP SPostDem.SPost
     Monad_DSLP Monad_DSLPSP SPostDem.Monad_SPost
@@ -1046,15 +1046,15 @@ Proof.
     dslp_to_dslpsp_morphism SPostDem.from_dslpsp_morphism).
 Qed.
 
-Lemma maillard_dem_to_dslp_order {A} (w w' : SPostDem.SPost A) :
+Lemma dm4all_dem_to_dslp_order {A} (w w' : SPostDem.SPost A) :
   SPostDem.le w w' <->
-  ordDSLP (maillard_dem_to_dslp w) (maillard_dem_to_dslp w').
+  ordDSLP (dm4all_dem_to_dslp w) (dm4all_dem_to_dslp w').
 Proof.
   exact (ordDSLPSP_dslpsp_to_dslp
     (SPostDem.to_dslpsp w) (SPostDem.to_dslpsp w')).
 Qed.
 
-Lemma dslp_to_maillard_dem_order {A} (w w' : DSLP A) :
+Lemma dslp_to_dm4all_dem_order {A} (w w' : DSLP A) :
   ordDSLP w w' <->
-  SPostDem.le (dslp_to_maillard_dem w) (dslp_to_maillard_dem w').
+  SPostDem.le (dslp_to_dm4all_dem w) (dslp_to_dm4all_dem w').
 Proof. exact (ordDSLP_get w w'). Qed.

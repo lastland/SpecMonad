@@ -1,7 +1,7 @@
 # Predicate-transformer healthiness conditions
 
 Research date: 2026-09-10. Subject:
-[`PredicateTransformerProperties.v`](PredicateTransformerProperties.v).
+[`PredicateTransformerProperties.v`](../Code/SP/PredicateTransformerProperties.v).
 
 ## Adopted name and terminology
 
@@ -26,15 +26,15 @@ constraints. Healthiness does not assert algebraic arrow or monad laws.
 ## SP presentation terminology
 
 **Maillard's SP monad** is the original existential forward predicate-transformer
-monad in Maillard et al.'s *Dijkstra Monads for All* (ICFP 2019).[^maillard]
-[`SPostMonad.v`](SPostMonad.v) represents it as `SPM.SPost`: monotone unary
+monad in Maillard et al.'s *Dijkstra Monads for All* (ICFP 2019).[^dm4all]
+[`SPostMonad.v`](../Code/SP/SPostMonad.v) represents it as `SPM.SPost`: monotone unary
 transformers whose output at precondition `pre` implies `pre`, recorded by
 `SPM.Over pre`.
 
 **The demonic variant**, `SPost_dem`, is the universal dual of that construction:
 its output at `pre` is implied by `pre`. It uses `ret v pre a := a = v -> pre`
 and `bind m k pre b := forall a, k a (m pre a) b`.
-[`DSLPMonad.v`](DSLPMonad.v) defines this carrier as
+[`DSLPMonad.v`](../Code/SP/DSLPMonad.v) defines this carrier as
 `SPostDem.SPost`, using the existing `KenjiPureDSLP` restriction. The dual is
 introduced in this development; it is not attributed to the original DM4All
 artifact. These angelic/demonic names distinguish existential and universal SP
@@ -43,12 +43,12 @@ sequencing, rather than classify a computation's nondeterminism.
 **Monotone SP arrow** means an ASP or DSLP operation presentation whose carrier
 requires only precondition monotonicity. The carrier is `MonotoneSPost`, also
 called `MonoPT`, in
-[`TransformerRelations.v`](../PTMonadTaxonomy/TransformerRelations.v).
-[`SPostArrMonotoneLaws.v`](../Tests/SPostArrMonotoneLaws.v) selects the two
+[`TransformerRelations.v`](../Code/PTMonadTaxonomy/TransformerRelations.v).
+[`SPostArrMonotoneLaws.v`](../Code/Tests/SPostArrMonotoneLaws.v) selects the two
 presentations and classifies their laws. The term itself does not assert arrow
 laws or preservation of bottom, top, joins, or meets.
 
-**Healthy SP arrow** means an ASP or DSLP arrow in [`SPostArr.v`](SPostArr.v)
+**Healthy SP arrow** means an ASP or DSLP arrow in [`SPostArr.v`](../Code/SP/SPostArr.v)
 whose carrier bundles its class-defining healthiness conditions:
 
 | Carrier | Conditions besides monotonicity |
@@ -56,15 +56,15 @@ whose carrier bundles its class-defining healthiness conditions:
 | `ASPArr` (also `PureASPostArr`) | strict and disjunctive |
 | `DSLPArr` (also `PureDSLPostArr`) | top-preserving and conjunctive |
 
-[`ASPMonad.v`](ASPMonad.v) identifies Maillard's SP monad with healthy ASP
-arrows at input `unit`, and [`DSLPMonad.v`](DSLPMonad.v) identifies the demonic
+[`ASPMonad.v`](../Code/SP/ASPMonad.v) identifies Maillard's SP monad with healthy ASP
+arrows at input `unit`, and [`DSLPMonad.v`](../Code/SP/DSLPMonad.v) identifies the demonic
 variant with healthy DSLP arrows at input `unit`. The maps are inverse up to
 pointwise logical equivalence, preserve `ret` and `bind`, and preserve and
 reflect the pointwise refinement orders. Thus the restrictions exclude no
 healthy values at this input. The angelic results are constructive; the demonic
 healthiness, monad laws, and complete equivalence use excluded middle. The
 original existential monad need not preserve top, as
-`maillard_not_dslp_healthy` in [`ASPMonad.v`](ASPMonad.v) shows.
+`dm4all_not_dslp_healthy` in [`ASPMonad.v`](../Code/SP/ASPMonad.v) shows.
 
 ## Exact correspondence with the code
 
@@ -128,7 +128,7 @@ forward: `A` indexes initial states and `B` indexes results. The same preservati
 algebra applies, with an interpretation determined by this orientation.[^bw]
 
 For a relation `R : A -> B -> Prop` (the existing `Rel A B` carrier),
-[`RelSPostArr.v`](../Relational/RelSPostArr.v) computes two readings. Neither reading adds a
+[`RelSPostArr.v`](../Code/Relational/RelSPostArr.v) computes two readings. Neither reading adds a
 carrier or stores a transformer:
 
 ```text
@@ -159,7 +159,7 @@ labels in the December 31, 1997 draft**; pagination in the published 1998 editio
 was not verified. Dijkstra was read in the university archive's transcription;
 Hino et al.'s theorem numbers refer to the cited arXiv version.
 
-[^maillard]: Kenji Maillard, Danel Ahman, Robert Atkey, Guido Martínez, Cătălin
+[^dm4all]: Kenji Maillard, Danel Ahman, Robert Atkey, Guido Martínez, Cătălin
     Hriţcu, Exequiel Rivas, and Éric Tanter, [*Dijkstra Monads for
     All*](https://doi.org/10.1145/3341708), *Proceedings of the ACM on Programming
     Languages* 3 (ICFP), Article 104, 2019, §4.1, p. 104:13. The original

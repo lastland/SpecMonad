@@ -157,25 +157,25 @@ Print Assumptions TransformerLaws.bind_optionT_mono.
     round trips, both morphisms, and forward order comparison use only
     [Classical_Prop.classic]. The demonic ordered-monad instance and reverse
     order comparison are closed. *)
-Print Assumptions ASPMonad.maillard_singleton.
-Print Assumptions ASPMonad.maillard_healthiness.
-Print Assumptions ASPMonad.maillard_to_asp_morphism.
-Print Assumptions ASPMonad.asp_to_maillard_morphism.
-Print Assumptions ASPMonad.maillard_round_trip.
-Print Assumptions ASPMonad.asp_maillard_round_trip.
-Print Assumptions ASPMonad.maillard_to_asp_order.
-Print Assumptions ASPMonad.asp_to_maillard_order.
-Print Assumptions ASPMonad.maillard_ret_true_not_top.
-Print Assumptions ASPMonad.maillard_not_dslp_healthy.
+Print Assumptions ASPMonad.dm4all_singleton.
+Print Assumptions ASPMonad.dm4all_healthiness.
+Print Assumptions ASPMonad.dm4all_to_asp_morphism.
+Print Assumptions ASPMonad.asp_to_dm4all_morphism.
+Print Assumptions ASPMonad.dm4all_round_trip.
+Print Assumptions ASPMonad.asp_dm4all_round_trip.
+Print Assumptions ASPMonad.dm4all_to_asp_order.
+Print Assumptions ASPMonad.asp_to_dm4all_order.
+Print Assumptions ASPMonad.dm4all_ret_true_not_top.
+Print Assumptions ASPMonad.dm4all_not_dslp_healthy.
 Print Assumptions DSLPMonad.SPostDem.MonadLawsE_SPost.
 Print Assumptions DSLPMonad.SPostDem.OrderedMonad_SPost.
-Print Assumptions DSLPMonad.maillard_dem_healthiness.
-Print Assumptions DSLPMonad.maillard_dem_to_dslp_morphism.
-Print Assumptions DSLPMonad.dslp_to_maillard_dem_morphism.
-Print Assumptions DSLPMonad.maillard_dem_round_trip.
-Print Assumptions DSLPMonad.dslp_maillard_dem_round_trip.
-Print Assumptions DSLPMonad.maillard_dem_to_dslp_order.
-Print Assumptions DSLPMonad.dslp_to_maillard_dem_order.
+Print Assumptions DSLPMonad.dm4all_dem_healthiness.
+Print Assumptions DSLPMonad.dm4all_dem_to_dslp_morphism.
+Print Assumptions DSLPMonad.dslp_to_dm4all_dem_morphism.
+Print Assumptions DSLPMonad.dm4all_dem_round_trip.
+Print Assumptions DSLPMonad.dslp_dm4all_dem_round_trip.
+Print Assumptions DSLPMonad.dm4all_dem_to_dslp_order.
+Print Assumptions DSLPMonad.dslp_to_dm4all_dem_order.
 
 
 (** Canonical carriers share law dictionaries with their compatibility names.

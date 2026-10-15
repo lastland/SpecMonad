@@ -11,7 +11,7 @@ unary accessors such as `ASPMonad.getASP` against the binary
 
 ## Terminology
 
-[PROPERTY_TERMINOLOGY.md](../../../Code/SP/PROPERTY_TERMINOLOGY.md#sp-presentation-terminology)
+[PROPERTY_TERMINOLOGY.md](../../PROPERTY_TERMINOLOGY.md#sp-presentation-terminology)
 defines **Maillard's SP monad**, its supplied **demonic variant**
 (`SPost_dem`, the DSLP variant), **monotone SP arrow**, and **healthy SP arrow**.
 The monotone arrow presentations require only monotonicity; the healthy
@@ -25,7 +25,7 @@ algebraic arrow/monad laws remain distinct.
 | 3.1 | [SPostMonad.v](../../../Code/SP/SPostMonad.v) | `SPM.SPost`: monotone transformers into `Over pre` (propositions implying the precondition), `SP_le`, `OrderedMonad_SPost`; the pure predicates `KenjiPureSP` / `KenjiPureDSLP` used by the ASP and DSLP files |
 | 3.3 | [StatefulSPostCounterexample.v](../../../Code/SP/StatefulSPostCounterexample.v) | `KenjiProgSP` and `StKenji.KenjiProgSP`: stateful carriers restricted like `SPost`; `KenjiFailingBind`: the m/f/g counterexample to associativity. Hand-built carriers, not literally `stateArrT` over the angelic arrow; only the angelic case |
 | 3 | [RawSP.v](../../../Code/SP/RawSP.v) | raw `SPPure`, `SPSt`, `SPStExc`, the terminating slice `StTrans`, the order on raw transformers. Not the carriers of the four monads |
-| 3.3-3.4 | [PredicateTransformerProperties.v](../../../Code/SP/PredicateTransformerProperties.v) | `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, `ConjunctiveArr` for `(A -> Prop) -> B -> Prop`; see [PROPERTY_TERMINOLOGY.md](../../../Code/SP/PROPERTY_TERMINOLOGY.md) |
+| 3.3-3.4 | [PredicateTransformerProperties.v](../../../Code/SP/PredicateTransformerProperties.v) | `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, `ConjunctiveArr` for `(A -> Prop) -> B -> Prop`; see [PROPERTY_TERMINOLOGY.md](../../PROPERTY_TERMINOLOGY.md) |
 | 3.2, 3.4 | [SPostArr.v](../../../Code/SP/SPostArr.v) | the raw `SPArrT` and its properties; the ASP and DSLP arrows, normal forms, recovered relations, laws, stacks, `asp_to_dslp` |
 | 3.5 | [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v) | the DSP and ASLP arrows, their stacks, and the separation of the four classes |
 | 5 | [SPostArrEquiv.v](../../../Code/SP/SPostArrEquiv.v) | ASP/DSLP/DSP/ASLP arrows as morphisms to and from `Rel`; the transported `ArrowLoop` obstruction |
@@ -95,7 +95,7 @@ connects it to `DSLP` through `DSLPSP`. The maps preserve readings, `ret`,
 carrier excludes healthy values at input `unit`. The angelic chain is
 constructive; the demonic law and equivalence proofs use excluded middle.
 `SPostDem.OrderedMonad_SPost` itself is constructive.
-`maillard_not_dslp_healthy` shows that the original existential monad does not
+`dm4all_not_dslp_healthy` shows that the original existential monad does not
 generally preserve top. These base equivalences do not assert an equivalence
 for arbitrary binary inputs or state stacks.
 

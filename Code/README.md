@@ -9,7 +9,7 @@ checks those names when `make check` runs.
 > lemma, `SPStMonotone.DemonicMonotone.Radj_bind`: `bind` preserves the right
 > adjunction between demonic monotone SP transformers and `WSt`. Nothing uses
 > it, but `coqchk -o` lists it among the axioms of the build. Prove it or
-> remove it ([#7](https://github.com/lastland/SpecMonad/issues/7)).
+> remove it.
 
 ## Build
 

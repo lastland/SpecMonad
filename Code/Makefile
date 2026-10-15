@@ -55,12 +55,13 @@ layers:
 	python3 scripts/depgraph.py --check-layers
 
 # Package the development from Git (git archive already drops user and host
-# names).  Code/README.md links to ../PAPER.md, so package from the
+# names; archiving the tree rather than the commit also leaves out the commit
+# id).  Code/README.md links to ../PAPER.md, so package from the
 # repository root and keep the layout; Backup/ is outside the build, and
 # scripts/ is development tooling.
 .PHONY: package
 package:
-	git -C .. archive --prefix spec-monad/ -o Code/artifact.tar.gz HEAD \
+	git -C .. archive --prefix spec-monad/ -o Code/artifact.tar.gz 'HEAD^{tree}' \
 	  Code PAPER.md ':(exclude)Code/Backup' ':(exclude)Code/scripts'
 
 .PHONY: clean

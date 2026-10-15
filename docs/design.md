@@ -610,7 +610,7 @@ its §3.2.4 gives the conjunction/disjunction identities.
 `TerminatingArr`, `ConjunctiveArr`, and `DisjunctiveArr` for
 `(A -> Prop) -> B -> Prop`, following Ralph-Johan Back and Joakim von Wright,
 *Refinement Calculus: A Systematic Introduction* (1997 draft, §16.1; published
-1998). The [terminology source note](../Code/SP/PROPERTY_TERMINOLOGY.md#sources-and-verification-limits)
+1998). The [terminology source note](PROPERTY_TERMINOLOGY.md#sources-and-verification-limits)
 identifies the version consulted. Conjunctivity and disjunctivity preserve
 arbitrary **nonempty** families. Strictness supplies empty-join preservation;
 termination supplies empty-meet preservation. Here, termination means **top
