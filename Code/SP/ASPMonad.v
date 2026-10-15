@@ -25,7 +25,7 @@
     to top preservation. *)
 
 From Coq Require Import Morphisms RelationClasses Setoid.
-From ExtLib Require Import Monad.
+From ExtLib Require Import Monad StateMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
@@ -713,6 +713,85 @@ Section PureASPMonad.
       + apply Hfg. exact Hk.
   Qed.
 End PureASPMonad.
+
+(* ================================================================= *)
+(** ** State transformer / state arrow transformer carrier isomorphism *)
+(* ================================================================= *)
+
+(** Applying [stateT] to the ASP monad gives functions
+    [S -> ASP (A * S)].  Applying [stateArrT] to [ASPArr] and fixing the
+    input at [unit] gives [ASPSt S A].  Strictness and arbitrary
+    disjunctivity make these carriers isomorphic: an ASP transformer is
+    determined by its readings at singleton input states. *)
+Section ASPStateCarrierIso.
+  Context {S A : Type}.
+
+  Definition ASPStateT : Type := stateT S ASP A.
+
+  (** [toArrowASPState] is extensionally
+
+        [fun pre r => exists s, getASP (runStateT m s) (pre s) r].
+
+      The relational presentation below packages the required ASP
+      healthiness proof for free. *)
+  Definition toArrowASPState (m : ASPStateT) : ASPSt S A :=
+    aspOfRelSt (fun s r => getASP (runStateT m s) True r).
+
+  (** Conversely, isolate the singleton initial state [s]. *)
+  Definition fromArrowASPState (g : ASPSt S A) : ASPStateT :=
+    mkStateT (fun s => aspOfPred (fun r => getASPSt g (fun t => t = s) r)).
+
+  Lemma toArrowASPState_formula (m : ASPStateT) pre r :
+    getASPSt (toArrowASPState m) pre r <->
+    exists s, getASP (runStateT m s) (pre s) r.
+  Proof.
+    unfold toArrowASPState. rewrite getASPSt_of. split.
+    - intros [s [Hpre Hm]]. exists s.
+      apply getASP_singleton. exact (conj Hpre Hm).
+    - intros [s Hm]. exists s.
+      apply getASP_singleton in Hm. exact Hm.
+  Qed.
+
+  Lemma fromArrowASPState_formula (g : ASPSt S A) s p r :
+    getASP (runStateT (fromArrowASPState g) s) p r <->
+    getASPSt g (fun t => p /\ t = s) r.
+  Proof.
+    etransitivity. { apply getASP_of. }
+    rewrite (getASPSt_singleton S g (fun t => p /\ t = s) r).
+    split.
+    - intros [Hp Hg]. exists s. exact (conj (conj Hp eq_refl) Hg).
+    - intros [t [[Hp Ht] Hg]]. subst t. exact (conj Hp Hg).
+  Qed.
+
+  Lemma fromArrowASPState_toArrowASPState (m : ASPStateT) s p r :
+    getASP
+      (runStateT (fromArrowASPState (toArrowASPState m)) s) p r <->
+    getASP (runStateT m s) p r.
+  Proof.
+    rewrite fromArrowASPState_formula. unfold toArrowASPState.
+    rewrite getASPSt_of.
+    split.
+    - intros [t [[Hp Ht] Hm]]. subst t.
+      apply getASP_singleton. exact (conj Hp Hm).
+    - intro Hm. apply getASP_singleton in Hm. destruct Hm as [Hp HmT].
+      exists s. exact (conj (conj Hp eq_refl) HmT).
+  Qed.
+
+  Lemma toArrowASPState_fromArrowASPState (g : ASPSt S A) :
+    eq1 (toArrowASPState (fromArrowASPState g)) g.
+  Proof.
+    apply eq1_ASPSt_get. intros pre r.
+    rewrite toArrowASPState_formula. split.
+    - intros [s H]. apply fromArrowASPState_formula in H.
+      apply getASPSt_singleton in H.
+      destruct H as [t [[Hpre Ht] Hg]]. subst t.
+      apply getASPSt_singleton. exists s. exact (conj Hpre Hg).
+    - intro H. apply getASPSt_singleton in H.
+      destruct H as [s [Hpre Hg]]. exists s.
+      apply fromArrowASPState_formula, getASPSt_singleton.
+      exists s. exact (conj (conj Hpre eq_refl) Hg).
+  Qed.
+End ASPStateCarrierIso.
 
 (* ================================================================= *)
 (** ** Orders on the pure variant                                     *)
