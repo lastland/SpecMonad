@@ -30,7 +30,8 @@ From Incorrectness.WP Require
   WPure WPVariants.
 From Incorrectness.SP Require
   SPostMonad StatefulSPostCounterexample PredicateTransformerProperties
-  SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  SPostArr DSPASLPArr DSPASLPComponents SPostArrEquiv
+  ASPMonad DSLPMonad DSPMonad ASLPMonad.
 From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Verification.Generic Require
@@ -199,7 +200,8 @@ Check DSLPMonad.MonadLawsE_DSLPSt.
 
 (** DSP (strict, conjunctive) and ASLP (terminating, disjunctive) arrows;
     each element is the meet (resp. join) of an ASP part and a DSLP part
-    ([aspOf] / [dslpOf] in the paper); the monads are lawful. *)
+    ([aspOf] / [dslpOf] in the paper, directly or through a recovered
+    relation); the monads are lawful. *)
 Check DSPASLPArr.DSPArr.
 Check DSPASLPArr.dsp_hom_iff.
 Check DSPASLPArr.dspRel.
@@ -208,6 +210,16 @@ Check DSPASLPArr.dsp_split.
 Check DSPASLPArr.ASLPArr.
 Check DSPASLPArr.aslp_hom_iff.
 Check DSPASLPArr.aslp_split.
+Check DSPASLPComponents.aspOfDSPArr.
+Check DSPASLPComponents.dslpOfDSPArr.
+Check DSPASLPComponents.aspOfASLPArr.
+Check DSPASLPComponents.dslpOfASLPArr.
+Check DSPASLPComponents.dsp_split_direct.
+Check DSPASLPComponents.aslp_split_direct.
+Check DSPASLPComponents.aspOfDSP_aspPart.
+Check DSPASLPComponents.dslpOfDSP_dslpPart.
+Check DSPASLPComponents.aspOfASLP_aspPartA.
+Check DSPASLPComponents.dslpOfASLP_dslpPartA.
 Check DSPMonad.MonadLawsE_DSPSt.
 Check ASLPMonad.MonadLawsE_ASLPSt.
 

@@ -15,6 +15,8 @@ From Incorrectness.GaloisConnections Require Import
   GaloisArr PrePostArr RelPrePostArr WPArr.
 From Incorrectness.SP Require
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
+From Incorrectness.SP Require
+  DSPASLPComponents.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections.
 From Incorrectness.Verification.DivNonDet Require Import Computation.
@@ -392,6 +394,21 @@ Print Assumptions DSPASLPArr.no_DSLPArr_for_dsp.
 Print Assumptions DSPASLPArr.no_ASPArr_for_aslp.
 Print Assumptions DSPASLPArr.no_DSLPArr_for_aslp.
 Print Assumptions DSPASLPArr.no_ASPArr_for_dslp.
+
+(** The direct ASP and DSLP components of DSP and ASLP arrows.  The DSP
+    decomposition and the ASP component of an ASLP arrow are closed; the
+    ASLP decomposition, the other typed components, and their agreement with
+    the relation-based parts use excluded middle. *)
+Print Assumptions DSPASLPComponents.dsp_split_direct.
+Print Assumptions DSPASLPComponents.aslp_split_direct.
+Print Assumptions DSPASLPComponents.aspOfDSP_aspPart.
+Print Assumptions DSPASLPComponents.dslpOfDSP_dslpPart.
+Print Assumptions DSPASLPComponents.aspOfASLP_aspPartA.
+Print Assumptions DSPASLPComponents.dslpOfASLP_dslpPartA.
+Print Assumptions DSPASLPComponents.aspOfDSPArr.
+Print Assumptions DSPASLPComponents.dslpOfDSPArr.
+Print Assumptions DSPASLPComponents.aspOfASLPArr.
+Print Assumptions DSPASLPComponents.dslpOfASLPArr.
 
 (** The diagram with exceptions: the same pattern as at the state level.
     WP implications and Galois edges closed, the rest excluded middle. *)

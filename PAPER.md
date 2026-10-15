@@ -96,7 +96,7 @@ end of this file maps them to the current ones.
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | DSP: conjunctive, strict; ASLP: disjunctive, terminating | `DSPASLPArr.DSPArr`, `DSPASLPArr.dsp_hom_iff`, `DSPASLPArr.ASLPArr`, `DSPASLPArr.aslp_hom_iff` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
-| A DSP element is the conjunction of its `aspOf` and `dslpOf` components (ASLP: disjunction); `bind` through the components | `DSPASLPArr.aspPartArr`, `DSPASLPArr.dsp_split`, `DSPASLPArr.aslp_split` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved; the components are computed from a recovered relation, see [Gaps](#gaps-and-differences-from-the-paper) |
+| A DSP element is the conjunction of its `aspOf` and `dslpOf` components (ASLP: disjunction); `bind` through the components | `DSPASLPComponents.aspOfDSPArr`, `DSPASLPComponents.dslpOfDSPArr`, `DSPASLPComponents.aspOfASLPArr`, `DSPASLPComponents.dslpOfASLPArr`, `DSPASLPComponents.dsp_split_direct`, `DSPASLPComponents.aslp_split_direct`; `DSPASLPArr.aspPartArr`, `DSPASLPArr.dsp_split`, `DSPASLPArr.aslp_split` | [SP/DSPASLPComponents.v](Code/SP/DSPASLPComponents.v), [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved; `bind` goes through components computed from a recovered relation, see [Gaps](#gaps-and-differences-from-the-paper) |
 | `DSP S A`, `ASLP S A` are lawful monads | `DSPMonad.MonadLawsE_DSPSt`, `ASLPMonad.MonadLawsE_ASLPSt` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
 | The four classes differ (not stated in the paper) | `DSPASLPArr.no_ASPArr_for_dsp`, `DSPASLPArr.no_DSLPArr_for_aslp` | [SP/DSPASLPArr.v](Code/SP/DSPASLPArr.v) | proved |
 | "`DSP A` is isomorphic to `ASP A` and `ASLP A` to `DSLP A`" | `DSPMonad.dsp_to_asp_morphism`, `DSPMonad.asp_to_dsp_morphism`, `ASLPMonad.aslp_to_dslp_morphism`, `ASLPMonad.dslp_to_aslp_morphism` | [SP/DSPMonad.v](Code/SP/DSPMonad.v), [SP/ASLPMonad.v](Code/SP/ASLPMonad.v) | proved |
@@ -238,12 +238,18 @@ Hoare triples over-approximate.
   `Admitted`, `admit` or `Abort` in the files of `_CoqProject` (an `admit`
   at line 552 of that file is inside a comment).
 - **Section 3.5.** The paper defines `aspOf` / `dslpOf` on a whole
-  precondition. The code first recovers a relation by probing with
-  singleton complements (`DSPASLPArr.dspRel` relates `x` to `y` when
-  `w (fun _ => True) y /\ ~ w (fun z => z <> x) y`, the paper's `aspOf`
-  formula at precondition `x`), then
-  takes its ASP and DSLP readings (`DSPASLPArr.aspPartArr`). The recovery
-  is classical.
+  precondition. These formulas are in
+  [SP/DSPASLPComponents.v](Code/SP/DSPASLPComponents.v), but composition,
+  and so `bind`, uses parts computed differently: the code first recovers
+  a relation by probing with singleton complements (`DSPASLPArr.dspRel`
+  relates `x` to `y` when `w (fun _ => True) y /\ ~ w (fun z => z <> x) y`,
+  the paper's `aspOf` formula at precondition `x`), then takes its ASP and
+  DSLP readings (`DSPASLPArr.aspPartArr`). The two agree
+  (`DSPASLPComponents.aspOfDSP_aspPart`,
+  `DSPASLPComponents.dslpOfDSP_dslpPart`,
+  `DSPASLPComponents.aspOfASLP_aspPartA`,
+  `DSPASLPComponents.dslpOfASLP_dslpPartA`). The recovery and the
+  agreement are classical.
 
 ## Beyond the paper
 
