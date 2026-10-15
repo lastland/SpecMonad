@@ -519,7 +519,7 @@ Arguments bindASPStExc {S} {A} {B}.
     and the healthy ones factor that precondition out as a conjunct
     ([Singleton]).  At a [Prop] precondition this is the same as strict and
     disjunctive ([join_iff_singleton]), and as monotone with the
-    precondition as codomain ([kenji_iff_singleton]).  [retASPSP] and
+    precondition as codomain ([monotone_codomain_iff_singleton]).  [retASPSP] and
     [bindASPSP] are the forward transformer's: [bind] hands the
     postcondition of the prefix to the continuation as its precondition.
 
@@ -609,8 +609,8 @@ Section PureASPMonad.
     JoinPreserving w <-> Singleton w.
   Proof. split; [apply join_to_singleton | apply singleton_to_join]. Qed.
 
-  (** Equivalent to Kenji's formalization. *)
-  Theorem kenji_iff_singleton {A} (w : SPPure A) :
+  (** The carrier condition of [SPost] (Maillard et al., ICFP 2019). *)
+  Theorem monotone_codomain_iff_singleton {A} (w : SPPure A) :
     (Monotone w /\ Codomain w) <-> Singleton w.
   Proof.
     split.
@@ -859,7 +859,7 @@ Qed.
 Lemma dm4all_singleton {A} (w : SPM.SPost A) :
   Singleton (SPM.app w).
 Proof.
-  apply (proj1 (kenji_iff_singleton _)).
+  apply (proj1 (monotone_codomain_iff_singleton _)).
   split; [exact (SPM.app_mono w) | exact (SPM.app_over w)].
 Qed.
 
@@ -873,7 +873,7 @@ Next Obligation.
   exact (proj1 (getASPSP_split w p a H)).
 Qed.
 Next Obligation.
-  exact (proj1 (proj2 (kenji_iff_singleton _) (proj2_sig w))).
+  exact (proj1 (proj2 (monotone_codomain_iff_singleton _) (proj2_sig w))).
 Qed.
 
 Theorem dm4all_to_aspsp_morphism :

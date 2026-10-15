@@ -606,8 +606,8 @@ Section PureDSLPMonad.
     MeetPreserving w <-> MSingleton w.
   Proof. split; [apply meet_to_msingleton | apply msingleton_to_meet]. Qed.
 
-  Theorem kenjidslp_iff_msingleton {A} (w : SPPure A) :
-    KenjiPureDSLP w <-> MSingleton w.
+  Theorem monotone_codomainDSLP_iff_msingleton {A} (w : SPPure A) :
+    (Monotone w /\ CodomainDSLP w) <-> MSingleton w.
   Proof.
     split.
     - intros [Hmono Hcod] p a. split.
@@ -887,7 +887,7 @@ Qed.
     [p -> w p a], rather than [w p a -> p]. Its [bind] quantifies universally
     over intermediate results. *)
 Module SPostDem.
-  Definition SPost (A : Type) : Type := { w : SPPure A | KenjiPureDSLP w }.
+  Definition SPost (A : Type) : Type := { w : SPPure A | Monotone w /\ CodomainDSLP w }.
 
   Definition app {A} (w : SPost A) : SPPure A := proj1_sig w.
 
@@ -931,13 +931,13 @@ Module SPostDem.
 
   #[program] Definition to_dslpsp {A} (w : SPost A) : DSLPSP A := app w.
   Next Obligation.
-    exact (proj1 (kenjidslp_iff_msingleton _) (proj2_sig w)).
+    exact (proj1 (monotone_codomainDSLP_iff_msingleton _) (proj2_sig w)).
   Qed.
 
   #[program] Definition from_dslpsp {A} (w : DSLPSP A) : SPost A :=
     getDSLPSP w.
   Next Obligation.
-    exact (proj2 (kenjidslp_iff_msingleton _) (proj2_sig w)).
+    exact (proj2 (monotone_codomainDSLP_iff_msingleton _) (proj2_sig w)).
   Qed.
 
   #[global] Instance MonadLawsE_SPost : @MonadLawsE SPost Eq1_SPost Monad_SPost.

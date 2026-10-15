@@ -26,7 +26,7 @@ presentation (§3–4 and §8) and the morphisms into it (§5). The
 below describe carriers and readings; unless shown as complete declarations,
 they are schematic rather than standalone Coq commands.
 
-The five unary specification monads in §7 follow Kenji Maillard et al.,
+The five unary specification monads in §7 follow Maillard et al.,
 [*Dijkstra Monads for All*](https://doi.org/10.1145/3341708) (ICFP 2019),
 abbreviated **DM4all** below.
 
@@ -75,7 +75,7 @@ the carrier, so no theorem carries it as a hypothesis.
 Four healthiness conditions select the SP monads from the raw transformer
 type `(X -> Prop) -> Y -> Prop`. The raw type alone does not justify the
 sequencing laws: `SPostMonad.v` contains a counterexample to associativity for
-the weaker stateful Kenji-style carrier and its proposed bind.
+the weaker stateful extension of `SPost` (`SPostStExc`) and its proposed bind.
 
 | Monad | Healthiness, besides monotone | Reading of a relation `R` |
 |---|---|---|

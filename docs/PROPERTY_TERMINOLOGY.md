@@ -35,7 +35,7 @@ transformers whose output at precondition `pre` implies `pre`, recorded by
 its output at `pre` is implied by `pre`. It uses `ret v pre a := a = v -> pre`
 and `bind m k pre b := forall a, k a (m pre a) b`.
 [`DSLPMonad.v`](../Code/SP/DSLPMonad.v) defines this carrier as
-`SPostDem.SPost`, using the existing `KenjiPureDSLP` restriction. The dual is
+`SPostDem.SPost`, using the `Monotone` and `CodomainDSLP` conditions. The dual is
 introduced in this development; it is not attributed to the original DM4All
 artifact. These angelic/demonic names distinguish existential and universal SP
 sequencing, rather than classify a computation's nondeterminism.
@@ -159,8 +159,7 @@ labels in the December 31, 1997 draft**; pagination in the published 1998 editio
 was not verified. Dijkstra was read in the university archive's transcription;
 Hino et al.'s theorem numbers refer to the cited arXiv version.
 
-[^dm4all]: Kenji Maillard, Danel Ahman, Robert Atkey, Guido Martínez, Cătălin
-    Hriţcu, Exequiel Rivas, and Éric Tanter, [*Dijkstra Monads for
+[^dm4all]: Maillard et al., [*Dijkstra Monads for
     All*](https://doi.org/10.1145/3341708), *Proceedings of the ACM on Programming
     Languages* 3 (ICFP), Article 104, 2019, §4.1, p. 104:13. The original
     artifact's `Module StrongestPostcondition` defines `SP` and

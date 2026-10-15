@@ -62,8 +62,8 @@ end of this file maps them to the current ones.
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | `SPost_ang`: Maillard et al.'s `SPost`, carrier `(pre : P) -> A -> {p \| p => pre}`, lawful | `SPostMonad.SPM.SPost`, `SPostMonad.SPMFacts.MonadLawsE_SPost`, `SPostMonad.OrderedMonad_SPost` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) | proved |
-| The same restriction on `P -> A -> P` (monotone + codomain) | `SPostMonad.KenjiPureSP` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) | proved (definition) |
-| `SPost_dem`: universal `bind`, `ret v := a = v => pre`, lawful | `DSLPMonad.DSLPSP`, `DSLPMonad.kenjidslp_iff_msingleton`, `DSLPMonad.dslpsp_to_dslp_morphism` | [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved, as `DSLPMonad.DSLPSP` (the direct stateless DSLP monad); there is no separate `SPost_dem` definition |
+| The same restriction on `P -> A -> P` (monotone + codomain) | `SPostMonad.SPostPure` | [SP/SPostMonad.v](Code/SP/SPostMonad.v) | proved (definition) |
+| `SPost_dem`: universal `bind`, `ret v := a = v => pre`, lawful | `DSLPMonad.DSLPSP`, `DSLPMonad.monotone_codomainDSLP_iff_msingleton`, `DSLPMonad.dslpsp_to_dslp_morphism` | [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved, as `DSLPMonad.DSLPSP` (the direct stateless DSLP monad); there is no separate `SPost_dem` definition |
 
 ### 3.2 SPostArr: base *sp* arrow
 
@@ -72,14 +72,14 @@ end of this file maps them to the current ones.
 | An arrow with application, input type fixed, is a lawful monad (Lindley et al.) | `ArrowMonad.MonadLawsE_Arrow` | [Lib/Arrow/ArrowMonad.v](Code/Lib/Arrow/ArrowMonad.v) | proved |
 | State arrow transformer `stateArrT`; it and the option transformer preserve the laws | `StateArrowT.Core.stateArrT`, `StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT`, `OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT` | [Lib/Arrow/StateArrowT/](Code/Lib/Arrow/StateArrowT), [Lib/Arrow/OptionArrowT/](Code/Lib/Arrow/OptionArrowT) | proved |
 | `SPostArr_ang` / `SPostArr_dem`: lawful angelic and demonic arrows | `SPostArr.ASPArr`, `SPostArr.ArrowApplyLaws_ASPArr`, `SPostArr.DSLPArr`, `SPostArr.ArrowApplyLaws_DSLPArr` | [SP/SPostArr.v](Code/SP/SPostArr.v) | partial: the lawful arrows are the Section 3.4 carriers (monotone + strict + disjunctive, monotone + terminating + conjunctive); the arrow restricted only by monotonicity and the codomain condition is not formalized, see [Gaps](#gaps-and-differences-from-the-paper) |
-| "results in a lawful monad that is exactly `SPost_ang`" (resp. `SPost_dem`) | `ASPMonad.ASP`, `ASPMonad.ASPSP`, `ASPMonad.kenji_iff_singleton`, `ASPMonad.aspsp_to_asp_morphism`, `ASPMonad.asp_to_aspsp_morphism`, `DSLPMonad.dslpsp_to_dslp_morphism`, `DSLPMonad.dslp_to_dslpsp_morphism` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: isomorphic, not equal; goes through the direct monads `ASPMonad.ASPSP` / `DSLPMonad.DSLPSP` on `P -> A -> P`, not through `SPostMonad.SPM.SPost` |
+| "results in a lawful monad that is exactly `SPost_ang`" (resp. `SPost_dem`) | `ASPMonad.ASP`, `ASPMonad.ASPSP`, `ASPMonad.monotone_codomain_iff_singleton`, `ASPMonad.aspsp_to_asp_morphism`, `ASPMonad.asp_to_aspsp_morphism`, `DSLPMonad.dslpsp_to_dslp_morphism`, `DSLPMonad.dslp_to_dslpsp_morphism` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: isomorphic, not equal; goes through the direct monads `ASPMonad.ASPSP` / `DSLPMonad.DSLPSP` on `P -> A -> P`, not through `SPostMonad.SPM.SPost` |
 
 ### 3.3 Correcting stateful SPostArr
 
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
-| Stateful angelic carrier (monotone, codomain): unit laws hold | `StatefulSPostCounterexample.KenjiProgSP`, `StatefulSPostCounterexample.KenjiProgSP_bind_ret_r`, `StatefulSPostCounterexample.KenjiProgSP_bind_ret_l_kenji` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) | partial: hand-built carrier, see [Gaps](#gaps-and-differences-from-the-paper) |
-| The `m`, `f`, `g` counterexample: `bind` is not associative | `StatefulSPostCounterexample.KenjiFailingBind.ProgSP_bind_bind_fails`, `StatefulSPostCounterexample.StKenji.KenjiFailingBind.KenjiProgSP_bind_bind_fails` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) | partial: angelic only, hand-built carrier |
+| Stateful angelic carrier (monotone, codomain): unit laws hold | `StatefulSPostCounterexample.SPostStExc`, `StatefulSPostCounterexample.SPostStExc_bind_ret_r`, `StatefulSPostCounterexample.SPostStExc_bind_ret_l` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) | partial: hand-built carrier, see [Gaps](#gaps-and-differences-from-the-paper) |
+| The `m`, `f`, `g` counterexample: `bind` is not associative | `StatefulSPostCounterexample.FailingBind.SPostStExc_bind_bind_fails`, `StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails` | [SP/StatefulSPostCounterexample.v](Code/SP/StatefulSPostCounterexample.v) | partial: angelic only, hand-built carrier |
 | Demonic counterexample ("We can construct a similar counter-example") | none | | not formalized |
 | Fix: universally disjunctive / conjunctive carriers | `SPostArr.asp_join_iff`, `SPostArr.dslp_meet_iff` | [SP/SPostArr.v](Code/SP/SPostArr.v) | proved |
 
@@ -88,7 +88,7 @@ end of this file maps them to the current ones.
 | Paper | Rocq name(s) | File | Status |
 |---|---|---|---|
 | Universal disjunctivity = disjunctivity (inhabited index) + strictness; dually conjunctivity + termination | `PredicateTransformerProperties.strict_disjunctiveArr_full_join`, `PredicateTransformerProperties.terminating_conjunctiveArr_full_meet`, `SPostArr.asp_join_iff`, `SPostArr.dslp_meet_iff` | [SP/PredicateTransformerProperties.v](Code/SP/PredicateTransformerProperties.v), [SP/SPostArr.v](Code/SP/SPostArr.v) | proved |
-| "for stateful monotone, disjunctive *sps*, the codomain condition is equivalent to strictness" (dually termination) | `ASPMonad.strict_to_singleton`, `ASPMonad.kenji_iff_singleton`, `DSLPMonad.kenjidslp_iff_msingleton` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: stateless only |
+| "for stateful monotone, disjunctive *sps*, the codomain condition is equivalent to strictness" (dually termination) | `ASPMonad.strict_to_singleton`, `ASPMonad.monotone_codomain_iff_singleton`, `DSLPMonad.monotone_codomainDSLP_iff_msingleton` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | partial: stateless only |
 | `ASP S A` and `DSLP S A` are lawful monads | `ASPMonad.ASPSt`, `ASPMonad.MonadLawsE_ASPSt`, `DSLPMonad.MonadLawsE_DSLPSt` | [SP/ASPMonad.v](Code/SP/ASPMonad.v), [SP/DSLPMonad.v](Code/SP/DSLPMonad.v) | proved |
 
 ### 3.5 Stateful DSP and ASLP
@@ -186,20 +186,20 @@ Hoare triples over-approximate.
   the other three map into `WPure`; no lemma shows that their image lies in
   DWP, DWLP, AWP or AWLP.
 - **Section 3.3.** Only the angelic counterexample is formalized, and for the
-  hand-built carrier `StatefulSPostCounterexample.KenjiProgSP` (stateful
+  hand-built carrier `StatefulSPostCounterexample.SPostStExc` (stateful
   forward transformers restricted by monotonicity and the codomain
   condition), not literally for `stateArrT` over the angelic arrow at input
   `unit`. There is no demonic counterexample.
 - **`SPost_ang`, `SPost_dem`.** `SPost_dem` is `DSLPMonad.DSLPSP` in
   [SP/DSLPMonad.v](Code/SP/DSLPMonad.v); there is no definition under that
-  name. ASP ≅ `SPost_ang` goes through `ASPMonad.kenji_iff_singleton` (the
+  name. ASP ≅ `SPost_ang` goes through `ASPMonad.monotone_codomain_iff_singleton` (the
   carrier conditions agree) and `ASPMonad.aspsp_to_asp_morphism` (the direct
   monad is the arrow-derived one); no map is stated between `SPostMonad.SPM.SPost` and
   `ASP`.
 - **Section 3.4.** "The codomain condition is equivalent to strictness" for
   stateful monotone disjunctive *sps* (and the demonic dual) is proved only
   without state (`ASPMonad.strict_to_singleton`,
-  `ASPMonad.kenji_iff_singleton`, `DSLPMonad.kenjidslp_iff_msingleton`).
+  `ASPMonad.monotone_codomain_iff_singleton`, `DSLPMonad.monotone_codomainDSLP_iff_msingleton`).
   The stateful carriers are defined directly by strictness and
   disjunctivity, so the stateful equivalence is not needed by the
   construction.

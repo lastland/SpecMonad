@@ -22,8 +22,8 @@ algebraic arrow/monad laws remain distinct.
 
 | Paper | File | Contents |
 |---|---|---|
-| 3.1 | [SPostMonad.v](../../../Code/SP/SPostMonad.v) | `SPM.SPost`: monotone transformers into `Over pre` (propositions implying the precondition), `SP_le`, `OrderedMonad_SPost`; the pure predicates `KenjiPureSP` / `KenjiPureDSLP` used by the ASP and DSLP files |
-| 3.3 | [StatefulSPostCounterexample.v](../../../Code/SP/StatefulSPostCounterexample.v) | `KenjiProgSP` and `StKenji.KenjiProgSP`: stateful carriers restricted like `SPost`; `KenjiFailingBind`: the m/f/g counterexample to associativity. Hand-built carriers, not literally `stateArrT` over the angelic arrow; only the angelic case |
+| 3.1 | [SPostMonad.v](../../../Code/SP/SPostMonad.v) | `SPM.SPost`: monotone transformers into `Over pre` (propositions implying the precondition), `SP_le`, `OrderedMonad_SPost`; `SPostPure`, the same restriction on raw transformers, and its conditions `Monotone`, `Codomain`, `CodomainDSLP` used by the ASP and DSLP files |
+| 3.3 | [StatefulSPostCounterexample.v](../../../Code/SP/StatefulSPostCounterexample.v) | `SPostStExc` and `St.SPostSt`: stateful carriers restricted like `SPost`; `FailingBind`: the m/f/g counterexample to associativity. Hand-built carriers, not literally `stateArrT` over the angelic arrow; only the angelic case |
 | 3 | [RawSP.v](../../../Code/SP/RawSP.v) | raw `SPPure`, `SPSt`, `SPStExc`, the terminating slice `StTrans`, the order on raw transformers. Not the carriers of the four monads |
 | 3.3-3.4 | [PredicateTransformerProperties.v](../../../Code/SP/PredicateTransformerProperties.v) | `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, `ConjunctiveArr` for `(A -> Prop) -> B -> Prop`; see [PROPERTY_TERMINOLOGY.md](../../PROPERTY_TERMINOLOGY.md) |
 | 3.2, 3.4 | [SPostArr.v](../../../Code/SP/SPostArr.v) | the raw `SPArrT` and its properties; the ASP and DSLP arrows, normal forms, recovered relations, laws, stacks, `asp_to_dslp` |

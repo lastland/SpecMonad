@@ -201,51 +201,45 @@ Proof.
     apply (Hk a). exact (SPM.app_mono (k1 a) _ _ b (Hm p a) H).
 Qed.
 
-(* Initial attempts based on SPost and Kenji's work *)
+(** The carrier conditions of [SPost] (Maillard et al., ICFP 2019) on the
+    raw carrier [SPPure A = Prop -> A -> Prop]: monotone in the
+    precondition, and every output implies it ([Codomain]).
+    [CodomainDSLP] is the demonic dual. *)
+Definition Monotone {A} (w : SPPure A) : Prop :=
+  forall (p q : Prop) (a : A), (p -> q) -> w p a -> w q a.
 
-Section KenjiPureSP.
-  Definition Monotone {A} (w : SPPure A) : Prop :=
-    forall (p q : Prop) (a : A), (p -> q) -> w p a -> w q a.
+Definition Codomain {A} (w : SPPure A) : Prop :=
+  forall (p : Prop) (a : A), w p a -> p.
 
-  Definition Codomain {A} (w : SPPure A) : Prop :=
-    forall (p : Prop) (a : A), w p a -> p.
+(** The same restriction as a subset of [SPPure]: [ret] and [bind] preserve
+    it. *)
+Definition SPostPure (A : Type) : Type := { w : SPPure A | Monotone w /\ Codomain w }.
 
-  Definition KenjiPureSP (A : Type) : Type := { w : SPPure A | Monotone w /\ Codomain w }.
+Definition getSPostPure {A} (w : SPostPure A) : SPPure A := proj1_sig w.
 
-  Definition getKenjiPureSP {A} (w : KenjiPureSP A) : SPPure A := proj1_sig w.
+#[program] Definition retSPostPure {A} (v : A) : SPostPure A :=
+  fun pre a => pre /\ a = v.
+Next Obligation.
+Proof.
+  split.
+  - intros p q a Hpq [Hp Heq]. split; [exact (Hpq Hp) | exact Heq].
+  - intros p a [Hp _]. exact Hp.
+Qed.
 
-  #[program] Definition retKenjiPureSP {A} (v : A) : KenjiPureSP A :=
-    fun pre a => pre /\ a = v.
-  Next Obligation.
-  Proof.
-    split.
-    - intros p q a Hpq [Hp Heq]. split; [exact (Hpq Hp) | exact Heq].
-    - intros p a [Hp _]. exact Hp.
-  Qed.
-  
-  #[program] Definition bindKenjiPureSP {A B} (m : KenjiPureSP A) (k : A -> KenjiPureSP B) : KenjiPureSP B :=
-    fun pre b => exists a, k a (m pre a) b.
-  Next Obligation.
-  Proof.
-    split.
-    - (* monotone: weaken [pre] inside [m], then inside [k a] *)
-      intros p q b Hpq [a Ha]. exists a.
-      apply (proj1 (proj2_sig (k a)) (proj1_sig m p a) (proj1_sig m q a) b);
-        [ intro Hm; exact (proj1 (proj2_sig m) p q a Hpq Hm) | exact Ha ].
-    - (* codomain: [k a] returns its argument, which [m] returns [p] from *)
-      intros p b [a Ha].
-      exact (proj2 (proj2_sig m) p a (proj2 (proj2_sig (k a)) (proj1_sig m p a) b Ha)).
-  Qed.
-  
-End KenjiPureSP.
+#[program] Definition bindSPostPure {A B} (m : SPostPure A) (k : A -> SPostPure B) : SPostPure B :=
+  fun pre b => exists a, k a (m pre a) b.
+Next Obligation.
+Proof.
+  split.
+  - (* monotone: weaken [pre] inside [m], then inside [k a] *)
+    intros p q b Hpq [a Ha]. exists a.
+    apply (proj1 (proj2_sig (k a)) (proj1_sig m p a) (proj1_sig m q a) b);
+      [ intro Hm; exact (proj1 (proj2_sig m) p q a Hpq Hm) | exact Ha ].
+  - (* codomain: [k a] returns its argument, which [m] returns [p] from *)
+    intros p b [a Ha].
+    exact (proj2 (proj2_sig m) p a (proj2 (proj2_sig (k a)) (proj1_sig m p a) b Ha)).
+Qed.
 
-Arguments KenjiPureSP {_}.
-
-
-Section KenjiPureDSLP.
-  Definition CodomainDSLP {A} (w : SPPure A) : Prop :=
-    forall (p : Prop) (a : A), p -> w p a.
-
-  Definition KenjiPureDSLP {A} (w : SPPure A) : Prop := Monotone w /\ CodomainDSLP w.
-End KenjiPureDSLP.
+Definition CodomainDSLP {A} (w : SPPure A) : Prop :=
+  forall (p : Prop) (a : A), p -> w p a.
 

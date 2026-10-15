@@ -120,12 +120,12 @@ Check WPure.OrderedMonad_WStExc.
 (* ================================================================= *)
 
 (** Maillard et al.'s [SPost], carrier [(pre : Prop) -> A -> {p | p -> pre}]:
-    a lawful monad, ordered.  [KenjiPureSP] is the same restriction
+    a lawful monad, ordered.  [SPostPure] is the same restriction
     (monotone + codomain) on raw [SPPure A = Prop -> A -> Prop]. *)
 Check SPostMonad.SPM.SPost.
 Check SPostMonad.SPMFacts.MonadLawsE_SPost.
 Check SPostMonad.OrderedMonad_SPost.
-Check SPostMonad.KenjiPureSP.
+Check SPostMonad.SPostPure.
 
 (* ================================================================= *)
 (** ** Section 3.2, SPostArr: base sp arrow                          *)
@@ -152,11 +152,11 @@ Check SPostArr.ArrowApplyLaws_DSLPArr.
     conditions are Maillard et al.'s and its demonic dual. *)
 Check ASPMonad.ASP.
 Check ASPMonad.ASPSP.
-Check ASPMonad.kenji_iff_singleton.
+Check ASPMonad.monotone_codomain_iff_singleton.
 Check ASPMonad.aspsp_to_asp_morphism.
 Check ASPMonad.asp_to_aspsp_morphism.
 Check DSLPMonad.DSLPSP.
-Check DSLPMonad.kenjidslp_iff_msingleton.
+Check DSLPMonad.monotone_codomainDSLP_iff_msingleton.
 Check DSLPMonad.dslpsp_to_dslp_morphism.
 Check DSLPMonad.dslp_to_dslpsp_morphism.
 
@@ -166,13 +166,13 @@ Check DSLPMonad.dslp_to_dslpsp_morphism.
 
 (** Stateful transformers restricted only by monotonicity and the codomain
     condition: the unit laws hold, [bind] is not associative (the paper's
-    [m], [f], [g] with two states).  Over [option (A * S)]; [StKenji] is the
+    [m], [f], [g] with two states).  Over [option (A * S)]; [St] is the
     same over [A * S].  Angelic only. *)
-Check StatefulSPostCounterexample.KenjiProgSP.
-Check StatefulSPostCounterexample.KenjiProgSP_bind_ret_r.
-Check StatefulSPostCounterexample.KenjiProgSP_bind_ret_l_kenji.
-Check StatefulSPostCounterexample.KenjiFailingBind.ProgSP_bind_bind_fails.
-Check StatefulSPostCounterexample.StKenji.KenjiFailingBind.KenjiProgSP_bind_bind_fails.
+Check StatefulSPostCounterexample.SPostStExc.
+Check StatefulSPostCounterexample.SPostStExc_bind_ret_r.
+Check StatefulSPostCounterexample.SPostStExc_bind_ret_l.
+Check StatefulSPostCounterexample.FailingBind.SPostStExc_bind_bind_fails.
+Check StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails.
 
 (* ================================================================= *)
 (** ** Section 3.4, Stateful ASP and DSLP                            *)
