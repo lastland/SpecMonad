@@ -25,7 +25,7 @@ From Incorrectness.WP Require
 From Incorrectness.SP Require
   RawSP SPostMonad StatefulSPostCounterexample PredicateTransformerProperties
   SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad
-  PredIsomorphisms LawCounterexamples.
+  LawCounterexamples.
 From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Verification.Generic Require
@@ -132,7 +132,6 @@ Check GaloisArr.Galois_WP_PrePost.
     monad structure, through the Galois relations; see Section 6). *)
 Check MonadTaxonomy.galois_asp_dwlp_order.
 Check MonadTaxonomy.galois_awp_dslp_order.
-Check PredIsomorphisms.pred_to_dm4all_morphism.
 
 (* ================================================================= *)
 (** ** Section 2, Background: weakest precondition monads            *)
@@ -716,20 +715,6 @@ Check DSLPMonad.dslp_to_dm4all_dem_morphism.
 Check DSLPMonad.dm4all_dem_round_trip.
 Check DSLPMonad.dslp_dm4all_dem_round_trip.
 
-(** [SPost_ang] and [SPost_dem] are isomorphic to [Pred] as
-    monads (the angelic maps preserve the order, the demonic ones reverse
-    it). *)
-Check PredIsomorphisms.pred_to_dm4all_morphism.
-Check PredIsomorphisms.dm4all_to_pred_morphism.
-Check PredIsomorphisms.dm4all_to_pred_to_dm4all.
-Check PredIsomorphisms.pred_to_dm4all_to_pred.
-Check PredIsomorphisms.pred_to_dm4all_order.
-Check PredIsomorphisms.pred_to_dm4all_dem_morphism.
-Check PredIsomorphisms.dm4all_dem_to_pred_morphism.
-Check PredIsomorphisms.dm4all_dem_to_pred_to_dm4all_dem.
-Check PredIsomorphisms.pred_to_dm4all_dem_to_pred.
-Check PredIsomorphisms.pred_to_dm4all_dem_order.
-
 (** The adjunctions are proved at the base between [WPure]
     and [Pred], and lifted by [stateT] and [optionT]. *)
 Check MonadTaxonomy.MonadRelation_GaloisPredWP.
@@ -969,9 +954,6 @@ Check BaseGaloisConnections.wp_pp_over_adjunction.
 (** The [SPost] -- [Pred] edge of the diagram (partial: for
     binary arrows, monotone sps and relations, at input [unit]). *)
 Check GaloisArr.Galois_Rel_SPost.
-
-(** In the pure case [SPost ~ Pred] (Section 4.4 above). *)
-Check PredIsomorphisms.pred_to_dm4all_morphism.
 
 (** Monotone monad transformers preserve Galois connections
     (partial: they preserve monadic relations, which the Galois connections

@@ -98,7 +98,6 @@ SP/ASPMonad.v
 SP/DSLPMonad.v
 SP/DSPMonad.v
 SP/ASLPMonad.v
-SP/PredIsomorphisms.v
 Tests/ArrowMonadInstances.v
 Tests/ArrowTransformerInstances.v
 Tests/SPostArrInfrastructure.v

@@ -541,18 +541,16 @@ Print Assumptions DivNonDet.TriplesExamples.ITreePrograms.spin_not_dwp.
 Print Assumptions DivNonDetSt.TriplesExamples.ITreePrograms.progA_IT_asp_under.
 Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_under.
 
-(** Further results, expected to use at most excluded middle, functional and propositional
-    extensionality. *)
+(** Further results, expected to use at most excluded middle, functional
+    and propositional extensionality. *)
 From Incorrectness.SP Require
-  PredIsomorphisms LawCounterexamples StatefulSPostCounterexample.
+  LawCounterexamples StatefulSPostCounterexample.
 From Incorrectness.PTMonadTaxonomy Require MonadTaxonomy.
 From Incorrectness.Verification.DivNonDet Require HealthyReadings.
 From Incorrectness.Verification.DivNonDetSt Require
   HealthyReadings TripleRules.
 From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
   ResetEven DSPSequencing.
-Print Assumptions PredIsomorphisms.pred_to_dm4all_morphism.
-Print Assumptions PredIsomorphisms.pred_to_dm4all_dem_morphism.
 Print Assumptions StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
 Print Assumptions LawCounterexamples.AngArr.not_ArrowLaws.
 Print Assumptions ASPMonad.toArrowASPState_morphism.

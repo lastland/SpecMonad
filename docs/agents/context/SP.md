@@ -32,7 +32,6 @@ algebraic arrow/monad laws remain distinct.
 | 3.4-3.5 | [ASPMonad.v](../../../Code/SP/ASPMonad.v), [DSLPMonad.v](../../../Code/SP/DSLPMonad.v), [DSPMonad.v](../../../Code/SP/DSPMonad.v), [ASLPMonad.v](../../../Code/SP/ASLPMonad.v) | the four SP monads at input `unit`, with state and with state and exceptions; `ASPMonad.v` and `DSLPMonad.v` also connect `SPM.SPost` and the universal dual `SPostDem.SPost` to `ASP` and `DSLP` at input `unit`, prove their healthiness, and record the top-preservation counterexample |
 | 3.4 | [ASPMonad.v](../../../Code/SP/ASPMonad.v) | also `toArrowASPState` / `fromArrowASPState`: `stateT S ASP` and `ASPSt S` are isomorphic ordered monads (`toArrowASPState_morphism`, `fromArrowASPState_morphism`) |
 | App. D | [LawCounterexamples.v](../../../Code/SP/LawCounterexamples.v) | `AngArr` / `DemArr`: the monotone strict (terminating) arrows with the ASP (DSLP) operations fail `first f >>> arr fst = arr fst >>> f` |
-| 4.4 | [PredIsomorphisms.v](../../../Code/SP/PredIsomorphisms.v) | `SPost_ang` (`SPM.SPost`, `ASPSP`, `ASP`) and `SPost_dem` (`SPostDem.SPost`, `DSLPSP`, `DSLP`) isomorphic to `Pred` as monads; order preserved (angelic) or reversed (demonic) |
 
 ## The arrows
 
