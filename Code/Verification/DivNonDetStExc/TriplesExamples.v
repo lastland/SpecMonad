@@ -29,8 +29,8 @@
       [ProgEx.v]       [progEx]: add [1], or put [42]
       [Withdrawal.v]   [progloom], [progloom_harder]: "a bug is reachable"
                        from every start state (AWP) or from some (ASP)
-      [OHearn.v]       [example_state]: Example 3.1 of O'Hearn's
-                       "Incorrectness Logic"
+      [IL2020.v]       [example_state]: Example 3.1 of O'Hearn,
+                       "Incorrectness Logic" (POPL 2020)
       [ITreePrograms.v] [progA] as an ITree program, through [denoteStExc]
       [Counter.v]      [counter N]: a loop whose bug is reached after many
                        iterations; the incorrectness-logic triples, and
@@ -38,5 +38,5 @@
       [Common.v]       the pre- and postcondition [preEq0], [postEq0] *)
 
 From Incorrectness.Verification.DivNonDetStExc.TriplesExamples Require Export
-  Common ProgA ProgB ProgRet ProgEx Withdrawal OHearn ITreePrograms Counter.
+  Common ProgA ProgB ProgRet ProgEx Withdrawal IL2020 ITreePrograms Counter.
 

@@ -12,7 +12,7 @@ From ExtLib Require Import Monad StateMonad OptionMonad.
 From Incorrectness.Verification.Generic Require Import Triple InCorrectnessPrinciples.
 From Incorrectness.Verification.DivNonDetStExc Require Import Computation Morphisms Triples TriplesTaxonomy.
 
-Section OHearnRewritingRules.
+Section IL2020RewritingRules.
   Variable S : Type.
 
   Theorem first_symmetry_rule_1_aspStExc :
@@ -169,4 +169,4 @@ Section OHearnRewritingRules.
     exact (principle_of_agreement_dwlpStExc A m u u' o o' (conj Hinc (conj Hwp Himp))).
   Qed.
 
-End OHearnRewritingRules.
+End IL2020RewritingRules.

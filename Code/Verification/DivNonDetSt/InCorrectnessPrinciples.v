@@ -18,7 +18,7 @@ From Incorrectness.Verification.DivNonDetSt Require Import Computation.
 From Incorrectness.Verification.DivNonDetSt Require Import Morphisms.
 From Incorrectness.Verification.DivNonDetSt Require Import TriplesTaxonomy.
 
-Section OHearnRewritingRules.
+Section IL2020RewritingRules.
   Variable S : Type.
 
   Theorem first_symmetry_rule_1_asp :
@@ -175,4 +175,4 @@ Section OHearnRewritingRules.
     exact (principle_of_agreement_dwlp A m u u' o o' (conj Hinc (conj Hwp Himp))).
   Qed.
 
-End OHearnRewritingRules.
+End IL2020RewritingRules.

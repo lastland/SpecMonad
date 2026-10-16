@@ -31,7 +31,7 @@ From Incorrectness.Verification.DivNonDet Require
 From Incorrectness.Verification.DivNonDetSt Require
   Computation Morphisms Triples TriplesTaxonomy Typings DijkstraMonads.
 From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
-  ResetEven.
+  ResetEven IncorrectnessLogic.
 From Incorrectness.Verification.DivNonDetStExc Require
   Computation Morphisms DijkstraMonads TriplesExamples DijkstraExamples.
 From Incorrectness.GaloisConnections Require
@@ -100,10 +100,8 @@ Check DivNonDetStExc.Morphisms.aspStExc_morphism_rel.
 Check DivNonDetStExc.Morphisms.dspStExc_morphism_rel.
 
 (** Simple programs proved to satisfy correctness and
-    incorrectness triples. *)
-Check ProgA.progA_dwp_under.
-Check ProgA.progA_asp_under.
-Check ProgEx.progEx_dslp_under.
+    incorrectness triples: the examples indexed in
+    [Verification/DivNonDetStExc/TriplesExamples.v]. *)
 
 (** asp, dslp and all wp monads are specification monads, also
     with exceptions; flipping the order covers over- and
@@ -894,26 +892,10 @@ Check SPostArrEquiv.dslp_to_rel_morphism.
 (** ** Section 7, Formalization in Rocq                              *)
 (* ================================================================= *)
 
-(** Example programs, including O'Hearn's sequential examples,
-    that together use all sixteen kinds of triples (index:
-    [Verification/DivNonDetStExc/TriplesExamples.v]). *)
-Check OHearn.example_incorrect.
-Check ProgA.progA_dwp_under.
-Check ProgRet.progRet_dwp_over.
-Check ProgB.progB_dwlp_under.
-Check ProgRet.progRet_dwlp_over.
-Check ProgA.progA_awp_under.
-Check ProgA.progA_awp_over.
-Check ProgB.progB_awlp_under.
-Check ProgRet.progRet_awlp_over.
-Check ProgA.progA_asp_under.
-Check ProgA.progA_asp_over.
-Check ProgEx.progEx_dslp_under.
-Check ProgA.progA_dslp_over.
-Check ProgRet.progRet_dsp_under.
-Check ProgRet.progRet_dsp_over.
-Check ProgRet.progRet_aslp_under.
-Check ProgRet.progRet_aslp_over.
+(** Example programs that together use all sixteen kinds of
+    triples ([Verification/DivNonDetStExc/TriplesExamples.v]), including
+    O'Hearn's sequential examples
+    ([Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v]). *)
 
 (** Programs written as interaction trees, mapped into the
     computation monad by a monad morphism. *)

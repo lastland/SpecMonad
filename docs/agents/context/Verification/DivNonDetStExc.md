@@ -28,7 +28,7 @@ state. The SP morphisms keep exceptions and omit divergence.
   each holding the program, its outcome lemma and its triples: `ProgA.v`,
   `ProgB.v`, `ProgRet.v`, `ProgEx.v`, `Withdrawal.v` (`progloom`,
   `progloom_harder`: the contrast between angelic WP and ASP `Under`),
-  `OHearn.v` (O'Hearn's Example 3.1), `ITreePrograms.v` (`progA` as an
+  `IL2020.v` (Example 3.1 of O'Hearn, POPL 2020), `ITreePrograms.v` (`progA` as an
   ITree program, `progA_IT`, with the outcomes of `progA` and two of its
   triples), `Counter.v` (`counter N`, an ITree loop that stops or
   increments and raises on reaching `N`: its outcomes by `denote_iter` and

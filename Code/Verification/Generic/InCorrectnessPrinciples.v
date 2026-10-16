@@ -13,7 +13,7 @@
 From Incorrectness.Relational Require Import Rel.
 From Incorrectness.Verification.Generic Require Import Triple.
 
-Section OHearnRules.
+Section IL2020Rules.
   Context {X Y : Type} (R : Rel X Y).
 
   Theorem first_symmetry_rule_1 (P : X -> Prop) (Q1 Q2 : Y -> Prop) :
@@ -84,4 +84,4 @@ Section OHearnRules.
     intros [Hinc [Himp Hnot]] Hcor.
     exact (Hnot (principle_of_agreement U O U' O' (conj Hinc (conj Hcor Himp)))).
   Qed.
-End OHearnRules.
+End IL2020Rules.

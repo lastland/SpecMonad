@@ -1,4 +1,4 @@
-(** * O'Hearn, "Incorrectness Logic", Example 3.1
+(** * O'Hearn, "Incorrectness Logic" (POPL 2020), Example 3.1
 
     An incorrectness triple: every final state with [z = 42], [x] even and
     [y] odd is reached from a start state with [z = 11]. *)

@@ -36,7 +36,7 @@ Verification/DivNonDetStExc/TriplesExamples/ProgB.v
 Verification/DivNonDetStExc/TriplesExamples/ProgRet.v
 Verification/DivNonDetStExc/TriplesExamples/ProgEx.v
 Verification/DivNonDetStExc/TriplesExamples/Withdrawal.v
-Verification/DivNonDetStExc/TriplesExamples/OHearn.v
+Verification/DivNonDetStExc/TriplesExamples/IL2020.v
 Verification/DivNonDetStExc/TriplesExamples/ITreePrograms.v
 Verification/DivNonDetStExc/TriplesExamples/Counter.v
 Verification/DivNonDetStExc/TriplesExamples.v
