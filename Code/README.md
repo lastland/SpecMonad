@@ -12,13 +12,7 @@ Rocq/Coq 8.20 with `coq-ext-lib`, `coq-itree` and `coq-hammer-tactics`
 ```sh
 make -j8        # the development (about 45 s on 8 cores)
 make check      # assumption audit (Checks/Assumptions.v) and the claims index
-make layers     # check that imports respect the directory layers
 ```
-
-`make check` reports the axioms each selected theorem uses: functional and
-propositional extensionality and, where stated, excluded middle
-(`Classical_Prop.classic`); the ITree program layer also uses `eq_rect_eq`,
-through ITree and paco.
 
 ## Layout
 
