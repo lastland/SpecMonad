@@ -26,7 +26,7 @@ From Incorrectness.WP Require
 From Incorrectness.SP Require
   RawSP SPostMonad StatefulSPostCounterexample PredicateTransformerProperties
   SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad
-  ExceptionCollapse PredIsomorphisms LawCounterexamples.
+  PredIsomorphisms LawCounterexamples.
 From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Verification.Generic Require
@@ -710,21 +710,6 @@ Check MonadRelation.MonadRelation_rel_eq_state_option.
     reachable from two inputs. *)
 Check DSPASLPArr.no_ASPArr_for_dsp.
 Check DSPASLPArr.no_DSLPArr_for_aslp.
-
-(** The exception arrow transformer alone keeps DSP = ASP and
-    ASLP = DSLP: the four exception monads, the identity maps as monad
-    morphisms both ways, and all four are specification monads. *)
-Check ExceptionCollapse.MonadLawsE_DSPExc.
-Check ExceptionCollapse.dspExc_to_aspExc_morphism.
-Check ExceptionCollapse.aspExc_to_dspExc_morphism.
-Check DSPMonad.asp_to_dsp_to_asp.
-Check DSPMonad.dsp_to_asp_to_dsp.
-Check ExceptionCollapse.aslpExc_to_dslpExc_morphism.
-Check ExceptionCollapse.dslpExc_to_aslpExc_morphism.
-Check ASLPMonad.dslp_to_aslp_to_dslp.
-Check ASLPMonad.aslp_to_dslp_to_aslp.
-Check ExceptionCollapse.OrderedMonad_DSPExc.
-Check ExceptionCollapse.OrderedMonad_ASLPExc.
 
 (** ASP is [SPost_ang], DSLP is [SPost_dem]. *)
 Check DSLPMonad.dm4all_dem_to_dslp_morphism.

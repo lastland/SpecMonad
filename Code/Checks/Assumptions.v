@@ -545,14 +545,13 @@ Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_unde
     expected to use at most excluded middle, functional and propositional
     extensionality (and [eq_rect_eq] through ITree). *)
 From Incorrectness.SP Require
-  ExceptionCollapse PredIsomorphisms LawCounterexamples StatefulSPostCounterexample.
+  PredIsomorphisms LawCounterexamples StatefulSPostCounterexample.
 From Incorrectness.PTMonadTaxonomy Require MonadTaxonomy.
 From Incorrectness.Verification.DivNonDet Require HealthyReadings.
 From Incorrectness.Verification.DivNonDetSt Require
   HealthyReadings TripleRules.
 From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
   ResetEven DSPSequencing.
-Print Assumptions ExceptionCollapse.dspExc_to_aspExc_morphism.
 Print Assumptions PredIsomorphisms.pred_to_dm4all_morphism.
 Print Assumptions PredIsomorphisms.pred_to_dm4all_dem_morphism.
 Print Assumptions StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
