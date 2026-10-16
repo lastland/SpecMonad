@@ -7,10 +7,15 @@
     [St.FailingBind] build the transformers [m], [f], [g] of the
     paper and show that the proposed [bind] is not associative.  The paper
     phrases this for [stateArrT] over the angelic SP arrow at input [unit];
-    these are hand-built carriers of the same shape. *)
+    these are hand-built carriers of the same shape.
+
+    [Dem.SPostDem] is the demonic twin (Appendix D.2): monotone, with the
+    demonic codomain condition [(forall s, pre s) -> w pre r] and the [ret]
+    and [bind] of [DSLP].  Both unit laws hold, but [bind] is not
+    associative ([Dem.FailingBind.SPostDem_bind_bind_fails]). *)
 
 From ITree Require Import Basics.Monad.
-From Coq Require Import RelationClasses.
+From Coq Require Import RelationClasses Classical_Prop.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
 From Incorrectness.SP Require Import RawSP SPostMonad.
 
@@ -317,3 +322,151 @@ Module FailingBind.
 End FailingBind.
 
 End St.
+
+(* ================================================================= *)
+(** * [SPostDem]: the demonic twin of [SPostSt] (paper, Appendix D.2) *)
+(* ================================================================= *)
+
+Module Dem.
+Section SPostDem.
+  Variable S : Type.
+
+  (** A total precondition admits every result; under [MonotoneS] this is
+      termination. *)
+  Definition CodomainS {A} (w : @SPSt S A) : Prop :=
+    forall (p : S -> Prop) (r : A * S), (forall s, p s) -> w p r.
+
+  Definition SPostDem (A : Type) : Type :=
+    { w : @SPSt S A | St.MonotoneS S w /\ CodomainS w }.
+
+  Definition getSPostDem {A} (w : SPostDem A) : @SPSt S A := proj1_sig w.
+
+  #[program] Definition retSPostDem {A} (v : A) : SPostDem A :=
+    fun pre r => fst r = v -> pre (snd r).
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq H Hv. exact (Hpq _ (H Hv)).
+    - intros p r Hp _. exact (Hp _).
+  Qed.
+
+  #[program] Definition bindSPostDem {A B}
+    (m : SPostDem A) (k : A -> SPostDem B) : SPostDem B :=
+    fun pre r => forall a, k a (fun s0 => m pre (a, s0)) r.
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq H a.
+      apply (proj1 (proj2_sig (k a))
+               (fun s0 => proj1_sig m p (a, s0))
+               (fun s0 => proj1_sig m q (a, s0)) r);
+        [ intros s0 Hm; exact (proj1 (proj2_sig m) p q (a, s0) Hpq Hm) | exact (H a) ].
+    - intros p r Hp a.
+      apply (proj2 (proj2_sig (k a))). intro s0.
+      apply (proj2 (proj2_sig m)). exact Hp.
+  Qed.
+
+  (** In [SPostDem_bind_ret_l], [CodomainS] accepts the branches [a <> v],
+      whose precondition is total; the case split on [a = v] is classical. *)
+
+  Theorem SPostDem_bind_ret_r {A} (m : SPostDem A)
+    (pre : S -> Prop) (r : A * S) :
+    getSPostDem (bindSPostDem m retSPostDem) pre r <-> getSPostDem m pre r.
+  Proof.
+    destruct r as [a s]. split.
+    - intro H. exact (H a eq_refl).
+    - intros H a' Ha'. cbn in Ha'. subst a'. exact H.
+  Qed.
+
+  Theorem SPostDem_bind_ret_l {A B} (v : A) (k : A -> SPostDem B)
+    (pre : S -> Prop) (r : B * S) :
+    getSPostDem (bindSPostDem (retSPostDem v) k) pre r
+    <-> getSPostDem (k v) pre r.
+  Proof.
+    split.
+    - intro H.
+      apply (proj1 (proj2_sig (k v))
+               (fun s0 => proj1_sig (retSPostDem v) pre (v, s0)) pre r);
+        [ intros s0 Hs; exact (Hs eq_refl) | exact (H v) ].
+    - intros H a.
+      destruct (classic (a = v)) as [-> | Hav].
+      + apply (proj1 (proj2_sig (k v)) pre
+                 (fun s0 => proj1_sig (retSPostDem v) pre (v, s0)) r);
+          [ intros s0 Hs _; exact Hs | exact H ].
+      + apply (proj2 (proj2_sig (k a))). intros s0 Heq. contradiction.
+  Qed.
+
+End SPostDem.
+
+(** On the left [g] receives the intersection of the intermediate state
+    sets, which is empty, and on the right a single one of them, which
+    contains one Boolean.  Here [S = A = bool] and [B = C = unit]. *)
+Module FailingBind.
+
+  #[program] Definition m : SPostDem bool bool :=
+    fun pre _ => forall s, pre s.
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq H s. exact (Hpq s (H s)).
+    - intros p r Hp. exact Hp.
+  Qed.
+
+  #[program] Definition f : bool -> SPostDem bool unit :=
+    fun a => fun pre r =>
+      ((a = true /\ snd r = true) \/ (a = false /\ snd r = false)) ->
+      forall s', pre s'.
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq H Hc s'. exact (Hpq s' (H Hc s')).
+    - intros p r Hp _. exact Hp.
+  Qed.
+
+  #[program] Definition g : SPostDem bool unit :=
+    fun pre _ => pre true \/ pre false.
+  Next Obligation.
+  Proof.
+    split.
+    - intros p q r Hpq [Ht | Hf]; [left; exact (Hpq _ Ht) | right; exact (Hpq _ Hf)].
+    - intros p r Hp. left. exact (Hp true).
+  Qed.
+
+  Definition pre : bool -> Prop := fun _ => False.
+  Definition r : unit * bool := (tt, true).
+
+  (** The left association rejects [r]: every [bind m f pre (b, s)] fails,
+      since [f s] ends in [s] and [m pre] is empty. *)
+  Lemma bind_bind_l_rejects :
+    ~ getSPostDem bool (bindSPostDem bool (bindSPostDem bool m f) (fun _ : unit => g))
+        pre r.
+  Proof.
+    intro H. destruct (H tt) as [Ht | Hf].
+    - exact (Ht true (or_introl (conj eq_refl eq_refl)) true true).
+    - exact (Hf false (or_intror (conj eq_refl eq_refl)) true true).
+  Qed.
+
+  (** The right association accepts [r]: [f a] passes on [S \ {a}], which
+      contains the other Boolean state. *)
+  Lemma bind_bind_r_accepts :
+    getSPostDem bool
+      (bindSPostDem bool m (fun a => bindSPostDem bool (f a) (fun _ : unit => g)))
+      pre r.
+  Proof.
+    intros [|] b; [right | left]; cbn; intros [[? ?] | [? ?]]; discriminate.
+  Qed.
+
+  Theorem SPostDem_bind_bind_fails :
+    ~ (forall (A B C S : Type) (m : SPostDem S A) (f : A -> SPostDem S B)
+              (g : B -> SPostDem S C) (pre : S -> Prop) (r : C * S),
+         getSPostDem S (bindSPostDem S (bindSPostDem S m f) g) pre r <->
+           getSPostDem S (bindSPostDem S m (fun a => bindSPostDem S (f a) g)) pre r).
+  Proof.
+    intro H.
+    apply bind_bind_l_rejects.
+    apply (proj2 (H bool unit unit bool m f (fun _ : unit => g) pre r)).
+    exact bind_bind_r_accepts.
+  Qed.
+
+End FailingBind.
+End Dem.

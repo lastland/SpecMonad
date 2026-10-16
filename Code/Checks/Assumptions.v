@@ -540,3 +540,32 @@ Print Assumptions DivNonDetStExc.Morphisms.IsMonadMorphism_aslpStExc_denoteStExc
 Print Assumptions DivNonDet.TriplesExamples.ITreePrograms.spin_not_dwp.
 Print Assumptions DivNonDetSt.TriplesExamples.ITreePrograms.progA_IT_asp_under.
 Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_under.
+
+(** The results that back the paper's remaining claims (outside Section 6):
+    expected to use at most excluded middle, functional and propositional
+    extensionality (and [eq_rect_eq] through ITree). *)
+From Incorrectness.SP Require
+  ExceptionCollapse PredIsomorphisms LawCounterexamples StatefulSPostCounterexample.
+From Incorrectness.PTMonadTaxonomy Require MonadTaxonomy.
+From Incorrectness.Verification.DivNonDet Require HealthyReadings.
+From Incorrectness.Verification.DivNonDetSt Require
+  HealthyReadings TripleRules.
+From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
+  ResetEven DSPSequencing.
+Print Assumptions ExceptionCollapse.dspExc_to_aspExc_morphism.
+Print Assumptions PredIsomorphisms.pred_to_dm4all_morphism.
+Print Assumptions PredIsomorphisms.pred_to_dm4all_dem_morphism.
+Print Assumptions StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
+Print Assumptions LawCounterexamples.AngArr.not_ArrowLaws.
+Print Assumptions ASPMonad.toArrowASPState_morphism.
+Print Assumptions ASPMonad.fromArrowASPState_morphism.
+Print Assumptions MonadTaxonomy.MonadRelation_asp_implies_aslp_pure.
+Print Assumptions DivNonDetSt.TripleRules.wpSt_bind_under.
+Print Assumptions DivNonDet.HealthyReadings.dwpPure_DWP_morphism.
+Print Assumptions DivNonDet.HealthyReadings.dwpPure_DWP_complete.
+Print Assumptions DivNonDetSt.HealthyReadings.dwpSt_DWPSt_morphism.
+Print Assumptions DivNonDetSt.TripleRules.aspSt_bind_under.
+Print Assumptions DivNonDetSt.TripleRules.dspSt_bind_under.
+Print Assumptions ResetEven.incorr_p_q.
+Print Assumptions ResetEven.m_DM.
+Print Assumptions DSPSequencing.dspSt_over_seq_counterexample.

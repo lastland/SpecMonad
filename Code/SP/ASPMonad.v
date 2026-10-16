@@ -19,6 +19,11 @@
     facts and laws. This module re-exports that infrastructure and fixes the
     input for unary specifications, runners and refinement orders.
 
+    The carriers of [stateT S ASP] and [ASPSt S] are isomorphic, and the
+    isomorphism is one of ordered monads ([toArrowASPState_morphism],
+    [fromArrowASPState_morphism], [ordASPStateT_toArrowASPState]; paper,
+    Section 3.4).
+
     The last part of the file defines the stateless monad directly, with no
     arrow, as [ASPSP], and shows that it is [ASP]. It then connects Maillard's
     [SPM.SPost] to [ASP], proves its healthiness, and gives a counterexample
@@ -28,7 +33,7 @@ From Coq Require Import Morphisms RelationClasses Setoid.
 From ExtLib Require Import Monad StateMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Arrow Require Import Arrow OptionArrowT StateArrowT.
-From Incorrectness.Lib.Monad Require Import OrderedMonad.
+From Incorrectness.Lib.Monad Require Import OrderedMonad TransformerLaws.
 From Incorrectness.Lib.Arrow Require Import ArrowMonad.
 From Incorrectness.SP Require Export SPostArr.
 (* ================================================================= *)
@@ -792,6 +797,141 @@ Section ASPStateCarrierIso.
       exists s. exact (conj (conj Hpre eq_refl) Hg).
   Qed.
 End ASPStateCarrierIso.
+
+(* ================================================================= *)
+(** ** The carrier isomorphism is a monad isomorphism                 *)
+(* ================================================================= *)
+
+(** Both maps above are monad morphisms that preserve and reflect
+    refinement (paper, Section 3.4).  The transformer's [bind] runs the
+    continuation at the intermediate state with precondition [True], the
+    arrow's [bind] with precondition [fun t => t = s']; they agree because
+    every ASP element factors its precondition out as a conjunct
+    ([getASP_singleton]). *)
+Section ASPStateMonadIso.
+  Variable S : Type.
+
+  (** [Monad_stateT] is not a global instance. *)
+  Local Notation Monad_StASP := (@Monad_stateT S ASP Monad_ASP).
+  Local Notation Eq1_StASP := (@Eq1_stateT S ASP Eq1_ASP).
+  Local Notation ordStASP := (@le_stateT S ASP (@ordASP)).
+
+  Lemma eq1_ASPStateT_get {A} (m n : stateT S ASP A) :
+    Eq1_StASP A m n <->
+    (forall s p r, getASP (runStateT m s) p r <-> getASP (runStateT n s) p r).
+  Proof.
+    split.
+    - intros H s. apply (proj1 (eq1_ASP_get _ _) (H s)).
+    - intros H s. apply (proj2 (eq1_ASP_get _ _)). exact (H s).
+  Qed.
+
+  Lemma getASPStateT_ret {A} (x : A) s p r :
+    getASP (runStateT (@ret (stateT S ASP) Monad_StASP A x) s) p r <-> p /\ (x, s) = r.
+  Proof. exact (getASP_ret (x, s) p r). Qed.
+
+  Lemma getASPStateT_bind {A B} (m : stateT S ASP A) (k : A -> stateT S ASP B) s p r :
+    getASP (runStateT (@bind (stateT S ASP) Monad_StASP A B m k) s) p r <->
+    exists a s', getASP (runStateT m s) p (a, s') /\
+                 getASP (runStateT (k a) s') True r.
+  Proof.
+    etransitivity;
+      [ exact (getASP_bind (runStateT m s)
+                 (fun vs => let (v, s0) := vs in runStateT (k v) s0) p r) |].
+    split.
+    - intros [[a s'] H]. exists a, s'. exact H.
+    - intros [a [s' H]]. exists (a, s'). exact H.
+  Qed.
+
+  Theorem toArrowASPState_morphism :
+    @MonadMorphism (stateT S ASP) (ASPSt S) Monad_StASP (Monad_ASPSt S)
+      Eq1_StASP (Eq1_ASPSt S) (fun A => @toArrowASPState S A).
+  Proof.
+    constructor.
+    - intros A m n H. apply eq1_ASPSt_get. intros pre r.
+      rewrite !toArrowASPState_formula.
+      pose proof (proj1 (eq1_ASPStateT_get m n) H) as H'.
+      split; intros [s Hs]; exists s; apply (H' s); exact Hs.
+    - intros A x. apply eq1_ASPSt_get. intros pre r.
+      rewrite toArrowASPState_formula.
+      cbn [ret Monad_ASPSt]. rewrite getASPSt_ret. split.
+      + intros [s Hs]. apply getASPStateT_ret in Hs. destruct Hs as [Hp E].
+        exists s. split; [ exact Hp | symmetry; exact E ].
+      + intros [s [Hp E]]. exists s. apply getASPStateT_ret.
+        split; [ exact Hp | symmetry; exact E ].
+    - intros A B m k. apply eq1_ASPSt_get. intros pre r.
+      rewrite toArrowASPState_formula.
+      cbn [bind Monad_ASPSt]. rewrite getASPSt_bind. split.
+      + intros [s Hs]. apply getASPStateT_bind in Hs.
+        destruct Hs as [a [s' [Hm Hk]]]. exists a, s'. split.
+        * apply toArrowASPState_formula. exists s. exact Hm.
+        * apply toArrowASPState_formula. exists s'.
+          apply getASP_singleton. exact (conj eq_refl Hk).
+      + intros [a [s' [Hm Hk]]].
+        apply toArrowASPState_formula in Hm. destruct Hm as [s Hm].
+        apply toArrowASPState_formula in Hk. destruct Hk as [t Hk].
+        apply getASP_singleton in Hk. destruct Hk as [Ht Hk]. subst t.
+        exists s. apply getASPStateT_bind. exists a, s'. exact (conj Hm Hk).
+  Qed.
+
+  Theorem fromArrowASPState_morphism :
+    @MonadMorphism (ASPSt S) (stateT S ASP) (Monad_ASPSt S) Monad_StASP
+      (Eq1_ASPSt S) Eq1_StASP (fun A => @fromArrowASPState S A).
+  Proof.
+    constructor.
+    - intros A g h H. apply eq1_ASPStateT_get. intros s p r.
+      rewrite !fromArrowASPState_formula.
+      exact (proj1 (eq1_ASPSt_get S g h) H _ r).
+    - intros A x. apply eq1_ASPStateT_get. intros s p r.
+      rewrite fromArrowASPState_formula, getASPStateT_ret.
+      cbn [ret Monad_ASPSt]. rewrite getASPSt_ret. split.
+      + intros [t [[Hp Ht] E]]. subst t. split; [ exact Hp | symmetry; exact E ].
+      + intros [Hp E]. exists s. split; [ exact (conj Hp eq_refl) | symmetry; exact E ].
+    - intros A B g k. apply eq1_ASPStateT_get. intros s p r.
+      rewrite fromArrowASPState_formula, getASPStateT_bind.
+      cbn [bind Monad_ASPSt]. rewrite getASPSt_bind. split.
+      + intros [a [s' [Hg Hk]]]. exists a, s'. split.
+        * apply fromArrowASPState_formula. exact Hg.
+        * apply fromArrowASPState_formula.
+          apply (getASPSt_cong S (k a) (fun t => t = s') (fun t => True /\ t = s') r);
+            [ intro t; split; [ intro E; exact (conj I E) | intros [_ E]; exact E ] |].
+          exact Hk.
+      + intros [a [s' [Hg Hk]]]. exists a, s'. split.
+        * apply fromArrowASPState_formula in Hg. exact Hg.
+        * apply fromArrowASPState_formula in Hk.
+          apply (getASPSt_cong S (k a) (fun t => t = s') (fun t => True /\ t = s') r);
+            [ intro t; split; [ intro E; exact (conj I E) | intros [_ E]; exact E ] |].
+          exact Hk.
+  Qed.
+
+  Lemma ordASPStateT_toArrowASPState {A} (m n : stateT S ASP A) :
+    ordStASP A m n <-> ordASPSt (@toArrowASPState S A m) (@toArrowASPState S A n).
+  Proof.
+    rewrite ordASPSt_get. split.
+    - intros H pre r Hm. apply toArrowASPState_formula in Hm. destruct Hm as [s Hm].
+      apply toArrowASPState_formula. exists s.
+      exact (proj1 (ordASP_get _ _) (H s) (pre s) r Hm).
+    - intros H s. apply ordASP_get. intros p r Hm.
+      assert (Hto : getASPSt (toArrowASPState n) (fun t => p /\ t = s) r).
+      { apply H, toArrowASPState_formula. exists s.
+        apply getASP_singleton in Hm. destruct Hm as [Hp Hm].
+        apply getASP_singleton. exact (conj (conj Hp eq_refl) Hm). }
+      apply toArrowASPState_formula in Hto. destruct Hto as [t Hn].
+      apply getASP_singleton in Hn. destruct Hn as [[Hp Ht] Hn]. subst t.
+      apply getASP_singleton. exact (conj Hp Hn).
+  Qed.
+
+  Lemma ordASPSt_fromArrowASPState {A} (g h : ASPSt S A) :
+    ordASPSt g h <-> ordStASP A (fromArrowASPState g) (fromArrowASPState h).
+  Proof.
+    rewrite ordASPStateT_toArrowASPState.
+    pose proof (@om_eq1 _ _ _ _ (OrderedMonad_ASPSt S) A) as E.
+    pose proof (toArrowASPState_fromArrowASPState g) as Hg.
+    pose proof (toArrowASPState_fromArrowASPState h) as Hh.
+    destruct (Eq1Equivalence_ASPSt S A) as [_ Hs _].
+    split; intro H; etransitivity; [ apply E, Hg | etransitivity; [ exact H | apply E, Hs, Hh ] |
+                                    apply E, Hs, Hg | etransitivity; [ exact H | apply E, Hh ] ].
+  Qed.
+End ASPStateMonadIso.
 
 (* ================================================================= *)
 (** ** Orders on the pure variant                                     *)

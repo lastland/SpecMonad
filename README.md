@@ -23,8 +23,8 @@ The packages and their version constraints are listed in the
 The committed `Code/Makefile` regenerates the gitignored `Makefile.coq`
 from `_CoqProject` on every invocation, so no manual generation step is
 needed. Build membership
-does not by itself certify every statement: the paper claims that are not
-formalized are marked in [PAPER.md](PAPER.md), which also lists
+does not by itself certify every statement: [PAPER.md](PAPER.md) maps each
+claim to its Rocq names and lists
 [where the paper and the formalization disagree](PAPER.md#gaps-and-differences-from-the-paper).
 
 Run `make check` from `Code/` for the opt-in reports of selected theorem

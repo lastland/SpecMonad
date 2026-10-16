@@ -1,8 +1,8 @@
 # To prove: each WP reading lands in its healthiness class
 
-Status: open. Not needed for anything that builds today; closes the gap
-marked *not formalized* in [PAPER.md](../../PAPER.md#section-35-refined-wp-monads)
-against contribution 3 ("monad morphisms from the base computation monad
+Status: done, in `Verification/DivNonDet/HealthyReadings.v` and
+`Verification/DivNonDetSt/HealthyReadings.v` (with the converse: every
+element of a variant is a reading), for contribution 3 ("monad morphisms from the base computation monad
 into our eight *wp* and *sp* monads").
 
 ## The situation

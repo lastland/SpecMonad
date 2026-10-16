@@ -47,6 +47,11 @@ programs. The relations themselves are monadic relations in the sense of
   `MonadRelation_galois_*`); the file ends with the stateless collapse
   (`MonadRelation_dsp_asp_pure`, `MonadRelation_aslp_dslp_pure`).
 
+- `MonadTaxonomy.v`, section `PureImplications` (Figure 1(a)): the base sp
+  implication edges ASLP -> ASP and DSLP -> DSP through the parts; without
+  state every ASP element implies every ASLP element
+  (`asp_implies_aslp_any_pure`).
+
 ## Cautions
 
 - DSP and ASLP enter SP implications through one part (`aspOf` / `dslpOf`),

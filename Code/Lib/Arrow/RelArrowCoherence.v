@@ -1100,6 +1100,78 @@ Section SemanticNormalization.
         destruct o1; symmetry; exact Ho.
     Qed.
 
+    Local Lemma relO_second {X Y C} (f : optionArrT arr X Y) (c : C) x o :
+      R (@arr_second (optionArrT arr) OA X Y C f) (c, x) o <->
+      exists o1, R f x o1 /\
+        o = match o1 with Some y => Some (c, y) | None => None end.
+    Proof.
+      unfold arr_second. rewrite relO_comp. split.
+      - intros [o1 [H1 H2]]. apply relO_pure in H1. subst o1.
+        apply relO_comp in H2. destruct H2 as [o2 [H2 H3]].
+        apply relO_first in H2. destruct H2 as [o3 [Hf Ho2]].
+        exists o3. split; [ exact Hf |]. subst o2.
+        destruct o3 as [y|]; [ apply relO_pure in H3; exact H3 | exact H3 ].
+      - intros [o1 [Hf Ho]]. exists (Some (x, c)). split; [ apply relO_pure; reflexivity |].
+        apply relO_comp.
+        exists (match o1 with Some y => Some (y, c) | None => None end). split.
+        + apply relO_first. exists o1. split; [ exact Hf | reflexivity ].
+        + destruct o1 as [y|]; [ apply relO_pure; exact Ho | exact Ho ].
+    Qed.
+
+    Local Lemma relO_fanout_id {I A} (m : optionArrT arr I A) (i : I) o :
+      R (@arr_fanout (optionArrT arr) OA I A I m (@arr_id (optionArrT arr) OA I)) i o <->
+      exists o1, R m i o1 /\ o = option_map (fun a => (a, i)) o1.
+    Proof.
+      unfold arr_fanout, arr_split. rewrite relO_comp. split.
+      - intros [o1 [H1 H2]]. apply relO_pure in H1. subst o1.
+        apply relO_comp in H2. destruct H2 as [o2 [H2 H3]].
+        apply relO_first in H2. destruct H2 as [o3 [Hm Ho2]].
+        exists o3. split; [ exact Hm |]. subst o2.
+        destruct o3 as [a|]; [| exact H3 ].
+        apply relO_second in H3. destruct H3 as [o4 [Hid Ho]].
+        unfold arr_id in Hid. apply relO_pure in Hid. subst o4. exact Ho.
+      - intros [o1 [Hm Ho]]. exists (Some (i, i)). split; [ apply relO_pure; reflexivity |].
+        apply relO_comp.
+        exists (match o1 with Some a => Some (a, i) | None => None end). split.
+        + apply relO_first. exists o1. split; [ exact Hm | reflexivity ].
+        + destruct o1 as [a|]; [| exact Ho ].
+          apply relO_second. exists (Some i). split; [| exact Ho ].
+          unfold arr_id. apply relO_pure. reflexivity.
+    Qed.
+
+    Local Lemma relO_kapp {I A B} (k : A -> optionArrT arr I B) (a : A) (i : I) o :
+      R (@arr_comp (optionArrT arr) OA _ _ _
+           (@arr_pure (optionArrT arr) OA _ _ (fun '(a, i) => (k a, i)))
+           (@arr_app (optionArrT arr) OA (@ArrowApply_optionArrT arr HA HC HAA) I B))
+        (a, i) o <-> R (k a) i o.
+    Proof.
+      rewrite relO_comp. split.
+      - intros [o1 [H1 H2]]. apply relO_pure in H1. subst o1.
+        exact (proj1 (@rel_app arr HA HAA HRA HRAA I (option B) (k a) i o) H2).
+      - intro H. exists (Some (k a, i)). split; [ apply relO_pure; reflexivity |].
+        exact (proj2 (@rel_app arr HA HAA HRA HRAA I (option B) (k a) i o) H).
+    Qed.
+
+    Lemma relO_ret {I A} (a : A) i o :
+      R (@ret_arrow (optionArrT arr) OA I A a) i o <-> o = Some a.
+    Proof. exact (relO_pure (fun _ => a) i o). Qed.
+
+    (** [bind] runs the first computation; on [Some a] it runs the
+        continuation at the same input, and [None] propagates. *)
+    Lemma relO_bind {I A B} (m : optionArrT arr I A) (k : A -> optionArrT arr I B) i o :
+      R (@bind_arrow (optionArrT arr) OA (@ArrowApply_optionArrT arr HA HC HAA) I A B m k) i o <->
+      exists o1, R m i o1 /\
+        match o1 with Some a => R (k a) i o | None => o = None end.
+    Proof.
+      unfold bind_arrow. rewrite relO_comp. split.
+      - intros [o1 [H1 H2]]. apply relO_fanout_id in H1. destruct H1 as [o2 [Hm Ho1]].
+        exists o2. split; [ exact Hm |]. subst o1.
+        destruct o2 as [a|]; [ exact (proj1 (relO_kapp k a i o) H2) | exact H2 ].
+      - intros [o1 [Hm Hk]]. exists (option_map (fun a => (a, i)) o1). split.
+        + apply relO_fanout_id. exists o1. split; [ exact Hm | reflexivity ].
+        + destruct o1 as [a|]; [ exact (proj2 (relO_kapp k a i o) Hk) | exact Hk ].
+    Qed.
+
     Section StateOptionNormalization.
       Variable S : Type.
       Local Notation T := (stateArrT S (optionArrT arr)).

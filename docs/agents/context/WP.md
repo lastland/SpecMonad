@@ -23,8 +23,9 @@ Parent: [Code](Code.md). Paper: Section 2 (WP monads) and Section 3.6
 | DWP | strict, conjunctive | every outcome does, and none diverges |
 | AWLP | terminating, disjunctive | some outcome does, or one diverges |
 
-Only [PTMonadTaxonomy](PTMonadTaxonomy.md) imports `WPVariants.v`. The monad
-morphisms of [Triples](Verification.md) land in `WPure` itself; no
-lemma places their image in a variant; see
-[the note on proving it](../../notes/wp-readings-soundness.md). Keep WP triple argument and direction
+[PTMonadTaxonomy](PTMonadTaxonomy.md) and the `HealthyReadings.v` files of
+[Verification](Verification.md) import `WPVariants.v`. The monad morphisms of
+[Triples](Verification.md) land in `WPure` itself; `HealthyReadings.v` (base
+and with state) shows that each lands in its variant, as a monad morphism
+into it, and that every element of a variant is the reading of a program. Keep WP triple argument and direction
 changes in mind: the orders are reverse implication.

@@ -97,6 +97,11 @@
     [MonadRelation_galois_asp_dwlp], [MonadRelation_galois_asp_dwlp_exc]
     &c.).
 
+    Without state the implication instances hold through the parts
+    ([MonadRelation_asp_implies_aslp_pure] &c.), while implication between
+    the elements themselves holds of any two ([asp_implies_aslp_any_pure]
+    &c.).
+
     Without any transformer the flavours collapse two by two
     ([DSPMonad.v], [ASLPMonad.v]): a DSP element and an ASP element that
     denote one relation are the same transformer, and likewise an ASLP and a
@@ -2237,6 +2242,58 @@ Section Flavours.
     exact (GaloisWPSP_order _ _ _ _ G' G).
   Qed.
 End Flavours.
+
+(* ================================================================= *)
+(** ** Without state: implication                                     *)
+(* ================================================================= *)
+
+(** The edges ASLP ⇒ ASP and DSLP ⇒ DSP, with DSP and ASLP compared
+    through their ASP or DSLP part as in [Flavours]: inclusion of the
+    relations denoted, at input [unit] ([MonadRelation_rel_incl]).
+    Between the elements themselves, implication holds of any two
+    elements without state: at input [unit] an ASLP or DSLP element holds
+    whenever the precondition holds of [tt], and an ASP or DSP element only
+    then. *)
+
+Section PureImplications.
+
+  Theorem MonadRelation_asp_implies_aslp_pure :
+    @MonadRelation ASP ASLP Monad_ASP Monad_ASLP
+      (fun A a l => ordASP a (aspPartAArr l)).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (a : ASP A) (l : ASLP A) => forall x y, aspRel a x y -> aslpRel l x y) _
+              (fun A a l => iff_sym (asp_implies_aslp_rel a l)) _).
+    exact (MonadRelation_rel_incl (arr1 := ASPArr) (arr2 := ASLPArr) unit).
+  Qed.
+
+  Theorem MonadRelation_dsp_implies_dslp_pure :
+    @MonadRelation DSP DSLP Monad_DSP Monad_DSLP
+      (fun A d n => ordDSLP (dslpPartArr d) n).
+  Proof.
+    refine (MonadRelation_iff
+              (fun A (d : DSP A) (n : DSLP A) => forall x y, dslpRel n x y -> dspRel d x y) _
+              (fun A d n => iff_sym (dsp_implies_dslp_rel d n)) _).
+    exact (MonadRelation_flip _ (MonadRelation_rel_incl (arr1 := DSLPArr) (arr2 := DSPArr) unit)).
+  Qed.
+
+  Lemma asp_implies_aslp_any_pure {A} (a : ASP A) (l : ASLP A) P b :
+    getASPArr a P b -> getASLP l P b.
+  Proof.
+    intro Ha. destruct (proj1 (getASPArr_join a P b) Ha) as [[] [Hp _]].
+    apply (proj2 (get_aslp_to_dslp l P b)).
+    apply (proj2 (getDSLPArr_meet (aslp_to_dslp l) P b)).
+    intros [] _. exact Hp.
+  Qed.
+
+  Lemma dsp_implies_dslp_any_pure {A} (d : DSP A) (n : DSLP A) P b :
+    getDSP d P b -> getDSLPArr n P b.
+  Proof.
+    intro Hd. destruct (proj1 (getASPArr_join (aspPartArr d) P b)
+                          (proj1 (proj1 (dsp_split d P b) Hd))) as [[] [Hp _]].
+    apply (proj2 (getDSLPArr_meet n P b)). intros [] _. exact Hp.
+  Qed.
+End PureImplications.
 
 (* ================================================================= *)
 (** ** Without state: the contrapositive and the Galois relations    *)
