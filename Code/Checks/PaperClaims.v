@@ -31,12 +31,11 @@ From Incorrectness.PTMonadTaxonomy Require
 From Incorrectness.Verification.Generic Require
   Triple DijkstraMonad Typings.
 From Incorrectness.Verification.DivNonDet Require
-  Computation Morphisms Triples TriplesTaxonomy HealthyReadings.
+  Computation Morphisms Triples TriplesTaxonomy.
 From Incorrectness.Verification.DivNonDetSt Require
-  Computation Morphisms Triples TriplesTaxonomy Typings DijkstraMonads
-  HealthyReadings TripleRules.
+  Computation Morphisms Triples TriplesTaxonomy Typings DijkstraMonads.
 From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
-  ResetEven DSPSequencing.
+  ResetEven.
 From Incorrectness.Verification.DivNonDetStExc Require
   Computation Morphisms DijkstraMonads TriplesExamples DijkstraExamples.
 From Incorrectness.GaloisConnections Require
@@ -388,22 +387,6 @@ Check WPVariants.MonadLawsE_AWP.
 Check WPVariants.MonadLawsE_DWLP.
 Check WPVariants.MonadLawsE_DWP.
 Check WPVariants.MonadLawsE_AWLP.
-
-(** The four wp monads contain exactly the wps of programs
-    under their interpretation: each reading lands in its monad, as a monad
-    morphism into it, and every element is the reading of a computation. *)
-Check DivNonDet.HealthyReadings.dwpPure_healthy.
-Check DivNonDet.HealthyReadings.dwlpPure_healthy.
-Check DivNonDet.HealthyReadings.awpPure_healthy.
-Check DivNonDet.HealthyReadings.awlpPure_healthy.
-Check DivNonDet.HealthyReadings.dwpPure_DWP_morphism.
-Check DivNonDet.HealthyReadings.dwlpPure_DWLP_morphism.
-Check DivNonDet.HealthyReadings.awpPure_AWP_morphism.
-Check DivNonDet.HealthyReadings.awlpPure_AWLP_morphism.
-Check DivNonDet.HealthyReadings.dwpPure_DWP_complete.
-Check DivNonDet.HealthyReadings.dwlpPure_DWLP_complete.
-Check DivNonDet.HealthyReadings.awpPure_AWP_complete.
-Check DivNonDet.HealthyReadings.awlpPure_AWLP_complete.
 
 (** They share WP's [ret] and [bind]; [ret] has all four
     properties and [bind] preserves each, so they are submonads of WP. *)
@@ -773,12 +756,6 @@ Check DivNonDetSt.Triples.aslpSt_read.
 Check RelSPostArr.dspOf.
 Check RelSPostArr.aslpOf.
 
-(** The stateful wp morphisms into the refined wp monads. *)
-Check DivNonDetSt.HealthyReadings.dwpSt_DWPSt_morphism.
-Check DivNonDetSt.HealthyReadings.dwlpSt_DWLPSt_morphism.
-Check DivNonDetSt.HealthyReadings.awpSt_AWPSt_morphism.
-Check DivNonDetSt.HealthyReadings.awlpSt_AWLPSt_morphism.
-
 (** The base wp morphisms, lifted by [stateT] to the stateful
     ones. *)
 Check DivNonDet.Morphisms.dwpPure_morphism.
@@ -829,35 +806,6 @@ Check ResetEven.incorr_p_q.
 Check ResetEven.asp_m_p'.
 Check ResetEven.lisbon_p'_q.
 Check ResetEven.incorr_p'_q.
-
-(** The wp triple sequencing rule, under and over, for any
-    monad morphism into the stateful wp monad, hence for the four readings
-    (all eight kinds). *)
-Check DivNonDetSt.TripleRules.wpSt_bind_under.
-Check DivNonDetSt.TripleRules.wpSt_bind_over.
-
-(** The ASP and DSLP rules in both directions (Hoare logic
-    and incorrectness logic), and DSP under / ASLP over through their
-    components (partial: the side condition [q0 ⇒ p_a] is right for the
-    over-approximate rules; the under-approximate ones need [p_a ⇒ q0];
-    under-approximate ASP and over-approximate DSLP, with a family of
-    [p_a], also need an inhabited result type). *)
-Check DivNonDetSt.TripleRules.aspSt_bind_over.
-Check DivNonDetSt.TripleRules.aspSt_bind_under.
-Check DivNonDetSt.TripleRules.dslpSt_bind_under.
-Check DivNonDetSt.TripleRules.dslpSt_bind_over.
-Check DivNonDetSt.TripleRules.dspSt_under_iff.
-Check DivNonDetSt.TripleRules.aslpSt_over_iff.
-Check DivNonDetSt.TripleRules.dspSt_bind_under.
-Check DivNonDetSt.TripleRules.aslpSt_bind_over.
-Check DSPSequencing.side_aspSt_under.
-Check DSPSequencing.inhabited_aspSt_under.
-
-(** Figure 2: over-approximate DSP and under-approximate ASLP
-    triples do not compose; the counterexample (b) is the complement of
-    (a). *)
-Check DSPSequencing.dspSt_over_seq_counterexample.
-Check DSPSequencing.aslpSt_under_seq_counterexample.
 
 (** The comparison rule is the bind typing of the Dijkstra
     monad of a morphism; ASP, DSLP and the wp monads are specification

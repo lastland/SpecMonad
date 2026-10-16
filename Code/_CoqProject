@@ -8,7 +8,6 @@ Verification/Generic/Typings.v
 Verification/Generic/InCorrectnessPrinciples.v
 Verification/DivNonDet/Computation.v
 Verification/DivNonDet/Morphisms.v
-Verification/DivNonDet/HealthyReadings.v
 Verification/DivNonDet/Triples.v
 Verification/DivNonDet/TriplesTaxonomy.v
 Verification/DivNonDet/DijkstraMonads.v
@@ -24,12 +23,9 @@ Verification/DivNonDetSt/TriplesTaxonomy.v
 Verification/DivNonDetSt/InCorrectnessPrinciples.v
 Verification/DivNonDetSt/DijkstraMonads.v
 Verification/DivNonDetSt/Typings.v
-Verification/DivNonDetSt/HealthyReadings.v
-Verification/DivNonDetSt/TripleRules.v
 Verification/DivNonDetSt/TriplesExamples/ITreePrograms.v
 Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v
 Verification/DivNonDetSt/TriplesExamples/ResetEven.v
-Verification/DivNonDetSt/TriplesExamples/DSPSequencing.v
 Verification/DivNonDetStExc/Computation.v
 Verification/DivNonDetStExc/Morphisms.v
 Verification/DivNonDetStExc/Triples.v

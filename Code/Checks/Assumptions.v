@@ -546,22 +546,12 @@ Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_unde
 From Incorrectness.SP Require
   LawCounterexamples StatefulSPostCounterexample.
 From Incorrectness.PTMonadTaxonomy Require MonadTaxonomy.
-From Incorrectness.Verification.DivNonDet Require HealthyReadings.
-From Incorrectness.Verification.DivNonDetSt Require
-  HealthyReadings TripleRules.
 From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
-  ResetEven DSPSequencing.
+  ResetEven.
 Print Assumptions StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
 Print Assumptions LawCounterexamples.AngArr.not_ArrowLaws.
 Print Assumptions ASPMonad.toArrowASPState_morphism.
 Print Assumptions ASPMonad.fromArrowASPState_morphism.
 Print Assumptions MonadTaxonomy.MonadRelation_asp_implies_aslp_pure.
-Print Assumptions DivNonDetSt.TripleRules.wpSt_bind_under.
-Print Assumptions DivNonDet.HealthyReadings.dwpPure_DWP_morphism.
-Print Assumptions DivNonDet.HealthyReadings.dwpPure_DWP_complete.
-Print Assumptions DivNonDetSt.HealthyReadings.dwpSt_DWPSt_morphism.
-Print Assumptions DivNonDetSt.TripleRules.aspSt_bind_under.
-Print Assumptions DivNonDetSt.TripleRules.dspSt_bind_under.
 Print Assumptions ResetEven.incorr_p_q.
 Print Assumptions ResetEven.m_DM.
-Print Assumptions DSPSequencing.dspSt_over_seq_counterexample.

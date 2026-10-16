@@ -1,8 +1,7 @@
 # To prove: each WP reading lands in its healthiness class
 
-Status: done, in `Verification/DivNonDet/HealthyReadings.v` and
-`Verification/DivNonDetSt/HealthyReadings.v` (with the converse: every
-element of a variant is a reading), for contribution 3 ("monad morphisms from the base computation monad
+Status: open. Not needed for anything that builds today; backs
+contribution 3 ("monad morphisms from the base computation monad
 into our eight *wp* and *sp* monads").
 
 ## The situation
@@ -92,7 +91,7 @@ with `toWPure ∘ dwpPure_DWP = dwpPure`. It is a monad morphism
 Place: the lemmas in `Verification/DivNonDet/Morphisms.v` (next to the
 readings), the lifts in `DivNonDetSt/Morphisms.v` and
 `DivNonDetStExc/Morphisms.v`, the `StExc` variants in `WP/WPVariants.v`.
-Add the new names to `Checks/PaperClaims.v` (contribution 3, Section 3.5).
+Add the new names to `Checks/PaperClaims.v`.
 
 ## What it gives
 

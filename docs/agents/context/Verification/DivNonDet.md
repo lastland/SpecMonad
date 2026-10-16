@@ -76,8 +76,3 @@ Parent: [Verification](../Verification.md). The base setting: `divndNE`.
   `Nondeterminism.or`), `ITree.spin` (DWLP accepts it, DWP rejects it), and
   `countdownIT n` with `ITree.iter`, which has the outcomes of `countdown n`
   and so exactly its triples, for each reading (`countdownIT_dwp` &c.).
-- [HealthyReadings.v](../../../../Code/Verification/DivNonDet/HealthyReadings.v): each WP reading
-  lands in its variant of [WPVariants.v](../../../../Code/WP/WPVariants.v)
-  (`dwpPure_healthy` &c.), corestricted as a monad morphism into it
-  (`dwpPure_DWP_morphism` &c.), and every element of a variant is the
-  reading of a computation (`dwpPure_DWP_complete` &c., classical).
