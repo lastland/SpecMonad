@@ -1,13 +1,15 @@
 (** * Paper claims index
 
     One block per section of the paper, in paper order.  Each block quotes
-    or paraphrases a claim and [Check]s the Rocq names that state it.
-    This file holds only what the paper claims.
+    or paraphrases a claim and names the Rocq objects that state it:
+    [Print] for definitions, so their body shows, and [Check] for theorems.
+    Where the formalization differs from the claim, the comment says how
+    ("partial: ...").  This file holds only what the paper claims.
     Assumptions are reported by [Checks/Assumptions.v].
 
     Modules are required without [Import] and names are qualified by file
     (by directory too where several files share a name, and by [Module]
-    where the file has one), so a [Check] fails if a name moves. *)
+    where the file has one), so a [Check] or [Print] fails if a name moves. *)
 
 From Incorrectness.Lib.Monad Require
   OrderedMonad MonadRelation TransformerLaws.
@@ -56,7 +58,7 @@ Check DivNonDetSt.TriplesTaxonomy.PartCorr_galois_asp_over.
 Check DivNonDetSt.Triples.triple_aspSt.
 
 (** The state transformer on the wp monad. *)
-Check WPure.WSt.
+Print WPure.WSt.
 Check WPure.MonadLawsE__WSt.
 
 (** "monotone sps alone do not form a lawful monad" (partial: for
@@ -72,18 +74,18 @@ Check ASPMonad.dm4all_round_trip.
 Check ASPMonad.asp_dm4all_round_trip.
 
 (** The four homomorphism properties of sps. *)
-Check PredicateTransformerProperties.StrictArr.
-Check PredicateTransformerProperties.TerminatingArr.
-Check PredicateTransformerProperties.ConjunctiveArr.
-Check PredicateTransformerProperties.DisjunctiveArr.
+Print PredicateTransformerProperties.StrictArr.
+Print PredicateTransformerProperties.TerminatingArr.
+Print PredicateTransformerProperties.ConjunctiveArr.
+Print PredicateTransformerProperties.DisjunctiveArr.
 
 (** A specification monad is a monad ordered so that [bind] is
     monotone. *)
-Check OrderedMonad.OrderedMonad.
+Print OrderedMonad.OrderedMonad.
 
 (** The base computation monad of nondeterminism and
     nontermination. *)
-Check DivNonDet.Computation.divndNE.
+Print DivNonDet.Computation.divndNE.
 
 (** State and exceptions on both sides, lawful; the morphisms
     lift for free. *)
@@ -123,8 +125,8 @@ Check ASLPMonad.not_OrderedMonad_ASLPSt.
 (** Galois connections with stateful [Pred] (Section 6) and
     pre/post specifications (partial: as Galois connections of binary
     arrows, at input [S]). *)
-Check GaloisArr.Galois_Rel_PrePost.
-Check GaloisArr.Galois_WP_PrePost.
+Print GaloisArr.Galois_Rel_PrePost.
+Print GaloisArr.Galois_WP_PrePost.
 
 (** The isomorphism between [Pred] and [SPost] extends to
     isomorphisms between asp and dwlp and between dslp and awp as stateful
@@ -139,23 +141,23 @@ Check MonadTaxonomy.galois_awp_dslp_order.
 
 (** The monotone continuation monad on [P], with its [ret] and
     [bind]; monotonicity, preserved by [ret] and [bind]. *)
-Check WPure.WPure.
-Check WPure.wpure_mono.
-Check WPure.retWPure.
-Check WPure.bindWPure.
+Print WPure.WPure.
+Print WPure.wpure_mono.
+Print WPure.retWPure.
+Print WPure.bindWPure.
 Check WPure.MonadLawsE_WPure.
 Check WPVariants.wpure_ret_mono.
 Check WPVariants.wpure_bind_mono.
 
 (** The pointwise order, preserved by [ret] and [bind]
     ([WP_le] is DM4all's direction, the converse of the paper's). *)
-Check WPure.WP_le.
+Print WPure.WP_le.
 Check WPure.OrderedMonad_WPure.
 
 (** The stateful wp monad, ordered, with monotone [bind]. *)
-Check WPure.retPs.
-Check WPure.bindPs.
-Check WPure.ordWSt.
+Print WPure.retPs.
+Print WPure.bindPs.
+Print WPure.ordWSt.
 Check WPure.OrderedMonad_WSt.
 
 (* ================================================================= *)
@@ -163,15 +165,15 @@ Check WPure.OrderedMonad_WSt.
 (* ================================================================= *)
 
 (** An sp of a pure program, [P -> (A -> P)]. *)
-Check RawSP.SPPure.
+Print RawSP.SPPure.
 
 (** Maillard et al.'s [SPost] (monotone, postconditions imply
     the precondition), with (ang) [ret]/[bind], is lawful. *)
-Check SPostMonad.SPM.SPost.
-Check SPostMonad.SPM.retSP.
-Check SPostMonad.SPM.bindSP.
+Print SPostMonad.SPM.SPost.
+Print SPostMonad.SPM.retSP.
+Print SPostMonad.SPM.bindSP.
 Check SPostMonad.SPMFacts.MonadLawsE_SPost.
-Check SPostMonad.SPostPure.
+Print SPostMonad.SPostPure.
 
 (** That carrier is the disjunctive, strict sps. *)
 Check ASPMonad.monotone_codomain_iff_singleton.
@@ -179,16 +181,16 @@ Check ASPMonad.join_iff_singleton.
 
 (** Disjunctivity, strictness, conjunctivity,
     termination of base sps. *)
-Check RawSP.Disjunctive.
-Check RawSP.Strict.
-Check RawSP.Conjunctive.
-Check RawSP.Terminating.
+Print RawSP.Disjunctive.
+Print RawSP.Strict.
+Print RawSP.Conjunctive.
+Print RawSP.Terminating.
 
 (** [ASP], the sps preserving all disjunctions, with (ang)
     [ret]/[bind], lawful. *)
-Check ASPMonad.ASPSP.
-Check ASPMonad.retASPSP.
-Check ASPMonad.bindASPSP.
+Print ASPMonad.ASPSP.
+Print ASPMonad.retASPSP.
+Print ASPMonad.bindASPSP.
 Check ASPMonad.MonadLawsE_ASPSP.
 
 (** Without disjunctivity (conjunctivity) the associativity
@@ -209,9 +211,9 @@ Check DSPASLPArr.aslp_hom_iff.
 Check ASPMonad.dm4all_not_dslp_healthy.
 
 (** [DSLP] with (dem) [ret]/[bind] is lawful. *)
-Check DSLPMonad.DSLPSP.
-Check DSLPMonad.retDSLPSP.
-Check DSLPMonad.bindDSLPSP.
+Print DSLPMonad.DSLPSP.
+Print DSLPMonad.retDSLPSP.
+Print DSLPMonad.bindDSLPSP.
 Check DSLPMonad.MonadLawsE_DSLPSP.
 Check DSLPMonad.meet_iff_msingleton.
 
@@ -220,16 +222,16 @@ Check DSLPMonad.meet_iff_msingleton.
     [dslpOf] parts; both monads are lawful (partial: the parts are defined
     through the relation an element denotes, not by the displayed
     formulas). *)
-Check DSPMonad.DSP.
-Check DSPASLPArr.dspRel.
-Check DSPASLPArr.aspPartArr.
-Check DSPASLPArr.dslpPartArr.
+Print DSPMonad.DSP.
+Print DSPASLPArr.dspRel.
+Print DSPASLPArr.aspPartArr.
+Print DSPASLPArr.dslpPartArr.
 Check DSPASLPArr.dsp_split.
 Check DSPMonad.MonadLawsE_DSP.
-Check ASLPMonad.ASLP.
-Check DSPASLPArr.aslpRel.
-Check DSPASLPArr.aspPartAArr.
-Check DSPASLPArr.dslpPartAArr.
+Print ASLPMonad.ASLP.
+Print DSPASLPArr.aslpRel.
+Print DSPASLPArr.aspPartAArr.
+Print DSPASLPArr.dslpPartAArr.
 Check DSPASLPArr.aslp_split.
 Check ASLPMonad.MonadLawsE_ASLP.
 
@@ -250,26 +252,26 @@ Check Monad.TransformerLaws.MonadLawsE_stateT.
 
 (** Arrows, application, and the monad of an arrow with
     application at a fixed input. *)
-Check Arrow.Arrow.
-Check Arrow.ArrowApply.
-Check ArrowMonad.Monad_Arrow.
+Print Arrow.Arrow.
+Print Arrow.ArrowApply.
+Print ArrowMonad.Monad_Arrow.
 
 (** sp arrows [(B -> P) -> (A -> P)], monotone. *)
-Check SPostArr.SPArrT.
-Check SPostArr.sp_monotone.
+Print SPostArr.SPArrT.
+Print SPostArr.sp_monotone.
 
 (** [ASPArr] (strict + disjunctive = all disjunctions), its
     operations, lawful; at input [unit] it is [ASP]. *)
-Check SPostArr.ASPArr.
+Print SPostArr.ASPArr.
 Check PredicateTransformerProperties.strict_disjunctiveArr_full_join.
 Check SPostArr.ASP_full_join.
-Check SPostArr.pureASP.
-Check SPostArr.compASP.
-Check SPostArr.firstASP.
-Check SPostArr.appASP.
+Print SPostArr.pureASP.
+Print SPostArr.compASP.
+Print SPostArr.firstASP.
+Print SPostArr.appASP.
 Check SPostArr.ArrowLaws_ASPArr.
 Check SPostArr.ArrowApplyLaws_ASPArr.
-Check ASPMonad.ASP.
+Print ASPMonad.ASP.
 Check ASPMonad.aspsp_to_asp_morphism.
 Check ASPMonad.asp_to_aspsp_morphism.
 Check ASPMonad.aspsp_to_asp_to_aspsp.
@@ -283,16 +285,16 @@ Check LawCounterexamples.DemArr.not_ArrowLaws.
 
 (** [DSLPArr] (terminating + conjunctive = all conjunctions),
     its operations, lawful; at input [unit] it is [DSLP]. *)
-Check SPostArr.DSLPArr.
+Print SPostArr.DSLPArr.
 Check PredicateTransformerProperties.terminating_conjunctiveArr_full_meet.
 Check SPostArr.DSLP_full_meet.
-Check SPostArr.pureDSLP.
-Check SPostArr.compDSLP.
-Check SPostArr.firstDSLP.
-Check SPostArr.appDSLP.
+Print SPostArr.pureDSLP.
+Print SPostArr.compDSLP.
+Print SPostArr.firstDSLP.
+Print SPostArr.appDSLP.
 Check SPostArr.ArrowLaws_DSLPArr.
 Check SPostArr.ArrowApplyLaws_DSLPArr.
-Check DSLPMonad.DSLP.
+Print DSLPMonad.DSLP.
 Check DSLPMonad.dslpsp_to_dslp_morphism.
 Check DSLPMonad.dslp_to_dslpsp_morphism.
 Check DSLPMonad.dslpsp_to_dslp_to_dslpsp.
@@ -306,14 +308,14 @@ Check DSLPMonad.dslp_to_dslpsp_to_dslp.
     fixed input; the state arrow transformer preserves the laws and gives
     the four stateful sp monads. *)
 Check ArrowMonad.MonadLawsE_Arrow.
-Check StateArrowT.Core.stateArrT.
-Check ASPMonad.ASPSt.
+Print StateArrowT.Core.stateArrT.
+Print ASPMonad.ASPSt.
 Check ASPMonad.MonadLawsE_ASPSt.
-Check DSLPMonad.DSLPSt.
+Print DSLPMonad.DSLPSt.
 Check DSLPMonad.MonadLawsE_DSLPSt.
-Check DSPMonad.DSPSt.
+Print DSPMonad.DSPSt.
 Check DSPMonad.MonadLawsE_DSPSt.
-Check ASLPMonad.ASLPSt.
+Print ASLPMonad.ASLPSt.
 Check ASLPMonad.MonadLawsE_ASLPSt.
 Check StateArrowT.Core.ArrowLaws_stateArrT.
 Check StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT.
@@ -332,7 +334,7 @@ Check DSLPMonad.getDSLPSt_bind.
 
 (** An arrow morphism gives a monad morphism once the input is
     fixed, and the arrow transformers lift arrow morphisms. *)
-Check ArrowMorphism.ArrowMorphism.
+Print ArrowMorphism.ArrowMorphism.
 Check ArrowMorphism.arrow_morphism_monad.
 Check ArrowMorphism.state_arrow_morphism.
 Check ArrowMorphism.option_arrow_morphism.
@@ -340,8 +342,8 @@ Check ArrowMorphism.option_arrow_morphism.
 (** Restricted to monotone, strict, disjunctive transformers,
     the carriers of [StT(ASP)] and [StTArr(ASPArr) unit] are isomorphic
     through [toArrow] and [fromArrow], with the paper's formulas. *)
-Check ASPMonad.toArrowASPState.
-Check ASPMonad.fromArrowASPState.
+Print ASPMonad.toArrowASPState.
+Print ASPMonad.fromArrowASPState.
 Check ASPMonad.toArrowASPState_formula.
 Check ASPMonad.fromArrowASPState_formula.
 Check ASPMonad.fromArrowASPState_toArrowASPState.
@@ -353,18 +355,18 @@ Check ASPMonad.toArrowASPState_fromArrowASPState.
 
 (** The healthiness conditions and the four wp monads AWP,
     DWLP, DWP, AWLP, lawful. *)
-Check WPVariants.wpure_strict.
-Check WPVariants.wpure_terminating.
-Check WPVariants.wpure_conjunctive.
-Check WPVariants.wpure_disjunctive.
+Print WPVariants.wpure_strict.
+Print WPVariants.wpure_terminating.
+Print WPVariants.wpure_conjunctive.
+Print WPVariants.wpure_disjunctive.
 Check WPVariants.awp_health.
 Check WPVariants.dwlp_health.
 Check WPVariants.dwp_health.
 Check WPVariants.awlp_health.
-Check WPVariants.AWP.
-Check WPVariants.DWLP.
-Check WPVariants.DWP.
-Check WPVariants.AWLP.
+Print WPVariants.AWP.
+Print WPVariants.DWLP.
+Print WPVariants.DWP.
+Print WPVariants.AWLP.
 Check WPVariants.MonadLawsE_AWP.
 Check WPVariants.MonadLawsE_DWLP.
 Check WPVariants.MonadLawsE_DWP.
@@ -390,13 +392,13 @@ Check WPVariants.toWPure_morphism.
 
 (** Implication, contrapositive and Galois connection between
     transformers, and what each says of triples. *)
-Check TransformerRelations.pt_le.
+Print TransformerRelations.pt_le.
 Check TransformerRelations.pt_le_under.
 Check TransformerRelations.pt_le_over.
-Check TransformerRelations.Contrapositive.
+Print TransformerRelations.Contrapositive.
 Check TransformerRelations.Contrapositive_under_over.
 Check TransformerRelations.Contrapositive_over_under.
-Check TransformerRelations.GaloisPT.
+Print TransformerRelations.GaloisPT.
 Check TransformerRelations.GaloisPT_over_under.
 
 (** Verscht and Kaminski's diagram (their Figure 5) for the
@@ -499,7 +501,7 @@ Check DivNonDetSt.TriplesTaxonomy.awp_over_galois_PartIncorr. (* 26 *)
     An implication X => Y is [MonadRelation_x_implies_y]: [X ⊑ Y]. *)
 
 (** DM4all's monadic relation. *)
-Check MonadRelation.MonadRelation.
+Print MonadRelation.MonadRelation.
 
 (** Figure 1(a), base monads.  The wp edges are generic in the two
     conditions; DSP collapses into ASP and ASLP into DSLP.  The sp
@@ -523,8 +525,8 @@ Check MonadTaxonomy.MonadRelation_galois_awp_dslp_pure. (* a14 *)
 (** The four stateful sp monads share [SPSt] and its order;
     [⊑] is not a monadic relation between DSP / ASLP and ASP / DSLP, as
     their binds are not monotone (Figure 2). *)
-Check MonotoneSPSt.SPStMonotone.SPStMon.
-Check MonadTaxonomy.impliesSPSt.
+Print MonotoneSPSt.SPStMonotone.SPStMon.
+Print MonadTaxonomy.impliesSPSt.
 Check ASLPMonad.aslp_arbitrary_bind_impossible.
 Check DSPMonad.dsp_arbitrary_bind_impossible.
 
@@ -547,7 +549,7 @@ Check MonadTaxonomy.dsp_implies_dslp_part.
     [⊑] on [WSt] is a monadic relation between any two of them. *)
 Check WPVariants.toWSt_ret.
 Check WPVariants.toWSt_bind.
-Check MonadTaxonomy.impliesWSt.
+Print MonadTaxonomy.impliesWSt.
 Check MonadTaxonomy.MonadRelation_implies_toWSt.
 Check MonadTaxonomy.MonadRelation_impliesWSt.
 
@@ -568,7 +570,7 @@ Check MonadTaxonomy.MonadRelation_awp_implies_dwp.
 (** Figure 1(b) sp contrapositive edges: [⋈] on [SPSt] is
     monadic between DSP and ASLP, ASP and DSLP, one to one, swapping the
     components and meets with joins; symmetric. *)
-Check MonadTaxonomy.contraSPSt.
+Print MonadTaxonomy.contraSPSt.
 Check MonadTaxonomy.MonadRelation_contraSPSt.
 Check MonadTaxonomy.contraSPSt_meet_join.
 Check MonadTaxonomy.contraSPSt_join_meet.
@@ -585,7 +587,7 @@ Check MonadTaxonomy.contra_dslp_in_asp.
 (** Figure 1(b) wp contrapositive edges: [⋈] on [WSt] is
     monadic between DWP and AWLP, AWP and DWLP, one to one, and
     symmetric. *)
-Check MonadTaxonomy.contraWSt.
+Print MonadTaxonomy.contraWSt.
 Check MonadTaxonomy.MonadRelation_contraWSt.
 Check MonadTaxonomy.contraWSt_sym.
 Check MonadTaxonomy.MonadRelation_contra_dwp_awlp_one. (* b11 *)
@@ -601,8 +603,8 @@ Check MonadTaxonomy.contra_dwlp_in_awp.
     relation (angelic structure), its sps are disjunctive and strict and its
     wps conjunctive and terminating, it restricts to ASP and DWLP, one to
     one. *)
-Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj.
-Check MonadTaxonomy.GaloisSPWP.
+Print MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj.
+Print MonadTaxonomy.GaloisSPWP.
 Check MonadTaxonomy.Ladj_GaloisSPWP.
 Check MonadTaxonomy.MonadRelation_GaloisSPWP.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_colim.
@@ -613,8 +615,8 @@ Check MonadTaxonomy.galois_dwlp_in_asp.
 
 (** Figure 1(b) Galois edge AWP -> DSLP: [Radj], demonic
     structure, restricts to AWP and DSLP, one to one. *)
-Check MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj.
-Check MonadTaxonomy.GaloisWPSP.
+Print MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj.
+Print MonadTaxonomy.GaloisWPSP.
 Check MonadTaxonomy.Radj_GaloisWPSP.
 Check MonadTaxonomy.MonadRelation_GaloisWPSP.
 Check MonadTaxonomy.MonadRelation_galois_awp_dslp. (* b14 *)
@@ -654,16 +656,16 @@ Check DSPASLPArr.no_DSLPArr_for_aslp.
 (** Monad morphisms; triples of a monad morphism, under and
     over; specification of a computation by an element; specification
     monads. *)
-Check OrderedMonad.MonadMorphism.
-Check Generic.Triple.triple.
-Check Generic.Triple.pt_holds.
-Check Generic.Triple.Under.
-Check Generic.Triple.Over.
+Print OrderedMonad.MonadMorphism.
+Print Generic.Triple.triple.
+Print Generic.Triple.pt_holds.
+Print Generic.Triple.Under.
+Print Generic.Triple.Over.
 
 (** The stateful computation monad and the eight stateful
     morphisms, with their readings on outcomes. *)
-Check DivNonDetSt.Computation.stdivndNE.
-Check DivNonDetSt.Computation.outSt.
+Print DivNonDetSt.Computation.stdivndNE.
+Print DivNonDetSt.Computation.outSt.
 Check DivNonDetSt.Morphisms.dwpSt_morphism.
 Check DivNonDetSt.Morphisms.dwlpSt_morphism.
 Check DivNonDetSt.Morphisms.awpSt_morphism.
@@ -680,8 +682,8 @@ Check DivNonDetSt.Triples.aspSt_read.
 Check DivNonDetSt.Triples.dslpSt_read.
 Check DivNonDetSt.Triples.dspSt_read.
 Check DivNonDetSt.Triples.aslpSt_read.
-Check RelSPostArr.dspOf.
-Check RelSPostArr.aslpOf.
+Print RelSPostArr.dspOf.
+Print RelSPostArr.aslpOf.
 
 (** The base wp morphisms, lifted by [stateT] to the stateful
     ones. *)
@@ -721,7 +723,7 @@ Check DivNonDetSt.Triples.triple_awpSt.
 (** The running program on even and odd states, its AWP and
     ASP transformers; Lisbon logic fails (at [s = 1]) where incorrectness
     logic holds; with [p'] both hold. *)
-Check ResetEven.m.
+Print ResetEven.m.
 Check ResetEven.m_out.
 Check ResetEven.awp_m.
 Check ResetEven.asp_m.
@@ -749,21 +751,21 @@ Check WPVariants.OrderedMonad_AWLPSt.
 (** The AWP specification of the running program, its
     comparison (a Dijkstra-monad typing), and its equivalence with the
     pre/post pair. *)
-Check ResetEven.wspec.
+Print ResetEven.wspec.
 Check ResetEven.awp_m_le_wspec.
-Check ResetEven.m_DM.
+Print ResetEven.m_DM.
 Check ResetEven.wspec_pp2wp.
 Check ResetEven.le_wspec_iff_lisbon.
 
 (** wp triples, ASP over and DSLP under triples embed as
     specifications ([pp2wp_under], [pp2wp_over], [pp2asp_over],
     [pp2dslp_under]). *)
-Check DivNonDetSt.Typings.wpUnderSt.
-Check DivNonDetSt.Typings.wpOverSt.
+Print DivNonDetSt.Typings.wpUnderSt.
+Print DivNonDetSt.Typings.wpOverSt.
 Check DivNonDetSt.Typings.triple_under_wpSt.
 Check DivNonDetSt.Typings.triple_over_wpSt.
-Check Generic.Typings.aspOver.
-Check Generic.Typings.dslpUnder.
+Print Generic.Typings.aspOver.
+Print Generic.Typings.dslpUnder.
 Check Generic.Typings.le_aspOver.
 Check Generic.Typings.le_dslpUnder.
 Check DivNonDetSt.Typings.triple_over_aspSt.
@@ -781,14 +783,14 @@ Check DijkstraExamples.progloom_harder_not_Dasp_op.
 
 (** The Dijkstra monad of a monad morphism, its operations
     and DM4all's laws; also with the order flipped. *)
-Check DijkstraMonad.OrderedTarget.
-Check DijkstraMonad.DM.
-Check DijkstraMonad.DM_ret.
-Check DijkstraMonad.DM_bind.
-Check DijkstraMonad.DM_wkn.
-Check DijkstraMonad.DijkstraLaws.
+Print DijkstraMonad.OrderedTarget.
+Print DijkstraMonad.DM.
+Print DijkstraMonad.DM_ret.
+Print DijkstraMonad.DM_bind.
+Print DijkstraMonad.DM_wkn.
+Print DijkstraMonad.DijkstraLaws.
 Check DijkstraMonad.DM_laws.
-Check DijkstraMonad.DMop.
+Print DijkstraMonad.DMop.
 Check DijkstraMonad.DMop_laws.
 
 (** Dijkstra monads for the four wp monads, ASP and DSLP
@@ -825,7 +827,7 @@ Check BaseGaloisConnections.wp_pp_under_adjunction.
 Check BaseGaloisConnections.wp_pp_over_adjunction.
 
 (** The [SPost] -- [Pred] edge of the diagram. *)
-Check GaloisArr.Galois_Rel_SPost.
+Print GaloisArr.Galois_Rel_SPost.
 
 (** Monotone monad transformers preserve Galois connections. *)
 Check MonadRelation.MonadRelation_stateT.
@@ -837,22 +839,22 @@ Check MonadRelation.MonadRelation_optionT.
     paper says demonic); [ψ ⊣ ψ'], and [ψ'] does not preserve WP's [bind];
     the maps are monotone; the adjoints are colimit/limit preserving; ASP is
     isomorphic to DWLP. *)
-Check PredMonad.PredSt.PredSt.
-Check PredMonad.PredSt.ordPredSt.
-Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred.
-Check MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt.
+Print PredMonad.PredSt.PredSt.
+Print PredMonad.PredSt.ordPredSt.
+Print MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred.
+Print MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_ret.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_bind.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_ret.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_bind.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_fromPred.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_pred.
-Check MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred.
+Print MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_toPred_adj.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred_ret.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.toPred_bind.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_monotone.
-Check MonotoneSPSt.SPStMonotone.AngelicMonotone.WSt2pred.
+Print MonotoneSPSt.SPStMonotone.AngelicMonotone.WSt2pred.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.WSt2pred_monotone.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_Wst2pred_adj.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.WSt2pred_bind_counterexample.
@@ -864,21 +866,21 @@ Check SPostArrEquiv.asp_to_rel_morphism.
     [bind]; [ξ] and [ζ] are monad morphisms (demonic structure);
     the lax demonic bind (footnote); [Radj (ξ p) (ζ p)], and every [Radj]
     pair is of this form; nuclei and limits; DSLP is isomorphic to AWP. *)
-Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred.
+Print MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_antitone.
-Check MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt.
+Print MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_antitone.
-Check MonotoneSPSt.SPStMonotone.DemonicMonotone.WSt2pred.
+Print MonotoneSPSt.SPStMonotone.DemonicMonotone.WSt2pred.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.WSt2pred_antitone.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_Wst2pred_adj.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.WSt2pred_bind_counterexample.
-Check MonotoneSPSt.SPStMonotone.DemonicMonotone.toPred.
+Print MonotoneSPSt.SPStMonotone.DemonicMonotone.toPred.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_toPred_adj.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_ret.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_bind.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_ret.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_bind.
-Check MonotoneSPSt.SPStMonotone.DemonicMonotone.bindP.
+Print MonotoneSPSt.SPStMonotone.DemonicMonotone.bindP.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.lunit.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.runit.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.assoc.
@@ -936,12 +938,12 @@ Check DivNonDetStExc.Computation.denoteStExc_morphism.
 
 (** The twelve laws, with logical equivalence of sp arrows as
     the equality. *)
-Check Arrow.ArrowLaws.
-Check Arrow.ArrowApplyLaws.
-Check SPostArr.ASPArr_eq.
-Check SPostArr.DSLPArr_eq.
-Check DSPASLPArr.DSPArr_eq.
-Check DSPASLPArr.ASLPArr_eq.
+Print Arrow.ArrowLaws.
+Print Arrow.ArrowApplyLaws.
+Print SPostArr.ASPArr_eq.
+Print SPostArr.DSLPArr_eq.
+Print DSPASLPArr.DSPArr_eq.
+Print DSPASLPArr.ASLPArr_eq.
 
 (** The state and option arrow transformers satisfy the arrow
     transformer laws. *)
@@ -952,7 +954,7 @@ Check OptionArrowT.ArrowApplyLaws.ArrowApplyLaws_optionArrT.
 
 (** All sp arrows are choice arrows, with Hughes's laws and
     Paterson's distribution law; the transformers preserve them. *)
-Check Arrow.ArrowChoiceLaws.
+Print Arrow.ArrowChoiceLaws.
 Check SPostArr.ArrowChoiceLaws_ASPArr.
 Check SPostArr.ArrowChoiceLaws_DSLPArr.
 Check DSPASLPArr.ArrowChoiceLaws_DSPArr.
@@ -966,19 +968,19 @@ Check OptionArrowT.ArrowChoiceLaws.ArrowChoiceLaws_optionArrT.
 
 (** The two arrows, their parts, operations and laws; direct
     composition of dsps fails; at input [unit] they give DSP and ASLP. *)
-Check DSPASLPArr.DSPArr.
-Check DSPASLPArr.pure_DSP.
-Check DSPASLPArr.comp_DSP.
-Check DSPASLPArr.first_DSP.
-Check DSPASLPArr.app_DSP.
+Print DSPASLPArr.DSPArr.
+Print DSPASLPArr.pure_DSP.
+Print DSPASLPArr.comp_DSP.
+Print DSPASLPArr.first_DSP.
+Print DSPASLPArr.app_DSP.
 Check DSPASLPArr.ArrowLaws_DSPArr.
 Check DSPASLPArr.ArrowApplyLaws_DSPArr.
 Check SPostArrInfrastructure.dsp_naive_transformer_comp_rejects.
-Check DSPASLPArr.ASLPArr.
-Check DSPASLPArr.pure_ASLP.
-Check DSPASLPArr.comp_ASLP.
-Check DSPASLPArr.first_ASLP.
-Check DSPASLPArr.app_ASLP.
+Print DSPASLPArr.ASLPArr.
+Print DSPASLPArr.pure_ASLP.
+Print DSPASLPArr.comp_ASLP.
+Print DSPASLPArr.first_ASLP.
+Print DSPASLPArr.app_ASLP.
 Check DSPASLPArr.ArrowLaws_ASLPArr.
 Check DSPASLPArr.ArrowApplyLaws_ASLPArr.
 Check DSPMonad.dspsp_to_dsp_morphism.
@@ -1027,7 +1029,7 @@ Check ASLPMonad.aslpRelSt_bind_of.
 
 (** E.1: [SPost_ang(S, A)] (monotone, strict) with the (ang-st) operations:
     the unit laws hold, associativity fails, with the paper's [m], [f], [g]. *)
-Check StatefulSPostCounterexample.St.SPostSt.
+Print StatefulSPostCounterexample.St.SPostSt.
 Check StatefulSPostCounterexample.St.SPostSt_bind_ret_r.
 Check StatefulSPostCounterexample.St.SPostSt_bind_ret_l.
 Check StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails.
@@ -1035,7 +1037,7 @@ Check StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails.
 (** E.2: [SPost_dem(S, A)] (monotone, terminating) with the (dem-st)
     operations: the unit laws hold, associativity fails, with the paper's
     [m], [f], [g]. *)
-Check StatefulSPostCounterexample.Dem.SPostDem.
+Print StatefulSPostCounterexample.Dem.SPostDem.
 Check StatefulSPostCounterexample.Dem.SPostDem_bind_ret_r.
 Check StatefulSPostCounterexample.Dem.SPostDem_bind_ret_l.
 Check StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
@@ -1044,12 +1046,12 @@ Check StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
     [ASPArr] (the codomain condition amounts to strictness) fail
     [first f >>> arr fst = arr fst >>> f], with the paper's [g] and [pre];
     dually for the monotone, terminating arrows with those of [DSLPArr]. *)
-Check LawCounterexamples.AngArr.SPArrAng.
+Print LawCounterexamples.AngArr.SPArrAng.
 Check LawCounterexamples.AngArr.codomain_iff_strict.
 Check LawCounterexamples.AngArr.compAng_ASP.
 Check LawCounterexamples.AngArr.first_fst_fails.
 Check LawCounterexamples.AngArr.not_ArrowLaws.
-Check LawCounterexamples.DemArr.SPArrDem.
+Print LawCounterexamples.DemArr.SPArrDem.
 Check LawCounterexamples.DemArr.codomain_iff_terminating.
 Check LawCounterexamples.DemArr.compDem_DSLP.
 Check LawCounterexamples.DemArr.first_fst_fails.
@@ -1062,11 +1064,11 @@ Check LawCounterexamples.DemArr.not_ArrowLaws.
 (** Lemmas lem:dsp-split and lem:aslp-split, and the health
     of the components. *)
 Check DSPASLPArr.dsp_split.
-Check DSPASLPArr.aspPartArr.
-Check DSPASLPArr.dslpPartArr.
+Print DSPASLPArr.aspPartArr.
+Print DSPASLPArr.dslpPartArr.
 Check DSPASLPArr.aslp_split.
-Check DSPASLPArr.aspPartAArr.
-Check DSPASLPArr.dslpPartAArr.
+Print DSPASLPArr.aspPartAArr.
+Print DSPASLPArr.dslpPartAArr.
 
 (* ================================================================= *)
 (** ** Appendix G, Monadic relations between the base monads         *)
