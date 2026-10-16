@@ -1,5 +1,4 @@
-(** * The carriers of the SP and WP monads inside the monotone arrow carrier
-      (paper, Section 4).
+(** * The carriers of the SP and WP monads inside the monotone arrow carrier.
 
     The WP monads are read at the second index of [MonoPT] and the SP monads
     at the first; the four refinements of each family become subsets of

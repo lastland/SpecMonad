@@ -21,8 +21,7 @@ specification monads).
   counit. `Pred` is in [Relational/PredMonad.v](../../../Code/Relational/PredMonad.v),
   `SPost` in [SP/SPostMonad.v](../../../Code/SP/SPostMonad.v).
 
-Not formalized: the paper's claim that these connections survive monad and
-arrow transformers. The nearest result is the monadic-relation lifting of
+Their lifting through monad transformers is the monadic-relation lifting of
 `GaloisPredWP` in [PTMonadTaxonomy/MonadTaxonomy.v](../../../Code/PTMonadTaxonomy/MonadTaxonomy.v).
 
 ## Binary arrows (beyond the paper)

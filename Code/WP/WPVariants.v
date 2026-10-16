@@ -1,4 +1,4 @@
-(** * The four WP variants [AWP], [DWLP], [DWP], [AWLP] (paper, Section 3.6).
+(** * The four WP variants [AWP], [DWLP], [DWP], [AWLP].
 
     Each is [WPure] restricted by a healthiness condition that [ret] and
     [bind] preserve, so each is a submonad of [WPure] with the order pulled

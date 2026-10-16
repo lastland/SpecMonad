@@ -31,13 +31,12 @@ boundaries. `Backup/` (including `Backup/Taxonomy-deprecated/`) is excluded from
 normal symbol searches.
 
 `Code/` is organized by paper section ([Code/README.md](Code/README.md));
-[PAPER.md](PAPER.md) maps claims to Rocq names and
-`Code/Checks/PaperClaims.v` checks them under `make check`. Directories form
+`Code/Checks/PaperClaims.v` maps claims to Rocq names and checks them under
+`make check`. Directories form
 layers ([Code/scripts/layers.txt](Code/scripts/layers.txt)): a new import must
 respect them (`make layers`, also run in CI). Put a new file in the directory
 of the paper section that presents it; if it is infrastructure, in `Lib/` or
-`Relational/`. Keep `PAPER.md` and `PaperClaims.v` in sync when renaming a
-claimed result.
+`Relational/`. Update `PaperClaims.v` when renaming a claimed result.
 
 Concrete arrow instantiation checks live in `Code/Tests/`.
 

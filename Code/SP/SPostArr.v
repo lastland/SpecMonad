@@ -1,5 +1,4 @@
-(** * Property-only strongest-postcondition arrows: ASP and DSLP
-      (paper, Sections 3.2-3.4).
+(** * Property-only strongest-postcondition arrows: ASP and DSLP.
 
     The canonical carriers contain predicate transformers and healthiness
     proofs, not stored relations. ASP/DSLP have constructive normal forms.

@@ -1,12 +1,9 @@
 (** * Paper claims index
 
     One block per section of the paper, in paper order.  Each block quotes
-    or paraphrases a claim, with its line in the paper's source, and
-    [Check]s the Rocq names that state it.  Where the formalization differs
-    from the claim the comment says how ("partial: ..."); claims with no
-    formal counterpart are listed as "Not formalized" and checked nowhere.
-    This file holds only what the paper claims.  [PAPER.md] at the
-    repository root is the evaluator-facing table built from this file.
+    or paraphrases a claim and [Check]s the Rocq names that state it.
+    Where the formalization differs from the claim the comment says how
+    ("partial: ...").  This file holds only what the paper claims.
     Assumptions are reported by [Checks/Assumptions.v].
 
     Modules are required without [Import] and names are qualified by file
@@ -27,21 +24,25 @@ From Incorrectness.WP Require
   WPure WPVariants.
 From Incorrectness.SP Require
   RawSP SPostMonad StatefulSPostCounterexample PredicateTransformerProperties
-  SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad.
+  SPostArr DSPASLPArr SPostArrEquiv ASPMonad DSLPMonad DSPMonad ASLPMonad
+  PredIsomorphisms LawCounterexamples.
 From Incorrectness.PTMonadTaxonomy Require
   TransformerRelations MonotoneSPSt SPStBindComparisons MonadTaxonomy.
 From Incorrectness.Verification.Generic Require
   Triple DijkstraMonad Typings.
 From Incorrectness.Verification.DivNonDet Require
-  Computation Morphisms Triples TriplesTaxonomy.
+  Computation Morphisms Triples TriplesTaxonomy HealthyReadings.
 From Incorrectness.Verification.DivNonDetSt Require
-  Computation Morphisms Triples TriplesTaxonomy Typings DijkstraMonads.
+  Computation Morphisms Triples TriplesTaxonomy Typings DijkstraMonads
+  HealthyReadings TripleRules.
+From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require
+  ResetEven DSPSequencing.
 From Incorrectness.Verification.DivNonDetStExc Require
   Computation Morphisms DijkstraMonads TriplesExamples DijkstraExamples.
 From Incorrectness.GaloisConnections Require
   BaseGaloisConnections GaloisArr.
 From Incorrectness.Tests Require
-  SPostArrMonotoneLaws SPostArrInfrastructure.
+  SPostArrInfrastructure.
 
 (* ================================================================= *)
 (** ** Section 1, Introduction                                       *)
@@ -125,11 +126,13 @@ Check ASLPMonad.not_OrderedMonad_ASLPSt.
 Check GaloisArr.Galois_Rel_PrePost.
 Check GaloisArr.Galois_WP_PrePost.
 
-(** Not formalized: that incorrectness logic has no wp characterization
-    (cited from Verscht and Kaminski); the shape [S -> P -> (A * S -> P)] of
-    the state transformer on [SPost] (no [stateT S SPost] is defined); "all
-    definitions and proofs are mechanized": not the case, see the Not
-    formalized notes. *)
+(** The isomorphism between [Pred] and [SPost] extends to
+    isomorphisms between asp and dwlp and between dslp and awp as stateful
+    specification monads (partial: order isomorphisms, compatible with the
+    monad structure, through the Galois relations; see Section 6). *)
+Check MonadTaxonomy.galois_asp_dwlp_order.
+Check MonadTaxonomy.galois_awp_dslp_order.
+Check PredIsomorphisms.pred_to_dm4all_morphism.
 
 (* ================================================================= *)
 (** ** Section 2, Background: weakest precondition monads            *)
@@ -155,9 +158,6 @@ Check WPure.retPs.
 Check WPure.bindPs.
 Check WPure.ordWSt.
 Check WPure.OrderedMonad_WSt.
-
-(** Not formalized: the iso [(A -> P) -> (1 -> P) ~ (A -> P) -> P];
-    a named order on predicates (inlined). *)
 
 (* ================================================================= *)
 (** ** Section 3.1, Base sp monads                                   *)
@@ -192,15 +192,11 @@ Check ASPMonad.retASPSP.
 Check ASPMonad.bindASPSP.
 Check ASPMonad.MonadLawsE_ASPSP.
 
-(** Without disjunctivity (conjunctivity) the arrow laws and
-    the associativity of the stateful bind fail (partial: for monotone
-    carriers with these operations). *)
+(** Without disjunctivity (conjunctivity) the associativity
+    of the stateful bind fails (Appendix D). *)
 Check StatefulSPostCounterexample.FailingBind.SPostStExc_bind_bind_fails.
 Check StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails.
-Check SPostArrMonotoneLaws.MonotoneLaws.ASP.no_arrow_laws.
-Check SPostArrMonotoneLaws.MonotoneLaws.ASP.no_arrow_apply_laws.
-Check SPostArrMonotoneLaws.MonotoneLaws.DSLP.no_arrow_laws.
-Check SPostArrMonotoneLaws.MonotoneLaws.DSLP.no_arrow_apply_laws.
+Check StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
 
 (** Each class is exactly the transformers of programs under
     its interpretation (at the arrow level). *)
@@ -223,7 +219,8 @@ Check DSLPMonad.meet_iff_msingleton.
 (** [DSP] (conjunctive, strict) and [ASLP] (disjunctive,
     terminating); each element is the meet (join) of its [aspOf] and
     [dslpOf] parts; both monads are lawful (partial: the parts are defined
-    through the relation they denote, not by the displayed formulas). *)
+    through the relation an element denotes, not by the displayed
+    formulas). *)
 Check DSPMonad.DSP.
 Check DSPASLPArr.dspRel.
 Check DSPASLPArr.aspPartArr.
@@ -279,6 +276,12 @@ Check ASPMonad.asp_to_aspsp_morphism.
 Check ASPMonad.aspsp_to_asp_to_aspsp.
 Check ASPMonad.asp_to_aspsp_to_asp.
 
+(** Monotonicity and strictness alone are not enough: without
+    disjunctivity the arrow laws fail (Appendix D.3; dually without
+    conjunctivity). *)
+Check LawCounterexamples.AngArr.not_ArrowLaws.
+Check LawCounterexamples.DemArr.not_ArrowLaws.
+
 (** [DSLPArr] (terminating + conjunctive = all conjunctions),
     its operations, lawful; at input [unit] it is [DSLP]. *)
 Check SPostArr.DSLPArr.
@@ -295,8 +298,6 @@ Check DSLPMonad.dslpsp_to_dslp_morphism.
 Check DSLPMonad.dslp_to_dslpsp_morphism.
 Check DSLPMonad.dslpsp_to_dslp_to_dslpsp.
 Check DSLPMonad.dslp_to_dslpsp_to_dslp.
-
-(** Not formalized: functions and Kleisli arrows as arrows. *)
 
 (* ================================================================= *)
 (** ** Section 3.3, Stateful sp arrows and monads                    *)
@@ -354,28 +355,17 @@ Check ArrowMorphism.arrow_morphism_monad.
 Check ArrowMorphism.state_arrow_morphism.
 Check ArrowMorphism.option_arrow_morphism.
 
-(** sp arrows are isomorphic to relations (partial: [Rel] is
-    not identified as a Kleisli arrow). *)
-Check SPostArrEquiv.asp_to_rel_morphism.
-Check SPostArrEquiv.asp_from_rel_morphism.
-Check SPostArrEquiv.dslp_to_rel_morphism.
-Check SPostArrEquiv.dslp_from_rel_morphism.
-Check SPostArrEquiv.asp_from_to.
-Check SPostArrEquiv.asp_to_from.
-Check SPostArrEquiv.dslp_from_to.
-Check SPostArrEquiv.dslp_to_from.
-Check SPostArrEquiv.dsp_to_rel_morphism.
-Check SPostArrEquiv.dsp_from_rel_morphism.
-Check DSPASLPArr.dspRel_ofRelArr.
-Check DSPASLPArr.dspRel_spec.
-Check SPostArrEquiv.aslp_to_rel_morphism.
-Check SPostArrEquiv.aslp_from_rel_morphism.
-Check DSPASLPArr.aslpRel_ofRelArr.
-Check DSPASLPArr.aslpRel_spec.
-
-(** Not formalized: the state arrow transformer on a Kleisli
-    arrow gives the state monad transformer, and
-    [StT(ASP) ~ StTArr(ASPArr) unit] through [toArrow]/[fromArrow]. *)
+(** Restricted to monotone, strict, disjunctive transformers,
+    [StT(ASP)] and [StTArr(ASPArr) unit] are isomorphic through [toArrow]
+    and [fromArrow], with the paper's formulas, as ordered monads. *)
+Check ASPMonad.toArrowASPState.
+Check ASPMonad.fromArrowASPState.
+Check ASPMonad.toArrowASPState_formula.
+Check ASPMonad.fromArrowASPState_formula.
+Check ASPMonad.fromArrowASPState_toArrowASPState.
+Check ASPMonad.toArrowASPState_fromArrowASPState.
+Check ASPMonad.toArrowASPState_morphism.
+Check ASPMonad.fromArrowASPState_morphism.
 
 (* ================================================================= *)
 (** ** Section 3.5, Refined wp monads                                *)
@@ -400,6 +390,22 @@ Check WPVariants.MonadLawsE_DWLP.
 Check WPVariants.MonadLawsE_DWP.
 Check WPVariants.MonadLawsE_AWLP.
 
+(** The four wp monads contain exactly the wps of programs
+    under their interpretation: each reading lands in its monad, as a monad
+    morphism into it, and every element is the reading of a computation. *)
+Check DivNonDet.HealthyReadings.dwpPure_healthy.
+Check DivNonDet.HealthyReadings.dwlpPure_healthy.
+Check DivNonDet.HealthyReadings.awpPure_healthy.
+Check DivNonDet.HealthyReadings.awlpPure_healthy.
+Check DivNonDet.HealthyReadings.dwpPure_DWP_morphism.
+Check DivNonDet.HealthyReadings.dwlpPure_DWLP_morphism.
+Check DivNonDet.HealthyReadings.awpPure_AWP_morphism.
+Check DivNonDet.HealthyReadings.awlpPure_AWLP_morphism.
+Check DivNonDet.HealthyReadings.dwpPure_DWP_complete.
+Check DivNonDet.HealthyReadings.dwlpPure_DWLP_complete.
+Check DivNonDet.HealthyReadings.awpPure_AWP_complete.
+Check DivNonDet.HealthyReadings.awlpPure_AWLP_complete.
+
 (** They share WP's [ret] and [bind]; [ret] has all four
     properties and [bind] preserves each, so they are submonads of WP. *)
 Check WPVariants.toWPure_ret.
@@ -413,10 +419,6 @@ Check WPVariants.wpure_bind_terminating.
 Check WPVariants.wpure_bind_conjunctive.
 Check WPVariants.wpure_bind_disjunctive.
 Check WPVariants.toWPure_morphism.
-
-(** Not formalized: that the wps of programs under each
-    interpretation land in the matching submonad (the wp morphisms target
-    WP). *)
 
 (* ================================================================= *)
 (** ** Section 4.1, Taxonomy of triples                              *)
@@ -714,6 +716,20 @@ Check DSLPMonad.dslp_to_dm4all_dem_morphism.
 Check DSLPMonad.dm4all_dem_round_trip.
 Check DSLPMonad.dslp_dm4all_dem_round_trip.
 
+(** [SPost_ang] and [SPost_dem] are isomorphic to [Pred] as
+    monads (the angelic maps preserve the order, the demonic ones reverse
+    it). *)
+Check PredIsomorphisms.pred_to_dm4all_morphism.
+Check PredIsomorphisms.dm4all_to_pred_morphism.
+Check PredIsomorphisms.dm4all_to_pred_to_dm4all.
+Check PredIsomorphisms.pred_to_dm4all_to_pred.
+Check PredIsomorphisms.pred_to_dm4all_order.
+Check PredIsomorphisms.pred_to_dm4all_dem_morphism.
+Check PredIsomorphisms.dm4all_dem_to_pred_morphism.
+Check PredIsomorphisms.dm4all_dem_to_pred_to_dm4all_dem.
+Check PredIsomorphisms.pred_to_dm4all_dem_to_pred.
+Check PredIsomorphisms.pred_to_dm4all_dem_order.
+
 (** The adjunctions are proved at the base between [WPure]
     and [Pred], and lifted by [stateT] and [optionT]. *)
 Check MonadTaxonomy.MonadRelation_GaloisPredWP.
@@ -735,10 +751,6 @@ Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_exc_one.
 Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_exc_two.
 Check MonadTaxonomy.MonadRelation_galois_asp_dwlp_exc.
 Check MonadTaxonomy.MonadRelation_galois_awp_dslp_exc.
-
-(** Not formalized: that the exception arrow transformer alone
-    keeps DSP = ASP and ASLP = DSLP; [SPost_ang] and
-    [SPost_dem] isomorphic to [Pred]. *)
 
 (* ================================================================= *)
 (** ** Section 5, Specifying monadic programs                        *)
@@ -776,6 +788,12 @@ Check DivNonDetSt.Triples.aslpSt_read.
 Check RelSPostArr.dspOf.
 Check RelSPostArr.aslpOf.
 
+(** The stateful wp morphisms into the refined wp monads. *)
+Check DivNonDetSt.HealthyReadings.dwpSt_DWPSt_morphism.
+Check DivNonDetSt.HealthyReadings.dwlpSt_DWLPSt_morphism.
+Check DivNonDetSt.HealthyReadings.awpSt_AWPSt_morphism.
+Check DivNonDetSt.HealthyReadings.awlpSt_AWLPSt_morphism.
+
 (** The base wp morphisms, lifted by [stateT] to the stateful
     ones. *)
 Check DivNonDet.Morphisms.dwpPure_morphism.
@@ -812,11 +830,49 @@ Check MonadTaxonomy.GaloisWPSP_pt.
 Check DivNonDetSt.Triples.triple_aspSt.
 Check DivNonDetSt.Triples.triple_awpSt.
 
-(** The two incorrectness logics differ (partial: shown on a
-    different program, with exceptions: Lisbon logic fails where
-    incorrectness logic holds). *)
-Check Withdrawal.progloom_harder_not_awp_under.
-Check Withdrawal.progloom_harder_asp_under.
+(** The running program on even and odd states, its AWP and
+    ASP transformers; Lisbon logic fails (at [s = 1]) where incorrectness
+    logic holds; with [p'] both hold. *)
+Check ResetEven.m.
+Check ResetEven.m_out.
+Check ResetEven.awp_m.
+Check ResetEven.asp_m.
+Check ResetEven.awp_m_q.
+Check ResetEven.asp_m_p.
+Check ResetEven.lisbon_p_q_fails.
+Check ResetEven.incorr_p_q.
+Check ResetEven.asp_m_p'.
+Check ResetEven.lisbon_p'_q.
+Check ResetEven.incorr_p'_q.
+
+(** The wp triple sequencing rule, under and over, for any
+    monad morphism into the stateful wp monad, hence for the four readings
+    (all eight kinds). *)
+Check DivNonDetSt.TripleRules.wpSt_bind_under.
+Check DivNonDetSt.TripleRules.wpSt_bind_over.
+
+(** The ASP and DSLP rules in both directions (Hoare logic
+    and incorrectness logic), and DSP under / ASLP over through their
+    components (partial: the side condition [q0 ⇒ p_a] is right for the
+    over-approximate rules; the under-approximate ones need [p_a ⇒ q0];
+    under-approximate ASP and over-approximate DSLP, with a family of
+    [p_a], also need an inhabited result type). *)
+Check DivNonDetSt.TripleRules.aspSt_bind_over.
+Check DivNonDetSt.TripleRules.aspSt_bind_under.
+Check DivNonDetSt.TripleRules.dslpSt_bind_under.
+Check DivNonDetSt.TripleRules.dslpSt_bind_over.
+Check DivNonDetSt.TripleRules.dspSt_under_iff.
+Check DivNonDetSt.TripleRules.aslpSt_over_iff.
+Check DivNonDetSt.TripleRules.dspSt_bind_under.
+Check DivNonDetSt.TripleRules.aslpSt_bind_over.
+Check DSPSequencing.side_aspSt_under.
+Check DSPSequencing.inhabited_aspSt_under.
+
+(** Figure 2: over-approximate DSP and under-approximate ASLP
+    triples do not compose; the counterexample (b) is the complement of
+    (a). *)
+Check DSPSequencing.dspSt_over_seq_counterexample.
+Check DSPSequencing.aslpSt_under_seq_counterexample.
 
 (** The comparison rule is the bind typing of the Dijkstra
     monad of a morphism; ASP, DSLP and the wp monads are specification
@@ -830,6 +886,15 @@ Check WPVariants.OrderedMonad_DWPSt.
 Check WPVariants.OrderedMonad_AWPSt.
 Check WPVariants.OrderedMonad_DWLPSt.
 Check WPVariants.OrderedMonad_AWLPSt.
+
+(** The AWP specification of the running program, its
+    comparison (a Dijkstra-monad typing), and its equivalence with the
+    pre/post pair. *)
+Check ResetEven.wspec.
+Check ResetEven.awp_m_le_wspec.
+Check ResetEven.m_DM.
+Check ResetEven.wspec_pp2wp.
+Check ResetEven.le_wspec_iff_lisbon.
 
 (** wp triples, ASP over and DSLP under triples embed as
     specifications ([pp2wp_under], [pp2wp_over], [pp2asp_over],
@@ -890,14 +955,6 @@ Check DijkstraExamples.progB_Dawlp.
 Check DijkstraExamples.progA_Dasp.
 Check DijkstraExamples.progEx_Ddslp_op.
 
-(** Not formalized: that incorrectness logic has no wp
-    characterization (cited); the paper's running
-    program on even and odd states, its transformers and specifications;
-    the sequencing rules for triples and the failure of
-    over-approximate DSP / under-approximate ASLP triples to compose
-    (Figure 3); wp morphisms into the healthy wp monads (they
-    target WP). *)
-
 (* ================================================================= *)
 (** ** Section 6, Galois connections between specification monads    *)
 (* ================================================================= *)
@@ -912,6 +969,9 @@ Check BaseGaloisConnections.wp_pp_over_adjunction.
 (** The [SPost] -- [Pred] edge of the diagram (partial: for
     binary arrows, monotone sps and relations, at input [unit]). *)
 Check GaloisArr.Galois_Rel_SPost.
+
+(** In the pure case [SPost ~ Pred] (Section 4.4 above). *)
+Check PredIsomorphisms.pred_to_dm4all_morphism.
 
 (** Monotone monad transformers preserve Galois connections
     (partial: they preserve monadic relations, which the Galois connections
@@ -970,15 +1030,6 @@ Check MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_colim.
 Check MonadTaxonomy.galois_awp_dslp_order.
 Check SPostArrEquiv.dslp_to_rel_morphism.
 
-(** Not formalized: Maillard et al.'s [SPost ~ Pred]; the monotonicity of
-    [φ], [ψ], [ζ], [ξ'], [ζ'] and the naturality of the demonic maps; the
-    stateful [ψ'] and [ψ ⊣ ψ'], [ζ'] and [ζ' ⊣ ζ]; [ξ'] as a monad morphism;
-    that [ψ'] and [ζ'] do not preserve WP's bind; the nuclei (1)-(3) beyond
-    the cases above; ASP ~ Pred ~ DWLP and DSLP ~ Pred^op ~ AWP as stated
-    isomorphisms; the rendered draft notes: Galois connections lifted
-    through monad and arrow transformers, extended to the new specification
-    monads (its "NewGaloisConnections.v" is [wp_pp_over_adjunction] above). *)
-
 (* ================================================================= *)
 (** ** Section 7, Formalization in Rocq                              *)
 (* ================================================================= *)
@@ -1009,9 +1060,9 @@ Check DivNonDetSt.Computation.denoteSt_morphism.
 Check DivNonDetStExc.Computation.denoteStExc_morphism.
 
 (** All sp arrows are choice arrows, with Hughes's laws and
-    Paterson's distribution law; the transformers preserve them.  (The
-    sentence also says loop arrows: not the case, no sp arrow has an
-    [ArrowLoop] instance.) *)
+    Paterson's distribution law; the transformers preserve them (partial:
+    the sentence also says loop arrows, which they are not: no sp arrow
+    has an [ArrowLoop] instance). *)
 Check Arrow.ArrowChoiceLaws.
 Check SPostArr.ArrowChoiceLaws_ASPArr.
 Check SPostArr.ArrowChoiceLaws_DSLPArr.
@@ -1020,9 +1071,8 @@ Check DSPASLPArr.ArrowChoiceLaws_ASLPArr.
 Check StateArrowT.ArrowChoiceLaws.ArrowChoiceLaws_stateArrT.
 Check OptionArrowT.ArrowChoiceLaws.ArrowChoiceLaws_optionArrT.
 
-(** Not checkable here: "all definitions and results are formalized" (not
-    the case, see the Not formalized notes); "about 28k lines", "only
-    funext, propext and excluded middle" (the build has about 35k lines;
+(** Not checkable here: "about 28k lines", "only funext,
+    propext and excluded middle" (the build has about 38.6k lines;
     [Checks/Assumptions.v] reports the axioms, which also include
     [eq_rect_eq], through ITree). *)
 
@@ -1044,8 +1094,9 @@ Check DSPASLPArr.ASLPArr_eq.
 (* ================================================================= *)
 
 (** The two arrows, their parts, operations and laws; direct
-    composition of dsps fails (partial: on non-pure arrows); at input
-    [unit] they give DSP and ASLP. *)
+    composition of dsps fails (partial: on non-pure arrows; the parts are
+    defined through the relation an element denotes, not by the displayed
+    formulas); at input [unit] they give DSP and ASLP. *)
 Check DSPASLPArr.DSPArr.
 Check DSPASLPArr.pure_DSP.
 Check DSPASLPArr.comp_DSP.
@@ -1069,3 +1120,75 @@ Check DSPMonad.dspsp_to_dsp_to_dspsp.
 Check DSPMonad.dsp_to_dspsp_to_dsp.
 Check ASLPMonad.aslpsp_to_aslp_to_aslpsp.
 Check ASLPMonad.aslp_to_aslpsp_to_aslp.
+
+(* ================================================================= *)
+(** ** Appendix C, Fixing the input of the ASP and DSLP arrows       *)
+(* ================================================================= *)
+
+(** Lemma lem:asp-singleton; fixing the input of [ASPArr]
+    gives the carrier and the [ret] and [bind] of [ASP] (partial: [bind]
+    read in relational form; the carrier equivalence is proved
+    classically, not constructively). *)
+Check ASPMonad.getASP_singleton.
+Check ASPMonad.join_iff_singleton.
+Check ASPMonad.getASP_ret.
+Check ASPMonad.getASP_bind.
+Check ASPMonad.aspsp_to_asp_morphism.
+
+(** Dually Lemma lem:dslp-singleton, and the [ret] and [bind]
+    of [DSLP] (partial: [bind] read in relational form). *)
+Check DSLPMonad.getDSLP_msingleton.
+Check DSLPMonad.meet_iff_msingleton.
+Check DSLPMonad.getDSLP_ret.
+Check DSLPMonad.getDSLP_bind.
+Check DSLPMonad.dslpsp_to_dslp_morphism.
+
+(* ================================================================= *)
+(** ** Appendix D, Counterexamples to the monad and arrow laws       *)
+(* ================================================================= *)
+
+(** D.1: [SPost_ang(S, A)] (monotone, strict) with the
+    (ang-st) operations: the unit laws hold, associativity fails, with the
+    paper's [m], [f], [g] (at [S = A = bool]). *)
+Check StatefulSPostCounterexample.St.SPostSt.
+Check StatefulSPostCounterexample.St.SPostSt_bind_ret_r.
+Check StatefulSPostCounterexample.St.SPostSt_bind_ret_l.
+Check StatefulSPostCounterexample.St.FailingBind.SPostSt_bind_bind_fails.
+
+(** D.2: [SPost_dem(S, A)] (monotone, terminating) with the
+    (dem-st) operations: the unit laws hold, associativity fails, with the
+    paper's [m], [f], [g] (at [S = A = bool]). *)
+Check StatefulSPostCounterexample.Dem.SPostDem.
+Check StatefulSPostCounterexample.Dem.SPostDem_bind_ret_r.
+Check StatefulSPostCounterexample.Dem.SPostDem_bind_ret_l.
+Check StatefulSPostCounterexample.Dem.FailingBind.SPostDem_bind_bind_fails.
+
+(** D.3: the monotone, strict sp arrows with the operations of
+    [ASPArr] (the codomain condition amounts to strictness) fail
+    [first f >>> arr fst = arr fst >>> f], with the paper's [g] and [pre];
+    dually for the monotone, terminating arrows with those of [DSLPArr]. *)
+Check LawCounterexamples.AngArr.SPArrAng.
+Check LawCounterexamples.AngArr.codomain_iff_strict.
+Check LawCounterexamples.AngArr.compAng_ASP.
+Check LawCounterexamples.AngArr.first_fst_fails.
+Check LawCounterexamples.AngArr.not_ArrowLaws.
+Check LawCounterexamples.DemArr.SPArrDem.
+Check LawCounterexamples.DemArr.codomain_iff_terminating.
+Check LawCounterexamples.DemArr.compDem_DSLP.
+Check LawCounterexamples.DemArr.first_fst_fails.
+Check LawCounterexamples.DemArr.not_ArrowLaws.
+
+(* ================================================================= *)
+(** ** Appendix E, Decomposing dsp and aslp transformers             *)
+(* ================================================================= *)
+
+(** Lemmas lem:dsp-split and lem:aslp-split, and the health
+    of the components (partial: the components are defined through the
+    relation an element denotes, not by the displayed formulas; their health
+    holds by their types). *)
+Check DSPASLPArr.dsp_split.
+Check DSPASLPArr.aspPartArr.
+Check DSPASLPArr.dslpPartArr.
+Check DSPASLPArr.aslp_split.
+Check DSPASLPArr.aspPartAArr.
+Check DSPASLPArr.dslpPartAArr.

@@ -1,4 +1,4 @@
-(** * Raw strongest-postcondition transformers (paper, Section 3).
+(** * Raw strongest-postcondition transformers.
 
     [SPPure A = Prop -> A -> Prop], the stateful [SPSt] and [SPStExc], the
     terminating-slice variant [StTrans], and the refinement order on raw

@@ -1,7 +1,7 @@
 # Global context map
 
 Read the [README](../../../README.md) for project goals, [CLAUDE.md](../../../CLAUDE.md) for
-development conventions, [PAPER.md](../../../PAPER.md) for the paper-to-code index,
+development conventions, [PaperClaims.v](../../../Code/Checks/PaperClaims.v) for the paper-to-code index,
 and the [design notes](../../design.md) for semantics. Start with [Code](Code.md), then the parent and local
 contexts for the task. Source declarations determine exact contracts.
 See [domain-document rules](../domain.md) for maintenance and ADR use.
@@ -62,7 +62,7 @@ representation change, read carrier → equivalence → examples/tests. For a
 generic law, read Lib → transformer → generic/concrete tests. For a
 judgment, check its outcome type, quantifiers, and order direction. For Dijkstra
 typings, read carrier/order → Generic/DijkstraMonad.v → the setting's Dijkstra and Typings files. For a paper claim, start
-from [PAPER.md](../../../PAPER.md).
+from [PaperClaims.v](../../../Code/Checks/PaperClaims.v).
 
 `Backup/` (with the former `Taxonomy/deprecated/` and `ITreeExamples/`) is outside the normal
 manifest. Consult it deliberately; the provenance of the copied ITree examples

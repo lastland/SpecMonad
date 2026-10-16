@@ -23,13 +23,16 @@ algebraic arrow/monad laws remain distinct.
 | Paper | File | Contents |
 |---|---|---|
 | 3.1 | [SPostMonad.v](../../../Code/SP/SPostMonad.v) | `SPM.SPost`: monotone transformers into `Over pre` (propositions implying the precondition), `SP_le`, `OrderedMonad_SPost`; `SPostPure`, the same restriction on raw transformers, and its conditions `Monotone`, `Codomain`, `CodomainDSLP` used by the ASP and DSLP files |
-| 3.3 | [StatefulSPostCounterexample.v](../../../Code/SP/StatefulSPostCounterexample.v) | `SPostStExc` and `St.SPostSt`: stateful carriers restricted like `SPost`; `FailingBind`: the m/f/g counterexample to associativity. Hand-built carriers, not literally `stateArrT` over the angelic arrow; only the angelic case |
+| 3.3 | [StatefulSPostCounterexample.v](../../../Code/SP/StatefulSPostCounterexample.v) | `SPostStExc` and `St.SPostSt`: stateful carriers restricted like `SPost`; `FailingBind`: the m/f/g counterexample to associativity. Hand-built carriers, not literally `stateArrT` over the angelic arrow; only the angelic case; `Dem`: the demonic twin (monotone, terminating), whose `bind` is not associative either |
 | 3 | [RawSP.v](../../../Code/SP/RawSP.v) | raw `SPPure`, `SPSt`, `SPStExc`, the terminating slice `StTrans`, the order on raw transformers. Not the carriers of the four monads |
 | 3.3-3.4 | [PredicateTransformerProperties.v](../../../Code/SP/PredicateTransformerProperties.v) | `StrictArr`, `TerminatingArr`, `DisjunctiveArr`, `ConjunctiveArr` for `(A -> Prop) -> B -> Prop`; see [PROPERTY_TERMINOLOGY.md](../../PROPERTY_TERMINOLOGY.md) |
 | 3.2, 3.4 | [SPostArr.v](../../../Code/SP/SPostArr.v) | the raw `SPArrT` and its properties; the ASP and DSLP arrows, normal forms, recovered relations, laws, stacks, `asp_to_dslp` |
 | 3.5 | [DSPASLPArr.v](../../../Code/SP/DSPASLPArr.v) | the DSP and ASLP arrows, their stacks, and the separation of the four classes |
 | 5 | [SPostArrEquiv.v](../../../Code/SP/SPostArrEquiv.v) | ASP/DSLP/DSP/ASLP arrows as morphisms to and from `Rel`; the transported `ArrowLoop` obstruction |
 | 3.4-3.5 | [ASPMonad.v](../../../Code/SP/ASPMonad.v), [DSLPMonad.v](../../../Code/SP/DSLPMonad.v), [DSPMonad.v](../../../Code/SP/DSPMonad.v), [ASLPMonad.v](../../../Code/SP/ASLPMonad.v) | the four SP monads at input `unit`, with state and with state and exceptions; `ASPMonad.v` and `DSLPMonad.v` also connect `SPM.SPost` and the universal dual `SPostDem.SPost` to `ASP` and `DSLP` at input `unit`, prove their healthiness, and record the top-preservation counterexample |
+| 3.4 | [ASPMonad.v](../../../Code/SP/ASPMonad.v) | also `toArrowASPState` / `fromArrowASPState`: `stateT S ASP` and `ASPSt S` are isomorphic ordered monads (`toArrowASPState_morphism`, `fromArrowASPState_morphism`) |
+| App. D | [LawCounterexamples.v](../../../Code/SP/LawCounterexamples.v) | `AngArr` / `DemArr`: the monotone strict (terminating) arrows with the ASP (DSLP) operations fail `first f >>> arr fst = arr fst >>> f` |
+| 4.4 | [PredIsomorphisms.v](../../../Code/SP/PredIsomorphisms.v) | `SPost_ang` (`SPM.SPost`, `ASPSP`, `ASP`) and `SPost_dem` (`SPostDem.SPost`, `DSLPSP`, `DSLP`) isomorphic to `Pred` as monads; order preserved (angelic) or reversed (demonic) |
 
 ## The arrows
 

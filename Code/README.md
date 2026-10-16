@@ -1,9 +1,8 @@
 # The Rocq development
 
 Mechanization of *A Taxonomy of Predicate Transformer Monads for Specifying
-Monadic Programs*. Directories follow the paper; [PAPER.md](../PAPER.md) maps
-each claim to its Rocq name, and [Checks/PaperClaims.v](Checks/PaperClaims.v)
-checks those names when `make check` runs.
+Monadic Programs*. Directories follow the paper; [Checks/PaperClaims.v](Checks/PaperClaims.v)
+maps each claim to its Rocq names and checks them when `make check` runs.
 
 ## Build
 
@@ -97,5 +96,3 @@ file-level graph with a directory-only view.
    [Verification/Generic/Typings.v](Verification/Generic/Typings.v),
    [Verification/DivNonDetStExc/DijkstraExamples.v](Verification/DivNonDetStExc/DijkstraExamples.v).
 8. §7: [GaloisConnections/BaseGaloisConnections.v](GaloisConnections/BaseGaloisConnections.v).
-
-`Backup/` (including the former `ITreeExamples/`) is outside the build.

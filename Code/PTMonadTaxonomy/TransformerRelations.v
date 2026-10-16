@@ -1,4 +1,4 @@
-(** * The taxonomy on bare predicate transformers (paper, Section 4.1).
+(** * The taxonomy on bare predicate transformers.
 
     The monotone carrier [MonotoneSPost] read with either index fixed, as
     [MonoPT], and the three relations of Verscht and Kaminski's taxonomy on

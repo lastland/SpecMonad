@@ -47,6 +47,26 @@ Parent: [Verification](../Verification.md). The state setting:
   ITree's `Or`): its tree is a choice between the two results
   (`progA_IT_tree`, up to `eutt`), hence its outcomes (`progA_IT_out`) and
   its DWP and ASP `Under` triples.
+- [HealthyReadings.v](../../../../Code/Verification/DivNonDetSt/HealthyReadings.v): the stateful
+  readings land in the stateful WP variants (`dwpSt_DWPSt_morphism` &c.), as
+  `stateT_map` of the base corestrictions.
+- [TripleRules.v](../../../../Code/Verification/DivNonDetSt/TripleRules.v): the sequencing rules.
+  WP triples compose under and over for any monad morphism into `WSt S`
+  (`wpSt_bind_under`, `wpSt_bind_over`), so for all eight kinds; ASP and DSLP compose in
+  both directions, the over-approximate rules with the side condition
+  `q0 => p_a` and the under-approximate ones with `p_a => q0`;
+  under-approximate ASP and over-approximate DSLP also need an inhabited
+  result type; under-approximate DSP and over-approximate ASLP compose
+  through their components.
+- [TriplesExamples/ResetEven.v](../../../../Code/Verification/DivNonDetSt/TriplesExamples/ResetEven.v):
+  the paper's running program (reset to 0 from an even state): its AWP and
+  ASP readings, Lisbon logic failing where incorrectness logic holds, and
+  its AWP specification as a Dijkstra-monad typing.
+- [TriplesExamples/DSPSequencing.v](../../../../Code/Verification/DivNonDetSt/TriplesExamples/DSPSequencing.v):
+  Figure 2: over-approximate DSP and under-approximate ASLP triples do not
+  compose; the incorrectness-logic rule needs its side condition the other
+  way (`side_aspSt_under`) and an inhabited result type
+  (`inhabited_aspSt_under`).
 - [TriplesExamples/IncorrectnessLogic.v](../../../../Code/Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v):
   the sequential examples of O'Hearn's *Incorrectness Logic* (POPL 2020),
   with each triple the paper states proved, or refuted when the paper calls
