@@ -437,36 +437,61 @@ Check TransformerRelations.GaloisPT_over_under.
     triples of one stateful monadic program: every implication edge is two
     arrows (under, over), every contrapositive edge two, every Galois edge
     one.  The [Under] triples are named after their logics. *)
-(** Implications, correctness side. *)
-Check DivNonDetSt.TriplesTaxonomy.TotalCorr_impl_PartCorr.
-Check DivNonDetSt.TriplesTaxonomy.TotalCorr_impl_LisbonLogic.
-Check DivNonDetSt.TriplesTaxonomy.LisbonLogic_impl_AngPartCorr.
-Check DivNonDetSt.TriplesTaxonomy.PartCorr_impl_AngPartCorr.
-Check DivNonDetSt.TriplesTaxonomy.dwlp_over_impl_dwp_over.
-Check DivNonDetSt.TriplesTaxonomy.awlp_over_impl_awp_over.
-Check DivNonDetSt.TriplesTaxonomy.awp_over_impl_dwp_over.
-Check DivNonDetSt.TriplesTaxonomy.awlp_over_impl_dwlp_over.
-(** Implications, incorrectness side. *)
-Check DivNonDetSt.TriplesTaxonomy.aslp_over_impl_asp_over.
-Check DivNonDetSt.TriplesTaxonomy.aslp_over_impl_dslp_over.
-Check DivNonDetSt.TriplesTaxonomy.asp_over_impl_dsp_over.
-Check DivNonDetSt.TriplesTaxonomy.dslp_over_impl_dsp_over.
-Check DivNonDetSt.TriplesTaxonomy.DemIncorr_impl_PartIncorr.
-Check DivNonDetSt.TriplesTaxonomy.DemIncorr_impl_IncorrLogic.
-Check DivNonDetSt.TriplesTaxonomy.PartIncorr_impl_AngPartIncorr.
-Check DivNonDetSt.TriplesTaxonomy.IncorrLogic_impl_AngPartIncorr.
+
+(** Figure 5 of Verscht and Kaminski, with its edges numbered; the check
+    stating an edge carries its number.
+
+  18~  b ⊆ awp c   =1=>  b ⊆ awlp c <~17~> dwp c ⊆ b   <=2=  dwlp c ⊆ b ~18
+           /\                /\                /\                /\
+         9 ||             10 ||             11 ||             12 ||
+  20~  b ⊆ dwp c   =3=>  b ⊆ dwlp c <~19~> awp c ⊆ b   <=4=  awlp c ⊆ b ~20
+                             ^                 ^
+                          25 |              26 |
+                             v                 v
+  22~  aslp b ⊆ c  =5=>  asp b ⊆ c  <~21~> c ⊆ dslp b  <=6=  c ⊆ dsp b  ~22
+        13 ||             14 ||             15 ||             16 ||
+           \/                \/                \/                \/
+  24~  dslp b ⊆ c  =7=>  dsp b ⊆ c  <~23~> c ⊆ aslp b  <=8=  c ⊆ asp b  ~24
+
+    Implications follow the arrowheads: =N=> along a row, || between
+    rows.  Contrapositives (negating b and c): <~N~>, and ~N at both ends
+    of a row for the arc between its outer triples.  Galois connections
+    (iff): 25 and 26.  The named logics are the [Under] triples:
+      b ⊆ dwp c   TotalCorr      b ⊆ dwlp c   PartCorr
+      b ⊆ awp c   LisbonLogic    b ⊆ awlp c   AngPartCorr
+      c ⊆ dsp b   DemIncorr      c ⊆ dslp b   PartIncorr
+      c ⊆ asp b   IncorrLogic    c ⊆ aslp b   AngPartIncorr
+    The others are [Over] triples, e.g. dwp c ⊆ b. *)
+
+(** Implications. *)
+Check DivNonDetSt.TriplesTaxonomy.LisbonLogic_impl_AngPartCorr. (* 1 *)
+Check DivNonDetSt.TriplesTaxonomy.dwlp_over_impl_dwp_over. (* 2 *)
+Check DivNonDetSt.TriplesTaxonomy.TotalCorr_impl_PartCorr. (* 3 *)
+Check DivNonDetSt.TriplesTaxonomy.awlp_over_impl_awp_over. (* 4 *)
+Check DivNonDetSt.TriplesTaxonomy.aslp_over_impl_asp_over. (* 5 *)
+Check DivNonDetSt.TriplesTaxonomy.DemIncorr_impl_PartIncorr. (* 6 *)
+Check DivNonDetSt.TriplesTaxonomy.dslp_over_impl_dsp_over. (* 7 *)
+Check DivNonDetSt.TriplesTaxonomy.IncorrLogic_impl_AngPartIncorr. (* 8 *)
+Check DivNonDetSt.TriplesTaxonomy.TotalCorr_impl_LisbonLogic. (* 9 *)
+Check DivNonDetSt.TriplesTaxonomy.PartCorr_impl_AngPartCorr. (* 10 *)
+Check DivNonDetSt.TriplesTaxonomy.awp_over_impl_dwp_over. (* 11 *)
+Check DivNonDetSt.TriplesTaxonomy.awlp_over_impl_dwlp_over. (* 12 *)
+Check DivNonDetSt.TriplesTaxonomy.aslp_over_impl_dslp_over. (* 13 *)
+Check DivNonDetSt.TriplesTaxonomy.asp_over_impl_dsp_over. (* 14 *)
+Check DivNonDetSt.TriplesTaxonomy.PartIncorr_impl_AngPartIncorr. (* 15 *)
+Check DivNonDetSt.TriplesTaxonomy.DemIncorr_impl_IncorrLogic. (* 16 *)
 (** Contrapositives. *)
-Check DivNonDetSt.TriplesTaxonomy.LisbonLogic_contra_dwlp_over.
-Check DivNonDetSt.TriplesTaxonomy.AngPartCorr_contra_dwp_over.
-Check DivNonDetSt.TriplesTaxonomy.TotalCorr_contra_awlp_over.
-Check DivNonDetSt.TriplesTaxonomy.PartCorr_contra_awp_over.
-Check DivNonDetSt.TriplesTaxonomy.DemIncorr_contra_aslp_over.
-Check DivNonDetSt.TriplesTaxonomy.PartIncorr_contra_asp_over.
-Check DivNonDetSt.TriplesTaxonomy.IncorrLogic_contra_dslp_over.
-Check DivNonDetSt.TriplesTaxonomy.AngPartIncorr_contra_dsp_over.
+Check DivNonDetSt.TriplesTaxonomy.AngPartCorr_contra_dwp_over. (* 17 *)
+Check DivNonDetSt.TriplesTaxonomy.LisbonLogic_contra_dwlp_over. (* 18 *)
+Check DivNonDetSt.TriplesTaxonomy.PartCorr_contra_awp_over. (* 19 *)
+Check DivNonDetSt.TriplesTaxonomy.TotalCorr_contra_awlp_over. (* 20 *)
+Check DivNonDetSt.TriplesTaxonomy.PartIncorr_contra_asp_over. (* 21 *)
+Check DivNonDetSt.TriplesTaxonomy.DemIncorr_contra_aslp_over. (* 22 *)
+Check DivNonDetSt.TriplesTaxonomy.AngPartIncorr_contra_dsp_over. (* 23 *)
+Check DivNonDetSt.TriplesTaxonomy.IncorrLogic_contra_dslp_over. (* 24 *)
 (** Galois connections. *)
-Check DivNonDetSt.TriplesTaxonomy.PartCorr_galois_asp_over.
-Check DivNonDetSt.TriplesTaxonomy.awp_over_galois_PartIncorr.
+Check DivNonDetSt.TriplesTaxonomy.PartCorr_galois_asp_over. (* 25 *)
+Check DivNonDetSt.TriplesTaxonomy.awp_over_galois_PartIncorr. (* 26 *)
 
 (* ================================================================= *)
 (** ** Section 4.2, Monadic relations (Figure 1)                     *)
