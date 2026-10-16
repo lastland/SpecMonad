@@ -472,8 +472,95 @@ Check DivNonDetSt.TriplesTaxonomy.awp_over_galois_PartIncorr.
 (** ** Section 4.2, Monadic relations (Figure 1)                     *)
 (* ================================================================= *)
 
+(** Figure 1, with its edges numbered.  The numbers are shared by the two
+    diagrams; the check stating an edge carries its number, prefixed [a]
+    for diagram (a) and [b] for diagram (b).
+
+    (a) Base monads                     (b) Monads with state
+
+            ASLP                                ASLP
+       1 //  :                            1* //  :  \\ 2*
+        //   :9    ≅ 2                      //   :9  \\
+     ASP <~~ 10 ~~> DSLP                 ASP <~~ 10 ~~> DSLP
+     |       :    // ^                   | \\    :    // ^
+     |  ≅ 3  :  //4  |                   |  \\3* :  //4* |
+     |       :  //   |                   |   \\  :  //   |
+  13 |      DSP      | 14             13 |      DSP      | 14
+     |               |                   |               |
+     |     AWLP      |                   |     AWLP      |
+     | 5 //  :  \\ 6 |                   | 5 //  :  \\ 6 |
+     v  //   :11 \\  |                   v  //   :11 \\  |
+     DWLP <~ 12 ~> AWP                   DWLP <~ 12 ~> AWP
+        \\   :   //                         \\   :   //
+       7 \\  :  // 8                       7 \\  :  // 8
+            DWP                                 DWP
+
+    Implications, pointing down:
+      1 ASLP => ASP    2 ASLP => DSLP   3 ASP => DSP     4 DSLP => DSP
+      5 AWLP => DWLP   6 AWLP => AWP    7 DWLP => DWP    8 AWP => DWP
+    Isomorphisms, in (a), in place of 2 and 3:
+      2 ASLP ≅ DSLP    3 ASP ≅ DSP
+    Contrapositives:
+      9 ASLP -- DSP   10 ASP -- DSLP   11 AWLP -- DWP   12 DWLP -- AWP
+    Galois connections, from the left adjoint:
+     13 ASP -> DWLP   14 AWP -> DSLP
+    [*]: through the [aspOf] or [dslpOf] part of DSP or ASLP.  An
+    implication X => Y is [MonadRelation_y_implies_x]: [Y ⊑ X]. *)
+
 (** l.2786-2801: DM4all's monadic relation. *)
 Check MonadRelation.MonadRelation.
+
+(** Figure 1(a), base monads.  The wp edges are generic in the two
+    conditions; DSP collapses into ASP and ASLP into DSLP.  The sp
+    implication edges hold through the parts as with state, while between
+    the elements themselves every ASP element implies every ASLP element,
+    and every DSP element every DSLP element. *)
+Check MonadTaxonomy.MonadRelation_asp_implies_aslp_pure. (* a1 *)
+Check MonadTaxonomy.asp_implies_aslp_any_pure.
+Check MonadTaxonomy.MonadRelation_aslp_dslp_pure. (* a2 *)
+Check ASLPMonad.aslp_to_dslp_morphism.
+Check ASLPMonad.dslp_to_aslp_morphism.
+Check ASLPMonad.dslp_to_aslp_to_dslp.
+Check ASLPMonad.aslp_to_dslp_to_aslp.
+Check MonadTaxonomy.MonadRelation_dsp_asp_pure. (* a3 *)
+Check DSPMonad.dsp_to_asp_morphism.
+Check DSPMonad.asp_to_dsp_morphism.
+Check DSPMonad.asp_to_dsp_to_asp.
+Check DSPMonad.dsp_to_asp_to_dsp.
+Check MonadTaxonomy.MonadRelation_dsp_implies_dslp_pure. (* a4 *)
+Check MonadTaxonomy.dsp_implies_dslp_any_pure.
+Check MonadTaxonomy.MonadRelation_implies_toWPure. (* a5-a8 *)
+Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_pure. (* a9 *)
+Check MonadTaxonomy.MonadRelation_contra_asp_dslp_pure. (* a10 *)
+Check MonadTaxonomy.MonadRelation_contra_toWPure. (* a11-a12 *)
+Check MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure. (* a13 *)
+Check MonadTaxonomy.MonadRelation_galois_awp_dslp_pure. (* a14 *)
+
+(** Figure 1(b), monads with state. *)
+
+(** l.2938-2951: the four stateful sp monads share [SPSt] and its order;
+    [⊑] is not a monadic relation between DSP / ASLP and ASP / DSLP, as
+    their binds are not monotone (Figure 2) (partial: shown for the order
+    on DSP and on ASLP themselves: no left-unital monotone bind exists). *)
+Check MonotoneSPSt.SPStMonotone.SPStMon.
+Check MonadTaxonomy.impliesSPSt.
+Check ASLPMonad.aslp_arbitrary_bind_impossible.
+Check DSPMonad.dsp_arbitrary_bind_impossible.
+
+(** l.2951-2958, Figure 1(b) sp implication edges: the DSP and ASLP binds
+    are computed through their components, the relations through the
+    components are monadic, and each entails [⊑] of the sps themselves
+    (the asterisks). *)
+Check SPStBindComparisons.bindASLPSt_SPStMonotone.
+Check SPStBindComparisons.bindDSPSt_SPStMonotone.
+Check MonadTaxonomy.MonadRelation_asp_implies_aslp. (* b1 *)
+Check MonadTaxonomy.asp_implies_aslp_part.
+Check MonadTaxonomy.MonadRelation_dslp_implies_aslp. (* b2 *)
+Check MonadTaxonomy.dslp_implies_aslp_part.
+Check MonadTaxonomy.MonadRelation_dsp_implies_asp. (* b3 *)
+Check MonadTaxonomy.dsp_implies_asp_part.
+Check MonadTaxonomy.MonadRelation_dsp_implies_dslp. (* b4 *)
+Check MonadTaxonomy.dsp_implies_dslp_part.
 
 (** l.2818-2827: the stateful wp monads are submonads of [WSt]; the order
     [⊑] on [WSt] is a monadic relation between any two of them. *)
@@ -489,82 +576,58 @@ Check TransformerRelations.pt_le_under.
 Check TransformerRelations.pt_le_over.
 
 (** Figure 1(b), wp implication edges (each also with its converse). *)
-Check MonadTaxonomy.MonadRelation_dwp_implies_dwlp.
-Check MonadTaxonomy.MonadRelation_dwp_implies_awp.
-Check MonadTaxonomy.MonadRelation_awp_implies_awlp.
-Check MonadTaxonomy.MonadRelation_dwlp_implies_awlp.
-Check MonadTaxonomy.MonadRelation_dwlp_implies_dwp.
-Check MonadTaxonomy.MonadRelation_awp_implies_dwp.
-Check MonadTaxonomy.MonadRelation_awlp_implies_awp.
+Check MonadTaxonomy.MonadRelation_dwlp_implies_awlp. (* b5 *)
 Check MonadTaxonomy.MonadRelation_awlp_implies_dwlp.
-
-(** l.2938-2951: the four stateful sp monads share [SPSt] and its order;
-    [⊑] is not a monadic relation between DSP / ASLP and ASP / DSLP, as
-    their binds are not monotone (Figure 2) (partial: shown for the order
-    on DSP and on ASLP themselves: no left-unital monotone bind exists). *)
-Check MonotoneSPSt.SPStMonotone.SPStMon.
-Check MonadTaxonomy.impliesSPSt.
-Check DSPMonad.dsp_arbitrary_bind_impossible.
-Check ASLPMonad.aslp_arbitrary_bind_impossible.
-
-(** l.2951-2958, Figure 1(b) sp implication edges: the DSP and ASLP binds
-    are computed through their components, the relations through the
-    components are monadic, and each entails [⊑] of the sps themselves
-    (the asterisks). *)
-Check SPStBindComparisons.bindDSPSt_SPStMonotone.
-Check SPStBindComparisons.bindASLPSt_SPStMonotone.
-Check MonadTaxonomy.MonadRelation_dsp_implies_asp.
-Check MonadTaxonomy.MonadRelation_dsp_implies_dslp.
-Check MonadTaxonomy.MonadRelation_asp_implies_aslp.
-Check MonadTaxonomy.MonadRelation_dslp_implies_aslp.
-Check MonadTaxonomy.dsp_implies_asp_part.
-Check MonadTaxonomy.dsp_implies_dslp_part.
-Check MonadTaxonomy.asp_implies_aslp_part.
-Check MonadTaxonomy.dslp_implies_aslp_part.
-
-(** l.2969-2987, Figure 1(b) wp contrapositive edges: [⋈] on [WSt] is
-    monadic between AWP and DWLP, DWP and AWLP, one to one, and
-    symmetric. *)
-Check MonadTaxonomy.contraWSt.
-Check MonadTaxonomy.MonadRelation_contraWSt.
-Check MonadTaxonomy.MonadRelation_contra_awp_dwlp_one.
-Check MonadTaxonomy.MonadRelation_contra_awp_dwlp_two.
-Check MonadTaxonomy.MonadRelation_contra_dwp_awlp_one.
-Check MonadTaxonomy.MonadRelation_contra_dwp_awlp_two.
-Check MonadTaxonomy.contra_awp_in_dwlp.
-Check MonadTaxonomy.contra_dwlp_in_awp.
-Check MonadTaxonomy.contra_dwp_in_awlp.
-Check MonadTaxonomy.contra_awlp_in_dwp.
-Check MonadTaxonomy.contraWSt_sym.
+Check MonadTaxonomy.MonadRelation_awp_implies_awlp. (* b6 *)
+Check MonadTaxonomy.MonadRelation_awlp_implies_awp.
+Check MonadTaxonomy.MonadRelation_dwp_implies_dwlp. (* b7 *)
+Check MonadTaxonomy.MonadRelation_dwlp_implies_dwp.
+Check MonadTaxonomy.MonadRelation_dwp_implies_awp. (* b8 *)
+Check MonadTaxonomy.MonadRelation_awp_implies_dwp.
 
 (** l.2989-3009, Figure 1(b) sp contrapositive edges: [⋈] on [SPSt] is
-    monadic between ASP and DSLP, DSP and ASLP, one to one, swapping the
+    monadic between DSP and ASLP, ASP and DSLP, one to one, swapping the
     components and meets with joins; symmetric. *)
 Check MonadTaxonomy.contraSPSt.
 Check MonadTaxonomy.MonadRelation_contraSPSt.
 Check MonadTaxonomy.contraSPSt_meet_join.
 Check MonadTaxonomy.contraSPSt_join_meet.
-Check MonadTaxonomy.MonadRelation_contra_asp_dslp_one.
-Check MonadTaxonomy.MonadRelation_contra_asp_dslp_two.
-Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_one.
-Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_two.
-Check MonadTaxonomy.contra_asp_in_dslp.
-Check MonadTaxonomy.contra_dslp_in_asp.
+Check MonadTaxonomy.contraSPSt_sym.
+Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_one. (* b9 *)
+Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_two. (* b9 *)
 Check MonadTaxonomy.contra_dsp_in_aslp.
 Check MonadTaxonomy.contra_aslp_in_dsp.
-Check MonadTaxonomy.contraSPSt_sym.
+Check MonadTaxonomy.MonadRelation_contra_asp_dslp_one. (* b10 *)
+Check MonadTaxonomy.MonadRelation_contra_asp_dslp_two. (* b10 *)
+Check MonadTaxonomy.contra_asp_in_dslp.
+Check MonadTaxonomy.contra_dslp_in_asp.
+
+(** l.2969-2987, Figure 1(b) wp contrapositive edges: [⋈] on [WSt] is
+    monadic between DWP and AWLP, AWP and DWLP, one to one, and
+    symmetric. *)
+Check MonadTaxonomy.contraWSt.
+Check MonadTaxonomy.MonadRelation_contraWSt.
+Check MonadTaxonomy.contraWSt_sym.
+Check MonadTaxonomy.MonadRelation_contra_dwp_awlp_one. (* b11 *)
+Check MonadTaxonomy.MonadRelation_contra_dwp_awlp_two. (* b11 *)
+Check MonadTaxonomy.contra_dwp_in_awlp.
+Check MonadTaxonomy.contra_awlp_in_dwp.
+Check MonadTaxonomy.MonadRelation_contra_awp_dwlp_one. (* b12 *)
+Check MonadTaxonomy.MonadRelation_contra_awp_dwlp_two. (* b12 *)
+Check MonadTaxonomy.contra_awp_in_dwlp.
+Check MonadTaxonomy.contra_dwlp_in_awp.
 
 (** l.3016-3034, Figure 1(b) Galois edge ASP -> DWLP: [Ladj] is a monadic
-    relation (angelic structure), its sps are disjunctive and strict and
-    its wps conjunctive and terminating, it restricts to ASP and DWLP, one
-    to one. *)
+    relation (angelic structure), its sps are disjunctive and strict and its
+    wps conjunctive and terminating, it restricts to ASP and DWLP, one to
+    one. *)
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj.
 Check MonadTaxonomy.GaloisSPWP.
 Check MonadTaxonomy.Ladj_GaloisSPWP.
 Check MonadTaxonomy.MonadRelation_GaloisSPWP.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_colim.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.Ladj_lim.
-Check MonadTaxonomy.MonadRelation_galois_asp_dwlp.
+Check MonadTaxonomy.MonadRelation_galois_asp_dwlp. (* b13 *)
 Check MonadTaxonomy.galois_asp_in_dwlp.
 Check MonadTaxonomy.galois_dwlp_in_asp.
 
@@ -574,35 +637,12 @@ Check MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj.
 Check MonadTaxonomy.GaloisWPSP.
 Check MonadTaxonomy.Radj_GaloisWPSP.
 Check MonadTaxonomy.MonadRelation_GaloisWPSP.
-Check MonadTaxonomy.MonadRelation_galois_awp_dslp.
+Check MonadTaxonomy.MonadRelation_galois_awp_dslp. (* b14 *)
 Check MonadTaxonomy.galois_awp_in_dslp.
 Check MonadTaxonomy.galois_dslp_in_awp.
 
 (** l.3050-3053: contrapositive pairs exchange [Ladj] and [Radj]. *)
 Check MonadTaxonomy.Ladj_iff_Radj.
-
-(** Figure 1(a), without state: the wp edges (generic in the two
-    conditions), the sp contrapositive and Galois edges, and the collapse
-    of DSP into ASP and of ASLP into DSLP. *)
-Check MonadTaxonomy.MonadRelation_implies_toWPure.
-Check MonadTaxonomy.MonadRelation_contra_toWPure.
-Check MonadTaxonomy.MonadRelation_contra_asp_dslp_pure.
-Check MonadTaxonomy.MonadRelation_contra_dsp_aslp_pure.
-Check MonadTaxonomy.MonadRelation_galois_asp_dwlp_pure.
-Check MonadTaxonomy.MonadRelation_galois_awp_dslp_pure.
-Check MonadTaxonomy.MonadRelation_dsp_asp_pure.
-Check MonadTaxonomy.MonadRelation_aslp_dslp_pure.
-Check DSPMonad.dsp_to_asp_morphism.
-Check DSPMonad.asp_to_dsp_morphism.
-Check ASLPMonad.aslp_to_dslp_morphism.
-Check ASLPMonad.dslp_to_aslp_morphism.
-Check DSPMonad.asp_to_dsp_to_asp.
-Check DSPMonad.dsp_to_asp_to_dsp.
-Check ASLPMonad.dslp_to_aslp_to_dslp.
-Check ASLPMonad.aslp_to_dslp_to_aslp.
-
-(** Not formalized: Figure 1(a), the sp implication edges ASLP -> ASP and
-    DSLP -> DSP without state. *)
 
 (* ================================================================= *)
 (** ** Section 4.4, Effect-modularity                                *)

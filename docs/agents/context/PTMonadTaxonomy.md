@@ -46,6 +46,11 @@ programs. The relations themselves are monadic relations in the sense of
   (`MonadRelation_dwp_implies_dwlp`, …, `MonadRelation_contra_*`,
   `MonadRelation_galois_*`); the file ends with the stateless collapse
   (`MonadRelation_dsp_asp_pure`, `MonadRelation_aslp_dslp_pure`).
+  `Section PureImplications` has the base sp implication edges of
+  Figure 1(a), ASLP -> ASP and DSLP -> DSP, through the parts; without
+  state every ASP element implies every ASLP element, and every DSP element
+  every DSLP element (`asp_implies_aslp_any_pure`,
+  `dsp_implies_dslp_any_pure`).
 
 ## Cautions
 
