@@ -1,4 +1,4 @@
-(** * The four WP readings land in their refined monads (paper, Sections 3.5 and 5)
+(** * The four WP readings land in their refined monads
 
     The readings [dwpPure], [dwlpPure], [awpPure], [awlpPure] of
     [Morphisms.v] target the unrestricted [WPure].  Each lands in the

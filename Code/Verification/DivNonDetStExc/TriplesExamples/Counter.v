@@ -23,8 +23,8 @@
       a reachable bug refutes the correctness triples
       ([counter_not_correct], [counter_not_partially_correct], principle of
       denial);
-    and the contrast between incorrectness logic and Lisbon logic of the
-    paper ([counter_il_any_start], [counter_lisbon_fails],
+    and the contrast between incorrectness logic and Lisbon logic
+    ([counter_il_any_start], [counter_lisbon_fails],
     [counter_lisbon_below]), with the correctness side: total correctness
     below [N] ([counter_dwp_below]), divergence and no bug from [N] on
     ([counter_awlp_diverges], [counter_no_bug_above]).  A result [None] is

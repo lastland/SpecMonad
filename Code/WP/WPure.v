@@ -1,5 +1,5 @@
 (** * [WPure]: the monad of MONOTONE weakest-precondition transformers,
-      and its two program-shaped stacks (paper, Section 2).
+      and its two program-shaped stacks.
 
     This file contains exactly three developments:
 

@@ -1,5 +1,5 @@
 (** * Counterexamples to the arrow laws without disjunctivity or
-      conjunctivity (paper, Appendix D.3)
+      conjunctivity
 
     [AngArr.SPArrAng] and [DemArr.SPArrDem] are monotone binary transformers
     with the angelic, respectively demonic, codomain condition, which under
@@ -8,8 +8,8 @@
     [ASPArr], respectively [DSLPArr], the law
     [first g >>> arr fst == arr fst >>> g] fails ([AngArr.first_fst_fails],
     [DemArr.first_fst_fails]), so neither satisfies [ArrowLaws]
-    ([AngArr.not_ArrowLaws], [DemArr.not_ArrowLaws]).  The monad
-    counterexample of Appendix D.2 is [StatefulSPostCounterexample.Dem]. *)
+    ([AngArr.not_ArrowLaws], [DemArr.not_ArrowLaws]).  The demonic
+    monad counterexample is [StatefulSPostCounterexample.Dem]. *)
 
 From Coq Require Import RelationClasses Classical_Prop.
 From Incorrectness.Lib.Arrow Require Import Arrow.

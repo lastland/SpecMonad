@@ -21,8 +21,7 @@
 
     The carriers of [stateT S ASP] and [ASPSt S] are isomorphic, and the
     isomorphism is one of ordered monads ([toArrowASPState_morphism],
-    [fromArrowASPState_morphism], [ordASPStateT_toArrowASPState]; paper,
-    Section 3.4).
+    [fromArrowASPState_morphism], [ordASPStateT_toArrowASPState]).
 
     The last part of the file defines the stateless monad directly, with no
     arrow, as [ASPSP], and shows that it is [ASP]. It then connects Maillard's
@@ -803,7 +802,7 @@ End ASPStateCarrierIso.
 (* ================================================================= *)
 
 (** Both maps above are monad morphisms that preserve and reflect
-    refinement (paper, Section 3.4).  The transformer's [bind] runs the
+    refinement.  The transformer's [bind] runs the
     continuation at the intermediate state with precondition [True], the
     arrow's [bind] with precondition [fun t => t = s']; they agree because
     every ASP element factors its precondition out as a conjunct

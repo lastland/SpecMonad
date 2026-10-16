@@ -1,7 +1,7 @@
 (** * O'Hearn's "Incorrectness Logic" (POPL 2020), as ITree programs
 
-    The examples of the paper without concurrency: each triple it states is
-    proved, or refuted where the paper calls it wrong.  A program is
+    O'Hearn's examples without concurrency: each triple stated there is
+    proved, or refuted where it is called wrong.  A program is
     [prog S A = optionT (stateT S (itree ILE))]: an [error()] keeps its
     state, so [er:] assertions can talk about it; [assume false] diverges.
     Triples are the named logics of [Triples.v] on a program's denotation:

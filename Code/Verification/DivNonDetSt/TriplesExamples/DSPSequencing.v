@@ -1,10 +1,10 @@
-(** * Sequencing DSP and ASLP triples: counterexamples (paper, Section 5)
+(** * Sequencing DSP and ASLP triples: counterexamples
 
     Over-approximate DSP triples and under-approximate ASLP triples do not
     compose, with the side condition in either direction
     ([dspSt_over_seq_counterexample], [aslpSt_under_seq_counterexample]).
-    The two computations are those of the paper's sequencing figure, on the
-    states [1]-[4], with a sink state [0] for the other start states:
+    The two computations act on the states [1]-[4], with a sink state [0]
+    for the other start states:
 
       [m1]   1 ↦ 2,  every other state ↦ 0
       [f1]   2 ↦ 4,  3 ↦ 4,  every other state ↦ 0

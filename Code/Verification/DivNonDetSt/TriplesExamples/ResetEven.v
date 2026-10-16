@@ -1,4 +1,4 @@
-(** * Reset an even state, maybe (paper, Section 5)
+(** * Reset an even state, maybe
 
     The program [m], written in [stdivndNE nat]: from an even state it
     either resets the state to [0] or keeps it, from an odd state it keeps

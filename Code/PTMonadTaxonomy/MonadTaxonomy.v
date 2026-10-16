@@ -8,7 +8,7 @@
     [Carriers.v] places the carriers of the monads inside the
     monotone arrow carrier, where the three relations are stated once
     ([TransformerRelations.v]).  This file states them on the monads; its
-    [Section Flavours] has the edges of the paper's Figure 1.
+    [Section Flavours] has the edges between the eight monads.
 
     They are defined on the two broad monads, in the monads' own terms:
 

@@ -92,8 +92,7 @@ with `toWPure ∘ dwpPure_DWP = dwpPure`. It is a monad morphism
 Place: the lemmas in `Verification/DivNonDet/Morphisms.v` (next to the
 readings), the lifts in `DivNonDetSt/Morphisms.v` and
 `DivNonDetStExc/Morphisms.v`, the `StExc` variants in `WP/WPVariants.v`.
-Add the new names to `Checks/PaperClaims.v` and update the `PAPER.md` rows
-(contribution 3, Section 3.6, the WP-morphisms gap).
+Add the new names to `Checks/PaperClaims.v` (contribution 3, Section 3.5).
 
 ## What it gives
 

@@ -4,7 +4,8 @@ SpecMonad is a work-in-progress Coq development studying how specification
 monads support correctness and incorrectness reasoning about programs.
 
 The development in [`Code/`](Code/README.md) is organized by the sections of
-the paper; [PAPER.md](PAPER.md) maps each claim to its Rocq name. The
+the paper; [PaperClaims.v](Code/Checks/PaperClaims.v) maps each claim to its
+Rocq names. The
 [design notes](docs/design.md) explain the semantics, representations, and
 naming conventions. Use the [context map](docs/agents/context/README.md) to navigate the rest
 of the repository. The [build manifest](Code/_CoqProject) lists the normal
@@ -23,9 +24,9 @@ The packages and their version constraints are listed in the
 The committed `Code/Makefile` regenerates the gitignored `Makefile.coq`
 from `_CoqProject` on every invocation, so no manual generation step is
 needed. Build membership
-does not by itself certify every statement: [PAPER.md](PAPER.md) maps each
-claim to its Rocq names and lists
-[where the paper and the formalization disagree](PAPER.md#gaps-and-differences-from-the-paper).
+does not by itself certify every statement:
+[PaperClaims.v](Code/Checks/PaperClaims.v) maps each claim to its Rocq names
+and says where the formalization differs from it.
 
 Run `make check` from `Code/` for the opt-in reports of selected theorem
 assumptions. This target is separate from the normal build and does not check

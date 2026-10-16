@@ -1,15 +1,14 @@
-(** * The stateful extension of [SPost] is not a monad (paper, Section 3.3).
+(** * The stateful extension of [SPost] is not a monad.
 
     [SPostStExc] (over [option (A * S)]) and [St.SPostSt] (its
     terminating-slice twin over [A * S]) restrict stateful forward
     transformers by monotonicity and the codomain condition, the conditions
     under which [SPost] (Maillard et al., ICFP 2019) is a monad.  [FailingBind] and
-    [St.FailingBind] build the transformers [m], [f], [g] of the
-    paper and show that the proposed [bind] is not associative.  The paper
-    phrases this for [stateArrT] over the angelic SP arrow at input [unit];
-    these are hand-built carriers of the same shape.
+    [St.FailingBind] build transformers [m], [f], [g] and show that the
+    proposed [bind] is not associative.  The carriers are hand-built, of the
+    shape of [stateArrT] over the angelic SP arrow at input [unit].
 
-    [Dem.SPostDem] is the demonic twin (Appendix D.2): monotone, with the
+    [Dem.SPostDem] is the demonic twin: monotone, with the
     demonic codomain condition [(forall s, pre s) -> w pre r] and the [ret]
     and [bind] of [DSLP].  Both unit laws hold, but [bind] is not
     associative ([Dem.FailingBind.SPostDem_bind_bind_fails]). *)
@@ -324,7 +323,7 @@ End FailingBind.
 End St.
 
 (* ================================================================= *)
-(** * [SPostDem]: the demonic twin of [SPostSt] (paper, Appendix D.2) *)
+(** * [SPostDem]: the demonic twin of [SPostSt] *)
 (* ================================================================= *)
 
 Module Dem.

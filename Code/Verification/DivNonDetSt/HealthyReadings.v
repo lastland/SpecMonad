@@ -1,4 +1,4 @@
-(** * The four stateful WP readings land in their refined monads (paper, Section 5)
+(** * The four stateful WP readings land in their refined monads
 
     The stateful readings [dwpSt] &c. of [Morphisms.v] are [stateT_map S]
     of the base readings and target [WSt S].  Their corestrictions

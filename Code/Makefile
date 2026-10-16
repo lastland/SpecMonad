@@ -8,7 +8,7 @@
 #
 #   make                     build everything (default; no assumption reports)
 #   make check               opt-in audit: build the project, print assumptions,
-#                             and compile the paper-claims index
+#                             and compile the claims index
 #   make clean               delegate clean and also remove the audit's outputs
 #   make layers              check that imports respect scripts/layers.txt
 #                             (python3; runs as its own CI step)
@@ -46,7 +46,7 @@ all: delegate
 .PHONY: check
 check: delegate
 	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/Assumptions.v
-	@# The claims index only has to compile: every name in PAPER.md exists.
+	@# The claims index only has to compile: every name it checks exists.
 	$(COQC) $(COQDEBUG) $(COQFLAGS) $(COQLIBS) Checks/PaperClaims.v > /dev/null
 	@echo "Checks/PaperClaims.v: all paper claims resolve"
 
@@ -56,13 +56,10 @@ layers:
 
 # Package the development from Git (git archive already drops user and host
 # names; archiving the tree rather than the commit also leaves out the commit
-# id).  Code/README.md links to ../PAPER.md, so package from the
-# repository root and keep the layout; Backup/ is outside the build, and
-# scripts/ is development tooling.
+# id).  Paths marked export-ignore in ../.gitattributes are left out.
 .PHONY: package
 package:
-	git -C .. archive --prefix spec-monad/ -o Code/artifact.tar.gz 'HEAD^{tree}' \
-	  Code PAPER.md ':(exclude)Code/Backup' ':(exclude)Code/scripts'
+	git -C .. archive --prefix spec-monad/ -o Code/artifact.tar.gz 'HEAD^{tree}' Code
 
 .PHONY: clean
 clean: regen

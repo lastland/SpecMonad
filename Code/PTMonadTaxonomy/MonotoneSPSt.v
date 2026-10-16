@@ -1,5 +1,4 @@
-(** * Monotone stateful SP transformers [SPStMon] (paper, Introduction,
-      Section 3.2 and Section 4).
+(** * Monotone stateful SP transformers [SPStMon].
 
     The angelic and demonic monad structures on monotone stateful forward
     transformers satisfy the unit laws only laxly ([lunitStrictlyLax]):

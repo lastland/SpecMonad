@@ -4,7 +4,7 @@ A long-form tour of the development: computation monads, the SP and WP
 specification monads, the morphisms and triples, the DM4All monads and their
 adjunctions, and the arrow/monad split. The directory guide is
 [Code/README.md](../Code/README.md); the paper-to-code index is
-[PAPER.md](../PAPER.md). Section numbers below are this document's, not the
+[PaperClaims.v](../Code/Checks/PaperClaims.v). Section numbers below are this document's, not the
 paper's.
 
 The organising principle is a dependency boundary:

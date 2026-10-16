@@ -541,9 +541,8 @@ Print Assumptions DivNonDet.TriplesExamples.ITreePrograms.spin_not_dwp.
 Print Assumptions DivNonDetSt.TriplesExamples.ITreePrograms.progA_IT_asp_under.
 Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_under.
 
-(** The results that back the paper's remaining claims (outside Section 6):
-    expected to use at most excluded middle, functional and propositional
-    extensionality (and [eq_rect_eq] through ITree). *)
+(** Further results, expected to use at most excluded middle, functional and propositional
+    extensionality. *)
 From Incorrectness.SP Require
   PredIsomorphisms LawCounterexamples StatefulSPostCounterexample.
 From Incorrectness.PTMonadTaxonomy Require MonadTaxonomy.

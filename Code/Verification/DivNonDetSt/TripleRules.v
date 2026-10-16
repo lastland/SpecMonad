@@ -1,4 +1,4 @@
-(** * Sequencing triples with state (paper, Section 5)
+(** * Sequencing triples with state
 
     WP   For any monad morphism [θ] into [WSt S], triples compose along
          [bind] ([wpSt_bind_under], [wpSt_bind_over]), by the morphism law

@@ -1,4 +1,4 @@
-(** * [SPost_ang] and [SPost_dem] are isomorphic to [Pred] (paper, Section 4.4)
+(** * [SPost_ang] and [SPost_dem] are isomorphic to [Pred]
 
     Without state, a healthy sp transformer is determined by one predicate
     on results, so both SP monads are isomorphic, as monads, to

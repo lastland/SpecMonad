@@ -1,4 +1,4 @@
-(** * Triples as typings, for any morphism (paper, Section 6)
+(** * Triples as typings, for any morphism
 
     The Dijkstra monads of [DijkstraMonad.v] and the triples of [Triple.v]
     are read off the same monad morphisms; this file compares them, for any

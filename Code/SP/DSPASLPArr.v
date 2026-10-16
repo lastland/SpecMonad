@@ -1,5 +1,4 @@
-(** * Property-only strongest-postcondition arrows: DSP and ASLP
-      (paper, Section 3.5).
+(** * Property-only strongest-postcondition arrows: DSP and ASLP.
 
     DSP/ASLP recover relations classically and split operations into their
     ASP and DSLP readings, which they combine by conjunction / disjunction.

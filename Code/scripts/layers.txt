@@ -1,4 +1,4 @@
-# Directory layers, in paper order.  `Layer: Allowed ...` -- a file may import
+# Directory layers.  `Layer: Allowed ...` -- a file may import
 # from its own layer and from the layers listed after the colon.  A file belongs
 # to the layer whose path is the longest prefix of its own.  Checked by
 # `python3 scripts/depgraph.py --check-layers`.

@@ -4,8 +4,7 @@
     or paraphrases a claim and [Check]s the Rocq names that state it.
     Where the formalization differs from the claim the comment says how
     ("partial: ...").  This file holds only what the paper claims.
-    [PAPER.md] at the repository root is the evaluator-facing table built
-    from this file.  Assumptions are reported by [Checks/Assumptions.v].
+    Assumptions are reported by [Checks/Assumptions.v].
 
     Modules are required without [Import] and names are qualified by file
     (by directory too where several files share a name, and by [Module]
