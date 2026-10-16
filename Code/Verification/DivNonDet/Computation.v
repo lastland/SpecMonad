@@ -227,7 +227,6 @@ Section DivNonDet.
 
 End DivNonDet.
 
-Arguments divnd _.
 Arguments divergeD {_}.
 Arguments orD {_}.
 Arguments mayDiverge {_}.
@@ -301,7 +300,6 @@ Definition orNE {A} (m1 m2 : divndNE A) : divndNE A :=
 Definition mayDivergeNE {A} (m : divndNE A) : Prop :=
   mayDiverge (getNE m).
 
-Arguments divndNE _.
 Arguments getNE {_}.
 Arguments retNE {_}.
 Arguments bindNE {_} {_}.
