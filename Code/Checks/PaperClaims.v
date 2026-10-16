@@ -3,13 +3,8 @@
     One block per section of the paper, in paper order.  Each block quotes
     or paraphrases a claim and names the Rocq objects that state it:
     [Print] for definitions, so their body shows, and [Check] for theorems.
-    Where the formalization differs from the claim, the comment says how
-    ("partial: ...").  This file holds only what the paper claims.
-    Assumptions are reported by [Checks/Assumptions.v].
-
-    Modules are required without [Import] and names are qualified by file
-    (by directory too where several files share a name, and by [Module]
-    where the file has one), so a [Check] or [Print] fails if a name moves. *)
+    This file holds only what the paper claims.
+    Assumptions are reported by [Checks/Assumptions.v]. *)
 
 From Incorrectness.Lib.Monad Require
   OrderedMonad MonadRelation TransformerLaws.
@@ -43,6 +38,11 @@ From Incorrectness.GaloisConnections Require
   BaseGaloisConnections GaloisArr.
 From Incorrectness.Tests Require
   SPostArrInfrastructure.
+From Incorrectness.Verification.DivNonDetStExc Require Triples.
+
+Import Incorrectness.Verification.DivNonDet.Triples
+  Incorrectness.Verification.DivNonDetSt.Triples
+  Incorrectness.Verification.DivNonDetStExc.Triples.
 
 (* ================================================================= *)
 (** ** Section 1, Introduction                                       *)
@@ -401,13 +401,8 @@ Check TransformerRelations.Contrapositive_over_under.
 Print TransformerRelations.GaloisPT.
 Check TransformerRelations.GaloisPT_over_under.
 
-(** Verscht and Kaminski's diagram (their Figure 5) for the
-    triples of one stateful monadic program: every implication edge is two
-    arrows (under, over), every contrapositive edge two, every Galois edge
-    one.  The [Under] triples are named after their logics. *)
 
-(** Figure 5 of Verscht and Kaminski, with its edges numbered; the check
-    stating an edge carries its number.
+(** Figure 5 of Verscht and Kaminski.
 
   18~  b ⊆ awp c   =1=>  b ⊆ awlp c <~17~> dwp c ⊆ b   <=2=  dwlp c ⊆ b ~18
            /\                /\                /\                /\
@@ -424,12 +419,11 @@ Check TransformerRelations.GaloisPT_over_under.
     Implications follow the arrowheads: =N=> along a row, || between
     rows.  Contrapositives (negating b and c): <~N~>, and ~N at both ends
     of a row for the arc between its outer triples.  Galois connections
-    (iff): 25 and 26.  The named logics are the [Under] triples:
+    (iff): 25 and 26.  Some of the logics are named:
       b ⊆ dwp c   TotalCorr      b ⊆ dwlp c   PartCorr
       b ⊆ awp c   LisbonLogic    b ⊆ awlp c   AngPartCorr
       c ⊆ dsp b   DemIncorr      c ⊆ dslp b   PartIncorr
-      c ⊆ asp b   IncorrLogic    c ⊆ aslp b   AngPartIncorr
-    The others are [Over] triples, e.g. dwp c ⊆ b. *)
+      c ⊆ asp b   IncorrLogic    c ⊆ aslp b   AngPartIncorr *)
 
 (** Implications. *)
 Check DivNonDetSt.TriplesTaxonomy.LisbonLogic_impl_AngPartCorr. (* 1 *)
