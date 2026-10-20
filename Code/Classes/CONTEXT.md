@@ -46,6 +46,10 @@ carriers belong to [Taxonomy arrows](../Taxonomy/Arrows/CONTEXT.md).
   criterion for unary monads: `OrderedMonad W le` asks for a preorder
   containing `eq1` and a `bind` monotone in both arguments. Every monad is
   ordered by `eq1` (`OrderedMonad_eq1`), so the criterion is relative to `le`.
+- [MonadMorphism.v](MonadMorphism.v) states when `σ : forall A, M A -> W A`
+  is a monad morphism: it respects both monads' `eq1` and preserves `ret`
+  and `bind`. No order on `W` is required. `MonadMorphism_comp` composes
+  two morphisms.
 
 ## Transformers and boundaries
 

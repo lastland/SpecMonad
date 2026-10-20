@@ -34,6 +34,7 @@ Classes/StateArrowT/ArrowApplyLaws.v
 Classes/StateArrowT.v
 Classes/Galois.v
 Classes/OrderedMonad.v
+Classes/MonadMorphism.v
 Taxonomy/BaseSpecMonads/PredMonad.v
 Taxonomy/BaseSpecMonads/PrePostMonad.v
 Taxonomy/BaseSpecMonads/SPostMonad.v
@@ -90,3 +91,6 @@ Taxonomy/InCorrectnessPrinciples.v
 Taxonomy/OldSP/OldSPObservations.v
 Taxonomy/OldSP/OldIncorrectnessRewritingRules.v
 Taxonomy/OldSP/OldExamplePrograms.v
+Taxonomy/Readings/PureReadings.v
+Taxonomy/Readings/StateReadings.v
+Taxonomy/Readings/Locality.v

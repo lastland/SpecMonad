@@ -23,6 +23,8 @@ describe how skills consume and maintain these documents.
   in the computation directory.
 - **EffectObservations/SP** and **EffectObservations/WP** map computations
   into specifications. Their parent directory compares observations and triples.
+- **Taxonomy/Readings** factors those observations through one relation
+  specification monad, reading it into each predicate-transformer monad.
 - **OldSP** contains an earlier presentation with some files still in the build.
 
 ## Active source contexts
@@ -48,6 +50,7 @@ including their parent directories.
 | [EffectObservations](Code/Taxonomy/EffectObservations/CONTEXT.md) | Observation comparisons and triples |
 | [SP observations](Code/Taxonomy/EffectObservations/SP/CONTEXT.md) | Strongest-postcondition observations |
 | [WP observations](Code/Taxonomy/EffectObservations/WP/CONTEXT.md) | Weakest-precondition observations |
+| [Readings](Code/Taxonomy/Readings/CONTEXT.md) | Predicate transformers as readings of the relation monad |
 | [OldSP](Code/Taxonomy/OldSP/CONTEXT.md) | Earlier SP presentation, partly built |
 
 ## Other areas

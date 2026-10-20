@@ -42,6 +42,9 @@ definitions and the manifest to resolve conflicts.
 - [EffectObservations](EffectObservations/CONTEXT.md) connects the models.
   [SP](EffectObservations/SP/CONTEXT.md) and [WP](EffectObservations/WP/CONTEXT.md)
   define observations; `EffectObservations/Taxonomy_*.v` files compare them.
+- [Readings](Readings/CONTEXT.md) factors observations through the relation
+  monad and reads it into each predicate-transformer monad, starting with
+  the state-free case.
 - [ExampleProgramDefs.v](ExampleProgramDefs.v) shares program definitions
   without importing observations. [InCorrectnessPrinciples.v](InCorrectnessPrinciples.v)
   states rewriting rules for the current double-option `tripleASP` presentation.
