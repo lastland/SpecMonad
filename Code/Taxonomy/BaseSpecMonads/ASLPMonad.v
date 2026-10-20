@@ -250,7 +250,16 @@ Proof. exact (aslpRel_ofRelArr (fun (p : unit * S) r => R (snd p) r) (tt, s) r).
 
 Lemma getASLPSt_of {S A} (R : S -> A * S -> Prop) pre r :
   getASLPSt (aslpOfRelSt R) pre r <-> (exists s, pre s /\ R s r) \/ (forall s, R s r -> pre s).
-Proof. rewrite getASLPSt_rel. setoid_rewrite aslpRelSt_of. reflexivity. Qed.
+Proof.
+  unfold getASLPSt, aslpOfRelSt, aslpOfRelArr, getASLP. cbn [proj1_sig].
+  unfold aslpOf, aspOf, dslpOf. split.
+  - intros [[[[] s] [Hp Hr]] | Hall].
+    + left. exists s. split; assumption.
+    + right. intros s' Hs'. exact (Hall (tt, s') Hs').
+  - intros [[s [Hp Hr]] | Hall].
+    + left. exists (tt, s). split; assumption.
+    + right. intros [[] s'] Hs'. exact (Hall s' Hs').
+Qed.
 
 Lemma ordASLPSt_get {S A} (m n : ASLPSt S A) :
   ordASLPSt m n <-> (forall pre r, getASLPSt m pre r -> getASLPSt n pre r).

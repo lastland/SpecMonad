@@ -265,7 +265,16 @@ Proof. exact (dspRel_ofRelArr (fun (p : unit * S) r => R (snd p) r) (tt, s) r). 
 
 Lemma getDSPSt_of {S A} (R : S -> A * S -> Prop) pre r :
   getDSPSt (dspOfRelSt R) pre r <-> (exists s, pre s /\ R s r) /\ (forall s, R s r -> pre s).
-Proof. rewrite getDSPSt_rel. setoid_rewrite dspRelSt_of. reflexivity. Qed.
+Proof.
+  unfold getDSPSt, dspOfRelSt, dspOfRelArr, getDSP. cbn [proj1_sig].
+  unfold dspOf, aspOf, dslpOf. split.
+  - intros [[[[] s] [Hp Hr]] Hall]. split.
+    + exists s. split; assumption.
+    + intros s' Hs'. exact (Hall (tt, s') Hs').
+  - intros [[s [Hp Hr]] Hall]. split.
+    + exists (tt, s). split; assumption.
+    + intros [[] s'] Hs'. exact (Hall s' Hs').
+Qed.
 
 Lemma ordDSPSt_get {S A} (m n : DSPSt S A) :
   ordDSPSt m n <-> (forall pre r, getDSPSt m pre r -> getDSPSt n pre r).

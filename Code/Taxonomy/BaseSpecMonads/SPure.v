@@ -627,6 +627,19 @@ Section RelationalBind.
     split; [ intro H; rb_flat; eauto | intros [a [s' [Hm Hk]]]; rb_build ].
   Qed.
 
+  (** [ret] denotes the relation of [ret], at a fixed input and under
+      [stateArrT S]. *)
+  Lemma rel_ret {I A} (a : A) i b :
+    rel _ _ (@ret_arrow arr _ I A a) i b <-> b = a.
+  Proof. unfold ret_arrow. rewrite rd_pure. split; intro H; symmetry; exact H. Qed.
+
+  Lemma relS_ret (S : Type) {I A} (a : A) i s r :
+    rel _ _ (@ret_arrow (stateArrT S arr) _ I A a) (i, s) r <-> r = (a, s).
+  Proof.
+    unfold ret_arrow. cbn [arr_pure Arrow_stateArrT]. rewrite rd_pure.
+    split; intro H; symmetry; exact H.
+  Qed.
+
   (** Under [optionArrT], then [stateArrT S (optionArrT _)]. *)
   Lemma relO_comp {X Y Z} (f : optionArrT arr X Y) (g : optionArrT arr Y Z) x o :
     rel _ _ (@arr_comp (optionArrT arr) _ X Y Z f g) x o <->
