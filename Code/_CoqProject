@@ -67,6 +67,7 @@ Taxonomy/ComputationMonads/DivNonDet.v
 Taxonomy/ComputationMonads/RdDivNonDet.v
 Taxonomy/BaseSpecMonads/SPPredicateTransformers.v
 Taxonomy/BaseSpecMonads/SPStBindComparisons.v
+Taxonomy/BaseSpecMonads/SPGaloisConnections.v
 Taxonomy/BaseSpecMonads/OldMonads/ASPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/DSLPMonad.v
 Taxonomy/BaseSpecMonads/OldMonads/DSPMonad.v

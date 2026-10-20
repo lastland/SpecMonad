@@ -76,6 +76,16 @@ Pure `DSPSP` / `ASLPSP` instead transport the `ASPSP` / `DSLPSP` structures via
   and SP triple targets, including `StSP` and `PureSP` variants. ASP `Under`
   and DSLP `Over` in-monad characterizations use `At` orders with nonemptiness
   conditions; raw `pp2_over` / `pp2_under` are not healthy targets.
+- [SPGaloisConnections.v](SPGaloisConnections.v) relates the monotone
+  transformers `SPStMonotone.SPStMon`, with their angelic and demonic skew-monad
+  structures, to the SP monads and pre/post pairs. Evaluation at a precondition
+  has IL's index as left adjoint and Hoare's as right adjoint. ASP
+  (singleton-determined) is coreflective through the interior and DSLP
+  (co-singleton-determined) reflective through the exterior, so ASP keeps only
+  Hoare's adjoint (`pp2asp_over`) and DSLP only IL's (`pp2dslp_under`). The
+  interior and exterior are the skew monads' left-unit defects and strict monad
+  morphisms. With relational postconditions, `witRel ⊣ strongest ⊣ hoareRel`
+  holds globally on programs.
 - [SPBindOrderCounterexample.v](SPBindOrderCounterexample.v) refutes ordered
   bind for `StDSP.DSPSt` and `StASLP.ASLPSt` under their existing global orders.
   This does not refute monad laws or monotonicity in the precondition.
