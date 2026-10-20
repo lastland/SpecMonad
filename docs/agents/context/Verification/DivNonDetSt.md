@@ -38,10 +38,10 @@ Parent: [Verification](../Verification.md). The state setting:
 - [DijkstraMonads.v](../../../../Code/Verification/DivNonDetSt/DijkstraMonads.v): the `OrderedTarget` instances of
   the lifted morphisms; a typing through a lifted WP morphism is a family of
   base typings (`wpSt_typing_pointwise`).
-- [Typings.v](../../../../Code/Verification/DivNonDetSt/Typings.v): with state `nat`, no index has the
+- [Typings.v](../../../../Code/Verification/DivNonDetSt/Typings.v): with two distinct states, no index has the
   ASP `Under` triple as its typings (`no_asp_under_index`), nor the DSLP
-  `Over` triple (`no_dslp_over_index`); the computations `reach0From0`,
-  `reach0From1`, `reachNothing` are built by `progOf`.
+  `Over` triple (`no_dslp_over_index`); the computations `reachFrom` and
+  `reachNothing` are built by `progOf`.
 - [TriplesExamples/ITreePrograms.v](../../../../Code/Verification/DivNonDetSt/TriplesExamples/ITreePrograms.v):
   `progA_IT` (set the state to `42`, then keep it or add `1`, choosing with
   ITree's `Or`): its tree is a choice between the two results
