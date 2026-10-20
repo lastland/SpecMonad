@@ -457,7 +457,7 @@ From Coq Require Import FunctionalExtensionality PropExtensionality ProofIrrelev
 From ITree Require Import Basics.Monad.
 From ExtLib Require Import Monad StateMonad OptionMonad.
 From Hammer Require Import Tactics.
-From Incorrectness.Classes Require Import Arrow OptionArrowT StateArrowT.
+From Incorrectness.Classes Require Import Arrow ArrowMorphism OptionArrowT StateArrowT.
 From Incorrectness.Taxonomy.Arrows Require Import PredArr.
 From Incorrectness.Taxonomy.ComputationMonads Require Import TransformerLaws.
 
@@ -1209,6 +1209,54 @@ End ArrowMonadLaws.
 
 Arguments Eq1_Arrow {_} {_} {_}.
 Arguments MonadLawsE_Arrow {_} {_} {_} {_} {_} {_}.
+
+(* ================================================================= *)
+(** ** Arrow morphisms preserve the arrow monad                       *)
+(* ================================================================= *)
+
+(** An arrow morphism that also preserves [arr_app]
+    ([Classes/ArrowMorphism.v]) preserves [ret_arrow] and [bind_arrow] at
+    every input: [bind]'s continuation reaches [arr_app] as data, and
+    [morph_app] converts it there. *)
+
+Section ArrowMorphismMonad.
+
+  Variables arr1 arr2 : Type -> Type -> Type.
+  Context `{HA1 : Arrow arr1} `{HAA1 : @ArrowApply arr1 HA1} `{HE1 : ArrowEq arr1}
+          `{HA2 : Arrow arr2} `{HAA2 : @ArrowApply arr2 HA2} `{HE2 : ArrowEq arr2}
+          `{HL2 : @ArrowLaws arr2 HA2 HE2}
+          (F : forall A B, arr1 A B -> arr2 A B)
+          `{HF : @ArrowMorphism arr1 arr2 HA1 HE1 HA2 HE2 F}
+          `{HFA : @ArrowApplyMorphism arr1 arr2 HA1 HAA1 HA2 HAA2 HE2 F}.
+  Variable I : Type.
+
+  Lemma morph_ret_arrow {A} (a : A) :
+    arrow_eq (F I A (ret_arrow arr1 I a)) (ret_arrow arr2 I a).
+  Proof. apply morph_pure. Qed.
+
+  Lemma morph_bind_arrow {A B} (m : arr1 I A) (k : A -> arr1 I B) :
+    arrow_eq (F I B (bind_arrow arr1 I m k))
+             (bind_arrow arr2 I (F I A m) (fun a => F I B (k a))).
+  Proof.
+    unfold bind_arrow.
+    etransitivity; [ apply morph_comp |].
+    apply comp_proper.
+    - etransitivity; [ apply (morph_fanout F) |].
+      unfold arr_fanout, arr_split, arr_second.
+      apply comp_proper; [ reflexivity |].
+      apply comp_proper; [ reflexivity |].
+      apply comp_proper; [ reflexivity |].
+      apply comp_proper; [| reflexivity ].
+      apply first_proper. apply (morph_id F).
+    - etransitivity; [ apply morph_comp |].
+      etransitivity; [ apply comp_proper; [ apply morph_pure | apply morph_app ] |].
+      etransitivity; [ symmetry; apply comp_assoc |].
+      apply comp_proper; [| reflexivity ].
+      etransitivity; [ apply pure_comp |].
+      apply arr_pure_ext. intros [a i]. reflexivity.
+  Qed.
+
+End ArrowMorphismMonad.
 
 (** For [ArrowApplyLaws] with Leibniz arrow equality, the arrow
     monad satisfies [MonadLawsE].  We prove this concretely for

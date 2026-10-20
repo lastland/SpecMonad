@@ -23,6 +23,7 @@ Taxonomy/ComputationMonads/StDivITree.v
 Taxonomy/ComputationMonads/StExcNonDet.v
 Taxonomy/ComputationMonads/StDivExcNonDet.v
 Classes/Arrow.v
+Classes/ArrowMorphism.v
 Classes/OptionArrowT/Core.v
 Classes/OptionArrowT/ArrowLaws.v
 Classes/OptionArrowT/ArrowChoiceLaws.v
@@ -59,6 +60,8 @@ Taxonomy/BaseSpecMonads/DSPMonad.v
 Taxonomy/BaseSpecMonads/ASLPArrowCore.v
 Taxonomy/BaseSpecMonads/ASLPArrowRel.v
 Taxonomy/BaseSpecMonads/ASLPMonad.v
+Taxonomy/BaseSpecMonads/DWLPArrowCore.v
+Taxonomy/BaseSpecMonads/GaloisTranspose.v
 Taxonomy/BaseSpecMonads/BaseGaloisConnections.v
 Taxonomy/BaseSpecMonads/NewGaloisConnections.v
 Taxonomy/EffectObservations/WP/StDivITree_WStExc.v

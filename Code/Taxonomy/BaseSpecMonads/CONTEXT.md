@@ -117,6 +117,34 @@ refute it at `S = bool` in the first argument of `bind` alone, and
 readings at a client precondition (`getDSPSt`, `getDSPStExc`, `getDSPPure`,
 and their `_of` forms for elements built from a relation).
 
+## The DWLP arrow and the Galois transpose
+
+[DWLPArrowCore.v](DWLPArrowCore.v) defines `DWLPArr`: `WPArr` of
+[WPArr.v](../Arrows/WPArr.v) refined by `wp_monotone`, `wp_terminating`, and
+`wp_conjunctive`, i.e. meet preservation (`dwlp_meet_iff`). Its operations
+are `WPArr`'s, but its `arrow_eq` is pointwise iff rather than Leibniz
+equality. It has `ArrowLaws` and `ArrowApplyLaws` but no `ArrowChoice`, and
+`ofRelDWLPArr` is the DWLP of a relation. Its unfolding lemmas are named
+`getDWLP_*` rather than `get_*`, so it can be imported next to an SP flavour.
+
+[GaloisTranspose.v](GaloisTranspose.v) states the Galois connection of one
+program as a relation between the two arrows: `GaloisRel s w` holds when
+`s P ⊆ Q <-> P ⊆ w Q`, for a raw `SPArrT` and a raw `WPArr`.
+- It is closed under `arr_pure`, `arr_comp`, and `arr_first`
+  (`galois_pure`, `galois_comp`, `galois_first`).
+- It forces join preservation on the left and meet preservation on the
+  right (`galois_left_join`, `galois_right_meet`).
+- Adjoints are unique on both sides (`galois_unique_sp`, `galois_unique_wp`).
+
+It is therefore the graph of an isomorphism `dwlpOfASP : ASPArr -> DWLPArr`
+with inverse `aspOfDWLP` (`galois_iff_dwlpOfASP`, `galois_iff_aspOfDWLP`).
+Both maps are `ArrowMorphism`s and `ArrowApplyMorphism`s, so they commute with
+`ret_arrow` and `bind_arrow` at every input (`dwlpOfASP_ret`,
+`dwlpOfASP_bind`). On relations, `dwlpOfASP_ofRel` sends `ofRelASPArr R` to
+`ofRelDWLPArr R`, which is asp ⊣ dwlp (`galois_ofRel`). `galois_awp_dslp` is
+the same relation at the exchanged types, for the converse of `R`, which is
+awp ⊣ dslp.
+
 ## Reading order
 
 Read the raw carrier, its healthiness condition, and its operations before the
@@ -124,3 +152,5 @@ law proofs. For SP, follow ASP, DSLP, DSP, then ASLP, in `OldMonads/` for the
 healthiness presentation or `*ArrowCore.v` then `*ArrowRel.v` then `*Monad.v`
 for the arrow one; for triple embeddings,
 read the exact order and side conditions before following an observation client.
+For the Galois transpose, read `ASPArrowCore.v` and `DWLPArrowCore.v`, then
+`GaloisTranspose.v`.

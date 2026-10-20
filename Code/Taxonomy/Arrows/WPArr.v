@@ -9,7 +9,8 @@
     Hughes-style [Arrow] interface here.
 
     This file defines the type, the Dijkstra refinement order
-    [WPArr_le], and the [ArrowEq], [Arrow], [ArrowChoice],
+    [WPArr_le], the homomorphism properties its refinements are cut
+    out by, and the [ArrowEq], [Arrow], [ArrowChoice],
     [ArrowApply] instances.  All their laws are proved in
     [Taxonomy/WPArr.v], where they mostly hold definitionally
     up to Coq's eta conversion.
@@ -41,6 +42,24 @@ Definition WPArr_le {A B} (w1 w2 : WPArr A B) : Prop :=
 #[global]
 Instance WPArr_le_PreOrder {A B} : PreOrder (@WPArr_le A B).
 Proof. constructor; cbv; auto. Qed.
+
+(* ================================================================= *)
+(** ** Homomorphism properties                                        *)
+(* ================================================================= *)
+
+(** Which operations on postconditions an element preserves, as [SPArr.v]
+    states for SP transformers.  Conjunctivity quantifies over NONEMPTY
+    families; [wp_terminating], top preservation, is the empty case. *)
+
+Definition wp_monotone {A B} (w : WPArr A B) : Prop :=
+  forall a Q1 Q2, (forall b, Q1 b -> Q2 b) -> w a Q1 -> w a Q2.
+
+Definition wp_terminating {A B} (w : WPArr A B) : Prop :=
+  forall a, w a (fun _ => True).
+
+Definition wp_conjunctive {A B} (w : WPArr A B) : Prop :=
+  forall (I : Type), inhabited I -> forall (Q : I -> B -> Prop) a,
+    w a (fun b => forall i, Q i b) <-> forall i, w a (Q i).
 
 #[global]
 Instance ArrowEq_WPArr : ArrowEq WPArr := {

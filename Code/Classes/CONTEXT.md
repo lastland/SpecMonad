@@ -37,6 +37,15 @@ carriers belong to [Taxonomy arrows](../Taxonomy/Arrows/CONTEXT.md).
 - `ArrowLoop` supplies feedback through `arr_loop`; `ArrowLoopLaws`
   states its tightening, sliding, vanishing, and superposing laws.
 - `ArrowT` supplies `arrowT_lift`; the class itself has no preservation laws.
+- [ArrowMorphism.v](ArrowMorphism.v) defines `ArrowMorphism arr1 arr2 F` for
+  maps `F A B : arr1 A B -> arr2 A B` that respect `arrow_eq` (`morph_proper`,
+  a plain field, not an instance) and preserve `arr_pure`, `arr_comp`, and
+  `arr_first` up to the target's `arrow_eq`. `ArrowApplyMorphism` adds
+  `morph_app`: `F arr_app` is `arr_app` after the arrow in its input is
+  converted, `arr_pure (fun p => (F (fst p), snd p))`. The derived operations
+  are preserved (`morph_id`, `morph_second`, `morph_split`, `morph_fanout`).
+  Preservation of `Monad_Arrow` is `morph_ret_arrow` / `morph_bind_arrow` in
+  [SPostArr.v](../Taxonomy/Arrows/SPostArr.v).
 - [Galois.v](Galois.v) indexes `Galois` by two binary carriers and both
   orders. `galois_alpha : G A B -> F A B` and `galois_gamma : F A B -> G A B`
   satisfy `le_F A B (galois_alpha g) f <-> le_G A B g (galois_gamma f)`.

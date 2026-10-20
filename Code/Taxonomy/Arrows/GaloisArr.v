@@ -49,9 +49,6 @@ From Incorrectness.Taxonomy.Arrows Require Import SPostArr PredArr PrePostArr WP
     [MonotoneWP] — the DM4all carrier for [W^Pure].  Monotonicity
     is required for the PrePostArr↔WP adjunction and for arrow/monad
     operations to preserve the carrier. *)
-Definition wp_monotone {A B} (w : WPArr A B) : Prop :=
-  forall a Q1 Q2, (forall b, Q1 b -> Q2 b) -> w a Q1 -> w a Q2.
-
 Definition MonotoneWP (A B : Type) : Type :=
   { w : WPArr A B | wp_monotone w }.
 

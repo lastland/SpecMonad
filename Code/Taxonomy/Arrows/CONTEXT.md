@@ -30,7 +30,10 @@ definitions, not older comments that refer to separate facts files or unary name
 - [WPArr.v](WPArr.v): `WPArr A B = A -> WPureT B`, using the raw carrier
   imported from [WPureMonad.v](../BaseSpecMonads/WPureMonad.v), not its monotone
   `WPure` subset. `ArrowEq_WPArr` uses Leibniz equality; `WPArr_le` uses reverse
-  pointwise implication.
+  pointwise implication. Its homomorphism properties `wp_monotone`,
+  `wp_terminating` (top preservation), and `wp_conjunctive` (nonempty
+  families) mirror `SPArr.v`. `MonotoneWP` and the meet-preserving `DWLPArr`
+  of [DWLPArrowCore.v](../BaseSpecMonads/DWLPArrowCore.v) are subset types of it.
 - [RelPrePostArr.v](RelPrePostArr.v): `RelPrePostArr A B` validates
   preconditions and input-indexed post-relations. Operations and arrow/monad
   equivalence use `project_wp`. That equivalence does not compare every raw
@@ -66,6 +69,11 @@ laws do not follow from the fields the class has. Specification monads
 presented as arrows at input `unit` (see `BaseSpecMonads/ASPArrow.v`) take
 their `MonadLawsE` from here rather than proving it by hand.
 
+`Section ArrowMorphismMonad` then shows that an arrow morphism preserving
+`arr_app` ([ArrowMorphism.v](../../Classes/ArrowMorphism.v)) preserves
+`ret_arrow` and `bind_arrow` at every input, not only `unit`
+(`morph_ret_arrow`, `morph_bind_arrow`).
+
 ## Boundaries and comparison results
 
 - Generic option/state arrow laws live in [OptionArrowT.v](../../Classes/OptionArrowT.v)
@@ -74,12 +82,16 @@ their `MonadLawsE` from here rather than proving it by hand.
 - Main's `PredArr.v` imports [StDivITree.v](../ComputationMonads/StDivITree.v),
   and `WPArr.v` imports a base-specification file. Distinguish semantic
   independence from the current import graph.
-- [GaloisArr.v](GaloisArr.v) defines `MonotoneWP`, `WFRelPrePost`, and
+- [GaloisArr.v](GaloisArr.v) defines `MonotoneWP` (`WPArr` refined by
+  `wp_monotone`), `WFRelPrePost`, and
   `MonotoneSPost` (`SPArrT` refined by `sp_monotone`), then `Galois_Pred_PrePost`, `Galois_Pred_SPost`,
   `Galois_WP_PrePost`, and `Galois_RPP_WP`. Preserve their subtype hypotheses.
   The relation/SP adjunction does not identify every monotone transformer with
   a relational ASP. `gamma_uni_not_monotone` is a stated obstruction;
   the subsequent existential-variant discussion is commentary, not another theorem.
+  These connect specification carriers. The Galois connection of one program,
+  asp ⊣ dwlp, is a relation between two arrows instead, in
+  [GaloisTranspose.v](../BaseSpecMonads/GaloisTranspose.v).
 
 ## Reading order
 
