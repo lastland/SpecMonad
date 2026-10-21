@@ -519,14 +519,19 @@ From Incorrectness.Verification.DivNonDetSt.TriplesExamples Require ITreeProgram
 From Incorrectness.Verification.DivNonDetStExc.TriplesExamples Require ITreePrograms.
 
 (** ITree programs.  The one-step inversions of [any_infinite] are closed;
-    the infinite paths of a [bind] and [leaf_or_infinite] use excluded middle
-    or [eq_rect_eq] (through ITree and paco); [denote] at each setting, the
+    [any_infinite_bind_inv] and [leaf_or_infinite] use excluded middle, and
+    [any_infinite_bind_leaf] uses [eq_rect_eq] -- not inherited from ITree
+    or paco, whose lemmas it calls are closed, but introduced by applying
+    [DivVis] in its [Vis] case.  [eq_rect_eq_from_propext] derives that
+    statement from propositional extensionality, so it is no further
+    assumption; see [Lib/ITreeFacts.v].  [denote] at each setting, the
     readings of programs and the examples also use functional and
     propositional extensionality (outcome sets are compared by Leibniz
     equality). *)
 Print Assumptions ITreeFacts.any_infiniteF_vis_inv.
 Print Assumptions ITreeFacts.any_infinite_ret.
 Print Assumptions ITreeFacts.any_infinite_bind_l.
+Print Assumptions ITreeFacts.eq_rect_eq_from_propext.
 Print Assumptions ITreeFacts.any_infinite_bind_leaf.
 Print Assumptions ITreeFacts.any_infinite_bind_inv.
 Print Assumptions ITreeFacts.leaf_or_infinite.

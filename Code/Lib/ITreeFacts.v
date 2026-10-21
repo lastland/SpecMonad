@@ -5,9 +5,19 @@
     axioms, the infinite paths of a [bind] ([any_infinite_bind_l],
     [any_infinite_bind_leaf], [any_infinite_bind_inv], the last by excluded
     middle), and, if every event has an answer, that every tree has a leaf
-    or an infinite path ([leaf_or_infinite], by excluded middle). *)
+    or an infinite path ([leaf_or_infinite], by excluded middle).
 
-From Coq Require Import Classical_Prop.
+    [any_infinite_bind_leaf] is the one result here that does rest on a
+    dependent elimination axiom: [Print Assumptions] reports Coq's
+    [Eqdep.Eq_rect_eq.eq_rect_eq] for it, introduced by applying [DivVis]
+    in its [Vis] case, where the event type is existential.  It is the only
+    use in the development, and it is not a further assumption:
+    [eq_rect_eq_from_propext] below derives that statement from
+    propositional extensionality, which the development already assumes.
+    Coq's tactics still cite the standard-library axiom, so the report is
+    unchanged. *)
+
+From Coq Require Import Classical_Prop ClassicalFacts PropExtensionality.
 From Paco Require Import paco.
 From ITree Require Import Core.ITreeDefinition Eq.Eqit Eq.Shallow Props.Leaf
   Props.Infinite.
@@ -83,6 +93,23 @@ Proof.
     pose proof (any_infiniteF_tau_inv _ _ Ht) as Hu. pclearbot. exact Hu.
   - cbn. destruct (any_infiniteF_vis_inv _ _ _ Ht) as [y Hy].
     apply (DivVis _ _ e y). right. apply CIH. pclearbot. exact Hy.
+Qed.
+
+(** The dependent elimination axiom that [any_infinite_bind_leaf] reports
+    is derivable from propositional extensionality: that gives proof
+    irrelevance, so a proof [h : p = p] equals [eq_refl], and
+    [eq_rect p Q x p eq_refl] reduces to [x].  Recorded here so that the
+    axiom [Print Assumptions] attributes to the lemma below is known to add
+    no strength beyond the axioms the development already assumes. *)
+
+Lemma eq_rect_eq_from_propext :
+  forall (U : Type) (p : U) (Q : U -> Type) (x : Q p) (h : p = p),
+    x = eq_rect p Q x p h.
+Proof.
+  assert (pe : prop_extensionality)
+    by (intros A B H; apply propositional_extensionality; exact H).
+  pose proof (ext_prop_dep_proof_irrel_cic pe) as pi.
+  intros U p Q x h. rewrite (pi _ h eq_refl). reflexivity.
 Qed.
 
 Lemma any_infinite_bind_leaf {E A B} (t : itree E A) (k : A -> itree E B) (a : A) :
