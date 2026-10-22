@@ -384,6 +384,53 @@ Check WPVariants.wpure_bind_conjunctive.
 Check WPVariants.wpure_bind_disjunctive.
 Check WPVariants.toWPure_morphism.
 
+(** Each of the four readings of a computation lands in the refined monad
+    of its interpretation, and corestricts to a monad morphism into it
+    ([corestrict], [corestrict_morphism]); with state these are the
+    [stateT_map] lifts.  So the morphisms of Section 5 target the four wp
+    monads, not only the ambient [WPure].  Conversely, classically, every
+    element of a refined monad is the reading of a computation
+    ([dwpPure_DWP_complete] &c.), so the four contain exactly the wps of
+    programs under their interpretation.  With state and exceptions the
+    refined monads are [WPSubStExc] = [stateT S (optionT (WPSub h))],
+    ordered and lawful through the generic transformers; both directions
+    lift to the two stacks, completeness pointwise in the start state
+    ([dwpSt_DWPSt_complete], [dwpStExc_DWPStExc_complete] &c.). *)
+Print WPVariants.corestrict.
+Check WPVariants.corestrict_morphism.
+Check WPVariants.conjunctive_repr.
+Check WPVariants.disjunctive_repr.
+Check DivNonDet.Morphisms.dwpPure_into_dwp.
+Check DivNonDet.Morphisms.dwlpPure_into_dwlp.
+Check DivNonDet.Morphisms.awpPure_into_awp.
+Check DivNonDet.Morphisms.awlpPure_into_awlp.
+Check DivNonDet.Morphisms.dwpPure_DWP_morphism.
+Check DivNonDet.Morphisms.dwlpPure_DWLP_morphism.
+Check DivNonDet.Morphisms.awpPure_AWP_morphism.
+Check DivNonDet.Morphisms.awlpPure_AWLP_morphism.
+Check DivNonDetSt.Morphisms.dwpSt_DWPSt_morphism.
+Check DivNonDetSt.Morphisms.dwlpSt_DWLPSt_morphism.
+Check DivNonDetSt.Morphisms.awpSt_AWPSt_morphism.
+Check DivNonDetSt.Morphisms.awlpSt_AWLPSt_morphism.
+Print WPVariants.WPSubStExc.
+Check WPVariants.OrderedMonad_WPSubStExc.
+Check DivNonDetStExc.Morphisms.dwpStExc_DWPStExc_morphism.
+Check DivNonDetStExc.Morphisms.dwlpStExc_DWLPStExc_morphism.
+Check DivNonDetStExc.Morphisms.awpStExc_AWPStExc_morphism.
+Check DivNonDetStExc.Morphisms.awlpStExc_AWLPStExc_morphism.
+Check DivNonDet.Morphisms.dwpPure_DWP_complete.
+Check DivNonDet.Morphisms.dwlpPure_DWLP_complete.
+Check DivNonDet.Morphisms.awpPure_AWP_complete.
+Check DivNonDet.Morphisms.awlpPure_AWLP_complete.
+Check DivNonDetSt.Morphisms.dwpSt_DWPSt_complete.
+Check DivNonDetSt.Morphisms.dwlpSt_DWLPSt_complete.
+Check DivNonDetSt.Morphisms.awpSt_AWPSt_complete.
+Check DivNonDetSt.Morphisms.awlpSt_AWLPSt_complete.
+Check DivNonDetStExc.Morphisms.dwpStExc_DWPStExc_complete.
+Check DivNonDetStExc.Morphisms.dwlpStExc_DWLPStExc_complete.
+Check DivNonDetStExc.Morphisms.awpStExc_AWPStExc_complete.
+Check DivNonDetStExc.Morphisms.awlpStExc_AWLPStExc_complete.
+
 (* ================================================================= *)
 (** ** Section 4.1, Taxonomy of triples                              *)
 (* ================================================================= *)

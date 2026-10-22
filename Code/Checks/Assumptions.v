@@ -546,6 +546,46 @@ Print Assumptions DivNonDet.TriplesExamples.ITreePrograms.spin_not_dwp.
 Print Assumptions DivNonDetSt.TriplesExamples.ITreePrograms.progA_IT_asp_under.
 Print Assumptions DivNonDetStExc.TriplesExamples.ITreePrograms.progA_IT_dwp_under.
 
+(** Each WP reading lands in the refined monad of its interpretation, and
+    corestricts to a monad morphism into it; the same with state, through
+    [stateT_map].  The soundness lemmas are closed; the corestrictions
+    inherit whatever the ambient readings use. *)
+Print Assumptions DivNonDet.Morphisms.dwpPure_into_dwp.
+Print Assumptions DivNonDet.Morphisms.dwlpPure_into_dwlp.
+Print Assumptions DivNonDet.Morphisms.awpPure_into_awp.
+Print Assumptions DivNonDet.Morphisms.awlpPure_into_awlp.
+Print Assumptions DivNonDet.Morphisms.dwpPure_DWP_morphism.
+Print Assumptions DivNonDet.Morphisms.dwlpPure_DWLP_morphism.
+Print Assumptions DivNonDet.Morphisms.awpPure_AWP_morphism.
+Print Assumptions DivNonDet.Morphisms.awlpPure_AWLP_morphism.
+Print Assumptions DivNonDetSt.Morphisms.dwpSt_DWPSt_morphism.
+Print Assumptions DivNonDetSt.Morphisms.dwlpSt_DWLPSt_morphism.
+Print Assumptions DivNonDetSt.Morphisms.awpSt_AWPSt_morphism.
+Print Assumptions DivNonDetSt.Morphisms.awlpSt_AWLPSt_morphism.
+Print Assumptions DivNonDetStExc.Morphisms.dwpStExc_DWPStExc_morphism.
+Print Assumptions DivNonDetStExc.Morphisms.dwlpStExc_DWLPStExc_morphism.
+Print Assumptions DivNonDetStExc.Morphisms.awpStExc_AWPStExc_morphism.
+Print Assumptions DivNonDetStExc.Morphisms.awlpStExc_AWLPStExc_morphism.
+
+(** The converse: every element of a refined monad is the reading of a
+    computation.  Classical -- the representation lemmas it rests on
+    ([WPVariants.conjunctive_repr], [disjunctive_repr]) use excluded
+    middle. *)
+Print Assumptions WPVariants.conjunctive_repr.
+Print Assumptions WPVariants.disjunctive_repr.
+Print Assumptions DivNonDet.Morphisms.dwpPure_DWP_complete.
+Print Assumptions DivNonDet.Morphisms.dwlpPure_DWLP_complete.
+Print Assumptions DivNonDet.Morphisms.awpPure_AWP_complete.
+Print Assumptions DivNonDet.Morphisms.awlpPure_AWLP_complete.
+Print Assumptions DivNonDetSt.Morphisms.dwpSt_DWPSt_complete.
+Print Assumptions DivNonDetSt.Morphisms.dwlpSt_DWLPSt_complete.
+Print Assumptions DivNonDetSt.Morphisms.awpSt_AWPSt_complete.
+Print Assumptions DivNonDetSt.Morphisms.awlpSt_AWLPSt_complete.
+Print Assumptions DivNonDetStExc.Morphisms.dwpStExc_DWPStExc_complete.
+Print Assumptions DivNonDetStExc.Morphisms.dwlpStExc_DWLPStExc_complete.
+Print Assumptions DivNonDetStExc.Morphisms.awpStExc_AWPStExc_complete.
+Print Assumptions DivNonDetStExc.Morphisms.awlpStExc_AWLPStExc_complete.
+
 (** Further results, expected to use at most excluded middle, functional
     and propositional extensionality. *)
 From Incorrectness.SP Require
