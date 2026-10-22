@@ -24,7 +24,7 @@ From Incorrectness.Relational Require Import
 From Incorrectness.SP Require Import
   SPostArrEquiv.
 From Incorrectness.WP Require Import
-  WPure.
+  WPure WPVariants.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 
@@ -90,6 +90,17 @@ Proof. exact (wpSt_morphism (@dwpPure) dwpPure_morphism S). Qed.
   IsMonadMorphism (@dwpSt S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (dwpSt_morphism S).
 
+Definition dwpSt_DWPSt {S A} (m : stdivndNE S A) : DWPSt S A := stateT_map S (@dwpPure_DWP) A m.
+
+Lemma dwpSt_DWPSt_morphism (S : Type) :
+  @MonadMorphism (stdivndNE S) (DWPSt S) (Monad__stdivndNE S) (Monad_DWPSt S)
+    (Eq1__stdivndNE S) (Eq1_DWPSt S) (@dwpSt_DWPSt S).
+Proof.
+  exact (@MonadMorphism_stateT divndNE DWP Monad__divndNE Monad_DWP
+           Eq1__divndNE Eq1_DWP Eq1Equivalence_DWP MonadLawsE_DWP
+           S (@dwpPure_DWP) dwpPure_DWP_morphism).
+Qed.
+
 Definition dwlpSt {S A} (m : stdivndNE S A) : WSt S A :=
   stateT_map S (@dwlpPure) A m.
 
@@ -100,6 +111,17 @@ Proof. exact (wpSt_morphism (@dwlpPure) dwlpPure_morphism S). Qed.
 #[global] Instance IsMonadMorphism_dwlpSt (S : Type) :
   IsMonadMorphism (@dwlpSt S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (dwlpSt_morphism S).
+
+Definition dwlpSt_DWLPSt {S A} (m : stdivndNE S A) : DWLPSt S A := stateT_map S (@dwlpPure_DWLP) A m.
+
+Lemma dwlpSt_DWLPSt_morphism (S : Type) :
+  @MonadMorphism (stdivndNE S) (DWLPSt S) (Monad__stdivndNE S) (Monad_DWLPSt S)
+    (Eq1__stdivndNE S) (Eq1_DWLPSt S) (@dwlpSt_DWLPSt S).
+Proof.
+  exact (@MonadMorphism_stateT divndNE DWLP Monad__divndNE Monad_DWLP
+           Eq1__divndNE Eq1_DWLP Eq1Equivalence_DWLP MonadLawsE_DWLP
+           S (@dwlpPure_DWLP) dwlpPure_DWLP_morphism).
+Qed.
 
 Definition awpSt {S A} (m : stdivndNE S A) : WSt S A :=
   stateT_map S (@awpPure) A m.
@@ -112,6 +134,17 @@ Proof. exact (wpSt_morphism (@awpPure) awpPure_morphism S). Qed.
   IsMonadMorphism (@awpSt S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (awpSt_morphism S).
 
+Definition awpSt_AWPSt {S A} (m : stdivndNE S A) : AWPSt S A := stateT_map S (@awpPure_AWP) A m.
+
+Lemma awpSt_AWPSt_morphism (S : Type) :
+  @MonadMorphism (stdivndNE S) (AWPSt S) (Monad__stdivndNE S) (Monad_AWPSt S)
+    (Eq1__stdivndNE S) (Eq1_AWPSt S) (@awpSt_AWPSt S).
+Proof.
+  exact (@MonadMorphism_stateT divndNE AWP Monad__divndNE Monad_AWP
+           Eq1__divndNE Eq1_AWP Eq1Equivalence_AWP MonadLawsE_AWP
+           S (@awpPure_AWP) awpPure_AWP_morphism).
+Qed.
+
 Definition awlpSt {S A} (m : stdivndNE S A) : WSt S A :=
   stateT_map S (@awlpPure) A m.
 
@@ -119,9 +152,55 @@ Lemma awlpSt_morphism (S : Type) :
   @MonadMorphism (stdivndNE S) (WSt S) (Monad__stdivndNE S) (Monad__WSt S)
     (Eq1__stdivndNE S) (Eq1__WSt S) (@awlpSt S).
 Proof. exact (wpSt_morphism (@awlpPure) awlpPure_morphism S). Qed.
+
 #[global] Instance IsMonadMorphism_awlpSt (S : Type) :
   IsMonadMorphism (@awlpSt S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (awlpSt_morphism S).
+
+Definition awlpSt_AWLPSt {S A} (m : stdivndNE S A) : AWLPSt S A := stateT_map S (@awlpPure_AWLP) A m.
+
+Lemma awlpSt_AWLPSt_morphism (S : Type) :
+  @MonadMorphism (stdivndNE S) (AWLPSt S) (Monad__stdivndNE S) (Monad_AWLPSt S)
+    (Eq1__stdivndNE S) (Eq1_AWLPSt S) (@awlpSt_AWLPSt S).
+Proof.
+  exact (@MonadMorphism_stateT divndNE AWLP Monad__divndNE Monad_AWLP
+           Eq1__divndNE Eq1_AWLP Eq1Equivalence_AWLP MonadLawsE_AWLP
+           S (@awlpPure_AWLP) awlpPure_AWLP_morphism).
+Qed.
+
+(** Completeness lifts pointwise: [stateT] is a function space and its
+    [eq1] is pointwise, so applying the base construction at each start
+    state suffices.  Every element of a refined stateful monad is therefore
+    the reading of a stateful computation. *)
+
+Definition dwpProgramSt {S A} (w : DWPSt S A) : stdivndNE S A :=
+  mkStateT (fun s => dwpProgram (runStateT w s)).
+
+Theorem dwpSt_DWPSt_complete {S A} (w : DWPSt S A) :
+  eq1 (dwpSt_DWPSt (dwpProgramSt w)) w.
+Proof. intro s. exact (dwpPure_DWP_complete (runStateT w s)). Qed.
+
+Definition dwlpProgramSt {S A} (w : DWLPSt S A) : stdivndNE S A :=
+  mkStateT (fun s => dwlpProgram (runStateT w s)).
+
+Theorem dwlpSt_DWLPSt_complete {S A} (w : DWLPSt S A) :
+  eq1 (dwlpSt_DWLPSt (dwlpProgramSt w)) w.
+Proof. intro s. exact (dwlpPure_DWLP_complete (runStateT w s)). Qed.
+
+Definition awpProgramSt {S A} (w : AWPSt S A) : stdivndNE S A :=
+  mkStateT (fun s => awpProgram (runStateT w s)).
+
+Theorem awpSt_AWPSt_complete {S A} (w : AWPSt S A) :
+  eq1 (awpSt_AWPSt (awpProgramSt w)) w.
+Proof. intro s. exact (awpPure_AWP_complete (runStateT w s)). Qed.
+
+Definition awlpProgramSt {S A} (w : AWLPSt S A) : stdivndNE S A :=
+  mkStateT (fun s => awlpProgram (runStateT w s)).
+
+Theorem awlpSt_AWLPSt_complete {S A} (w : AWLPSt S A) :
+  eq1 (awlpSt_AWLPSt (awlpProgramSt w)) w.
+Proof. intro s. exact (awlpPure_AWLP_complete (runStateT w s)). Qed.
+
 Definition outcomesSt {S A} (m : stateT S Pred A) : stateArrT S Rel unit A :=
   fun us r => runStateT m (snd us) r.
 
