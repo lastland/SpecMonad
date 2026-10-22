@@ -24,7 +24,7 @@ From Incorrectness.Relational Require Import
 From Incorrectness.SP Require Import
   SPostArrEquiv.
 From Incorrectness.WP Require Import
-  WPure.
+  WPure WPVariants.
 From Incorrectness.SP Require Import
   ASPMonad DSLPMonad DSPMonad ASLPMonad.
 
@@ -87,6 +87,41 @@ Section LiftedWP.
   Qed.
 
 End LiftedWP.
+
+(** The same lift with a refined target: a morphism into [WPSub h]
+    corestricted at the base ([DivNonDet/Morphisms.v]) lifts through
+    [optionT] and then [stateT] to one into [WPSubStExc h S], by the same
+    generic transformer theorems. *)
+
+Section LiftedWPSub.
+  Variable h : WPHealth.
+  Variable σ : forall A, divndNE A -> WPSub h A.
+  Hypothesis Hσ :
+    @MonadMorphism divndNE (WPSub h) Monad__divndNE (Monad_WPSub h)
+      Eq1__divndNE (Eq1_WPSub h) σ.
+  Variable S : Type.
+
+  Theorem wpSubStExc_morphism :
+    @MonadMorphism (stdivexcndNE S) (WPSubStExc h S) (Monad__stdivexcndNE S)
+      (Monad_WPSubStExc h S) (Eq1__stdivexcndNE S) (Eq1_WPSubStExc h S)
+      (stateT_map S (optionT_map σ)).
+  Proof.
+    exact (@MonadMorphism_stateT (optionT divndNE) (optionT (WPSub h))
+             (@Monad_optionT divndNE Monad__divndNE)
+             (@Monad_optionT (WPSub h) (Monad_WPSub h))
+             (@Eq1_optionT divndNE Eq1__divndNE)
+             (@Eq1_optionT (WPSub h) (Eq1_WPSub h))
+             (@Eq1Equivalence_optionT (WPSub h) (Monad_WPSub h) (Eq1_WPSub h)
+                (Eq1Equivalence_WPSub h))
+             (@MonadLawsE_optionT (WPSub h) (Monad_WPSub h) (Eq1_WPSub h)
+                (Eq1Equivalence_WPSub h) (MonadLawsE_WPSub h))
+             S (optionT_map σ)
+             (@MonadMorphism_optionT divndNE (WPSub h) Monad__divndNE (Monad_WPSub h)
+                Eq1__divndNE (Eq1_WPSub h) (Eq1Equivalence_WPSub h) (MonadLawsE_WPSub h)
+                σ Hσ)).
+  Qed.
+
+End LiftedWPSub.
 Definition dwpStExc {S A} (m : stdivexcndNE S A) : WStExc S A :=
   stateT_map S (optionT_map (@dwpPure)) A m.
 
@@ -97,6 +132,14 @@ Proof. exact (wpStExc_morphism (@dwpPure) dwpPure_morphism S). Qed.
 #[global] Instance IsMonadMorphism_dwpStExc (S : Type)
   : IsMonadMorphism (@dwpStExc S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (dwpStExc_morphism S).
+
+Definition dwpStExc_DWPStExc {S A} (m : stdivexcndNE S A) : DWPStExc S A :=
+  stateT_map S (optionT_map (@dwpPure_DWP)) A m.
+
+Lemma dwpStExc_DWPStExc_morphism (S : Type) :
+  @MonadMorphism (stdivexcndNE S) (DWPStExc S) (Monad__stdivexcndNE S)
+    (Monad_DWPStExc S) (Eq1__stdivexcndNE S) (Eq1_DWPStExc S) (@dwpStExc_DWPStExc S).
+Proof. exact (wpSubStExc_morphism dwp_health (@dwpPure_DWP) dwpPure_DWP_morphism S). Qed.
 Definition dwlpStExc {S A} (m : stdivexcndNE S A) : WStExc S A :=
   stateT_map S (optionT_map (@dwlpPure)) A m.
 
@@ -107,6 +150,14 @@ Proof. exact (wpStExc_morphism (@dwlpPure) dwlpPure_morphism S). Qed.
 #[global] Instance IsMonadMorphism_dwlpStExc (S : Type)
   : IsMonadMorphism (@dwlpStExc S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (dwlpStExc_morphism S).
+
+Definition dwlpStExc_DWLPStExc {S A} (m : stdivexcndNE S A) : DWLPStExc S A :=
+  stateT_map S (optionT_map (@dwlpPure_DWLP)) A m.
+
+Lemma dwlpStExc_DWLPStExc_morphism (S : Type) :
+  @MonadMorphism (stdivexcndNE S) (DWLPStExc S) (Monad__stdivexcndNE S)
+    (Monad_DWLPStExc S) (Eq1__stdivexcndNE S) (Eq1_DWLPStExc S) (@dwlpStExc_DWLPStExc S).
+Proof. exact (wpSubStExc_morphism dwlp_health (@dwlpPure_DWLP) dwlpPure_DWLP_morphism S). Qed.
 Definition awpStExc {S A} (m : stdivexcndNE S A) : WStExc S A :=
   stateT_map S (optionT_map (@awpPure)) A m.
 
@@ -117,6 +168,14 @@ Proof. exact (wpStExc_morphism (@awpPure) awpPure_morphism S). Qed.
 #[global] Instance IsMonadMorphism_awpStExc (S : Type)
   : IsMonadMorphism (@awpStExc S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (awpStExc_morphism S).
+
+Definition awpStExc_AWPStExc {S A} (m : stdivexcndNE S A) : AWPStExc S A :=
+  stateT_map S (optionT_map (@awpPure_AWP)) A m.
+
+Lemma awpStExc_AWPStExc_morphism (S : Type) :
+  @MonadMorphism (stdivexcndNE S) (AWPStExc S) (Monad__stdivexcndNE S)
+    (Monad_AWPStExc S) (Eq1__stdivexcndNE S) (Eq1_AWPStExc S) (@awpStExc_AWPStExc S).
+Proof. exact (wpSubStExc_morphism awp_health (@awpPure_AWP) awpPure_AWP_morphism S). Qed.
 Definition awlpStExc {S A} (m : stdivexcndNE S A) : WStExc S A :=
   stateT_map S (optionT_map (@awlpPure)) A m.
 
@@ -127,6 +186,45 @@ Proof. exact (wpStExc_morphism (@awlpPure) awlpPure_morphism S). Qed.
 #[global] Instance IsMonadMorphism_awlpStExc (S : Type)
   : IsMonadMorphism (@awlpStExc S) :=
   @Build_IsMonadMorphism _ _ _ _ _ _ _ (awlpStExc_morphism S).
+
+Definition awlpStExc_AWLPStExc {S A} (m : stdivexcndNE S A) : AWLPStExc S A :=
+  stateT_map S (optionT_map (@awlpPure_AWLP)) A m.
+
+Lemma awlpStExc_AWLPStExc_morphism (S : Type) :
+  @MonadMorphism (stdivexcndNE S) (AWLPStExc S) (Monad__stdivexcndNE S)
+    (Monad_AWLPStExc S) (Eq1__stdivexcndNE S) (Eq1_AWLPStExc S) (@awlpStExc_AWLPStExc S).
+Proof. exact (wpSubStExc_morphism awlp_health (@awlpPure_AWLP) awlpPure_AWLP_morphism S). Qed.
+
+(** Completeness lifts here too, by the same pointwise argument: [optionT]
+    only wraps, so the base construction applies at [option (A * S)]. *)
+
+Definition dwpProgramStExc {S A} (w : DWPStExc S A) : stdivexcndNE S A :=
+  mkStateT (fun s => mkOptionT (dwpProgram (unOptionT (runStateT w s)))).
+
+Theorem dwpStExc_DWPStExc_complete {S A} (w : DWPStExc S A) :
+  eq1 (dwpStExc_DWPStExc (dwpProgramStExc w)) w.
+Proof. intro s. exact (dwpPure_DWP_complete (unOptionT (runStateT w s))). Qed.
+
+Definition dwlpProgramStExc {S A} (w : DWLPStExc S A) : stdivexcndNE S A :=
+  mkStateT (fun s => mkOptionT (dwlpProgram (unOptionT (runStateT w s)))).
+
+Theorem dwlpStExc_DWLPStExc_complete {S A} (w : DWLPStExc S A) :
+  eq1 (dwlpStExc_DWLPStExc (dwlpProgramStExc w)) w.
+Proof. intro s. exact (dwlpPure_DWLP_complete (unOptionT (runStateT w s))). Qed.
+
+Definition awpProgramStExc {S A} (w : AWPStExc S A) : stdivexcndNE S A :=
+  mkStateT (fun s => mkOptionT (awpProgram (unOptionT (runStateT w s)))).
+
+Theorem awpStExc_AWPStExc_complete {S A} (w : AWPStExc S A) :
+  eq1 (awpStExc_AWPStExc (awpProgramStExc w)) w.
+Proof. intro s. exact (awpPure_AWP_complete (unOptionT (runStateT w s))). Qed.
+
+Definition awlpProgramStExc {S A} (w : AWLPStExc S A) : stdivexcndNE S A :=
+  mkStateT (fun s => mkOptionT (awlpProgram (unOptionT (runStateT w s)))).
+
+Theorem awlpStExc_AWLPStExc_complete {S A} (w : AWLPStExc S A) :
+  eq1 (awlpStExc_AWLPStExc (awlpProgramStExc w)) w.
+Proof. intro s. exact (awlpPure_AWLP_complete (unOptionT (runStateT w s))). Qed.
 Definition outcomesStExc {S A} (m : stateT S (optionT Pred) A)
   : stateArrT S (optionArrT Rel) unit A :=
   fun us o => unOptionT (runStateT m (snd us)) o.
