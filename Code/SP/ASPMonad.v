@@ -364,6 +364,22 @@ Section Readings.
       exists (tt, s). split; [ exact Hp |]. apply aspRelS_bind. exists a, s'. auto.
   Qed.
 
+  (** The displayed form of (ang-st): the continuation receives the whole
+      postcondition [m] produces at [a], rather than a singleton.  It agrees
+      with the relational form above because an ASP transformer is determined
+      by its values at singletons ([getASPSt_singleton]); disjunctivity is a
+      carrier condition, so no excluded middle is needed. *)
+  Lemma getASPSt_bind_formula {A B} (m : ASPSt S A) (k : A -> ASPSt S B) pre r :
+    getASPSt (bindASPSt S m k) pre r
+    <-> exists a, getASPSt (k a) (fun s' => getASPSt m pre (a, s')) r.
+  Proof.
+    rewrite getASPSt_bind. split.
+    - intros [a [s' [Hm Hk]]]. exists a.
+      apply getASPSt_singleton. exists s'. exact (conj Hm Hk).
+    - intros [a Hk]. apply getASPSt_singleton in Hk.
+      destruct Hk as [s0 [Hm Hk]]. exists a, s0. exact (conj Hm Hk).
+  Qed.
+
   Lemma eq1_ASPSt_get {A} (m n : ASPSt S A) :
     eq1 m n <-> (forall pre r, getASPSt m pre r <-> getASPSt n pre r).
   Proof.

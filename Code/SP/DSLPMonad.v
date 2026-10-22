@@ -372,6 +372,20 @@ Section Readings.
       exact (H a s' Hk s Hm).
   Qed.
 
+  (** The displayed form of (dem-st): the continuation receives the whole
+      postcondition [m] produces at [a], rather than being read through its
+      relation.  It agrees with the relational form above because a DSLP
+      transformer is determined by that relation ([getDSLPSt_rel]);
+      conjunctivity is a carrier condition, so no excluded middle is needed. *)
+  Lemma getDSLPSt_bind_formula {A B} (m : DSLPSt S A) (k : A -> DSLPSt S B) pre r :
+    getDSLPSt (bindDSLPSt S m k) pre r
+    <-> forall a, getDSLPSt (k a) (fun s' => getDSLPSt m pre (a, s')) r.
+  Proof.
+    rewrite getDSLPSt_bind. split.
+    - intros H a. apply getDSLPSt_rel. intros s' Hk. exact (H a s' Hk).
+    - intros H a s' Hk. exact (proj1 (getDSLPSt_rel (k a) _ r) (H a) s' Hk).
+  Qed.
+
   Lemma eq1_DSLPSt_get {A} (m n : DSLPSt S A) :
     eq1 m n <-> (forall pre r, getDSLPSt m pre r <-> getDSLPSt n pre r).
   Proof.

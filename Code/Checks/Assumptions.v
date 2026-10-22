@@ -204,6 +204,12 @@ Print Assumptions DSPASLPArr.dslpPart_formula.
 Print Assumptions DSPASLPArr.aspPartA_formula.
 Print Assumptions DSPASLPArr.dslpPartA_formula.
 
+(** The stateful ASP and DSLP binds agree with the formulas (ang-st) and
+    (dem-st) the paper displays.  Constructive: disjunctivity resp.
+    conjunctivity is a carrier condition, not a classical consequence. *)
+Print Assumptions ASPMonad.getASPSt_bind_formula.
+Print Assumptions DSLPMonad.getDSLPSt_bind_formula.
+
 (** Canonical relation readings specialize the generic normalization facts
     through existing RelArrow/RelArrowChoice/RelArrowApply dictionaries.
     These semantic wrappers are constructive. *)

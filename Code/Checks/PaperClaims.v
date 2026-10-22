@@ -322,13 +322,14 @@ Check ASLPMonad.MonadLawsE_ASLPSt.
 Check StateArrowT.Core.ArrowLaws_stateArrT.
 Check StateArrowT.ArrowApplyLaws.ArrowApplyLaws_stateArrT.
 
-(** The unfolded stateful [ret]/[bind] of ASP and DSLP
-    (partial: [bind] in relational form, equivalent by disjunctivity
-    resp. conjunctivity). *)
+(** The unfolded stateful [ret]/[bind] of ASP and DSLP, in the relational
+    form and in the displayed form of (ang-st) resp. (dem-st). *)
 Check ASPMonad.getASPSt_ret.
 Check ASPMonad.getASPSt_bind.
+Check ASPMonad.getASPSt_bind_formula.
 Check DSLPMonad.getDSLPSt_ret.
 Check DSLPMonad.getDSLPSt_bind.
+Check DSLPMonad.getDSLPSt_bind_formula.
 
 (* ================================================================= *)
 (** ** Section 3.4, Monads vs. arrows                                *)
