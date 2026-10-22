@@ -196,6 +196,14 @@ Print Assumptions DSPASLPArr.ArrowLaws_ASLPArr.
 Print Assumptions DSPASLPArr.ArrowChoiceLaws_ASLPArr.
 Print Assumptions DSPASLPArr.ArrowApplyLaws_ASLPArr.
 
+(** The DSP and ASLP parts, defined through the denoted relation, agree
+    with the formulas the paper displays.  Classical, as the paper's own
+    derivations of those formulas are. *)
+Print Assumptions DSPASLPArr.aspPart_formula.
+Print Assumptions DSPASLPArr.dslpPart_formula.
+Print Assumptions DSPASLPArr.aspPartA_formula.
+Print Assumptions DSPASLPArr.dslpPartA_formula.
+
 (** Canonical relation readings specialize the generic normalization facts
     through existing RelArrow/RelArrowChoice/RelArrowApply dictionaries.
     These semantic wrappers are constructive. *)

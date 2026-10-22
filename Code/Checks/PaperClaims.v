@@ -217,19 +217,24 @@ Check DSLPMonad.meet_iff_msingleton.
 
 (** [DSP] (conjunctive, strict) and [ASLP] (disjunctive,
     terminating); each element is the meet (join) of its [aspOf] and
-    [dslpOf] parts; both monads are lawful (partial: the parts are defined
-    through the relation an element denotes, not by the displayed
-    formulas). *)
+    [dslpOf] parts; both monads are lawful.  The parts are defined through
+    the relation an element denotes; [aspPart_formula] &c. show they agree
+    with the formulas displayed in the paper (Section 3.1 for DSP,
+    Appendix F.2 for ASLP), which are classical. *)
 Print DSPMonad.DSP.
 Print DSPASLPArr.dspRel.
 Print DSPASLPArr.aspPartArr.
 Print DSPASLPArr.dslpPartArr.
+Check DSPASLPArr.aspPart_formula.
+Check DSPASLPArr.dslpPart_formula.
 Check DSPASLPArr.dsp_split.
 Check DSPMonad.MonadLawsE_DSP.
 Print ASLPMonad.ASLP.
 Print DSPASLPArr.aslpRel.
 Print DSPASLPArr.aspPartAArr.
 Print DSPASLPArr.dslpPartAArr.
+Check DSPASLPArr.aspPartA_formula.
+Check DSPASLPArr.dslpPartA_formula.
 Check DSPASLPArr.aslp_split.
 Check ASLPMonad.MonadLawsE_ASLP.
 

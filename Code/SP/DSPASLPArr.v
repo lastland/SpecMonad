@@ -125,6 +125,46 @@ Section DSPImplementation.
     getDSP w P y <-> (aspPart w P y /\ dslpPart w P y).
   Proof. exact (dspRel_spec w P y). Qed.
 
+  (** The parts above are built from the relation an element denotes.  They
+      agree with the direct formulas on the element itself: the ASP part
+      admits [y] when the element admits it at [True] and not at the
+      complement of [P]; the DSLP part when the element admits it at [P],
+      or not at [True].  Both directions of the first and the forward
+      direction of the second are classical. *)
+
+  Theorem aspPart_formula {X Y} (w : DSPArr X Y) (P : X -> Prop) y :
+    aspPart w P y
+    <-> getDSP w (fun _ => True) y /\ ~ getDSP w (fun x => ~ P x) y.
+  Proof.
+    unfold aspPart, aspPartArr. cbn.
+    rewrite (dspRel_spec w (fun _ => True) y), (dspRel_spec w (fun x => ~ P x) y).
+    unfold dspOf, aspOf, dslpOf, asp, dslp. split.
+    - intros [x [HP Hx]]. split.
+      + split; [ exists x; split; [ exact I | exact Hx ] | intros ? ?; exact I ].
+      + intros [_ Hall]. exact (Hall x Hx HP).
+    - intros [[[x1 [_ Hx1]] _] Hn].
+      destruct (classic (forall x, dspRel w x y -> ~ P x)) as [Hb | Hb].
+      + exfalso. apply Hn. split; [| exact Hb ].
+        exists x1. split; [ exact (Hb x1 Hx1) | exact Hx1 ].
+      + apply NNPP. intro Hno. apply Hb. intros x Hx HP.
+        exact (Hno (ex_intro _ x (conj HP Hx))).
+  Qed.
+
+  Theorem dslpPart_formula {X Y} (w : DSPArr X Y) (P : X -> Prop) y :
+    dslpPart w P y
+    <-> getDSP w P y \/ ~ getDSP w (fun _ => True) y.
+  Proof.
+    unfold dslpPart, dslpPartArr. cbn.
+    rewrite (dspRel_spec w P y), (dspRel_spec w (fun _ => True) y).
+    unfold dspOf, aspOf, dslpOf, asp, dslp. split.
+    - intro Hall. destruct (classic (exists x, dspRel w x y)) as [[x0 Hx0] | Hno].
+      + left. split; [ exists x0; split; [ exact (Hall x0 Hx0) | exact Hx0 ] | exact Hall ].
+      + right. intros [[x [_ Hx]] _]. exact (Hno (ex_intro _ x Hx)).
+    - intros [[_ Hall] | Hn]; [ exact Hall |].
+      intros x Hx. exfalso. apply Hn.
+      split; [ exists x; split; [ exact I | exact Hx ] | intros ? ?; exact I ].
+  Qed.
+
   Theorem dspRel_faithful {X Y} (w v : DSPArr X Y) :
     Rel_eq (dspRel w) (dspRel v) -> DSPArr_eq w v.
   Proof.
@@ -427,6 +467,46 @@ Section ASLPImplementation.
   Theorem aslp_split {X Y} (w : ASLPArr X Y) P y :
     getASLP w P y <-> (aspPartA w P y \/ dslpPartA w P y).
   Proof. exact (aslpRel_spec w P y). Qed.
+
+  (** As for DSP, the parts agree with the direct formulas on the element:
+      the ASP part admits [y] when the element admits it at [P] and not at
+      [False]; the DSLP part when the element does not admit it at the
+      complement of [P], or does at [False].  Classical in both
+      directions. *)
+
+  Theorem aspPartA_formula {X Y} (w : ASLPArr X Y) (P : X -> Prop) y :
+    aspPartA w P y
+    <-> getASLP w P y /\ ~ getASLP w (fun _ => False) y.
+  Proof.
+    unfold aspPartA, aspPartAArr. cbn.
+    rewrite (aslpRel_spec w P y), (aslpRel_spec w (fun _ => False) y).
+    unfold aslpOf, aspOf, dslpOf, asp, dslp. split.
+    - intros [x [HP Hx]]. split.
+      + left. exists x. split; [ exact HP | exact Hx ].
+      + intros [[? [[] _]] | Hall]. exact (Hall x Hx).
+    - intros [Hor Hn]. destruct Hor as [Ha | Hb]; [ exact Ha |].
+      destruct (classic (exists x, aslpRel w x y)) as [[x0 Hx0] | Hno].
+      + exists x0. split; [ exact (Hb x0 Hx0) | exact Hx0 ].
+      + exfalso. apply Hn. right. intros x Hx. exact (Hno (ex_intro _ x Hx)).
+  Qed.
+
+  Theorem dslpPartA_formula {X Y} (w : ASLPArr X Y) (P : X -> Prop) y :
+    dslpPartA w P y
+    <-> ~ getASLP w (fun x => ~ P x) y \/ getASLP w (fun _ => False) y.
+  Proof.
+    unfold dslpPartA, dslpPartAArr. cbn.
+    rewrite (aslpRel_spec w (fun x => ~ P x) y), (aslpRel_spec w (fun _ => False) y).
+    unfold aslpOf, aspOf, dslpOf, asp, dslp. split.
+    - intro Hall. destruct (classic (exists x, aslpRel w x y)) as [[x0 Hx0] | Hno].
+      + left. intros [[x [HnP Hx]] | Hb].
+        * exact (HnP (Hall x Hx)).
+        * exact (Hb x0 Hx0 (Hall x0 Hx0)).
+      + right. right. intros x Hx. exact (Hno (ex_intro _ x Hx)).
+    - intros [Hn | Hbot] x Hx.
+      + apply NNPP. intro HnP. apply Hn. left.
+        exists x. split; [ exact HnP | exact Hx ].
+      + exfalso. destruct Hbot as [[? [[] _]] | Hall]. exact (Hall x Hx).
+  Qed.
 
   Theorem aslpRel_faithful {X Y} (w v : ASLPArr X Y) :
     Rel_eq (aslpRel w) (aslpRel v) -> ASLPArr_eq w v.
