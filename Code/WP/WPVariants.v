@@ -4,7 +4,7 @@
     [bind] preserve, so each is a submonad of [WPure] with the order pulled
     back from it. *)
 
-From Coq Require Import Morphisms RelationClasses Relation_Definitions.
+From Coq Require Import Morphisms RelationClasses Relation_Definitions Classical_Prop.
 From ExtLib Require Import Monad MonadState MonadExc StateMonad OptionMonad.
 From ITree Require Import Basics.Monad.
 From Incorrectness.Lib.Monad Require Import OrderedMonad.
@@ -70,6 +70,50 @@ Section Healthiness.
     wpure_mono f -> (forall a, p a <-> q a) -> (f p <-> f q).
   Proof. intros Hm H. split; apply Hm; intro a; apply H. Qed.
 End Healthiness.
+
+(** Classically, a monotone conjunctive transformer is determined by its
+    value at [True] and by the results it cannot exclude; a monotone
+    disjunctive one by its value at [False] and by the results it can
+    force.  These are what let a transformer be read back as a computation
+    ([Verification/DivNonDet/Morphisms.v]). *)
+
+Section Representation.
+  Context {A : Type} (f : WPureT A) (Hm : wpure_mono f).
+
+  Lemma conjunctive_repr (Hc : wpure_conjunctive f) (Q : A -> Prop) :
+    f Q <-> f (fun _ => True) /\ (forall a, ~ f (fun x => x <> a) -> Q a).
+  Proof.
+    split.
+    - intro H. split; [ exact (Hm Q _ (fun _ _ => I) H) |].
+      intros a Hna. apply NNPP. intro HQ. apply Hna.
+      refine (Hm Q _ _ H). intros x Hx Hxa. subst x. exact (HQ Hx).
+    - intros [Htop H]. destruct (classic (exists a, ~ Q a)) as [[a0 Ha0] | Hall].
+      + refine (Hm (fun x => forall i : { a | ~ Q a }, x <> proj1_sig i) Q _ _).
+        * intros x Hx. apply NNPP. intro HQ. exact (Hx (exist _ x HQ) eq_refl).
+        * apply (proj2 (Hc { a | ~ Q a } (inhabits (exist _ a0 Ha0))
+                          (fun i x => x <> proj1_sig i))).
+          intros [a Ha]. apply NNPP. intro Hn. exact (Ha (H a Hn)).
+      + refine (Hm _ Q _ Htop). intros x _. apply NNPP. intro HQ.
+        exact (Hall (ex_intro _ x HQ)).
+  Qed.
+
+  Lemma disjunctive_repr (Hd : wpure_disjunctive f) (Q : A -> Prop) :
+    f Q <-> f (fun _ => False) \/ (exists a, f (fun x => x = a) /\ Q a).
+  Proof.
+    split.
+    - intro H. destruct (classic (exists a, Q a)) as [[a0 Ha0] | Hnone].
+      + right.
+        assert (Hex : f (fun x => exists i : { a | Q a }, x = proj1_sig i)).
+        { refine (Hm Q _ _ H). intros x Hx. exists (exist _ x Hx). reflexivity. }
+        destruct (proj1 (Hd { a | Q a } (inhabits (exist _ a0 Ha0))
+                           (fun i x => x = proj1_sig i)) Hex) as [[a Ha] Hf].
+        exists a. exact (conj Hf Ha).
+      + left. refine (Hm Q _ _ H). intros x Hx. exact (Hnone (ex_intro _ x Hx)).
+    - intros [H | [a [H Ha]]].
+      + refine (Hm _ Q _ H). intros x [].
+      + refine (Hm _ Q _ H). intros x Hx. subst x. exact Ha.
+  Qed.
+End Representation.
 
 (** Each property holds of [ret] and is preserved by [bind]. *)
 
@@ -205,6 +249,20 @@ Section WPSub.
     eq1 (toWPure (bindWPSub m k)) (bind (toWPure m) (fun a => toWPure (k a))).
   Proof. intro p. reflexivity. Qed.
 
+  (** A morphism into [WPure] whose values satisfy [h] corestricts to a
+    morphism into [WPSub h], which has [WPure]'s [ret], [bind] and [eq1]. *)
+  Section Corestrict.
+    Context {M : Type -> Type} {MonadM : Monad M} {Eq1M : Eq1 M}
+      (σ : forall A, M A -> WPure A) (Hh : forall A (m : M A), h A (getWPure (σ A m))).
+
+    #[program] Definition corestrict {A} (m : M A) : WPSub A := getWPure (σ A m).
+
+    Lemma corestrict_morphism :
+      @MonadMorphism M WPure MonadM Monad_WPure Eq1M Eq1_WPure σ ->
+      @MonadMorphism M WPSub MonadM Monad_WPSub Eq1M Eq1_WPSub (@corestrict).
+    Proof. intros [Hp Hr Hb]. constructor; [ exact Hp | exact Hr | exact Hb ]. Qed.
+  End Corestrict.
+
   (** Refinement: [WP_le] along the inclusion. *)
   Definition WPSub_le {A} (w1 w2 : WPSub A) : Prop :=
     forall p, getWPSub w2 p -> getWPSub w1 p.
@@ -321,6 +379,48 @@ Section WPSub.
       intros s Q. cbn. split; apply getWPSub_mono; intros [a s'] H; exact H.
     Qed.
   End St.
+
+  (* --------------------------------------------------------------- *)
+  (** *** The state-and-exceptions stack                              *)
+  (* --------------------------------------------------------------- *)
+
+  (** [optionT] below [stateT], as for [WPure.WStExc]: an outcome is a
+      result with its final state, or a raised exception.  Everything is
+      the generic transformer instance, so the laws and the order chain
+      through [Lib/Monad/TransformerLaws.v] without touching [h]. *)
+
+  Section StExc.
+    Variable S : Type.
+
+    Definition WPSubStExc : Type -> Type := stateT S (optionT WPSub).
+
+    Definition Monad_WPSubStExc : Monad WPSubStExc :=
+      @Monad_stateT S _ (@Monad_optionT _ Monad_WPSub).
+
+    Definition Eq1_WPSubStExc : Eq1 WPSubStExc :=
+      @Eq1_stateT S _ (@Eq1_optionT _ Eq1_WPSub).
+
+    Definition Eq1Equivalence_WPSubStExc
+      : @Eq1Equivalence WPSubStExc Monad_WPSubStExc Eq1_WPSubStExc :=
+      @Eq1Equivalence_stateT S _ _ _
+        (@Eq1Equivalence_optionT _ Monad_WPSub Eq1_WPSub Eq1Equivalence_WPSub).
+
+    Definition MonadLawsE_WPSubStExc
+      : @MonadLawsE WPSubStExc Eq1_WPSubStExc Monad_WPSubStExc :=
+      @MonadLawsE_stateT S _ _ _
+        (@Eq1Equivalence_optionT _ Monad_WPSub Eq1_WPSub Eq1Equivalence_WPSub)
+        (@MonadLawsE_optionT _ Monad_WPSub Eq1_WPSub Eq1Equivalence_WPSub
+           MonadLawsE_WPSub).
+
+    Definition WPSubStExc_le {A} : relation (WPSubStExc A) :=
+      @le_stateT S _ (@le_optionT _ (@WPSub_le)) A.
+
+    Definition OrderedMonad_WPSubStExc
+      : @OrderedMonad WPSubStExc Monad_WPSubStExc Eq1_WPSubStExc (@WPSubStExc_le) :=
+      @OrderedMonad_stateT S _ _ _ (@le_optionT _ (@WPSub_le))
+        (@OrderedMonad_optionT _ Monad_WPSub Eq1_WPSub (@WPSub_le)
+           OrderedMonad_WPSub).
+  End StExc.
 End WPSub.
 
 Arguments getWPSub {h} {A}.
@@ -430,6 +530,25 @@ Definition ordAWPStOp {S A} : relation (AWPSt S A) := fun w1 w2 => ordAWPSt w2 w
 #[global] Instance OrderedMonad_AWPSt_op S : OrderedMonad (AWPSt S) (@ordAWPStOp S) :=
   OrderedMonad_flip (@ordAWPSt S) (OrderedMonad_AWPSt S).
 
+Definition AWPStExc (S : Type) : Type -> Type := WPSubStExc awp_health S.
+
+#[global] Instance Monad_AWPStExc S : Monad (AWPStExc S) := Monad_WPSubStExc awp_health S.
+#[global] Instance Eq1_AWPStExc S : Eq1 (AWPStExc S) := Eq1_WPSubStExc awp_health S.
+#[global] Instance Eq1Equivalence_AWPStExc S
+  : @Eq1Equivalence (AWPStExc S) (Monad_AWPStExc S) (Eq1_AWPStExc S) :=
+  Eq1Equivalence_WPSubStExc awp_health S.
+#[global] Instance MonadLawsE_AWPStExc S
+  : @MonadLawsE (AWPStExc S) (Eq1_AWPStExc S) (Monad_AWPStExc S) :=
+  MonadLawsE_WPSubStExc awp_health S.
+
+Definition ordAWPStExc {S A} : relation (AWPStExc S A) := @WPSubStExc_le awp_health S A.
+Definition ordAWPStExcOp {S A} : relation (AWPStExc S A) := fun w1 w2 => ordAWPStExc w2 w1.
+
+#[global] Instance OrderedMonad_AWPStExc S : OrderedMonad (AWPStExc S) (@ordAWPStExc S) :=
+  OrderedMonad_WPSubStExc awp_health S.
+#[global] Instance OrderedMonad_AWPStExc_op S : OrderedMonad (AWPStExc S) (@ordAWPStExcOp S) :=
+  OrderedMonad_flip (@ordAWPStExc S) (OrderedMonad_AWPStExc S).
+
 (* ================================================================= *)
 (** ** [DWLP]: demonic, liberal                                      *)
 (* ================================================================= *)
@@ -475,6 +594,25 @@ Definition ordDWLPStOp {S A} : relation (DWLPSt S A) := fun w1 w2 => ordDWLPSt w
   OrderedMonad_WPSubSt dwlp_health S.
 #[global] Instance OrderedMonad_DWLPSt_op S : OrderedMonad (DWLPSt S) (@ordDWLPStOp S) :=
   OrderedMonad_flip (@ordDWLPSt S) (OrderedMonad_DWLPSt S).
+
+Definition DWLPStExc (S : Type) : Type -> Type := WPSubStExc dwlp_health S.
+
+#[global] Instance Monad_DWLPStExc S : Monad (DWLPStExc S) := Monad_WPSubStExc dwlp_health S.
+#[global] Instance Eq1_DWLPStExc S : Eq1 (DWLPStExc S) := Eq1_WPSubStExc dwlp_health S.
+#[global] Instance Eq1Equivalence_DWLPStExc S
+  : @Eq1Equivalence (DWLPStExc S) (Monad_DWLPStExc S) (Eq1_DWLPStExc S) :=
+  Eq1Equivalence_WPSubStExc dwlp_health S.
+#[global] Instance MonadLawsE_DWLPStExc S
+  : @MonadLawsE (DWLPStExc S) (Eq1_DWLPStExc S) (Monad_DWLPStExc S) :=
+  MonadLawsE_WPSubStExc dwlp_health S.
+
+Definition ordDWLPStExc {S A} : relation (DWLPStExc S A) := @WPSubStExc_le dwlp_health S A.
+Definition ordDWLPStExcOp {S A} : relation (DWLPStExc S A) := fun w1 w2 => ordDWLPStExc w2 w1.
+
+#[global] Instance OrderedMonad_DWLPStExc S : OrderedMonad (DWLPStExc S) (@ordDWLPStExc S) :=
+  OrderedMonad_WPSubStExc dwlp_health S.
+#[global] Instance OrderedMonad_DWLPStExc_op S : OrderedMonad (DWLPStExc S) (@ordDWLPStExcOp S) :=
+  OrderedMonad_flip (@ordDWLPStExc S) (OrderedMonad_DWLPStExc S).
 
 (* ================================================================= *)
 (** ** [DWP]: demonic, total                                         *)
@@ -522,6 +660,25 @@ Definition ordDWPStOp {S A} : relation (DWPSt S A) := fun w1 w2 => ordDWPSt w2 w
 #[global] Instance OrderedMonad_DWPSt_op S : OrderedMonad (DWPSt S) (@ordDWPStOp S) :=
   OrderedMonad_flip (@ordDWPSt S) (OrderedMonad_DWPSt S).
 
+Definition DWPStExc (S : Type) : Type -> Type := WPSubStExc dwp_health S.
+
+#[global] Instance Monad_DWPStExc S : Monad (DWPStExc S) := Monad_WPSubStExc dwp_health S.
+#[global] Instance Eq1_DWPStExc S : Eq1 (DWPStExc S) := Eq1_WPSubStExc dwp_health S.
+#[global] Instance Eq1Equivalence_DWPStExc S
+  : @Eq1Equivalence (DWPStExc S) (Monad_DWPStExc S) (Eq1_DWPStExc S) :=
+  Eq1Equivalence_WPSubStExc dwp_health S.
+#[global] Instance MonadLawsE_DWPStExc S
+  : @MonadLawsE (DWPStExc S) (Eq1_DWPStExc S) (Monad_DWPStExc S) :=
+  MonadLawsE_WPSubStExc dwp_health S.
+
+Definition ordDWPStExc {S A} : relation (DWPStExc S A) := @WPSubStExc_le dwp_health S A.
+Definition ordDWPStExcOp {S A} : relation (DWPStExc S A) := fun w1 w2 => ordDWPStExc w2 w1.
+
+#[global] Instance OrderedMonad_DWPStExc S : OrderedMonad (DWPStExc S) (@ordDWPStExc S) :=
+  OrderedMonad_WPSubStExc dwp_health S.
+#[global] Instance OrderedMonad_DWPStExc_op S : OrderedMonad (DWPStExc S) (@ordDWPStExcOp S) :=
+  OrderedMonad_flip (@ordDWPStExc S) (OrderedMonad_DWPStExc S).
+
 (* ================================================================= *)
 (** ** [AWLP]: angelic, liberal                                      *)
 (* ================================================================= *)
@@ -567,3 +724,22 @@ Definition ordAWLPStOp {S A} : relation (AWLPSt S A) := fun w1 w2 => ordAWLPSt w
   OrderedMonad_WPSubSt awlp_health S.
 #[global] Instance OrderedMonad_AWLPSt_op S : OrderedMonad (AWLPSt S) (@ordAWLPStOp S) :=
   OrderedMonad_flip (@ordAWLPSt S) (OrderedMonad_AWLPSt S).
+
+Definition AWLPStExc (S : Type) : Type -> Type := WPSubStExc awlp_health S.
+
+#[global] Instance Monad_AWLPStExc S : Monad (AWLPStExc S) := Monad_WPSubStExc awlp_health S.
+#[global] Instance Eq1_AWLPStExc S : Eq1 (AWLPStExc S) := Eq1_WPSubStExc awlp_health S.
+#[global] Instance Eq1Equivalence_AWLPStExc S
+  : @Eq1Equivalence (AWLPStExc S) (Monad_AWLPStExc S) (Eq1_AWLPStExc S) :=
+  Eq1Equivalence_WPSubStExc awlp_health S.
+#[global] Instance MonadLawsE_AWLPStExc S
+  : @MonadLawsE (AWLPStExc S) (Eq1_AWLPStExc S) (Monad_AWLPStExc S) :=
+  MonadLawsE_WPSubStExc awlp_health S.
+
+Definition ordAWLPStExc {S A} : relation (AWLPStExc S A) := @WPSubStExc_le awlp_health S A.
+Definition ordAWLPStExcOp {S A} : relation (AWLPStExc S A) := fun w1 w2 => ordAWLPStExc w2 w1.
+
+#[global] Instance OrderedMonad_AWLPStExc S : OrderedMonad (AWLPStExc S) (@ordAWLPStExc S) :=
+  OrderedMonad_WPSubStExc awlp_health S.
+#[global] Instance OrderedMonad_AWLPStExc_op S : OrderedMonad (AWLPStExc S) (@ordAWLPStExcOp S) :=
+  OrderedMonad_flip (@ordAWLPStExc S) (OrderedMonad_AWLPStExc S).
