@@ -111,14 +111,13 @@ Check DSLPMonad.OrderedMonad_DSLPStExc.
 Check WPure.OrderedMonad_WStExc.
 Check OrderedMonad.OrderedMonad_flip.
 
-(** The dsp and aslp binds are not monotone (partial: with
-    state only; without state DSP and ASLP coincide with ASP and DSLP, see
-    Section 4.2).  Which triples embed in Dijkstra monads (the
-    bullet swaps asp and dslp; the artifact and Section 5 agree that asp
-    over and dslp under embed, asp under and dslp over do not); backed in
-    Section 5. *)
+(** The stateful dsp and aslp binds are not monotone.  Which
+    triples embed as Dijkstra-monad specifications: asp over and dslp
+    under do, asp under and dslp over do not; backed in Section 5. *)
 Check DSPMonad.not_OrderedMonad_DSPSt.
 Check ASLPMonad.not_OrderedMonad_ASLPSt.
+Check DSPMonad.not_OrderedMonad_DSPStExc.
+Check ASLPMonad.not_OrderedMonad_ASLPStExc.
 
 (** Galois connections with stateful [Pred] (Section 6) and
     pre/post specifications (partial: as Galois connections of binary
@@ -238,8 +237,8 @@ Check DSPASLPArr.dslpPartA_formula.
 Check DSPASLPArr.aslp_split.
 Check ASLPMonad.MonadLawsE_ASLP.
 
-(** "its bind is not monotone" (partial: with state only; see
-    Section 1 above). *)
+(** "the stateful dsp and aslp monads have binds that are not
+    monotone": checked in the Section 1 block above. *)
 
 (** The four pure sp monads. *)
 Check ASPMonad.MonadLawsE_ASP.
