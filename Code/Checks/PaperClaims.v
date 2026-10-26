@@ -203,8 +203,11 @@ Check SPostArr.dslp_meet_iff.
 Check DSPASLPArr.dsp_hom_iff.
 Check DSPASLPArr.aslp_hom_iff.
 
-(** The (ang) [ret] leaves the conjunctive, terminating
-    carrier (partial: shown for [ret]). *)
+(** Keeping the (ang) [ret] and [bind] on the conjunctive,
+    terminating carrier does not give DSLP: the [ret] already leaves that
+    carrier, which settles it without looking at [bind].  Stated for
+    dm4all's [retSP], the (ang) [ret] transported along the isomorphism
+    proved in the same file. *)
 Check ASPMonad.dm4all_not_dslp_healthy.
 
 (** [DSLP] with (dem) [ret]/[bind] is lawful. *)
@@ -881,8 +884,11 @@ Print DijkstraMonad.DMop.
 Check DijkstraMonad.DMop_laws.
 
 (** Dijkstra monads for the four wp monads, ASP and DSLP
-    (with state; with exceptions, with their laws), and the verified
-    examples as their elements. *)
+    (with state; with exceptions, with their laws).  The verified examples
+    are elements of them: the typings above are biconditional, so a triple
+    of an embeddable kind is already the specification its computation
+    types at, and [m_DM] works that out for the Lisbon triple of the
+    running program. *)
 Check DivNonDetSt.DijkstraMonads.OrderedTarget_dwpSt.
 Check DivNonDetSt.DijkstraMonads.OrderedTarget_dwlpSt.
 Check DivNonDetSt.DijkstraMonads.OrderedTarget_awpSt.
@@ -895,6 +901,9 @@ Check DivNonDetStExc.DijkstraMonads.Dawp_laws.
 Check DivNonDetStExc.DijkstraMonads.Dawlp_laws.
 Check DivNonDetStExc.DijkstraMonads.Dasp_laws.
 Check DivNonDetStExc.DijkstraMonads.Ddslp_laws.
+Check ResetEven.wspec.
+Check ResetEven.le_wspec_iff_lisbon.
+Check ResetEven.m_DM.
 Check DijkstraExamples.progA_Ddwp.
 Check DijkstraExamples.progB_Ddwlp.
 Check DijkstraExamples.progA_Dawp.
@@ -1001,7 +1010,11 @@ Check DivNonDetStExc.Computation.denoteStExc_morphism.
 (** Not checkable here: "about 28k lines", "only funext,
     propext and excluded middle" (the build has about 38.6k lines;
     [Checks/Assumptions.v] reports the axioms, which also include
-    [eq_rect_eq], through ITree). *)
+    [eq_rect_eq] -- introduced locally by applying [DivVis] in
+    [any_infinite_bind_leaf], not inherited from ITree or paco, whose
+    lemmas it calls are closed, and derivable from propositional
+    extensionality by [ITreeFacts.eq_rect_eq_from_propext], so the
+    paper's three are complete). *)
 
 (* ================================================================= *)
 (** ** Appendix A, Arrow laws                                        *)
