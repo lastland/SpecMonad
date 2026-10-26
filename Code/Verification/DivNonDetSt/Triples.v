@@ -80,6 +80,47 @@ Section LiftedWP.
     exact (pt_holds_pointwise
              (fun Q' s => getWPure (σ _ (runStateT m s)) Q') k P Q).
   Qed.
+
+  (** *** Sequencing
+
+      The morphism law at [bind], read at a start state: the specification
+      of [bind m f] is that of [m] against the postcondition that the
+      continuation's specification establishes.  This is the [Hbind]
+      premise of [pt_holds_backward_seq]; the [Hmono] premise is free,
+      since monotonicity is [WPure]'s carrier condition. *)
+  Lemma wpSt_bind_read {A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+    (Q : B * S -> Prop) (s : S) :
+    getWPure (σ _ (runStateT (bind m f) s)) Q
+    <-> getWPure (σ _ (runStateT m s))
+          (fun y => getWPure (σ _ (runStateT (f (fst y)) (snd y))) Q).
+  Proof.
+    etransitivity;
+      [ exact (mm_bind Hσ (runStateT m s)
+                 (fun vs => let (v, s') := vs in runStateT (f v) s') Q) |].
+    cbn. split; apply getWPure_mono; intros [v s'] H; exact H.
+  Qed.
+
+  (** The composition rule, at both kinds: [Over] flips the three
+      orderings and the side condition together. *)
+  Lemma spec_holds_wpSt_seq {A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+    (k : approxKind) (p : S -> Prop) (q0 : A * S -> Prop)
+    (pa : A -> S -> Prop) (q : B * S -> Prop) :
+    spec_holds (stateT_map S σ A m : WSt S A) k p q0 ->
+    (forall a, spec_holds (stateT_map S σ B (f a) : WSt S B) k (pa a) q) ->
+    seq_side k q0 (fun y => pa (fst y) (snd y)) ->
+    spec_holds (stateT_map S σ B (bind m f) : WSt S B) k p q.
+  Proof.
+    intros H1 H2 Hs.
+    refine (pt_holds_backward_seq
+              (fun Q s' => getWPure (σ _ (runStateT m s')) Q)
+              (fun (y : A * S) Q => getWPure (σ _ (runStateT (f (fst y)) (snd y))) Q)
+              (fun Q s' => getWPure (σ _ (runStateT (bind m f) s')) Q)
+              (fun Q1 Q2 s' HQ => getWPure_mono _ Q1 Q2 HQ)
+              (fun Q s' => wpSt_bind_read m f Q s')
+              k p q0 (fun y => pa (fst y) (snd y)) q H1 _ Hs).
+    intros [a s'].
+    exact (proj1 (spec_holds_wpSt (f a) k (pa a) q) (H2 a) s').
+  Qed.
 End LiftedWP.
 Theorem triple_dwpSt {S A} (m : stdivndNE S A) (k : approxKind)
   (P : S -> Prop) (Q : A * S -> Prop) :
@@ -104,6 +145,48 @@ Theorem triple_awlpSt {S A} (m : stdivndNE S A) (k : approxKind)
   triple (@awlpSt S) m k P Q
   <-> forall s, triple (@awlpPure) (runStateT m s) k (fun _ => P s) Q.
 Proof. exact (spec_holds_wpSt (@awlpPure) S m k P Q). Qed.
+
+(** *** Composition of wp triples
+
+    [spec_holds_wpSt_seq] at each of the four wp morphisms.  Each is stated
+    at the kind [k] it quantifies, so the four cover all eight wp
+    triples. *)
+
+Theorem triple_dwpSt_seq {S A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (k : approxKind) (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@dwpSt S) m k P Q0 ->
+  (forall a, triple (@dwpSt S) (f a) k (Pa a) Q) ->
+  seq_side k Q0 (fun y => Pa (fst y) (snd y)) ->
+  triple (@dwpSt S) (bind m f) k P Q.
+Proof. exact (spec_holds_wpSt_seq (@dwpPure) dwpPure_morphism S m f k P Q0 Pa Q). Qed.
+
+Theorem triple_dwlpSt_seq {S A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (k : approxKind) (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@dwlpSt S) m k P Q0 ->
+  (forall a, triple (@dwlpSt S) (f a) k (Pa a) Q) ->
+  seq_side k Q0 (fun y => Pa (fst y) (snd y)) ->
+  triple (@dwlpSt S) (bind m f) k P Q.
+Proof. exact (spec_holds_wpSt_seq (@dwlpPure) dwlpPure_morphism S m f k P Q0 Pa Q). Qed.
+
+Theorem triple_awpSt_seq {S A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (k : approxKind) (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@awpSt S) m k P Q0 ->
+  (forall a, triple (@awpSt S) (f a) k (Pa a) Q) ->
+  seq_side k Q0 (fun y => Pa (fst y) (snd y)) ->
+  triple (@awpSt S) (bind m f) k P Q.
+Proof. exact (spec_holds_wpSt_seq (@awpPure) awpPure_morphism S m f k P Q0 Pa Q). Qed.
+
+Theorem triple_awlpSt_seq {S A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (k : approxKind) (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@awlpSt S) m k P Q0 ->
+  (forall a, triple (@awlpSt S) (f a) k (Pa a) Q) ->
+  seq_side k Q0 (fun y => Pa (fst y) (snd y)) ->
+  triple (@awlpSt S) (bind m f) k P Q.
+Proof. exact (spec_holds_wpSt_seq (@awlpPure) awlpPure_morphism S m f k P Q0 Pa Q). Qed.
 
 Theorem triple_aspSt {S A} (m : stdivndNE S A) (k : approxKind)
   (P : S -> Prop) (Q : A * S -> Prop) :
@@ -132,6 +215,105 @@ Theorem triple_aslpSt {S A} (m : stdivndNE S A) (k : approxKind)
   <-> aslpHolds (fun (us : unit * S) r => outSt m (snd us) (Some r)) k
         (fun us => P (snd us)) Q.
 Proof. destruct k; reflexivity. Qed.
+
+(** *** Composition of ASP and DSLP triples
+
+    The two sp monads whose [bind] is monotone also have a composition
+    rule, in both directions.  Unlike the wp rules, the two kinds do not
+    share a statement: the intermediate point carries a returned value that
+    the continuation sees apart from the state, so [bind] must aggregate
+    over the returned values -- by join for [ASPSt], by meet for [DSLPSt]
+    -- and the kind that has to produce a returned value out of the
+    premises needs the result type inhabited.  That is [Under] for [ASPSt]
+    and [Over] for [DSLPSt]; Hoare logic (ASP [Over]) and partial
+    incorrectness (DSLP [Under]) are free of it.
+
+    The morphism law at [bind], read through the displayed formulas of
+    Section 3.3. *)
+
+Lemma aspSt_bind_read {S A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (r : B * S) :
+  getASPSt (aspSt (bind m f)) P r
+  <-> exists a, getASPSt (aspSt (f a)) (fun s' => getASPSt (aspSt m) P (a, s')) r.
+Proof.
+  etransitivity;
+    [ exact (proj1 (eq1_ASPSt_get S _ _) (mm_bind (aspSt_morphism_rel S) m f) P r) |].
+  exact (getASPSt_bind_formula S (aspSt m) (fun a => aspSt (f a)) P r).
+Qed.
+
+Lemma dslpSt_bind_read {S A B} (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (r : B * S) :
+  getDSLPSt (dslpSt (bind m f)) P r
+  <-> forall a, getDSLPSt (dslpSt (f a)) (fun s' => getDSLPSt (dslpSt m) P (a, s')) r.
+Proof.
+  etransitivity;
+    [ exact (proj1 (eq1_DSLPSt_get S _ _) (mm_bind (dslpSt_morphism_rel S) m f) P r) |].
+  exact (getDSLPSt_bind_formula S (dslpSt m) (fun a => dslpSt (f a)) P r).
+Qed.
+
+Theorem triple_aspSt_seq_under {S A B} (Hinh : inhabited A)
+  (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@aspSt S) m Under P Q0 ->
+  (forall a, triple (@aspSt S) (f a) Under (Pa a) Q) ->
+  seq_side_fwd (fun a s => (a, s)) Under Q0 Pa ->
+  triple (@aspSt S) (bind m f) Under P Q.
+Proof.
+  exact (pt_holds_forward_join_under_seq
+           (getASPSt (aspSt m)) (fun a s => (a, s))
+           (fun a => getASPSt (aspSt (f a))) (getASPSt (aspSt (bind m f)))
+           (fun a P1 P2 z HP => getASPSt_mono S _ P1 P2 z HP)
+           (aspSt_bind_read m f) Hinh P Q0 Pa Q).
+Qed.
+
+Theorem triple_aspSt_seq_over {S A B}
+  (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@aspSt S) m Over P Q0 ->
+  (forall a, triple (@aspSt S) (f a) Over (Pa a) Q) ->
+  seq_side_fwd (fun a s => (a, s)) Over Q0 Pa ->
+  triple (@aspSt S) (bind m f) Over P Q.
+Proof.
+  exact (pt_holds_forward_join_over_seq
+           (getASPSt (aspSt m)) (fun a s => (a, s))
+           (fun a => getASPSt (aspSt (f a))) (getASPSt (aspSt (bind m f)))
+           (fun a P1 P2 z HP => getASPSt_mono S _ P1 P2 z HP)
+           (aspSt_bind_read m f) P Q0 Pa Q).
+Qed.
+
+Theorem triple_dslpSt_seq_under {S A B}
+  (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@dslpSt S) m Under P Q0 ->
+  (forall a, triple (@dslpSt S) (f a) Under (Pa a) Q) ->
+  seq_side_fwd (fun a s => (a, s)) Under Q0 Pa ->
+  triple (@dslpSt S) (bind m f) Under P Q.
+Proof.
+  exact (pt_holds_forward_meet_under_seq
+           (getDSLPSt (dslpSt m)) (fun a s => (a, s))
+           (fun a => getDSLPSt (dslpSt (f a))) (getDSLPSt (dslpSt (bind m f)))
+           (fun a P1 P2 z HP => getDSLPSt_mono S _ P1 P2 z HP)
+           (dslpSt_bind_read m f) P Q0 Pa Q).
+Qed.
+
+Theorem triple_dslpSt_seq_over {S A B} (Hinh : inhabited A)
+  (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@dslpSt S) m Over P Q0 ->
+  (forall a, triple (@dslpSt S) (f a) Over (Pa a) Q) ->
+  seq_side_fwd (fun a s => (a, s)) Over Q0 Pa ->
+  triple (@dslpSt S) (bind m f) Over P Q.
+Proof.
+  exact (pt_holds_forward_meet_over_seq
+           (getDSLPSt (dslpSt m)) (fun a s => (a, s))
+           (fun a => getDSLPSt (dslpSt (f a))) (getDSLPSt (dslpSt (bind m f)))
+           (fun a P1 P2 z HP => getDSLPSt_mono S _ P1 P2 z HP)
+           (dslpSt_bind_read m f) Hinh P Q0 Pa Q).
+Qed.
 
 (* ================================================================= *)
 (** * The twenty-four readings, in terms of the outcomes              *)
