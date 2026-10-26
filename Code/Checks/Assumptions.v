@@ -343,6 +343,51 @@ Print Assumptions Triples.triple_dspStExc.
 Print Assumptions Triples.triple_aslpSt.
 Print Assumptions Triples.triple_aslpStExc.
 
+(** Composition.  All closed.  The generic rules are pure logic: they take
+    the morphism law at [bind] and monotonicity as premises, as are the two
+    refutations showing the inhabitation condition of the join [Under] and
+    meet [Over] rules is necessary.  Each instance carries only what its
+    morphism law carries, and the four base wp morphisms and the two
+    relational sp morphism theorems are themselves closed, so no
+    composition rule needs an axiom -- not even the two whose
+    counterexamples are classical, since those live on the dsp and aslp
+    side, which has no rule. *)
+Print Assumptions Triple.pt_holds_backward_seq.
+Print Assumptions Triple.pt_holds_forward_join_under_seq.
+Print Assumptions Triple.pt_holds_forward_join_over_seq.
+Print Assumptions Triple.pt_holds_forward_meet_under_seq.
+Print Assumptions Triple.pt_holds_forward_meet_over_seq.
+Print Assumptions Triple.forward_join_under_seq_needs_inhabited.
+Print Assumptions Triple.forward_meet_over_seq_needs_inhabited.
+Print Assumptions Triples.wpSt_bind_read.
+Print Assumptions Triples.spec_holds_wpSt_seq.
+Print Assumptions Triples.triple_dwpSt_seq.
+Print Assumptions Triples.triple_dwlpSt_seq.
+Print Assumptions Triples.triple_awpSt_seq.
+Print Assumptions Triples.triple_awlpSt_seq.
+Print Assumptions Triples.aspSt_bind_read.
+Print Assumptions Triples.dslpSt_bind_read.
+Print Assumptions Triples.triple_aspSt_seq_under.
+Print Assumptions Triples.triple_aspSt_seq_over.
+Print Assumptions Triples.triple_dslpSt_seq_under.
+Print Assumptions Triples.triple_dslpSt_seq_over.
+
+(** Composition through the components, and the two kinds that do not
+    compose.  All classical, and all for one reason: the dsp and aslp
+    readings of a computation are ([triple_dspSt], [triple_aslpSt] above),
+    so anything stated about them is.  The splitting itself is
+    propositional bookkeeping and the refutations compute with outcomes;
+    neither adds an axiom of its own. *)
+Print Assumptions Triples.triple_dspSt_split_under.
+Print Assumptions Triples.triple_aslpSt_split_over.
+Print Assumptions Triples.triple_dspSt_seq_under.
+Print Assumptions Triples.triple_aslpSt_seq_over.
+Print Assumptions Triples.seqFst_out_some.
+Print Assumptions Triples.seqSnd_out_some.
+Print Assumptions Triples.seqSeq_out_some.
+Print Assumptions Triples.dspSt_seq_over_fails.
+Print Assumptions Triples.aslpSt_seq_under_fails.
+
 (** The taxonomy diagram at the state level.
 
     Implications between WP triples: closed. *)

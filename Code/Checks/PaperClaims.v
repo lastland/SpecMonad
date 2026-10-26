@@ -779,6 +779,49 @@ Check ResetEven.asp_m_p'.
 Check ResetEven.lisbon_p'_q.
 Check ResetEven.incorr_p'_q.
 
+(** Composition (Section 5.3): two triples and an intermediate
+    assertion give one for the sequenced computation.  The rule holds by
+    monotonicity and the monad morphism law, and the over-approximate one
+    flips the three orderings and the side condition, so all eight kinds
+    of wp triples compose.  The asp and dslp rules hold in both
+    directions, reversing the wp rules' side conditions; the
+    under-approximate asp rule and the over-approximate dslp rule
+    additionally require the result type to be inhabited.  An
+    under-approximate dsp triple is the conjunction of an asp and a dslp
+    triple, and so is an over-approximate aslp triple, so these compose
+    through their components.  The two remaining kinds do not compose,
+    witnessed by the programs of Figure 2. *)
+Check Generic.Triple.seq_side.
+Check Generic.Triple.pt_holds_backward_seq.
+Check DivNonDetSt.Triples.wpSt_bind_read.
+Check DivNonDetSt.Triples.spec_holds_wpSt_seq.
+Check DivNonDetSt.Triples.triple_dwpSt_seq.
+Check DivNonDetSt.Triples.triple_dwlpSt_seq.
+Check DivNonDetSt.Triples.triple_awpSt_seq.
+Check DivNonDetSt.Triples.triple_awlpSt_seq.
+Check Generic.Triple.seq_side_fwd.
+Check Generic.Triple.pt_holds_forward_join_under_seq.
+Check Generic.Triple.pt_holds_forward_join_over_seq.
+Check Generic.Triple.pt_holds_forward_meet_under_seq.
+Check Generic.Triple.pt_holds_forward_meet_over_seq.
+Check Generic.Triple.forward_join_under_seq_needs_inhabited.
+Check Generic.Triple.forward_meet_over_seq_needs_inhabited.
+Check DivNonDetSt.Triples.aspSt_bind_read.
+Check DivNonDetSt.Triples.dslpSt_bind_read.
+Check DivNonDetSt.Triples.triple_aspSt_seq_under.
+Check DivNonDetSt.Triples.triple_aspSt_seq_over.
+Check DivNonDetSt.Triples.triple_dslpSt_seq_under.
+Check DivNonDetSt.Triples.triple_dslpSt_seq_over.
+Check DivNonDetSt.Triples.triple_dspSt_split_under.
+Check DivNonDetSt.Triples.triple_aslpSt_split_over.
+Check DivNonDetSt.Triples.triple_dspSt_seq_under.
+Check DivNonDetSt.Triples.triple_aslpSt_seq_over.
+Print DivNonDetSt.Triples.seqFst.
+Print DivNonDetSt.Triples.seqSnd.
+Check DivNonDetSt.Triples.seqSeq_out_some.
+Check DivNonDetSt.Triples.dspSt_seq_over_fails.
+Check DivNonDetSt.Triples.aslpSt_seq_under_fails.
+
 (** The comparison rule is the bind typing of the Dijkstra
     monad of a morphism; ASP, DSLP and the wp monads are specification
     monads; DSP and ASLP are not (Section 1). *)
