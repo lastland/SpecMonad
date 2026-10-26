@@ -659,3 +659,42 @@ Print Assumptions ASPMonad.fromArrowASPState_morphism.
 Print Assumptions MonadTaxonomy.MonadRelation_asp_implies_aslp_pure.
 Print Assumptions ResetEven.incorr_p_q.
 Print Assumptions ResetEven.m_DM.
+
+(** The nuclei of the four Section 6 adjunctions, and the identification
+    of the carrier conditions they are stated against with membership in
+    the named monads.
+
+    The nuclei themselves are closed: a round trip is the adjunction's
+    unit or counit, and the carrier characterisations are the image of
+    [fromPred] resp. [pred2WSt] satisfying the condition by construction,
+    which is quantifier shuffling.
+
+    So is each "a transformer meeting the condition is such an element":
+    the conditions quantify over all index types, which yields the guarded
+    clause by instantiation and the empty case at [Empty_set].
+
+    Excluded middle enters at exactly four lemmas, the wp half of
+    "every element of the monad meets the condition".  Going that way the
+    empty index has to be separated from the rest, because [WPVariants]
+    guards the conjunctive and disjunctive clauses and carries the empty
+    case apart as termination resp. strictness.  The sp half needs no
+    axiom, having a relational reading to pass through. *)
+From Incorrectness.PTMonadTaxonomy Require MonotoneSPSt.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_unit_inv.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_Wst_unit_inv.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_unit_inv.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_fix_disj_strict.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_Wst_unit_inv.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_Wst_fix_conj_term.
+Print Assumptions MonotoneSPSt.SPStMonotone.DemonicMonotone.tPfP_Wst_unit_inv.
+Print Assumptions MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_fix_conj_term.
+Print Assumptions MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_Wst_unit_inv.
+Print Assumptions MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_Wst_fix_disj_strict.
+Print Assumptions MonadTaxonomy.asp_disj_strict.
+Print Assumptions MonadTaxonomy.dslp_conj_term.
+Print Assumptions MonadTaxonomy.dwlp_conj_term.
+Print Assumptions MonadTaxonomy.awp_disj_strict.
+Print Assumptions MonadTaxonomy.sp_disj_strict_is_asp.
+Print Assumptions MonadTaxonomy.sp_conj_term_is_dslp.
+Print Assumptions MonadTaxonomy.wp_conj_term_is_dwlp.
+Print Assumptions MonadTaxonomy.wp_disj_strict_is_awp.

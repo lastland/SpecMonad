@@ -2222,6 +2222,151 @@ Section Flavours.
     exists (arrAWPSt (ladjDSLP (dslpStArr n))). exact (galois_ladjDSLP (dslpStArr n)).
   Qed.
 
+    (** The carrier conditions the nuclei of [MonotoneSPSt.v] are stated
+      against are exactly membership in the named monads. *)
+  Lemma asp_disj_strict {A} (m : ASPSt S A) :
+    AngelicMonotone.sp_disj_strict (asSPStMon m).
+  Proof.
+    intros I pre r; cbn. split.
+    - intro h. apply getASPSt_singleton in h.
+      destruct h as [s0 [[i hi] hr]]. exists i.
+      apply getASPSt_singleton. exists s0. split; [ exact hi | exact hr ].
+    - intros [i h]. apply getASPSt_singleton in h.
+      destruct h as [s0 [hi hr]]. apply getASPSt_singleton.
+      exists s0. split; [ exists i; exact hi | exact hr ].
+  Qed.
+
+  Lemma dslp_conj_term {A} (n : DSLPSt S A) :
+    DemonicMonotone.sp_conj_term (asDSLPStMon n).
+  Proof.
+    intros I pre r; cbn. split.
+    - intros h i. apply getDSLPSt_rel. intros s hs.
+      exact (proj1 (getDSLPSt_rel _ n _ r) h s hs i).
+    - intros h. apply getDSLPSt_rel. intros s hs i.
+      exact (proj1 (getDSLPSt_rel _ n _ r) (h i) s hs).
+  Qed.
+
+  Lemma dwlp_conj_term {A} (w : DWLPSt S A) :
+    AngelicMonotone.wp_conj_term (toWSt w).
+  Proof.
+    intros s I post.
+    destruct (proj2_sig (runStateT w s)) as [hm [ht hc]].
+    destruct (classic (inhabited I)) as [hI | hI].
+    - exact (hc I hI post).
+    - split.
+      + intros _ i. exact (match hI (inhabits i) with end).
+      + intros _. revert ht.
+        apply (wpure_mono_ext _ (fun _ => True) (fun r => forall i, post i r) hm).
+        intro r. split;
+          [ intros _ i; exact (match hI (inhabits i) with end) | intros _; constructor ].
+  Qed.
+
+  Lemma awp_disj_strict {A} (a : AWPSt S A) :
+    DemonicMonotone.wp_disj_strict (toWSt a).
+  Proof.
+    intros s I post.
+    destruct (proj2_sig (runStateT a s)) as [hm [hs hd]].
+    destruct (classic (inhabited I)) as [hI | hI].
+    - exact (hd I hI post).
+    - split.
+      + intro h. exfalso. apply hs. revert h.
+        apply (wpure_mono_ext _ (fun r => exists i, post i r) (fun _ => False) hm).
+        intro r. split;
+          [ intros [i _]; exact (match hI (inhabits i) with end) | intros [] ].
+      + intros [i _]. exact (match hI (inhabits i) with end).
+  Qed.
+
+  Lemma sp_disj_strict_arr {A} (sp : SPStMon S A)
+    (hsp : AngelicMonotone.sp_disj_strict sp) :
+    sp_monotone (proj1_sig sp) /\ sp_strict (proj1_sig sp)
+    /\ sp_disjunctive (proj1_sig sp).
+  Proof.
+    split; [ exact (fun P Q H b h => proj2_sig sp P Q b H h) | split ].
+    - intros r h.
+      destruct (proj1 (hsp Empty_set (fun _ _ => False) r)
+                  (proj2_sig sp (fun _ => False)
+                     (fun _ => exists _ : Empty_set, False) r
+                     (fun _ hf => match hf with end) h)) as [[] _].
+    - intros J _ q r. exact (hsp J q r).
+  Qed.
+
+  Lemma sp_disj_strict_is_asp {A} (sp : SPStMon S A) :
+    AngelicMonotone.sp_disj_strict sp ->
+    exists m : ASPSt S A, forall P r, getASPSt m P r <-> proj1_sig sp P r.
+  Proof.
+    intro hsp.
+    exists (arrASPSt (exist _ (proj1_sig sp) (sp_disj_strict_arr sp hsp))).
+    intros P r. reflexivity.
+  Qed.
+
+  Lemma sp_conj_term_arr {A} (sp : SPStMon S A)
+    (hsp : DemonicMonotone.sp_conj_term sp) :
+    sp_monotone (proj1_sig sp) /\ sp_terminating (proj1_sig sp)
+    /\ sp_conjunctive (proj1_sig sp).
+  Proof.
+    split; [ exact (fun P Q H b h => proj2_sig sp P Q b H h) | split ].
+    - intro r.
+      exact (proj2_sig sp _ (fun _ => True) r (fun _ _ => Logic.I)
+               (proj2 (hsp Empty_set (fun _ _ => False) r)
+                  (fun i : Empty_set => match i with end))).
+    - intros J _ q r. exact (hsp J q r).
+  Qed.
+
+  Lemma sp_conj_term_is_dslp {A} (sp : SPStMon S A) :
+    DemonicMonotone.sp_conj_term sp ->
+    exists n : DSLPSt S A, forall P r, getDSLPSt n P r <-> proj1_sig sp P r.
+  Proof.
+    intro hsp.
+    exists (arrDSLPSt (exist _ (proj1_sig sp) (sp_conj_term_arr sp hsp))).
+    intros P r. reflexivity.
+  Qed.
+
+  Lemma wp_conj_term_health {A} (w : WSt S A)
+    (hw : AngelicMonotone.wp_conj_term w) s :
+    dwlp_health (A * S)%type (getWPure (runStateT w s)).
+  Proof.
+    split; [ exact (proj2_sig (runStateT w s)) | split ].
+    - apply (wpure_mono_ext _ (fun r => forall i : Empty_set, (fun _ (_ : (A * S)%type) => True) i r)
+               (fun _ => True) (proj2_sig (runStateT w s))).
+      + intro r. split; [ intros _; constructor | intros _ [] ].
+      + apply (hw s Empty_set (fun _ _ => True)). intros [].
+    - intros J _ q. exact (hw s J q).
+  Qed.
+
+  Lemma wp_conj_term_is_dwlp {A} (w : WSt S A) :
+    AngelicMonotone.wp_conj_term w ->
+    exists v : DWLPSt S A,
+      forall s Q, getWPure (runStateT (toWSt v) s) Q <-> getWPure (runStateT w s) Q.
+  Proof.
+    intro hw.
+    exists (mkStateT (fun s => exist _ (getWPure (runStateT w s))
+                              (wp_conj_term_health w hw s))).
+    intros s Q. reflexivity.
+  Qed.
+
+  Lemma wp_disj_strict_health {A} (w : WSt S A)
+    (hw : DemonicMonotone.wp_disj_strict w) s :
+    awp_health (A * S)%type (getWPure (runStateT w s)).
+  Proof.
+    split; [ exact (proj2_sig (runStateT w s)) | split ].
+    - intro h.
+      assert (h' : getWPure (runStateT w s) (fun _ => exists _ : Empty_set, False)).
+      { revert h. apply getWPure_mono. intros r hf. destruct hf. }
+      destruct (proj1 (hw s Empty_set (fun _ _ => False)) h') as [[] _].
+    - intros J _ q. exact (hw s J q).
+  Qed.
+
+  Lemma wp_disj_strict_is_awp {A} (w : WSt S A) :
+    DemonicMonotone.wp_disj_strict w ->
+    exists a : AWPSt S A,
+      forall s Q, getWPure (runStateT (toWSt a) s) Q <-> getWPure (runStateT w s) Q.
+  Proof.
+    intro hw.
+    exists (mkStateT (fun s => exist _ (getWPure (runStateT w s))
+                              (wp_disj_strict_health w hw s))).
+    intros s Q. reflexivity.
+  Qed.
+  
   (** A Galois relation carries the order of one flavour to that of the
       other. *)
   Lemma galois_asp_dwlp_order {A} (m m' : ASPSt S A) (w w' : DWLPSt S A) :

@@ -325,6 +325,53 @@ Module AngelicMonotone. Section AngelicMonotone.
   (* toPred (fromPred p) ≈P p always *)
   (* fromPred (toPred sp) ≈ sp when sp is strict and disjunctive *)
 
+  Lemma fPtP_unit {A} {sp : SPStMon A} : fromPred (toPred sp) ≦ sp.
+  Proof.
+    apply fromPred_toPred_adj; now intros ???.
+  Qed.
+
+  Lemma tPfP_unit {A} (p : PredSt S A) : ordPredSt p (toPred (fromPred p)).
+  Proof.
+    apply fromPred_toPred_adj; now intros ???.
+  Qed.
+
+  Lemma tPfP_unit_inv {A} (p : PredSt S A) : ordPredSt (toPred (fromPred p)) p.
+  Proof.
+    intros s r (s0 & -> & h). exact h.
+  Qed.
+
+  Definition sp_disj_strict {A} (sp : SPStMon A) :=  forall I (pre : I -> S -> Prop),
+    forall r, proj1_sig sp (fun s=> exists i, pre i s) r <-> exists i, proj1_sig sp (pre i) r.
+  
+  Lemma fPtP_unit_inv {A} {sp : SPStMon A} :
+    sp_disj_strict sp -> sp ≦ fromPred (toPred sp).
+  Proof.
+    intros dsp pre r h; cbn in *.
+    assert (h' : proj1_sig sp (fun s => exists i : { s0 | pre s0 }, s = proj1_sig i) r).
+    { revert h. apply (proj2_sig sp). intros s hs. exists (exist _ s hs). reflexivity. }
+    destruct (proj1 (dsp _ _ r) h') as [[s0 hs0] hsp].
+    exists s0. split; [ exact hs0 | exact hsp ].
+  Qed.
+
+    Lemma fromPred_disj_strict {A} (p : PredSt S A) : sp_disj_strict (fromPred p).
+  Proof.
+    intros I pre r; cbn. split.
+    - intros (s0 & (i & hi) & hp). exists i, s0. split; assumption.
+    - intros (i & s0 & hi & hp). exists s0. split; [ exists i; exact hi | exact hp ].
+  Qed.
+
+  Lemma fPtP_fix_disj_strict {A} {sp : SPStMon A} :
+    sp ≦ fromPred (toPred sp) -> sp_disj_strict sp.
+  Proof.
+    intros hfix I pre r. split.
+    - intro h.
+      destruct (proj1 (fromPred_disj_strict (toPred sp) I pre r) (hfix _ _ h)) as [i hi].
+      exists i. exact (fPtP_unit _ _ hi).
+    - intros [i hi]. apply fPtP_unit.
+      apply (fromPred_disj_strict (toPred sp) I pre r).
+      exists i. exact (hfix _ _ hi).
+  Qed.
+    
   #[program]
   Definition WSt2pred {A} (w : WSt S A) : PredSt S A :=
     {| runStateT s0 r := forall p, runStateT w s0 p -> p r |}.
@@ -372,6 +419,54 @@ Module AngelicMonotone. Section AngelicMonotone.
     - intros h ???? h'%h; now apply h'.
   Qed.
 
+  Lemma fPtP_Wst_unit {A} {w : WSt S A} : ordWSt (pred2WSt (WSt2pred w)) w.
+  Proof.
+    apply pred2WSt_Wst2pred_adj; now intros ???.
+  Qed.
+
+  Lemma tPfP_Wst_unit {A} {p : PredSt S A} : ordPredSt p (WSt2pred (pred2WSt p)).
+  Proof.
+    apply pred2WSt_Wst2pred_adj; now intros ???.
+  Qed.
+
+  Lemma tPfP_Wst_unit_inv {A} {p : PredSt S A} : ordPredSt (WSt2pred (pred2WSt p)) p.
+  Proof.
+    intros s r h. exact (h (runStateT p s) (fun _ x => x)).
+  Qed.
+
+  Definition wp_conj_term {A} (w : WSt S A) := forall s I (post : I -> A * S -> Prop),
+    runStateT w s (fun r => forall i, post i r) <-> forall i, runStateT w s (post i).
+
+  Lemma fPtP_Wst_unit_inv {A} {w : WSt S A} :
+    wp_conj_term w -> ordWSt w (pred2WSt (WSt2pred w)).
+  Proof.
+    intros cw s post H.
+    apply (getWPure_mono (runStateT w s)
+             (fun r => forall q : { q | runStateT w s q }, proj1_sig q r) post).
+    - intros r hr. apply H. intros q hq. exact (hr (exist _ q hq)).
+    - apply cw. intros [q hq]. exact hq.
+  Qed.
+
+    Lemma pred2WSt_conj_term {A} (p : PredSt S A) : wp_conj_term (pred2WSt p).
+  Proof.
+    intros s I post; cbn. split.
+    - intros h i r hp. exact (h r hp i).
+    - intros h r hp i. exact (h i r hp).
+  Qed.
+
+  Lemma fPtP_Wst_fix_conj_term {A} {w : WSt S A} :
+    ordWSt w (pred2WSt (WSt2pred w)) -> wp_conj_term w.
+  Proof.
+    intros hfix s I post. split.
+    - intros h i.
+      exact (hfix s (post i)
+               (proj1 (pred2WSt_conj_term (WSt2pred w) s I post)
+                  (fPtP_Wst_unit s _ h) i)).
+    - intro h.
+      exact (hfix s _
+               (proj2 (pred2WSt_conj_term (WSt2pred w) s I post)
+                  (fun i => fPtP_Wst_unit s _ (h i)))).
+  Qed.
 
   Lemma Ladj_pred {A} (sp : SPStMon A) (w : WSt S A) : Ladj sp w <-> exists p, sp ≈ fromPred p /\ w ≈WSt pred2WSt p.
   Proof.
@@ -530,6 +625,25 @@ Module DemonicMonotone. Section DemonicMonotone.
       intros ? H; eapply h; intros pre' hpre'; apply (H (exist _ pre' hpre')).
   Qed.
 
+    Lemma fromPred_conj_term {A} (p : PredSt S A) : sp_conj_term (fromPred p).
+  Proof.
+    intros I pre r; cbn. split.
+    - intros h i s0 hp. exact (h s0 hp i).
+    - intros h s0 hp i. exact (h i s0 hp).
+  Qed.
+
+  Lemma fPtP_fix_conj_term {A} {sp : SPStMon A} :
+    fromPred (toPred sp) ≦ sp -> sp_conj_term sp.
+  Proof.
+    intros hfix I pre r. split.
+    - intro h. intro i.
+      apply hfix. apply (fromPred_conj_term (toPred sp) I pre r).
+      + exact (fPtP_unit _ _ h).
+    - intro h. apply hfix.
+      apply (fromPred_conj_term (toPred sp) I pre r).
+      intro i. exact (fPtP_unit _ _ (h i)).
+  Qed.
+
   Lemma fromPred_ret {A} (a : A) : fromPred (ret a) ≈ ret a.
   Proof.
     split; unfold fromPred.
@@ -644,6 +758,57 @@ Module DemonicMonotone. Section DemonicMonotone.
       now intros ? ->.
   Qed.
 
+  Lemma fPtP_Wst_unit {A} {w : WSt S A} : ordWSt w (pred2WSt (WSt2pred w)).
+  Proof.
+    apply pred2WSt_Wst2pred_adj; now intros ???.
+  Qed.
+
+  Lemma tPfP_Wst_unit {A} {p : PredSt S A} : ordPredSt p (WSt2pred (pred2WSt p)).
+  Proof.
+    apply pred2WSt_Wst2pred_adj; now intros ???.
+  Qed.
+
+  Lemma tPfP_Wst_unit_inv {A} {p : PredSt S A} : ordPredSt (WSt2pred (pred2WSt p)) p.
+  Proof.
+    intros s r (r' & hp & ->). exact hp.
+  Qed.
+
+  Definition wp_disj_strict {A} (w : WSt S A) := forall s I (post : I -> A * S -> Prop),
+      runStateT w s (fun r => exists i, post i r) <-> exists i, runStateT w s (post i).
+
+  Lemma fPtP_Wst_unit_inv {A} {w : WSt S A} :
+    wp_disj_strict w -> ordWSt (pred2WSt (WSt2pred w)) w.
+  Proof.
+    intros dw s post h; cbn in *.
+    assert (h' : runStateT w s (fun r' => exists i : { r | post r }, proj1_sig i = r')).
+    { revert h. apply (getWPure_mono (runStateT w s)).
+      intros r hr. exists (exist _ r hr). reflexivity. }
+    destruct (proj1 (dw _ _ _) h') as [[r hr] hw].
+    exists r. split;
+      [ revert hw; apply (getWPure_mono (runStateT w s)); intros ? <-; reflexivity
+      | exact hr ].
+  Qed.
+
+    Lemma pred2WSt_disj_strict {A} (p : PredSt S A) : wp_disj_strict (pred2WSt p).
+  Proof.
+    intros s I post; cbn. split.
+    - intros (r & hp & i & hpost). exists i, r. split; assumption.
+    - intros (i & r & hp & hpost). exists r. split; [ exact hp | exists i; exact hpost ].
+  Qed.
+
+  Lemma fPtP_Wst_fix_disj_strict {A} {w : WSt S A} :
+    ordWSt (pred2WSt (WSt2pred w)) w -> wp_disj_strict w.
+  Proof.
+    intros hfix s I post. split.
+    - intro h.
+      destruct (proj1 (pred2WSt_disj_strict (WSt2pred w) s I post)
+                  (hfix s _ h)) as [i hi].
+      exists i. exact (fPtP_Wst_unit s _ hi).
+    - intros [i hi]. apply (fPtP_Wst_unit s).
+      apply (pred2WSt_disj_strict (WSt2pred w) s I post).
+      exists i. exact (hfix s _ hi).
+  Qed.
+  
   #[local] Notation "m ≈P m'" := (ordPredSt m m' /\ ordPredSt m' m) (at level 70).
   Lemma WSt2pred_ret {A} (a : A) : WSt2pred (ret a) ≈P ret a.
   Proof.

@@ -127,10 +127,15 @@ Print GaloisArr.Galois_WP_PrePost.
 
 (** The isomorphism between [Pred] and [SPost] extends to
     isomorphisms between asp and dwlp and between dslp and awp as stateful
-    specification monads (partial: order isomorphisms, compatible with the
-    monad structure, through the Galois relations; see Section 6). *)
+    specification monads: the nuclei of Section 6 put each of the four in
+    bijection with the stateful predicates, the maps preserve [ret] and
+    [bind], and the Galois relations carry one order to the other. *)
 Check MonadTaxonomy.galois_asp_dwlp_order.
 Check MonadTaxonomy.galois_awp_dslp_order.
+Check MonadTaxonomy.sp_disj_strict_is_asp.
+Check MonadTaxonomy.wp_conj_term_is_dwlp.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_unit_inv.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_fix_disj_strict.
 
 (* ================================================================= *)
 (** ** Section 2, Background: weakest precondition monads            *)
@@ -991,6 +996,39 @@ Check MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_lim.
 Check MonotoneSPSt.SPStMonotone.DemonicMonotone.Radj_colim.
 Check MonadTaxonomy.galois_awp_dslp_order.
 Check SPostArrEquiv.dslp_to_rel_morphism.
+
+(** The nuclei of the four adjunctions, and the two chains they give.
+    (1) every stateful predicate is a fixed point of both round trips
+    through the sp and the wp side; (2) and (3) the fixed points of the
+    other two round trips are exactly the elements of ASP and DWLP
+    (angelic), DSLP and AWP (demonic).  "Exactly" is both directions: the
+    carrier conditions the nuclei are stated against hold of every element
+    of the named monad, and a transformer satisfying one is such an
+    element, recovered unchanged. *)
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_unit.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_unit_inv.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_Wst_unit.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_Wst_unit_inv.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_unit.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_unit_inv.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_fix_disj_strict.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_Wst_unit.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_Wst_unit_inv.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_Wst_fix_conj_term.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.tPfP_Wst_unit.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.tPfP_Wst_unit_inv.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_fix_conj_term.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_Wst_unit.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_Wst_unit_inv.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fPtP_Wst_fix_disj_strict.
+Check MonadTaxonomy.asp_disj_strict.
+Check MonadTaxonomy.dslp_conj_term.
+Check MonadTaxonomy.dwlp_conj_term.
+Check MonadTaxonomy.awp_disj_strict.
+Check MonadTaxonomy.sp_disj_strict_is_asp.
+Check MonadTaxonomy.sp_conj_term_is_dslp.
+Check MonadTaxonomy.wp_conj_term_is_dwlp.
+Check MonadTaxonomy.wp_disj_strict_is_awp.
 
 (* ================================================================= *)
 (** ** Section 7, Formalization in Rocq                              *)
