@@ -1,11 +1,25 @@
-(** * Monotone stateful SP transformers [SPStMon].
+(** * Monotone SP transformers, base ([BaseMonotone]) and stateful
+      ([SPStMon]).
 
-    The angelic and demonic monad structures on monotone stateful forward
-    transformers satisfy the unit laws only laxly ([lunitStrictlyLax]):
-    monotone sps alone are not a lawful monad.  The file also proves the
-    adjunctions [Ladj] / [Radj] between these transformers and [WSt], and
-    their representability by [PredSt]; [MonadTaxonomy.v] uses them for the
-    Galois edges of the taxonomy. *)
+    Monotone sps alone are not a lawful monad: the (ang) [ret] and [bind]
+    satisfy left unit only as an inequation, at the base carrier
+    ([BaseMonotone.lunit], [BaseMonotone.lunitStrictlyLax]) and at the
+    stateful one, for both the angelic and the demonic structure.  The
+    failing direction differs: the stateful [bind] pins the returned value
+    through [ret]'s second conjunct and the base one does not, so at the
+    base carrier it is [bind (ret v) f <= f v] that fails, and at the
+    stateful carrier its converse -- there with a state to evaluate at,
+    which the base case does not need.
+
+    The file also proves the adjunctions [Ladj] / [Radj] between the
+    stateful transformers and [WSt], their representability by [PredSt],
+    and the nuclei of those adjunctions: each round trip through [PredSt]
+    is the identity, and the fixed points of the other two are the
+    transformers meeting the carrier conditions [sp_disj_strict] /
+    [wp_conj_term] (angelic) and [sp_conj_term] / [wp_disj_strict]
+    (demonic).  [MonadTaxonomy.v] uses them for the Galois edges of the
+    taxonomy, and identifies those conditions with membership in [ASPSt],
+    [DWLPSt], [DSLPSt] and [AWPSt]. *)
 
 From ITree Require Import Basics.Monad.
 Require Import Coq.Logic.PropExtensionality.
@@ -20,6 +34,56 @@ Open Scope monad_scope.
 From ExtLib Require Import MonadState StateMonad.
 From Incorrectness.Relational Require Import PredMonad.
 From Incorrectness.WP Require Import WPure.
+
+(** * Monotone base SP transformers
+
+    The claim one level down, where Section 1's sentence is: with the (ang)
+    [ret] and [bind] of Section 3.1 on monotone [SPPure], left unit holds
+    only as an inequation.  No state, so no inhabitation hypothesis -- and
+    it is the other direction that fails, because the base [bind] does not
+    pin the returned value the way the stateful one does. *)
+Module BaseMonotone.
+
+  Definition SPPureMonotone {A} (sp : SPPure A) : Prop :=
+    forall (pre pre' : Prop) a, (pre -> pre') -> sp pre a -> sp pre' a.
+
+  Definition SPMon A := { sp : SPPure A | SPPureMonotone sp }.
+
+  Definition le {A} (m n : SPMon A) : Prop :=
+    forall pre a, proj1_sig m pre a -> proj1_sig n pre a.
+
+  #[program] Definition retP {A} (v : A) : SPMon A := fun pre a => pre /\ a = v.
+  Next Obligation. red. intros pre pre' a H [h e]. exact (conj (H h) e). Qed.
+
+  #[program] Definition bindP {A B} (m : SPMon A) (f : A -> SPMon B) : SPMon B :=
+    fun pre b => exists a, proj1_sig (f a) (proj1_sig m pre a) b.
+  Next Obligation.
+    red. intros pre pre' b H [a ha]. exists a.
+    revert ha. apply (proj2_sig (f a)). apply (proj2_sig m). exact H.
+  Qed.
+
+  Lemma lunit {A B} (v : A) (f : A -> SPMon B) : le (f v) (bindP (retP v) f).
+  Proof.
+    intros pre b h. exists v. revert h. apply (proj2_sig (f v)).
+    intro hp. exact (conj hp eq_refl).
+  Qed.
+
+  (** [probe true] is the identity on preconditions, [probe false] accepts
+      everything -- monotone, but not strict. *)
+  #[program] Definition probe (a : bool) : SPMon unit :=
+    fun pre (_ : unit) => if a then pre else True.
+  Next Obligation.
+    red. destruct a; intros pre pre' u H h; [ exact (H h) | exact h ].
+  Qed.
+
+  Lemma lunitStrictlyLax :
+    exists A B (v : A) (f : A -> SPMon B), ~ le (bindP (retP v) f) (f v).
+  Proof.
+    exists bool, unit, true, probe.
+    intro h. apply (h False tt). cbn. exists false. exact I.
+  Qed.
+
+End BaseMonotone.
 
 Module SPStMonotone.
 (* A stateful forward predicate transformer is monotone when it
