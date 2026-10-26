@@ -931,8 +931,8 @@ Check MonadRelation.MonadRelation_optionT.
 
 (** The stateful [Pred]; [φ] and [ψ] are monad morphisms
     (angelic structure); [Ladj (φ p) (ψ p)], and every [Ladj] pair is of
-    this form; [φ ⊣ φ'] and [φ'] preserves the angelic structure (the
-    paper says demonic); [ψ ⊣ ψ'], and [ψ'] does not preserve WP's [bind];
+    this form; [φ ⊣ φ'] and [φ'] preserves the angelic structure;
+    [ψ ⊣ ψ'], and [ψ'] does not preserve WP's [bind];
     the maps are monotone; the adjoints are colimit/limit preserving; ASP is
     isomorphic to DWLP. *)
 Print PredMonad.PredSt.PredSt.
