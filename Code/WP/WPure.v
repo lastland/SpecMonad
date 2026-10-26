@@ -102,7 +102,15 @@ Section WPure.
 
 End WPure.
 
-(** ** The refinement order on [WPure] *)
+(** ** The refinement order on [WPure]
+
+    Reverse implication: [WP_le w1 w2] says [w2] accepts no more than [w1]
+    does, so the stronger specification is the smaller one.  This is
+    DM4all's direction and the converse of the pointwise order the paper
+    writes [⊑] -- it is the order of the paper's [WP^op].  A comparison the
+    paper displays as [pt ⊑ θ(m)] is therefore [WP_le (θ m) pt] here, with
+    the arguments the other way round; in Section 6, which works in
+    [WP^op] throughout, the two line up directly. *)
 
 Definition WP_le {A} (w1 w2 : WPure A) : Prop :=
   forall k, getWPure w2 k -> getWPure w1 k.
