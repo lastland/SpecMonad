@@ -680,6 +680,17 @@ Print Assumptions ResetEven.m_DM.
     case apart as termination resp. strictness.  The sp half needs no
     axiom, having a relational reading to pass through. *)
 From Incorrectness.PTMonadTaxonomy Require MonotoneSPSt.
+
+(** Monotone sps are not a lawful monad: left unit one way and its
+    refutation the other, at the base carrier and at the stateful one.
+    Closed -- the witnesses are given, not obtained from a choice
+    principle, and the stateful case asks for a state rather than
+    deciding that one exists. *)
+Print Assumptions MonotoneSPSt.BaseMonotone.lunit.
+Print Assumptions MonotoneSPSt.BaseMonotone.lunitStrictlyLax.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.lunit.
+Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax.
+
 Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_unit_inv.
 Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.tPfP_Wst_unit_inv.
 Print Assumptions MonotoneSPSt.SPStMonotone.AngelicMonotone.fPtP_unit_inv.

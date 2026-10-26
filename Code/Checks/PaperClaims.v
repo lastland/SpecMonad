@@ -61,9 +61,16 @@ Check DivNonDetSt.Triples.triple_aspSt.
 Print WPure.WSt.
 Check WPure.MonadLawsE__WSt.
 
-(** "monotone sps alone do not form a lawful monad" (partial: for
-    the angelic structure on monotone stateful transformers, left unit holds
-    only as an inequation; the converse fails for an inhabited state). *)
+(** "monotone sps alone do not form a lawful monad": with the (ang)
+    [ret] and [bind] of Section 3.1, left unit holds on monotone [SPPure]
+    only as an inequation, which is why DM4all restrict the carrier
+    further.  The same at the stateful carrier, where the failing
+    direction is the other one -- the stateful [bind] pins the returned
+    value through [ret]'s second conjunct, the base one does not -- and a
+    state has to be given to evaluate at. *)
+Check MonotoneSPSt.BaseMonotone.lunit.
+Check MonotoneSPSt.BaseMonotone.lunitStrictlyLax.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.lunit.
 Check MonotoneSPSt.SPStMonotone.AngelicMonotone.lunitStrictlyLax.
 
 (** Maillard et al.'s [SPost] specifies programs under the angelic,
@@ -120,10 +127,19 @@ Check DSPMonad.not_OrderedMonad_DSPStExc.
 Check ASLPMonad.not_OrderedMonad_ASLPStExc.
 
 (** Galois connections with stateful [Pred] (Section 6) and
-    pre/post specifications (partial: as Galois connections of binary
-    arrows, at input [S]). *)
+    pre/post specifications.  DM4all's base diagram is at the monad level
+    ([BaseGaloisConnections.v], in the Section 6 block below), and so is
+    stateful [Pred]: between [PredSt] and each of [SPStMon] and [WSt], on
+    the angelic and the demonic side, sharpened to bijections by Section
+    6's nuclei
+    (partial: pre/post is a Galois connection of binary arrows at input
+    [S], not of a stateful pre/post monad). *)
 Print GaloisArr.Galois_Rel_PrePost.
 Print GaloisArr.Galois_WP_PrePost.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.fromPred_toPred_adj.
+Check MonotoneSPSt.SPStMonotone.AngelicMonotone.pred2WSt_Wst2pred_adj.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.fromPred_toPred_adj.
+Check MonotoneSPSt.SPStMonotone.DemonicMonotone.pred2WSt_Wst2pred_adj.
 
 (** The isomorphism between [Pred] and [SPost] extends to
     isomorphisms between asp and dwlp and between dslp and awp as stateful
@@ -151,8 +167,16 @@ Check WPure.MonadLawsE_WPure.
 Check WPVariants.wpure_ret_mono.
 Check WPVariants.wpure_bind_mono.
 
-(** The pointwise order, preserved by [ret] and [bind]
-    ([WP_le] is DM4all's direction, the converse of the paper's). *)
+(** The pointwise order, preserved by [ret] and [bind].
+
+    [WP_le] is DM4all's direction, the converse of the paper's: [WP_le w1
+    w2] is the paper's [w2 ⊑ w1].  So it is the order of the paper's
+    [WP^op], and the two conventions meet in different places.  Section 5.4
+    compares in the paper's order, so a display there like
+    [pp2wp (pre, post) ⊑ θ(m)] is [ordWSt (θ m) (wpUnderSt pre post)] here
+    -- same proposition, arguments the other way round.  Section 6 already
+    works in [WP^op], so its adjunctions and nuclei read directly:
+    [ψ ⊣ ψ'] is [pred2WSt_Wst2pred_adj], with no swap. *)
 Print WPure.WP_le.
 Check WPure.OrderedMonad_WPure.
 
@@ -252,8 +276,11 @@ Check ASLPMonad.MonadLawsE_ASLP.
 Check ASPMonad.MonadLawsE_ASP.
 Check DSLPMonad.MonadLawsE_DSLP.
 
-(** The state monad transformer on a lawful monad is lawful
-    (partial: generic; [stateT S SPost] itself is not defined). *)
+(** The state monad transformer on a lawful monad is lawful, which is
+    what Section 3.1 applies to [SPost] to get the unexpected shape
+    [S -> P -> (A * S -> P)].  The instance itself is not formed: the
+    section's point is that this is the wrong construction, so nothing
+    downstream uses it. *)
 Check Monad.TransformerLaws.MonadLawsE_stateT.
 
 (* ================================================================= *)
