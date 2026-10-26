@@ -116,66 +116,73 @@ Proof.
   - intros H [[] s] r Hw. exact (H s r Hw).
 Qed.
 
-(** Three computations: the result [(tt, 0)] is reached from [0] by the
-    first, from [1] by the second, and by the third from nowhere. *)
-Definition reach0From0 : stdivndNE nat unit :=
-  progOf (fun s (r : unit * nat) => s = 0 /\ r = (tt, 0)).
-Definition reach0From1 : stdivndNE nat unit :=
-  progOf (fun s (r : unit * nat) => s = 1 /\ r = (tt, 0)).
-Definition reachNothing : stdivndNE nat unit :=
-  progOf (fun (_ : nat) (_ : unit * nat) => False).
+(** The negative results hold at any state type with two distinct states
+    and any inhabited result type, which is what the paper's lemma assumes.
+    A result [r0] of [A * S] supplies the inhabitant. *)
+Section NoIndex.
+  Context (S A : Type) (s0 s1 : S) (Hne : s0 <> s1) (r0 : A * S).
 
-(** A typing is an inclusion of relations, so the computations typed by one
-    index are closed under intersection of their relations.  The ASP
-    [Under] triple is not: the first two computations satisfy it and the
-    third, whose relation is their intersection, does not.  So no index has
-    the triple as its typings.  This is a fact about the order of the ASP
-    monad, not about the Dijkstra construction. *)
-Theorem no_asp_under_index :
-  ~ exists w : ASPSt nat unit,
-      forall m : stdivndNE nat unit,
-        ordASPSt w (aspSt m) <->
-        triple (@aspSt nat) m Under
-          (fun _ => True) (fun r : unit * nat => r = (tt, 0)).
-Proof.
-  intros [w Hiff].
-  assert (H1 : ordASPSt w (aspSt reach0From0)).
-  { apply (proj2 (Hiff reach0From0)). intros r Hr.
-    exists (tt, 0). split; [ exact I | exact (conj eq_refl Hr) ]. }
-  assert (H2 : ordASPSt w (aspSt reach0From1)).
-  { apply (proj2 (Hiff reach0From1)). intros r Hr.
-    exists (tt, 1). split; [ exact I | exact (conj eq_refl Hr) ]. }
-  pose proof (proj1 (aspSt_typing_op w reach0From0) H1) as R1.
-  pose proof (proj1 (aspSt_typing_op w reach0From1) H2) as R2.
-  assert (H0 : ordASPSt w (aspSt reachNothing)).
-  { apply (proj2 (aspSt_typing_op w reachNothing)). intros s r Hw.
-    destruct (R1 s r Hw) as [E1 _]. destruct (R2 s r Hw) as [E2 _].
-    subst s. discriminate E2. }
-  destruct (proj1 (Hiff reachNothing) H0 (tt, 0) eq_refl) as [[[] s] [_ Hr]].
-  exact Hr.
-Qed.
+  (** Three computations: [r0] is reached from [s0] by the first, from
+      [s1] by the second, and by the third from nowhere. *)
+  Definition reachFromS0 : stdivndNE S A :=
+    progOf (fun s (r : A * S) => s = s0 /\ r = r0).
+  Definition reachFromS1 : stdivndNE S A :=
+    progOf (fun s (r : A * S) => s = s1 /\ r = r0).
+  Definition reachNothing : stdivndNE S A :=
+    progOf (fun (_ : S) (_ : A * S) => False).
 
-(** The same for the DSLP [Over] triple, at the complements: the result
-    [(tt, 0)] must be reached from somewhere. *)
-Theorem no_dslp_over_index :
-  ~ exists w : DSLPSt nat unit,
-      forall m : stdivndNE nat unit,
-        ordDSLPSt (dslpSt m) w <->
-        triple (@dslpSt nat) m Over
-          (fun _ => False) (fun r : unit * nat => r <> (tt, 0)).
-Proof.
-  intros [w Hiff].
-  assert (H1 : ordDSLPSt (dslpSt reach0From0) w).
-  { apply (proj2 (Hiff reach0From0)). intros r Hd E. subst r.
-    exact (Hd (tt, 0) (conj eq_refl eq_refl)). }
-  assert (H2 : ordDSLPSt (dslpSt reach0From1) w).
-  { apply (proj2 (Hiff reach0From1)). intros r Hd E. subst r.
-    exact (Hd (tt, 1) (conj eq_refl eq_refl)). }
-  pose proof (proj1 (dslpSt_typing reach0From0 w) H1) as R1.
-  pose proof (proj1 (dslpSt_typing reach0From1 w) H2) as R2.
-  assert (H0 : ordDSLPSt (dslpSt reachNothing) w).
-  { apply (proj2 (dslpSt_typing reachNothing w)). intros s r Hw.
-    destruct (R1 s r Hw) as [E1 _]. destruct (R2 s r Hw) as [E2 _].
-    subst s. discriminate E2. }
-  exact (proj1 (Hiff reachNothing) H0 (tt, 0) (fun us Hr => Hr) eq_refl).
-Qed.
+  (** A typing is an inclusion of relations, so the computations typed by
+      one index are closed under intersection of their relations.  The ASP
+      [Under] triple is not: the first two computations satisfy it and the
+      third, whose relation is their intersection, does not.  So no index
+      has the triple as its typings.  This is a fact about the order of the
+      ASP monad, not about the Dijkstra construction. *)
+  Theorem no_asp_under_index :
+    ~ exists w : ASPSt S A,
+        forall m : stdivndNE S A,
+          ordASPSt w (aspSt m) <->
+          triple (@aspSt S) m Under
+            (fun _ => True) (fun r : A * S => r = r0).
+  Proof.
+    intros [w Hiff].
+    assert (H1 : ordASPSt w (aspSt reachFromS0)).
+    { apply (proj2 (Hiff reachFromS0)). intros r Hr.
+      exists (tt, s0). split; [ exact I | exact (conj eq_refl Hr) ]. }
+    assert (H2 : ordASPSt w (aspSt reachFromS1)).
+    { apply (proj2 (Hiff reachFromS1)). intros r Hr.
+      exists (tt, s1). split; [ exact I | exact (conj eq_refl Hr) ]. }
+    pose proof (proj1 (aspSt_typing_op w reachFromS0) H1) as R1.
+    pose proof (proj1 (aspSt_typing_op w reachFromS1) H2) as R2.
+    assert (H0 : ordASPSt w (aspSt reachNothing)).
+    { apply (proj2 (aspSt_typing_op w reachNothing)). intros s r Hw.
+      destruct (R1 s r Hw) as [E1 _]. destruct (R2 s r Hw) as [E2 _].
+      exact (Hne (eq_trans (eq_sym E1) E2)). }
+    destruct (proj1 (Hiff reachNothing) H0 r0 eq_refl) as [[[] s] [_ Hr]].
+    exact Hr.
+  Qed.
+
+  (** The same for the DSLP [Over] triple, at the complements: the result
+      [r0] must be reached from somewhere. *)
+  Theorem no_dslp_over_index :
+    ~ exists w : DSLPSt S A,
+        forall m : stdivndNE S A,
+          ordDSLPSt (dslpSt m) w <->
+          triple (@dslpSt S) m Over
+            (fun _ => False) (fun r : A * S => r <> r0).
+  Proof.
+    intros [w Hiff].
+    assert (H1 : ordDSLPSt (dslpSt reachFromS0) w).
+    { apply (proj2 (Hiff reachFromS0)). intros r Hd E. subst r.
+      exact (Hd (tt, s0) (conj eq_refl eq_refl)). }
+    assert (H2 : ordDSLPSt (dslpSt reachFromS1) w).
+    { apply (proj2 (Hiff reachFromS1)). intros r Hd E. subst r.
+      exact (Hd (tt, s1) (conj eq_refl eq_refl)). }
+    pose proof (proj1 (dslpSt_typing reachFromS0 w) H1) as R1.
+    pose proof (proj1 (dslpSt_typing reachFromS1 w) H2) as R2.
+    assert (H0 : ordDSLPSt (dslpSt reachNothing) w).
+    { apply (proj2 (dslpSt_typing reachNothing w)). intros s r Hw.
+      destruct (R1 s r Hw) as [E1 _]. destruct (R2 s r Hw) as [E2 _].
+      exact (Hne (eq_trans (eq_sym E1) E2)). }
+    exact (proj1 (Hiff reachNothing) H0 r0 (fun us Hr => Hr) eq_refl).
+  Qed.
+End NoIndex.
