@@ -70,4 +70,36 @@ Section OneRelation.
     exact (Contrapositive_sym (dspMono (dspOfRelArr R)) (aslpMono (aslpOfRelArr R))
              dsp_contra_aslp).
   Qed.
+
+  (** *** Two readings that are a triple of each component
+
+      A dsp is the conjunction of its asp and dslp components and an aslp
+      their disjunction ([dsp_split], [aslp_split]), so a triple against
+      one is a triple against each -- but only for the kind that puts the
+      connective where it splits: an implication into a conjunction, or
+      one out of a disjunction.  The other two kinds, dsp [Over] and aslp
+      [Under], put it the other way round and do not split, which is why
+      they have no composition rule to inherit. *)
+
+  Lemma dsp_split_under (P : X -> Prop) (Q : Y -> Prop) :
+    pt_holds (Forward (getDSP (dspOfRelArr R))) Under P Q
+    <-> pt_holds (Forward (getASPArr (relASP R))) Under P Q
+        /\ pt_holds (Forward (getDSLPArr (relDSLP R))) Under P Q.
+  Proof.
+    split.
+    - intro H. split; intros y Hq;
+        [ exact (proj1 (H y Hq)) | exact (proj2 (H y Hq)) ].
+    - intros [H1 H2] y Hq. exact (conj (H1 y Hq) (H2 y Hq)).
+  Qed.
+
+  Lemma aslp_split_over (P : X -> Prop) (Q : Y -> Prop) :
+    pt_holds (Forward (getASLP (aslpOfRelArr R))) Over P Q
+    <-> pt_holds (Forward (getASPArr (relASP R))) Over P Q
+        /\ pt_holds (Forward (getDSLPArr (relDSLP R))) Over P Q.
+  Proof.
+    split.
+    - intro H. split; intros y Hy; apply H;
+        [ exact (or_introl Hy) | exact (or_intror Hy) ].
+    - intros [H1 H2] y [Hy|Hy]; [ exact (H1 y Hy) | exact (H2 y Hy) ].
+  Qed.
 End OneRelation.
