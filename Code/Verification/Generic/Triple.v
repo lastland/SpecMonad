@@ -216,6 +216,218 @@ Section PTHolds.
   Qed.
 End PTHolds.
 
+(* ================================================================= *)
+(** * Sequencing                                                      *)
+(* ================================================================= *)
+
+(** Two triples compose into one for the sequenced computation, given an
+    intermediate assertion.  A rule needs only two facts about the
+    readings: the transformer of [bind] is built from the transformers of
+    the parts, which is the monad morphism law ([Hbind] below), and
+    transformers are monotone ([Hmono]).  Everything else is the shape of
+    the triple, so one lemma covers both kinds at once: [Over] flips the
+    three orderings and the side condition together.
+
+    [Under] and [Over] disagree on which way the side condition points, and
+    a backward reading disagrees with a forward one, so there are two
+    definitions, each flipped by the kind. *)
+
+(** The intermediate assertion of the first computation implies the
+    precondition of the continuation. *)
+Definition seq_side {Y : Type} (k : approxKind) (q0 pa : Y -> Prop) : Prop :=
+  match k with
+  | Under => forall y, q0 y -> pa y
+  | Over  => forall y, pa y -> q0 y
+  end.
+
+Section SequencingBackward.
+  Context {X Y Z : Type}.
+  Variables (tm  : (Y -> Prop) -> X -> Prop)
+            (tf  : Y -> (Z -> Prop) -> Prop)
+            (tmf : (Z -> Prop) -> X -> Prop).
+
+  Hypothesis Hmono :
+    forall Q1 Q2 x, (forall y, Q1 y -> Q2 y) -> tm Q1 x -> tm Q2 x.
+  Hypothesis Hbind : forall Q x, tmf Q x <-> tm (fun y => tf y Q) x.
+
+  (** The continuation's triple is stated at the intermediate point, so its
+      precondition no longer mentions it; this is the form
+      [pt_holds_pointwise] produces, and the one a lifted [wp] morphism
+      reads at ([spec_holds_wpSt]). *)
+  Lemma pt_holds_backward_seq (k : approxKind)
+    (p : X -> Prop) (q0 pa : Y -> Prop) (q : Z -> Prop) :
+    pt_holds (Backward tm) k p q0 ->
+    (forall y, pt_holds (Backward (fun Q (_ : unit) => tf y Q)) k
+                 (fun _ => pa y) q) ->
+    seq_side k q0 pa ->
+    pt_holds (Backward tmf) k p q.
+  Proof.
+    destruct k; cbn; intros H1 H2 Hs x Hx.
+    - apply Hbind. refine (Hmono q0 _ x _ (H1 x Hx)).
+      intros y Hq0. exact (H2 y tt (Hs y Hq0)).
+    - apply H1. refine (Hmono _ q0 x _ (proj1 (Hbind q x) Hx)).
+      intros y Ht. exact (Hs y (H2 y tt Ht)).
+  Qed.
+End SequencingBackward.
+
+(** A forward reading sequences the other way round: the continuation
+    receives the postcondition the first computation produces, so it is the
+    continuation that must be monotone, and the side condition points
+    against the backward one.
+
+    The intermediate point carries a returned value [i] and a state [x],
+    which the first computation's postcondition sees together ([emb]) and
+    the continuation sees apart: it is a different transformer per returned
+    value.  So [bind] must aggregate over [i], and the two sp monads that
+    have a monotone [bind] aggregate differently -- [ASPSt] by join,
+    [DSLPSt] by meet -- which is the only place the two rules part. *)
+Section SequencingForward.
+  Context {I X Y Z : Type}.
+  Variables (tm  : (X -> Prop) -> Y -> Prop)
+            (emb : I -> X -> Y)
+            (tf  : I -> (X -> Prop) -> Z -> Prop)
+            (tmf : (X -> Prop) -> Z -> Prop).
+
+  Hypothesis Hmono :
+    forall i P1 P2 z, (forall x, P1 x -> P2 x) -> tf i P1 z -> tf i P2 z.
+
+  Definition seq_side_fwd (k : approxKind)
+    (q0 : Y -> Prop) (pa : I -> X -> Prop) : Prop :=
+    match k with
+    | Under => forall i x, pa i x -> q0 (emb i x)
+    | Over  => forall i x, q0 (emb i x) -> pa i x
+    end.
+
+  (** A join-aggregated [bind], as [ASPSt] has.  The [Under] rule must
+      produce a returned value out of premises that only quantify over
+      them, so it needs [I] inhabited; with [I] empty the sequenced
+      transformer is the join of nothing, every premise is vacuous, and the
+      conclusion is arbitrary.  The [Over] rule -- Hoare logic -- is free
+      of it. *)
+  Section Join.
+    Hypothesis Hbind :
+      forall P z, tmf P z <-> exists i, tf i (fun x => tm P (emb i x)) z.
+
+    Lemma pt_holds_forward_join_under_seq (Hinh : inhabited I)
+      (p : X -> Prop) (q0 : Y -> Prop) (pa : I -> X -> Prop) (q : Z -> Prop) :
+      pt_holds (Forward tm) Under p q0 ->
+      (forall i, pt_holds (Forward (tf i)) Under (pa i) q) ->
+      seq_side_fwd Under q0 pa ->
+      pt_holds (Forward tmf) Under p q.
+    Proof.
+      intros H1 H2 Hs z Hq. destruct Hinh as [i].
+      apply Hbind. exists i.
+      refine (Hmono i (pa i) _ z _ (H2 i z Hq)).
+      intros x Hpa. exact (H1 (emb i x) (Hs i x Hpa)).
+    Qed.
+
+    Lemma pt_holds_forward_join_over_seq
+      (p : X -> Prop) (q0 : Y -> Prop) (pa : I -> X -> Prop) (q : Z -> Prop) :
+      pt_holds (Forward tm) Over p q0 ->
+      (forall i, pt_holds (Forward (tf i)) Over (pa i) q) ->
+      seq_side_fwd Over q0 pa ->
+      pt_holds (Forward tmf) Over p q.
+    Proof.
+      intros H1 H2 Hs z Hz.
+      destruct (proj1 (Hbind p z) Hz) as [i Hi].
+      apply (H2 i z). refine (Hmono i _ (pa i) z _ Hi).
+      intros x Ht. exact (Hs i x (H1 (emb i x) Ht)).
+    Qed.
+  End Join.
+
+  (** A meet-aggregated [bind], as [DSLPSt] has.  Here it is the [Over]
+      rule that needs [I] inhabited, for the dual reason. *)
+  Section Meet.
+    Hypothesis Hbind :
+      forall P z, tmf P z <-> forall i, tf i (fun x => tm P (emb i x)) z.
+
+    Lemma pt_holds_forward_meet_under_seq
+      (p : X -> Prop) (q0 : Y -> Prop) (pa : I -> X -> Prop) (q : Z -> Prop) :
+      pt_holds (Forward tm) Under p q0 ->
+      (forall i, pt_holds (Forward (tf i)) Under (pa i) q) ->
+      seq_side_fwd Under q0 pa ->
+      pt_holds (Forward tmf) Under p q.
+    Proof.
+      intros H1 H2 Hs z Hq. apply Hbind. intro i.
+      refine (Hmono i (pa i) _ z _ (H2 i z Hq)).
+      intros x Hpa. exact (H1 (emb i x) (Hs i x Hpa)).
+    Qed.
+
+    Lemma pt_holds_forward_meet_over_seq (Hinh : inhabited I)
+      (p : X -> Prop) (q0 : Y -> Prop) (pa : I -> X -> Prop) (q : Z -> Prop) :
+      pt_holds (Forward tm) Over p q0 ->
+      (forall i, pt_holds (Forward (tf i)) Over (pa i) q) ->
+      seq_side_fwd Over q0 pa ->
+      pt_holds (Forward tmf) Over p q.
+    Proof.
+      intros H1 H2 Hs z Hz. destruct Hinh as [i]. apply (H2 i z).
+      refine (Hmono i _ (pa i) z _ (proj1 (Hbind p z) Hz i)).
+      intros x Ht. exact (Hs i x (H1 (emb i x) Ht)).
+    Qed.
+  End Meet.
+End SequencingForward.
+
+(** The inhabitation condition of the two rules above is necessary, not an
+    artifact of their proofs.  At [I] empty the join is of nothing and the
+    meet is of everything, so in each case every premise is vacuous while
+    the conclusion is decided outright, the wrong way. *)
+
+Theorem forward_join_under_seq_needs_inhabited :
+  ~ (forall (I X Y Z : Type)
+       (tm : (X -> Prop) -> Y -> Prop) (emb : I -> X -> Y)
+       (tf : I -> (X -> Prop) -> Z -> Prop) (tmf : (X -> Prop) -> Z -> Prop),
+       (forall i P1 P2 z, (forall x, P1 x -> P2 x) -> tf i P1 z -> tf i P2 z) ->
+       (forall P z, tmf P z <-> exists i, tf i (fun x => tm P (emb i x)) z) ->
+       forall (p : X -> Prop) (q0 : Y -> Prop) (pa : I -> X -> Prop)
+         (q : Z -> Prop),
+         pt_holds (Forward tm) Under p q0 ->
+         (forall i, pt_holds (Forward (tf i)) Under (pa i) q) ->
+         seq_side_fwd emb Under q0 pa ->
+         pt_holds (Forward tmf) Under p q).
+Proof.
+  intro H.
+  refine (H Empty_set unit unit unit (fun _ _ => True)
+            (fun i (_ : unit) => Empty_set_rect (fun _ => unit) i)
+            (fun i => Empty_set_rect (fun _ => (unit -> Prop) -> unit -> Prop) i)
+            (fun _ _ => False) _ _
+            (fun _ => True) (fun _ => True)
+            (fun i => Empty_set_rect (fun _ => unit -> Prop) i)
+            (fun _ => True) _ _ _ tt I).
+  - intros [].
+  - intros P z. split; [ contradiction | intros [[] _] ].
+  - intros y _. exact I.
+  - intros [].
+  - intros [].
+Qed.
+
+Theorem forward_meet_over_seq_needs_inhabited :
+  ~ (forall (I X Y Z : Type)
+       (tm : (X -> Prop) -> Y -> Prop) (emb : I -> X -> Y)
+       (tf : I -> (X -> Prop) -> Z -> Prop) (tmf : (X -> Prop) -> Z -> Prop),
+       (forall i P1 P2 z, (forall x, P1 x -> P2 x) -> tf i P1 z -> tf i P2 z) ->
+       (forall P z, tmf P z <-> forall i, tf i (fun x => tm P (emb i x)) z) ->
+       forall (p : X -> Prop) (q0 : Y -> Prop) (pa : I -> X -> Prop)
+         (q : Z -> Prop),
+         pt_holds (Forward tm) Over p q0 ->
+         (forall i, pt_holds (Forward (tf i)) Over (pa i) q) ->
+         seq_side_fwd emb Over q0 pa ->
+         pt_holds (Forward tmf) Over p q).
+Proof.
+  intro H.
+  refine (H Empty_set unit unit unit (fun _ _ => True)
+            (fun i (_ : unit) => Empty_set_rect (fun _ => unit) i)
+            (fun i => Empty_set_rect (fun _ => (unit -> Prop) -> unit -> Prop) i)
+            (fun _ _ => True) _ _
+            (fun _ => True) (fun _ => True)
+            (fun i => Empty_set_rect (fun _ => unit -> Prop) i)
+            (fun _ => False) _ _ _ tt I).
+  - intros [].
+  - intros P z. split; [ intros _ [] | intros _; exact I ].
+  - intros y _. exact I.
+  - intros [].
+  - intros [].
+Qed.
+
 (** The judgement on a base arrow, at arbitrary indices: [X] is what a
     precondition is a predicate on, [Y] what a postcondition is. *)
 
