@@ -315,6 +315,217 @@ Proof.
            (dslpSt_bind_read m f) Hinh P Q0 Pa Q).
 Qed.
 
+(** *** Composition through the components
+
+    A dsp is the conjunction of its asp and dslp components and an aslp
+    their disjunction ([dsp_split], [aslp_split]), so a triple against one
+    is a triple against each -- but only for the kind that puts the
+    connective where it splits: an implication into a conjunction, or one
+    out of a disjunction.  The other two kinds, dsp [Over] and aslp
+    [Under], put it the other way round and do not split, which is why
+    they have no composition rule to inherit. *)
+
+Lemma triple_dspSt_split_under {S A} (m : stdivndNE S A)
+  (P : S -> Prop) (Q : A * S -> Prop) :
+  triple (@dspSt S) m Under P Q
+  <-> triple (@aspSt S) m Under P Q /\ triple (@dslpSt S) m Under P Q.
+Proof.
+  rewrite triple_dspSt, triple_aspSt, triple_dslpSt. split.
+  - intro H. split; intros y Hq;
+      [ exact (proj1 (H y Hq)) | exact (proj2 (H y Hq)) ].
+  - intros [H1 H2] y Hq. exact (conj (H1 y Hq) (H2 y Hq)).
+Qed.
+
+Lemma triple_aslpSt_split_over {S A} (m : stdivndNE S A)
+  (P : S -> Prop) (Q : A * S -> Prop) :
+  triple (@aslpSt S) m Over P Q
+  <-> triple (@aspSt S) m Over P Q /\ triple (@dslpSt S) m Over P Q.
+Proof.
+  rewrite triple_aslpSt, triple_aspSt, triple_dslpSt. split.
+  - intro H. split; intros y Hy; apply H;
+      [ exact (or_introl Hy) | exact (or_intror Hy) ].
+  - intros [H1 H2] y [Hy|Hy]; [ exact (H1 y Hy) | exact (H2 y Hy) ].
+Qed.
+
+(** So the two decomposable kinds compose, componentwise, each component
+    carrying the same intermediate assertion.  Both inherit the
+    inhabitation condition, but from opposite sides: the dsp rule from its
+    asp half, the aslp rule from its dslp half. *)
+
+Theorem triple_dspSt_seq_under {S A B} (Hinh : inhabited A)
+  (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@dspSt S) m Under P Q0 ->
+  (forall a, triple (@dspSt S) (f a) Under (Pa a) Q) ->
+  seq_side_fwd (fun a s => (a, s)) Under Q0 Pa ->
+  triple (@dspSt S) (bind m f) Under P Q.
+Proof.
+  intros H1 H2 Hs.
+  apply triple_dspSt_split_under in H1. destruct H1 as [H1a H1d].
+  apply triple_dspSt_split_under. split.
+  - refine (triple_aspSt_seq_under Hinh m f P Q0 Pa Q H1a _ Hs).
+    intro a. exact (proj1 (proj1 (triple_dspSt_split_under (f a) (Pa a) Q) (H2 a))).
+  - refine (triple_dslpSt_seq_under m f P Q0 Pa Q H1d _ Hs).
+    intro a. exact (proj2 (proj1 (triple_dspSt_split_under (f a) (Pa a) Q) (H2 a))).
+Qed.
+
+Theorem triple_aslpSt_seq_over {S A B} (Hinh : inhabited A)
+  (m : stdivndNE S A) (f : A -> stdivndNE S B)
+  (P : S -> Prop) (Q0 : A * S -> Prop)
+  (Pa : A -> S -> Prop) (Q : B * S -> Prop) :
+  triple (@aslpSt S) m Over P Q0 ->
+  (forall a, triple (@aslpSt S) (f a) Over (Pa a) Q) ->
+  seq_side_fwd (fun a s => (a, s)) Over Q0 Pa ->
+  triple (@aslpSt S) (bind m f) Over P Q.
+Proof.
+  intros H1 H2 Hs.
+  apply triple_aslpSt_split_over in H1. destruct H1 as [H1a H1d].
+  apply triple_aslpSt_split_over. split.
+  - refine (triple_aspSt_seq_over m f P Q0 Pa Q H1a _ Hs).
+    intro a. exact (proj1 (proj1 (triple_aslpSt_split_over (f a) (Pa a) Q) (H2 a))).
+  - refine (triple_dslpSt_seq_over Hinh m f P Q0 Pa Q H1d _ Hs).
+    intro a. exact (proj2 (proj1 (triple_aslpSt_split_over (f a) (Pa a) Q) (H2 a))).
+Qed.
+
+(** *** The two kinds that do not compose
+
+    Over-approximate dsp triples and under-approximate aslp triples have
+    no composition rule.  These are exactly the two whose triples do not
+    decompose into an asp and a dslp triple ([dsp_split_under],
+    [aslp_split_over] in [Generic/TripleTaxonomy.v]), so there is nothing
+    for them to compose through, and indeed the rule is refutable.
+
+    The witness is the picture the paper draws: [seqFst] takes state 1 to
+    state 2 and diverges elsewhere, [seqSnd] takes states 2 and 3 to state
+    4 and diverges elsewhere.  Divergence is what keeps the relations to
+    the arrows drawn -- a terminating outcome at any other start state
+    would add paths into 4.  Sequenced, they take 1 to 4 and nothing else:
+    state 3 is reachable by the continuation but never produced by
+    [seqFst], and an intermediate assertion cannot say so.  One pair of
+    programs serves both refutations, the second with every predicate
+    negated. *)
+
+Definition seqFst : stdivndNE nat unit :=
+  bind get (fun s => match s with 1 => put 2 | _ => divergeSt end).
+
+Definition seqSnd (_ : unit) : stdivndNE nat unit :=
+  bind get (fun s => match s with 2 | 3 => put 4 | _ => divergeSt end).
+
+Lemma seqFst_out_some (s : nat) (r : unit * nat) :
+  outSt seqFst s (Some r) <-> s = 1 /\ r = (tt, 2).
+Proof.
+  unfold seqFst. rewrite outSt_bind. split.
+  - intros [o1 [H1 H2]]. apply outSt_get in H1. rewrite H1 in H2. cbn in H2.
+    destruct s as [|[|n]]; try (apply outSt_diverge in H2; discriminate).
+    apply outSt_put in H2. split; [ reflexivity | congruence ].
+  - intros [-> ->]. exists (Some (1, 1)).
+    split; [ apply outSt_get; reflexivity | apply outSt_put; reflexivity ].
+Qed.
+
+Lemma seqSnd_out_some (s : nat) (r : unit * nat) :
+  outSt (seqSnd tt) s (Some r) <-> (s = 2 \/ s = 3) /\ r = (tt, 4).
+Proof.
+  unfold seqSnd. rewrite outSt_bind. split.
+  - intros [o1 [H1 H2]]. apply outSt_get in H1. rewrite H1 in H2. cbn in H2.
+    destruct s as [|[|[|[|n]]]];
+      try (apply outSt_diverge in H2; discriminate);
+      apply outSt_put in H2.
+    + split; [ left; reflexivity | congruence ].
+    + split; [ right; reflexivity | congruence ].
+  - intros [[-> | ->] ->]; [ exists (Some (2, 2)) | exists (Some (3, 3)) ];
+      (split; [ apply outSt_get; reflexivity | apply outSt_put; reflexivity ]).
+Qed.
+
+Lemma seqSeq_out_some (s : nat) (r : unit * nat) :
+  outSt (bind seqFst seqSnd) s (Some r) <-> s = 1 /\ r = (tt, 4).
+Proof.
+  rewrite outSt_bind. split.
+  - intros [o1 [H1 H2]]. destruct o1 as [[[] s']|]; [| discriminate H2 ].
+    apply seqFst_out_some in H1. destruct H1 as [Hs Hr].
+    assert (s' = 2) by congruence. subst s'.
+    apply seqSnd_out_some in H2. split; [ exact Hs | exact (proj2 H2) ].
+  - intros [-> ->]. exists (Some (tt, 2)). split.
+    + apply seqFst_out_some. split; reflexivity.
+    + apply seqSnd_out_some. split; [ left; reflexivity | reflexivity ].
+Qed.
+
+(** Figure 2(a): [p = {1}], [q0 = pa = {2}], [q = {}].  Both premises and
+    the side condition hold; the conclusion fails, because in the
+    sequenced computation state 4 is reachable only from [p]. *)
+Theorem dspSt_seq_over_fails :
+  ~ (forall (S A B : Type) (m : stdivndNE S A) (f : A -> stdivndNE S B)
+       (P : S -> Prop) (Q0 : A * S -> Prop) (Pa : A -> S -> Prop)
+       (Q : B * S -> Prop),
+       triple (@dspSt S) m Over P Q0 ->
+       (forall a, triple (@dspSt S) (f a) Over (Pa a) Q) ->
+       seq_side_fwd (fun a s => (a, s)) Over Q0 Pa ->
+       triple (@dspSt S) (bind m f) Over P Q).
+Proof.
+  intro H.
+  assert (H1 : triple (@dspSt nat) seqFst Over
+                 (fun s => s = 1) (fun r : unit * nat => snd r = 2)).
+  { apply triple_dspSt. intros r [[us [Hus Hr]] _].
+    apply seqFst_out_some in Hr. destruct Hr as [_ ->]. reflexivity. }
+  assert (H2 : forall a : unit,
+            triple (@dspSt nat) (seqSnd a) Over
+              (fun s => s = 2) (fun _ : unit * nat => False)).
+  { intros []. apply triple_dspSt. intros r [[us [Hus Hr]] Hall].
+    apply seqSnd_out_some in Hr. destruct Hr as [_ ->].
+    assert (H3 : outSt (seqSnd tt) 3 (Some (tt, 4)))
+      by (apply seqSnd_out_some; split; [ right; reflexivity | reflexivity ]).
+    pose proof (Hall (tt, 3) H3) as Hbad. cbn in Hbad. discriminate Hbad. }
+  assert (Hs : seq_side_fwd (fun (a : unit) (s : nat) => (a, s)) Over
+                 (fun r : unit * nat => snd r = 2) (fun (_ : unit) (s : nat) => s = 2))
+    by (intros a s Hq; exact Hq).
+  specialize (H nat unit unit seqFst seqSnd
+                (fun s => s = 1) (fun r : unit * nat => snd r = 2)
+                (fun (_ : unit) s => s = 2) (fun _ : unit * nat => False) H1 H2 Hs).
+  rewrite triple_dspSt in H. apply (H (tt, 4)). split.
+  - exists (tt, 1). split; [ reflexivity |].
+    apply seqSeq_out_some. split; reflexivity.
+  - intros us Hr. apply seqSeq_out_some in Hr. exact (proj1 Hr).
+Qed.
+
+(** Figure 2(b): the same two programs with every predicate negated, which
+    is the contrapositive the aslp -- dsp edge of the taxonomy gives
+    ([aslp_contra_dsp]). *)
+Theorem aslpSt_seq_under_fails :
+  ~ (forall (S A B : Type) (m : stdivndNE S A) (f : A -> stdivndNE S B)
+       (P : S -> Prop) (Q0 : A * S -> Prop) (Pa : A -> S -> Prop)
+       (Q : B * S -> Prop),
+       triple (@aslpSt S) m Under P Q0 ->
+       (forall a, triple (@aslpSt S) (f a) Under (Pa a) Q) ->
+       seq_side_fwd (fun a s => (a, s)) Under Q0 Pa ->
+       triple (@aslpSt S) (bind m f) Under P Q).
+Proof.
+  intro H.
+  assert (H1 : triple (@aslpSt nat) seqFst Under
+                 (fun s => s <> 1) (fun r : unit * nat => snd r <> 2)).
+  { apply triple_aslpSt. intros r Hq. right.
+    intros us Hr. apply seqFst_out_some in Hr. destruct Hr as [_ ->].
+    exfalso. apply Hq. reflexivity. }
+  assert (H2 : forall a : unit,
+            triple (@aslpSt nat) (seqSnd a) Under
+              (fun s => s <> 2) (fun _ : unit * nat => True)).
+  { intros []. apply triple_aslpSt. intros [[] n] _.
+    destruct n as [|[|[|[|[|k]]]]];
+      try (right; intros us Hr; apply seqSnd_out_some in Hr;
+           destruct Hr as [_ Hr4]; discriminate Hr4).
+    left. exists (tt, 3). split; [ discriminate |].
+    apply seqSnd_out_some. split; [ right; reflexivity | reflexivity ]. }
+  assert (Hs : seq_side_fwd (fun (a : unit) (s : nat) => (a, s)) Under
+                 (fun r : unit * nat => snd r <> 2) (fun (_ : unit) (s : nat) => s <> 2))
+    by (intros a s Hq; exact Hq).
+  specialize (H nat unit unit seqFst seqSnd
+                (fun s => s <> 1) (fun r : unit * nat => snd r <> 2)
+                (fun (_ : unit) s => s <> 2) (fun _ : unit * nat => True) H1 H2 Hs).
+  rewrite triple_aslpSt in H.
+  destruct (H (tt, 4) I) as [[us [Hne Hr]] | Hall].
+  - apply seqSeq_out_some in Hr. exact (Hne (proj1 Hr)).
+  - refine (Hall (tt, 1) _ eq_refl). apply seqSeq_out_some. split; reflexivity.
+Qed.
+
 (* ================================================================= *)
 (** * The twenty-four readings, in terms of the outcomes              *)
 (* ================================================================= *)
