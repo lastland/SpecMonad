@@ -22,7 +22,7 @@ make check      # assumption audit (Checks/Assumptions.v) and the claims index
 | [Relational/](Relational) | infrastructure; `Pred` (§6) | proof infrastructure: relations as arrows, the four SP readings of a relation, the predicate monad `Pred` |
 | [WP/](WP) | §2, §3.5 | `WPure` and its stacks; the WP variants AWP, DWLP, DWP, AWLP |
 | [SP/](SP) | §3.1–3.4 | `SPost` and why its stateful extension fails; the SP arrows ASP, DSLP, DSP, ASLP; the four SP monads |
-| [PTMonadTaxonomy/](PTMonadTaxonomy) | §4 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
+| [PTMonadTaxonomy/](PTMonadTaxonomy) | §1, §4, §6 | the taxonomy of predicate transformer (PT) monads: implication, contrapositive and Galois connection on bare transformers, then as monadic relations between the monads (Figure 1) |
 | [Verification/](Verification) | §1, §3.5, §4.1, §5 | everything that involves the computation monad `divndNE`, by setting; programs are interaction trees, denoted into it; each setting directory has the same files: `Computation.v`, `Morphisms.v`, `Triples.v`, `TriplesTaxonomy.v`, `DijkstraMonads.v`, `Typings.v`, `InCorrectnessPrinciples.v` (O'Hearn's rules), and examples in `TriplesExamples/` |
 | ↳ [Generic/](Verification/Generic) | §5 | what is the same at every setting: the general triple, the Dijkstra construction, triples as typings at any indices |
 | ↳ [DivNonDet/](Verification/DivNonDet) | §1, §3.5, §5 | base setting: programs `itree E A` and their outcomes `divndNE`, `denote`; the readings defined once (`dwpPure`, `aspPure`, …) |

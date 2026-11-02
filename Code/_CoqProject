@@ -26,6 +26,7 @@ Verification/DivNonDetSt/Typings.v
 Verification/DivNonDetSt/TriplesExamples/ITreePrograms.v
 Verification/DivNonDetSt/TriplesExamples/IncorrectnessLogic.v
 Verification/DivNonDetSt/TriplesExamples/ResetEven.v
+Verification/PrePost/Embeddings.v
 Verification/DivNonDetStExc/Computation.v
 Verification/DivNonDetStExc/Morphisms.v
 Verification/DivNonDetStExc/Triples.v

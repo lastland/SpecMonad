@@ -12,4 +12,5 @@ Verification/DivNonDet:       Lib Relational WP SP PTMonadTaxonomy Verification/
 Verification/DivNonDetSt:     Lib Relational WP SP PTMonadTaxonomy Verification/Generic Verification/DivNonDet
 Verification/DivNonDetStExc:  Lib Relational WP SP PTMonadTaxonomy Verification/Generic Verification/DivNonDet
 GaloisConnections:            Lib Relational WP SP PTMonadTaxonomy
+Verification/PrePost:         Lib Relational WP SP PTMonadTaxonomy Verification/Generic Verification/DivNonDet Verification/DivNonDetSt GaloisConnections
 Tests:                        Lib Relational WP SP PTMonadTaxonomy Verification/Generic Verification/DivNonDet Verification/DivNonDetSt Verification/DivNonDetStExc GaloisConnections
